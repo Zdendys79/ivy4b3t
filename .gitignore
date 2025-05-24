@@ -1,0 +1,6 @@
+.vscode/
+node_modules/
+/web/restricted/backups/
+/web/restricted/db_config.json
+/ivy/sql/_sql.json
+*.bak

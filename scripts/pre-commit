@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "[PRE-COMMIT] Zapisování verze do souboru package.json"
+node ivy/git_commit_version.js pre
+git add ivy/package.json

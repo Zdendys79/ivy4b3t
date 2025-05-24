@@ -1,0 +1,6 @@
+{
+    "host": "localhost",
+    "user": "php_user",
+    "password": "***složité_a_dlouhé_heslo***",
+    "database": "ivy"
+}

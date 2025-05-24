@@ -1,0 +1,7 @@
+{
+    "_sql.json.note":"Tento soubor zkopírujte/přejmenujte na _sql.json, zapište do údajů platné hodnoty a odmažte tento řádek",
+    "host":"localhost",
+    "user":"database_user",
+    "password":"unbreakable_database_password",
+    "database":"database_name"
+}
