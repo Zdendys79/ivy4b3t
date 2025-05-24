@@ -24,10 +24,10 @@ mklink /J e:\B3projekty\ivy4b3t\web e:\B3-VPS00.website\ivy
 mklink /J e:\B3projekty\ivy4b3t\scripts e:\B3.puppeteer\scripts
 
 :: Git hook pre-commit
-mklink e:\B3.puppeteer\scripts\pre-commit e:\B3projekty\ivy4b3t\.git\hooks\pre-commit
+mklink e:\B3projekty\ivy4b3t\.git\hooks\pre-commit e:\B3.puppeteer\scripts\pre-commit
 
 :: Git hook post-commit
-mklink e:\B3.puppeteer\scripts\post-commit e:\B3projekty\ivy4b3t\.git\hooks\post-commit
+mklink e:\B3projekty\ivy4b3t\.git\hooks\post-commit e:\B3.puppeteer\scripts\post-commit
 
 echo Hotovo.
 pause
