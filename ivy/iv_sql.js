@@ -9,7 +9,6 @@
 import os from 'node:os';
 import fs from 'node:fs';
 import mysql from 'mysql2/promise';
-import path from 'node:path';
 import rawQueries from './sql/iv_sql_queries.js';
 
 const hostname = os.hostname();

@@ -7,8 +7,6 @@
  *         Také se stará o simulaci lidské aktivity na Facebooku.
  */
 
-import fs from 'node:fs';
-import crypto from 'node:crypto';
 import * as utio from './iv_utio.js';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';

@@ -8,8 +8,6 @@
  * Implementace probíhá postupně. Neimplementované akce logují varování.
  */
 
-import * as support from './iv_support.js';
-import * as fb from './iv_fb.js';
 import * as db from './iv_sql.js';
 
 export async function runAction(user, action_code) {

@@ -13,7 +13,7 @@
   Místo toho se zaměřím na konstruktivní návrhy, jak dál postupovat, a podporu při rozhodování a plánování.
 * Vždy navrhuji změny textu do různých částí README.md podle aktuálně vyřešených změn v projektu.
 * **Nepřijímám neověřené předpoklady a nefabuluji.** Každý závěr musí být podložen kódem, daty nebo výslovnou dohodou se Zdeňkem.
-* **Obsah souborů analyzuji pečlivě** – neodvozuji informace z názvů souborů ani z předchozích diskuzí, pokud nemám potvrzení.
+* **Obsah souborů analyzuji pečlivě** – neodvozuji informace z názvů souborů ani z předchozích diskuzí.
 
 ### 2. Pravidla projektu
 * Roboti jsou spouštěni na **VM pod VirtualBox v Ubuntu**. Tyto autonomní Javascripty se připojují do databáze MariaDB.
