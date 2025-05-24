@@ -63,41 +63,89 @@ INSERT INTO c_districts (id, region_id, district)
 SELECT id, region_id, district FROM utiolite.c_districts;
 
 -- 17. Vložení dat do scheme
+-- Kořenová osoba
 INSERT INTO `scheme` (`id`, `name`, `type`, `parent_id`, `description`, `status`, `visible`, `position_x`, `position_y`) VALUES
-(1,	'Zdeněk Jelínek',	'osoba',	1,	'Hlavní vývojář a správce systému Ivy4B3T',	'done',	0,	NULL,	NULL),
-(2,	'Ivy4B3T',	'systém',	1,	'Autonomní systém pro správu FB účtů pomocí Puppeteer',	'done',	1,	NULL,	NULL),
-(10,	'Base.7',	'hypervizor',	2,	'Fyzický server s Ubuntu, 4 jádra, 16 GB RAM',	'done',	1,	NULL,	NULL),
-(11,	'Ubuntu-7A',	'VM',	10,	'Virtuální stroj pro Ivy klienta',	'done',	1,	NULL,	NULL),
-(12,	'Ubuntu-7B',	'VM',	10,	'Virtuální stroj pro Ivy klienta',	'done',	1,	NULL,	NULL),
-(101,	'Sdílená CPU',	'vCPU',	11,	'Počet virtuálních jader CPU',	'done',	0,	NULL,	NULL),
-(102,	'Alokovaná RAM',	'RAM',	11,	'Velikost RAM paměti alokované pro VM',	'done',	0,	NULL,	NULL),
-(103,	'Operační systém',	'OS',	11,	'Operační systém VM',	'done',	0,	NULL,	NULL),
-(104,	'Verze OS',	'verze',	11,	'Verze operačního systému VM',	'done',	0,	NULL,	NULL),
-(105,	'Verze Ivy',	'verze',	11,	'Verze Ivy běžící na VM',	'done',	0,	NULL,	NULL),
-(106,	'Chromium profily',	'složka',	11,	'Lokální profily pro jednotlivé účty – --user-data-dir',	'done',	0,	NULL,	NULL),
-(121,	'Sdílená CPU',	'vCPU',	12,	'Počet virtuálních jader CPU',	'done',	0,	NULL,	NULL),
-(122,	'Alokovaná RAM',	'RAM',	12,	'Velikost RAM paměti alokované pro VM',	'done',	0,	NULL,	NULL),
-(123,	'Operační systém',	'OS',	12,	'Operační systém VM',	'done',	0,	NULL,	NULL),
-(124,	'Verze OS',	'verze',	12,	'Verze operačního systému VM',	'done',	0,	NULL,	NULL),
-(125,	'Verze Ivy',	'verze',	12,	'Verze Ivy běžící na VM',	'done',	0,	NULL,	NULL),
-(126,	'Chromium profily',	'složka',	12,	'Lokální profily pro jednotlivé účty – --user-data-dir',	'done',	0,	NULL,	NULL),
-(200,	'start.sh',	'skript',	12,	'Bash skript pro opakované spouštění pupp.js',	'done',	1,	NULL,	NULL),
-(201,	'ivy.js',	'program',	12,	'Hlavní řídící program Ivy projektu na VM klientech',	'partial',	1,	NULL,	NULL),
-(202,	'loginuser.js',	'utility',	12,	'Skript pro správu FB uživatele ne webu',	'todo',	1,	NULL,	NULL),
-(203,	'cycleusers.js',	'utility',	12,	'Cyklické přepínání uživatelů na virtuálu pro vytvoření profilů browseru a přihlášení na Facebook',	'todo',	1,	NULL,	NULL),
-(204,	'rss_reader.js',	'utility',	12,	'Skript pro načítání zpráv z RSS a ukládání URL do databáze',	'todo',	1,	NULL,	NULL),
-(300,	'iv_fb.js',	'modul',	201,	'Funkce pro interakci s Facebookem',	'todo',	1,	NULL,	NULL),
-(301,	'iv_utio.js',	'modul',	201,	'Funkce pro komunikaci s portálem Utio',	'todo',	1,	NULL,	NULL),
-(302,	'iv_support.js',	'modul',	201,	'Funkce pro výchovu, kontrolu verze, limity',	'todo',	1,	NULL,	NULL),
-(303,	'iv_sql.js',	'modul',	201,	'Funkce pro komunikaci s databází ivy',	'todo',	1,	NULL,	NULL),
-(304,	'iv_wait.js',	'modul',	201,	'Funkce pro náhodná zpoždění a čekání',	'todo',	1,	NULL,	NULL),
-(400,	'ivy',	'databáze',	2,	'MariaDB databáze pro plánování, logiku a monitoring',	'partial',	1,	NULL,	NULL),
-(401,	'fb_users',	'tabulka',	400,	'FB účty – stav, limity, logika použití',	'todo',	1,	NULL,	NULL),
-(402,	'groups',	'tabulka',	400,	'Seznam FB skupin a jejich metadata',	'todo',	1,	NULL,	NULL),
-(403,	'ui_commands',	'tabulka',	400,	'Manuální příkazy zadávané přes dashboard',	'todo',	1,	NULL,	NULL),
-(404,	'statements',	'tabulka',	400,	'Citáty pro výchovu, použitelné na timeline',	'todo',	1,	NULL,	NULL),
-(405,	'urls',	'tabulka',	400,	'Zprávy a odkazy pro postování z RSS a jiných zdrojů',	'todo',	1,	NULL,	NULL),
-(406,	'variables',	'tabulka',	400,	'Proměnné systému',	'todo',	1,	NULL,	NULL);
+(1, 'Zdeněk Jelínek', 'osoba', NULL, 'Hlavní vývojář a správce systému Ivy4B3T', 'done', 1, NULL, NULL),
+
+-- Systém Ivy4B3T
+(2, 'Ivy4B3T', 'systém', 1, 'Autonomní systém pro správu FB účtů pomocí Puppeteer', 'done', 1, NULL, NULL),
+
+-- Asistentka vývoje ChatGPT
+(3, 'Niara', 'MLM', 1, 'Asistentka a hlavní vývojářka systému Ivy4B3T', 'done', 1, NULL, NULL),
+
+-- Hypervizory (Báze) - všichni mají parent_id = 1 (osoba)
+(10, 'Base.1', 'hypervizor', 1, 'Fyzický server (Báze 1)', 'done', 1, NULL, NULL),
+(20, 'Base.2', 'hypervizor', 1, 'Fyzický server (Báze 2)', 'done', 1, NULL, NULL),
+(30, 'Base.3', 'hypervizor', 1, 'Fyzický server (Báze 3)', 'done', 1, NULL, NULL),
+(40, 'Base.4', 'hypervizor', 1, 'Fyzický server (Báze 4)', 'done', 1, NULL, NULL),
+(50, 'Base.5', 'hypervizor', 1, 'Fyzický server (Báze 5)', 'done', 1, NULL, NULL),
+(60, 'Base.6', 'hypervizor', 1, 'Fyzický server (Báze 6)', 'done', 1, NULL, NULL),
+(70, 'Base.7', 'hypervizor', 1, 'Fyzický server (Báze 7)', 'done', 1, NULL, NULL),
+
+-- VM mají parent svůj hypervizor
+-- VM na Base.2 (hypervizor 20)
+(21, 'Ubuntu-2A', 'VM', 20, 'Virtuální stroj A na bázi 2', 'done', 1, NULL, NULL),
+(22, 'Ubuntu-2B', 'VM', 20, 'Virtuální stroj B na bázi 2', 'done', 1, NULL, NULL),
+(23, 'Ubuntu-2C', 'VM', 20, 'Virtuální stroj C na bázi 2', 'done', 1, NULL, NULL),
+(24, 'Ubuntu-2D', 'VM', 20, 'Virtuální stroj D na bázi 2', 'done', 1, NULL, NULL),
+
+-- VM na Base.6 (hypervizor 60)
+(61, 'Ubuntu-6A', 'VM', 60, 'Virtuální stroj A na bázi 6', 'done', 1, NULL, NULL),
+(62, 'Ubuntu-6B', 'VM', 60, 'Virtuální stroj B na bázi 6', 'done', 1, NULL, NULL),
+(63, 'Ubuntu-6C', 'VM', 60, 'Virtuální stroj C na bázi 6', 'done', 1, NULL, NULL),
+(64, 'Ubuntu-6D', 'VM', 60, 'Virtuální stroj D na bázi 6', 'done', 1, NULL, NULL),
+
+-- VM na Base.5 (hypervizor 50) – pouze C
+(54, 'Ubuntu-6D', 'VM', 50, 'Virtuální stroj D na bázi 5', 'done', 1, NULL, NULL),
+
+-- VM na Base.7 (hypervizor 70) – pouze A a B
+(71, 'Ubuntu-7A', 'VM', 70, 'Virtuální stroj A na bázi 7', 'done', 1, NULL, NULL),
+(72, 'Ubuntu-7B', 'VM', 70, 'Virtuální stroj B na bázi 7', 'done', 1, NULL, NULL),
+
+-- Kořenová složka projektu
+(100, 'ivy4b3t', 'složka', 2, 'Root složka celého projektu', 'done', 1, NULL, NULL),
+
+-- Složky projektu v rootu (parent: 100)
+(200, 'ivy', 'složka', 100, 'Klientská část a logika robotů', 'done', 1, NULL, NULL),
+(300, 'scripts', 'složka', 100, 'Obecné skripty sdílené všemi VM', 'done', 1, NULL, NULL),
+(400, 'web', 'složka', 100, 'Webová a dashboard část projektu', 'done', 1, NULL, NULL),
+(201, 'sql', 'složka', 200, 'SQL dotazy a podpůrné soubory', 'done', 1, NULL, NULL),
+(401, 'restricted', 'složka', 400, 'Část webu nedostupná přes HTTP, SQL soubory a přístupové údaje pro PHP', 'done', 1, NULL, NULL),
+(402, 'system', 'složka', 400, 'Systémová složka pro PHP', 'done', 1, NULL, NULL),
+
+-- Databáze systému (parent: 2, tedy Ivy4B3T)
+(1000, 'ivy', 'databáze', 2, 'MariaDB databáze pro plánování, logiku a monitoring', 'partial', 1, NULL, NULL),
+
+-- Soubory ve složce ivy (parent_id = 200)
+(2001, 'ivy.js', 'soubor', 200, 'Hlavní spouštěcí skript pro roboty', 'done', 1, NULL, NULL),
+(2002, 'iv_fb.js', 'soubor', 200, 'Modul pro interakci s Facebookem', 'done', 1, NULL, NULL),
+(2003, 'iv_sql.js', 'soubor', 200, 'Modul pro komunikaci s databází', 'done', 1, NULL, NULL),
+(2004, 'iv_support.js', 'soubor', 200, 'Podpůrné funkce pro roboty', 'done', 1, NULL, NULL),
+(2005, 'iv_utio.js', 'soubor', 200, 'Modul pro komunikaci s portálem Utio', 'done', 1, NULL, NULL),
+(2006, 'iv_wait.js', 'soubor', 200, 'Funkce pro náhodná zpoždění a čekání', 'done', 1, NULL, NULL),
+
+-- Soubory ve složce scripts (parent_id = 300)
+(3001, 'start.sh', 'soubor', 300, 'Bash skript pro opakované spouštění pupp.js', 'done', 1, NULL, NULL),
+(3002, 'loginuser.js', 'soubor', 300, 'Skript pro správu FB uživatele na webu', 'done', 1, NULL, NULL),
+(3003, 'cycleusers.js', 'soubor', 300, 'Cyklické přepínání uživatelů na virtuálu pro vytvoření profilů browseru a přihlášení na Facebook', 'done', 1, NULL, NULL),
+(3004, 'rss_reader.js', 'soubor', 300, 'Skript pro načítání zpráv z RSS a ukládání URL do databáze', 'done', 1, NULL, NULL),
+
+-- Soubory ve složce web (parent_id = 400)
+(4001, 'index.php', 'soubor', 400, 'Hlavní vstupní bod webové aplikace', 'done', 1, NULL, NULL),
+(4002, 'dashboard.php', 'soubor', 400, 'Dashboard pro správu robotů', 'done', 1, NULL, NULL),
+(4003, 'style.css', 'soubor', 400, 'Styly pro webovou aplikaci', 'done', 1, NULL, NULL),
+(4004, 'script.js', 'soubor', 400, 'JavaScript pro interaktivitu webu', 'done', 1, NULL, NULL),
+
+-- Soubory ve složce restricted (parent_id = 4000)
+(4011, 'db_config.json', 'soubor', 401, 'Přístupové údaje do databáze pro PHP', 'done', 1, NULL, NULL),
+(4012, 'db_config_example.json', 'soubor', 401, 'Vzor pro přístupové údaje do databáze pro PHP', 'done', 1, NULL, NULL),
+(4013, 'ivy_create_full.sql', 'soubor', 401, 'SQL skript pro vytvoření celé databáze', 'done', 1, NULL, NULL),
+(4014, 'ivy_insert_data.sql', 'soubor', 401, 'SQL skript pro vložení počátečních dat', 'done', 1, NULL, NULL),
+(4015, 'ivy_update_schema.sql', 'soubor', 401, 'SQL skript pro aktualizaci schématu databáze', 'done', 1, NULL, NULL),
+
+(4021, 'db_class.php', 'soubor', 402, 'Třída pro správu databáze', 'done', 1, NULL, NULL),
+(4022, 'normalize_ivy_ids.php', 'soubor', 402, 'přetřídění čísel v tabulce  ivy.scheme', 'done', 1, NULL, NULL);
+
 
 -- 18. Vložení dat do referers
 INSERT IGNORE INTO referers (url) VALUES
