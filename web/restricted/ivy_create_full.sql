@@ -35,7 +35,7 @@ CREATE TABLE `scheme` (
 CREATE TABLE `heartbeat` (
   `host` varchar(15) NOT NULL,
   `up` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `version` varchar(3) DEFAULT NULL,
+  `version` varchar(7) DEFAULT NULL,
   `user_id` smallint(5) unsigned NOT NULL DEFAULT 0,
   `user_loged` datetime DEFAULT NULL,
   `group_id` smallint(5) unsigned NOT NULL DEFAULT 0,

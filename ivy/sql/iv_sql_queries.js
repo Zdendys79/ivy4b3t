@@ -176,7 +176,7 @@ SET used = used + 1
 WHERE url = ?`,
 
   get_production_version_code: `
-SELECT value
+SELECT code
 FROM variables
 WHERE name = 'version'
 LIMIT 1;`,
