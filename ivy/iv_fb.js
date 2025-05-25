@@ -7,6 +7,7 @@
  */
 
 import * as wait from './iv_wait.js';
+import * as char from './iv_char.js';
 
 let new_thing_element;
 let fb = false; // browser page
@@ -162,7 +163,7 @@ export async function pasteStatement(statement = false) {
 
 export async function pasteCode() {
     const el = await fb.evaluateHandle(() => document.activeElement);
-    await el.type(`${generate(4)}`);
+    await el.type(`${char.generate(4)}`);
     await fb.waitForTimeout(wait.timeout());
 }
 
@@ -557,30 +558,6 @@ export async function getScreenshotForDatabase() {
         type: 'png'
     });
     return image;
-}
-
-function generate(c = 6) {
-    const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const signs = "/+*-$,;:#&"
-    // c is base for random generated string length.
-    // one third + 1 is mandatory part (1/3*c)
-    // the other two-thirds is an optional part > interval (0 - 2/3*c)
-    let chars_count = Math.floor(Math.random() * 2 * c / 3 + Math.floor(1 + c / 3));
-    let code = "";
-    let sign_not_used = true;
-
-    for (let i = 0; i < chars_count; i++) {
-        let rnd1 = Math.floor(Math.random() * chars.length);
-        // instert any sign from list when:
-        // is not last char, not used before and with "random chance" increasing with each previous character
-        if ((i < (chars_count - 1)) && sign_not_used && Math.round(Math.random() * (2 + i) / chars_count)) {
-            rnd2 = Math.floor(Math.random() * signs.length);
-            code += signs.substring(rnd2, rnd2 + 1);
-            sign_not_used = false;
-        }
-        code += chars.substring(rnd1, rnd1 + 1);
-    }
-    return code;
 }
 
 export async function test_x(selector) {

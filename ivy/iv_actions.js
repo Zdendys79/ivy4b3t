@@ -10,6 +10,7 @@
 
 import * as db from './iv_sql.js';
 import * as wait from './iv_wait.js';
+import { IvMath } from './iv-math.class.js';
 
 export async function runAction(user, action_code) {
   switch (action_code) {
@@ -85,27 +86,21 @@ async function messengerReply(user) {
 
 async function accountDelay(user) {
   console.log(`[${user.id}] Spouštím delay režim.`);
-  const isNight = new Date().getHours() < 6 || new Date().getHours() >= 22;
-  const minutes = isNight ? rand(420, 720) : rand(180, 480);
-  await db.systemLog("account_delay", `Čekám ${minutes} minut.`, { user_id: user.id });
-  await wait.delay(minutes * 60000);
+  const isNight = new Date().getHours() < 2 || new Date().getHours() >= 20;
+  const minutes = isNight
+    ? IvMath.parabolicRandReverse(420, 600)  // noční režim: 7-10 hodin (delší časy)
+    : IvMath.rand(180, 480); // denní režim: 3-8 hodin
+  await db.updateUserWorktime(user.id, minutes); // nastavit next_worktime
+  await db.systemLog("account_delay", `Čekání uživatele: ${minutes} minut.`, { user_id: user.id });
   return true;
 }
 
 async function accountSleep(user) {
   console.log(`[${user.id}] Spouštím sleep režim.`);
-  const hours = rand(24, 72);
-  await db.setWorktimeToTomorow(user.id); // nastavit next_worktime
+  const minutes = IvMath.parabolicRand(24*60, 72*60);
+  const hours = `${Math.floor(minutes/60)}:${Math.floor(minutes%60).toString().padStart(2, '0')}`;
+  await db.updateUserWorktime(user.id, minutes); // nastavit next_worktime
   await db.systemLog("account_sleep", `Sleep na ${hours} hodin.`, { user_id: user.id });
   await db.userLog(user, 'account_sleep', hours, `Sleep mode aktivován.`);
   return true;
-}
-
-function rand(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-async function wait(minutes) {
-  const ms = minutes * 60000;
-  return new Promise(resolve => setTimeout(resolve, ms));
 }

@@ -2,7 +2,7 @@
 // scheme.php (web/scheme.php)
 // Výpis stromu systému z databáze ivy.scheme ve formátu ASCII v HTML5
 
-require_once __DIR__ . '/system/db_class.php';
+require_once __DIR__ . '/system/db.class.php';
 
 // Připojení k databázi pomocí existující třídy
 $db = new DbClass();

@@ -11,6 +11,8 @@ import * as utio from './iv_utio.js';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
 import * as fb from './iv_fb.js';
+
+
 import md5 from 'md5';
 
 export async function addMeToGroup(user, group) {
@@ -137,25 +139,6 @@ export async function pasteMsg(user, group) {
     }
     console.error("clickNewThing or getting message failed!");
     return false;
-}
-
-export function generate(c = 6) {
-    const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const signs = "/+*-$,;:#&";
-    let chars_count = Math.floor(Math.random() * 2 * c / 3 + Math.floor(1 + c / 3));
-    let code = "";
-    let sign_not_used = true;
-
-    for (let i = 0; i < chars_count; i++) {
-        let rnd1 = Math.floor(Math.random() * chars.length);
-        if ((i < (chars_count - 1)) && sign_not_used && Math.round(Math.random() * (2 + i) / chars_count)) {
-            let rnd2 = Math.floor(Math.random() * signs.length);
-            code += signs[rnd2];
-            sign_not_used = false;
-        }
-        code += chars[rnd1];
-    }
-    return code;
 }
 
 export async function closeBlankTabs(context) {
