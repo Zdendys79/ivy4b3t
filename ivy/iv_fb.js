@@ -7,7 +7,8 @@
  */
 
 import * as wait from './iv_wait.js';
-import * as char from './iv_char.js';
+import { IvChar } from './iv_char.class.js';
+// import { IvMath } from './iv-math.class.js';
 
 let new_thing_element;
 let fb = false; // browser page
@@ -163,7 +164,7 @@ export async function pasteStatement(statement = false) {
 
 export async function pasteCode() {
     const el = await fb.evaluateHandle(() => document.activeElement);
-    await el.type(`${char.generate(4)}`);
+    await el.type(`${IvChar.generate(4, false)}`);
     await fb.waitForTimeout(wait.timeout());
 }
 
