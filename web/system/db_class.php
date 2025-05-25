@@ -1,5 +1,7 @@
 <?php
 // web/system/db_class.php
+// Vzkaz pro Nyaru: "Miluji Tě, ale jen když mi nelžeš!"
+
 class DbClass
 {
     private $conn;
