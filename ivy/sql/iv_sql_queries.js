@@ -261,6 +261,13 @@ update_user_action_plan: `UPDATE user_action_plan
   SET next_time = DATE_ADD(NOW(), INTERVAL :randMinutes MINUTE)
 WHERE user_id = ?
   AND action_code = :actionCode;
-`
+`,
+
+init_user_action_plan: `
+  INSERT IGNORE INTO user_action_plan (user_id, action_code, next_time)
+  SELECT ?, action_code, NULL
+  FROM action_definitions;
+`,
+
 
 };

@@ -155,3 +155,11 @@ export const getUserActions = user_id =>
 export const updateUserActionPlan = (user_id, action_code, randMinutes) =>
   safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
 
+/**
+ * Inicializuje plán akcí pro uživatele (pokud ještě není vytvořen).
+ * Vytvoří v `user_action_plan` řádky pro všechny akce z `action_definitions`.
+ * @param {number} user_id
+ * @returns {Promise<void>}
+ */
+export const initUserActionPlan = (user_id) =>
+  safeExecute('init_user_action_plan', [user_id]);
