@@ -25,7 +25,7 @@ console.log(`[IVY] Verze klienta: ${versionCode}`);
   while (true) {
     try {
       await db.heartBeat(0, 0, versionCode);
-      const dbVersion = await db.getProductionVersionCode();
+      const dbVersion = await db.getVersionCode();
       if (dbVersion.code !== versionCode) {
         console.log(`[IVY] Rozdílná verze: DB=${dbVersion.code}, Lokálně=${versionCode}. Ukončuji.`);
         process.exit(1);

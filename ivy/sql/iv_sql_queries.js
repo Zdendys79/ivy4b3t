@@ -206,7 +206,7 @@ WHERE id = ?`,
   group_by_id: `
 SELECT * FROM fb_groups WHERE id = ?`,
 
-  get_version: `
+  get_version_code: `
 SELECT code FROM versions ORDER BY created DESC LIMIT 1`,
 
   get_random_referer: `

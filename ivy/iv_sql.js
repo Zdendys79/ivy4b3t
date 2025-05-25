@@ -97,7 +97,7 @@ export const setWorktimeToTomorow = user_id => safeExecute("update_worktime_to_t
 export const getRecentlyLogedUserFromMyNeighborhood = () => safeQueryFirst("get_recently_loged_user_from_neighborhood", [hostname, 30]);
 export const lockAccount = (user_id) => safeExecute("lock_account", [user_id]);
 export const userLogedToFB = (user_id) => safeExecute("update_user_loged_to_fb", [hostname, user_id, user_id]);
-export const getProductionVersionCode = () => safeQueryFirst("get_production_version_code");
+export const getVersionCode = () => safeQueryFirst("get_version_code");
 export const updateUserNextStatement = (user, hours) => safeExecute('update_user_next_statement', [hours, user.id]);
 export const updateUserAddGroup = (user, group_id) => safeExecute('update_user_add_group', [user.id]);
 export const setUserLimit = (user, new_limit, old_limit) => safeExecute('set_user_limit', [new_limit, user.id]);
