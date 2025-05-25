@@ -1,6 +1,6 @@
 <?php
-// system/db_class.php
-class Database
+// web/system/db_class.php
+class DbClass
 {
     private $conn;
     private $errors;
