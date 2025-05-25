@@ -194,7 +194,6 @@ async function restartHost(command) {
     await closeBrowser();
     const title = "UI command";
     await db.systemLog(title, "The UI ordered a restart of the program!", command.data);
-    await db.serverLog(`${title}: The UI ordered a restart of the program!`);
     await db.uICommandSolved(command.id);
     console.log(title);
     console.log("Exiting the program!");

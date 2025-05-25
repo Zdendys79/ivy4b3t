@@ -14,6 +14,7 @@ import UserAgentOverride from 'puppeteer-extra-plugin-stealth/evasions/user-agen
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
 import * as fb from './iv_fb.js';
+import * as ui from './iv_ui.js';
 import * as utio from './iv_utio.js';
 import * as support from './iv_support.js';
 
@@ -26,7 +27,8 @@ let next_worktime = Date.now() - 10;
 export async function tick() {
     const ui_command = await db.getUICommand();
     if (ui_command) {
-        console.log("UI příkaz detekován – bude zpracován později.");
+        console.log("UI příkaz detekován – zpracovávám...");
+        await ui.solveUICommand(ui_command);
         return;
     }
 

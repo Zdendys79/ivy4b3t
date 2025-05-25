@@ -9,6 +9,7 @@
  */
 
 import * as db from './iv_sql.js';
+import * as wait from './iv_wait.js';
 
 export async function runAction(user, action_code) {
   switch (action_code) {
@@ -87,7 +88,7 @@ async function accountDelay(user) {
   const isNight = new Date().getHours() < 6 || new Date().getHours() >= 22;
   const minutes = isNight ? rand(420, 720) : rand(180, 480);
   await db.systemLog("account_delay", `Čekám ${minutes} minut.`, { user_id: user.id });
-  await wait(minutes);
+  await wait.delay(minutes * 60000);
   return true;
 }
 

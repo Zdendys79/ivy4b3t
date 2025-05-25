@@ -87,14 +87,6 @@ async function safeExecute(query_id, params = []) {
 export const getActionDefinitions = () => safeQueryAll('get_action_definitions');
 export const getAvailableActions = user_id => safeQueryAll('get_available_actions', [user_id]);
 export const insertToActionPlan = (user_id, action_code, next_time) => safeExecute('insert_to_action_plan', [user_id, action_code, next_time]);
-export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
-  .then(row => row && row.time ? new Date(row.time) : false);
-
-export async function heartBeat(user_id, group_id, version_code) {
-  const data = [hostname, user_id, group_id, version_code, user_id, group_id, version_code];
-  return await safeExecute("heartbeat", data);
-}
-
 export const getUser = () => safeQueryFirst("user", [hostname]);
 export const getUserById = user_id => safeQueryFirst("user_by_id", [user_id]);
 export const getUICommand = () => safeQueryFirst("get_ui_command", [hostname]);
@@ -102,6 +94,26 @@ export const uICommandSolved = id => safeExecute("ui_command_solved", [id]);
 export const uICommandAccepted = id => safeExecute("ui_command_accepted", [id]);
 export const getRandomReferer = () => safeQueryFirst("get_random_referer");
 export const setWorktimeToTomorow = user_id => safeExecute("update_worktime_to_tomorow", [user_id]);
+export const getRecentlyLogedUserFromMyNeighborhood = () => safeQueryFirst("get_recently_loged_user_from_neighborhood", [hostname, 30]);
+export const lockAccount = (user_id) => safeExecute("lock_account", [user_id]);
+export const userLogedToFB = (user_id) => safeExecute("update_user_loged_to_fb", [hostname, user_id, user_id]);
+export const getProductionVersionCode = () => safeQueryFirst("get_production_version_code");
+export const updateUserNextStatement = (user, hours) => safeExecute('update_user_next_statement', [hours, user.id]);
+export const updateUserAddGroup = (user, group_id) => safeExecute('update_user_add_group', [user.id]);
+export const setUserLimit = (user, new_limit, old_limit) => safeExecute('set_user_limit', [new_limit, user.id]);
+export const loadUrl = () => safeQueryFirst('load_url');
+export const useUrl = (url) => safeExecute('use_url', [url]);
+export const getStatement = () => safeQueryFirst('select_statement');
+export const verifyMsg = (group_id, md5) => safeQueryFirst('verify_posted_data', [group_id, md5]);
+export const getGroupById = (group_id) => safeQueryFirst('group_by_id', [group_id]);
+
+export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
+  .then(row => row && row.time ? new Date(row.time) : false);
+
+export async function heartBeat(user_id, group_id, version_code) {
+  const data = [hostname, user_id, group_id, version_code, user_id, group_id, version_code];
+  return await safeExecute("heartbeat", data);
+}
 
 export async function systemLog(title, msg, data) {
   const payload = [hostname, title, msg, JSON.stringify(data)];
@@ -118,12 +130,3 @@ export async function updateUserWorktime(user, worktime) {
   const log = await userLog(user, 4, worktime, `Updated worktime +${worktime} minutes.`);
   return update1 && log;
 }
-
-export const updateUserNextStatement = (user, hours) => safeExecute('update_user_next_statement', [hours, user.id]);
-export const updateUserAddGroup = (user, group_id) => safeExecute('update_user_add_group', [user.id]);
-export const setUserLimit = (user, new_limit, old_limit) => safeExecute('set_user_limit', [new_limit, user.id]);
-export const loadUrl = () => safeQueryFirst('load_url');
-export const useUrl = (url) => safeExecute('use_url', [url]);
-export const getStatement = () => safeQueryFirst('select_statement');
-export const verifyMsg = (group_id, md5) => safeQueryFirst('verify_posted_data', [group_id, md5]);
-export const getGroupById = (group_id) => safeQueryFirst('group_by_id', [group_id]);
