@@ -10,7 +10,7 @@
 
 import * as db from './iv_sql.js';
 import * as wait from './iv_wait.js';
-import { IvMath } from './iv-math.class.js';
+import { IvMath } from './iv_math.class.js';
 
 export async function runAction(user, action_code) {
   switch (action_code) {
