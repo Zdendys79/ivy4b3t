@@ -20,18 +20,15 @@ CREATE TABLE `versions` (
 
 -- 3. Tabulka schématu systému
 CREATE TABLE `scheme` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id` varchar(8) NOT NULL,
   `name` varchar(128) NOT NULL,
   `type` varchar(64) NOT NULL,
-  `parent_id` int(10) unsigned DEFAULT NULL,
   `description` text DEFAULT NULL,
   `status` enum('todo','partial','done','deprecated') DEFAULT 'todo',
   `visible` tinyint(1) DEFAULT 1,
   `position_x` float DEFAULT NULL,
   `position_y` float DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `parent_id` (`parent_id`),
-  CONSTRAINT `scheme_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `scheme` (`id`) ON DELETE SET NULL
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
 -- 4. Tabulka heartbeat
