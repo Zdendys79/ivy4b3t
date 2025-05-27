@@ -47,12 +47,12 @@ export async function tick() {
 
   try {
     // 3) Check neighborhood lock
-    const recent = await db.getRecentlyLogedUserFromMyNeighborhood();
+    /*const recent = await db.getRecentlyLogedUserFromMyNeighborhood();
     console.log('Recent neighbor lock:', recent);
     if (recent) {
       console.log('Jiný uživatel je stále aktivní, vynechávám tick.');
       return;
-    }
+    }*/
 
     // 4) Fetch user to work
     const user = await db.getUser();
