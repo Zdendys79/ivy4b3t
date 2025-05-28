@@ -101,7 +101,6 @@ CREATE TABLE `ui_commands` (
 CREATE TABLE `quotes` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `user_id` SMALLINT(5) UNSIGNED DEFAULT 0,          -- Původní user_id, pro referenci
-  `posted` DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,  -- Původní posted
   `text` TEXT NOT NULL,                               -- Text citátu
   `author` VARCHAR(255) DEFAULT NULL,                 -- Autor citátu (doplňujeme později)
   `hash` VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,  -- Původní hash
@@ -164,16 +163,6 @@ CREATE TABLE `c_districts` (
   PRIMARY KEY (`id`),
   KEY `RegionKey` (`region_id`),
   CONSTRAINT `c_districts_FK` FOREIGN KEY (`region_id`) REFERENCES `c_regions` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE `log_u` (
-  `time` datetime DEFAULT NULL,
-  `user_id` smallint(5) unsigned DEFAULT NULL,
-  `type` tinyint(3) unsigned DEFAULT 0,
-  `data` varchar(24) DEFAULT '',
-  `text` tinytext DEFAULT NULL,
-  KEY `log_u_FK_user` (`user_id`),
-  CONSTRAINT `log_u_FK_user` FOREIGN KEY (`user_id`) REFERENCES `fb_users` (`id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 📂 Tabulka action_log (sjednocený log všech akcí)

@@ -37,9 +37,9 @@ INSERT INTO ui_commands (id, host, command, data, created, accepted, fulfilled)
 SELECT id, host, command, data, created, accepted, fulfilled
 FROM utiolite.ui_commands;
 
--- 4. Převod statements
-INSERT INTO quotes (user_id, posted, text, hash)
-SELECT user_id, posted, statement, hash FROM statements;
+-- Převod dat z utiolite.statements do ivy.quotes
+INSERT INTO ivy.quotes (user_id, posted, text, hash)
+SELECT user_id, posted, statement, hash FROM utiolite.statements;
 
 -- 5. Převod urls
 INSERT INTO urls (used, url, date)
@@ -175,6 +175,6 @@ VALUES
 ('messenger_check',   'Prohlédnout Messenger',    'Načíst a projít všechny zprávy v Messengeru.',        20, 120, 240, TRUE, FALSE),
 ('messenger_reply',   'Zpráva známému',           'Napsat příteli.',                                     50, 60, 960, TRUE, FALSE),
 ('account_sleep',     'Uspání účtu',              'Odpočinek účtu na 24-72h.',                           1, 10080, 17280, FALSE, TRUE),
-('account_delay',     'Denní odpočinek',          'Krátký odpočinek dle denní doby (noc/dopo).',         25, 180, 720, TRUE, TRUE);
+('account_delay',     'Denní odpočinek',          'Krátký odpočinek dle denní doby (noc/dopo).',         25, 180, 720, TRUE, TRUE),
 ('quote_post', 'Citát na Timeline', 'Publikace citátu na timeline uživatele.', 50, 4320, 10080, TRUE, TRUE);
 
