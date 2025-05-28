@@ -12,7 +12,7 @@ import mysql from 'mysql2/promise';
 import rawQueries from './sql/iv_sql_queries.js';
 
 const hostname = os.hostname();
-const sql_setup = JSON.parse(fs.readFileSync('./sql/_sql.json'));
+const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
 
 // Sloučení načítaných souborů do dotazového objektu
 const queries = {

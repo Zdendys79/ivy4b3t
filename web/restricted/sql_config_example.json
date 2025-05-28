@@ -1,6 +1,7 @@
 {
-    "host": "localhost",
-    "user": "php_user",
-    "password": "***složité_a_dlouhé_heslo***",
-    "database": "ivy"
+    "README":"Copy/rename this file to sql_config.json in the project folder /ivy/sql. Type in valid values ​​and delete this line if necessary.",
+    "host":"localhost",
+    "user":"database_user",
+    "password":"unbreakable_database_password",
+    "database":"database_name"
 }

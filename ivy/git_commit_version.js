@@ -53,7 +53,7 @@ if (mode === 'pre') {
       process.exit(1);
     }
 
-    const dbConfigPath = path.join(__dirname, 'sql', '_sql.json');
+    const dbConfigPath = path.join(__dirname, 'sql', 'sql_config.json');
     const dbConfigRaw = await fs.readFile(dbConfigPath, 'utf8');
     const dbConfig = JSON.parse(dbConfigRaw);
 

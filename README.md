@@ -32,8 +32,8 @@
 │   ├── iv_rhythm.js          ← Plánování akcí podle `action_plan`
 │   ├── iv_actions.js         ← Implementace akcí na základě `action_code`
 │   └── sql/                  ← Původní SQL dotazy ve formátu `.sql`
-│       ├── _sql_sample.json  ← Vzor konfiguračního souboru pro připojení k DB
-│       ├── _sql.json         ← Konfiguračního souboru pro připojení k DB
+│       ├── sql_config_sample.json  ← Vzor konfiguračního souboru pro připojení k DB
+│       ├── sql_config.json         ← Konfiguračního souboru pro připojení k DB
 │       ├── iv_sql_queries.js ← Definice všech SQL dotazů (exportované jako ESM objekt)
 │       ├── iv_user.sql       ← Výběr uživatele
 │       └── iv_group.sql      ← Výběr vhodné skupiny
@@ -56,7 +56,7 @@
 
 ## ✅ Vytvořené a používané soubory ve verzi IV
 
-| Soubor                  | Účel                                                                      |
+| Složka ivy - soubory    | Účel                                                                      |
 | ----------------------- | ------------------------------------------------------------------------- |
 | `ivy.js`                | Spouštěcí smyčka klienta – volá `tick()`, hlídá verzi, zapisuje heartbeat |
 | `iv_worker.js`          | Hlavní pracovní logika robota – login, akce, volání FB a UTIO             |
@@ -71,10 +71,18 @@
 | `iv_actions.js`         | Realizace konkrétních typů akcí uživatelů (např. delay, sleep, like)      |
 | `sql/iv_user.sql`       | Původní dotaz pro výběr uživatele                                         |
 | `sql/iv_group.sql`      | Původní dotaz pro výběr skupiny pro daného uživatele                      |
-| `aql/iv_sql_queries.js` | ESM export SQL dotazů – nahrazuje přímé čtení ze souborů                  |
+| `sql/iv_sql_queries.js` | ESM export SQL dotazů – nahrazuje přímé čtení ze souborů                  |
+| `sql/sql_config_sample.json`| Šablona pro `sql_config.json`, přejmenujte a zapište skutečné SQL     |
+| `sql/sql_config.json`   | Obsahuje DB přístupové údaje pro JS a proto není ukládán na GIT           |
 | `start.sh`              | Opakovaný spouštěcí skript (git pull + rsync + `node ivy.js`)             |
 | `git_commit_version.js` | Získání GIT hashe a zapsání verze do DB a `package.json`                  |
-| `_sql_sample.json`      | Šablona pro `_sql.json` obsahující DB přístupové údaje                    |
+
+| Složka web - soubory    | Účel                                                                      |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `web/restricted/sql_config_sample.json`| Šablona pro `sql_config.json`, přejmenujte a zapište skutečné údaje |
+| `web/restricted/sql_config.json` | Obsahuje DB přístupové údaje pro PHP a proto není ukládán na GIT         |
+
+
 
 | Soubory - scripts        | Popis a účel                                          |
 | ------------------------ | ----------------------------------------------------- |
@@ -302,7 +310,7 @@ Níže je seznam pravidel, která jsou aktuálně nastavena:
 node_modules/            # Knihovny a závislosti z Node.js - vytvoří se při instalaci projektu (npm install)
 /web/restricted/backups/ # Zálohy – nejsou určeny pro verzování
 /web/restricted/db_config.json  # Konfigurace databáze – obsahuje citlivé údaje pro PHP
-/ivy/sql/_sql.json       # Konfigurace databáze – obsahuje citlivé údaje pro Node.js (soubory jsou téměř identické)
+/ivy/sql/sql_config.json       # Konfigurace databáze – obsahuje citlivé údaje pro Node.js (soubory jsou téměř identické)
 *.bak                    # Záložní soubory (například .bak z editorů)
 Poznámka:
 Soubory a složky uvedené výše nejsou součástí verzované historie projektu a neměly by být přidávány do repozitáře.

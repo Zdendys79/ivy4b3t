@@ -22,7 +22,7 @@ do
     echo "[START] Kopíruji $SOURCE_SUBFOLDER do $TARGET_DIR..."
     rsync -av --delete \
         --exclude node_modules \
-        --exclude sql/_sql.json \
+        --exclude sql/sql_config.json \
         "$REPO_DIR/$SOURCE_SUBFOLDER/" "$TARGET_DIR/"
 
     echo "[START] Spouštím robota..."

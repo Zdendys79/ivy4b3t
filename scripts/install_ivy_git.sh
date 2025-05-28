@@ -28,13 +28,13 @@ echo "[4/9] Kopíruji složku ivy do ~/ivy..."
 mkdir -p ~/ivy
 rsync -av --delete ~/git/ivy4b3t/ivy/ ~/ivy/
 
-echo "[5/9] Vytvářím sql/_sql.json ze šablony..."
+echo "[5/9] Vytvářím sql/sql_config.json..."
 cd ~/ivy/sql || { echo "Chyba: složka sql neexistuje"; exit 1; }
 
 read -rsp "Zadej heslo pro uživatele B3.remotes: " DB_PASS
 echo
 
-cat > _sql.json <<EOF
+cat > sql_config.json <<EOF
 {
   "host": "83.167.224.200",
   "user": "B3.remotes",
