@@ -2,9 +2,9 @@
 node_modules/
 /web/restricted/backups/
 /web/restricted/db_config.json
-/web/restricted/_sql_config.json
+/web/restricted/sql_config.json
 /ivy/sql/_sql.json
-/ivy/sql/_sql_config.json
+/ivy/sql/sql_config.json
 
 *.bak
 *.code-workspace

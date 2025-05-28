@@ -38,9 +38,8 @@ SELECT id, host, command, data, created, accepted, fulfilled
 FROM utiolite.ui_commands;
 
 -- 4. Převod statements
-INSERT INTO statements (user_id, posted, statement, hash)
-SELECT user_id, posted, statement, hash
-FROM utiolite.statements;
+INSERT INTO quotes (user_id, posted, text, hash)
+SELECT user_id, posted, statement, hash FROM statements;
 
 -- 5. Převod urls
 INSERT INTO urls (used, url, date)
@@ -166,15 +165,16 @@ INSERT IGNORE INTO referers (url) VALUES
 ('https://www.e15.cz');
 
 -- 19 data pro jednotlivé druhy akcí
-INSERT INTO action_definitions (action_code, label, description, weight, min_minutes, max_minutes, repeatable)
+INSERT INTO action_definitions (action_code, label, description, weight, min_minutes, max_minutes, repeatable, active)
 VALUES
-('group_post',        'Příspěvek do skupiny',     'Příspěvek získaný z UTIO typu G/GV.',                 10, 60, 180, TRUE),
-('timeline_post',     'Příspěvek na Timeline',    'Osobní status na timeline uživatele.',                2, 1080, 4320, TRUE),
-('comment',           'Komentář',                 'Komentář pod cizím příspěvkem.',                      5, 240, 600, TRUE),
-('react',             'Reakce (like)',            'Like nebo jiná emoce na příspěvek.',                  8, 60, 180, TRUE),
-('share_post',        'Sdílení',                  'Sdílení cizího příspěvku.',                           2, 2880, 7200, TRUE),
-('messenger_check',   'Prohlédnout Messenger',    'Načíst a projít zprávy v Messengeru.',                4, 60, 240, TRUE),
-('messenger_reply',   'Zpráva známému',           'Reagovat nebo napsat příteli.',                       4, 240, 960, TRUE),
-('account_sleep',     'Uspání účtu',              'Odpočinek účtu na 24-72h.',                           1, 10080, 17280, FALSE),
-('account_delay',     'Denní odpočinek',          'Krátký odpočinek dle denní doby (noc/dopo).',         6, 180, 720, TRUE);
+('group_post',        'Příspěvek do skupiny',     'Příspěvek získaný z UTIO typu G/GV.',                 30, 3, 5, TRUE, FALSE),
+('timeline_post',     'Příspěvek na Timeline',    'Osobní status na timeline uživatele.',                1, 1080, 4320, TRUE, FALSE),
+('comment',           'Komentář',                 'Komentář pod cizím příspěvkem.',                      10, 240, 600, TRUE, FALSE),
+('react',             'Reakce (like)',            'Like nebo jiná emoce na příspěvek.',                  20, 60, 180, TRUE, FALSE),
+('share_post',        'Sdílení',                  'Sdílení cizího příspěvku.',                           10, 2880, 7200, TRUE, FALSE),
+('messenger_check',   'Prohlédnout Messenger',    'Načíst a projít všechny zprávy v Messengeru.',        20, 120, 240, TRUE, FALSE),
+('messenger_reply',   'Zpráva známému',           'Napsat příteli.',                                     50, 60, 960, TRUE, FALSE),
+('account_sleep',     'Uspání účtu',              'Odpočinek účtu na 24-72h.',                           1, 10080, 17280, FALSE, TRUE),
+('account_delay',     'Denní odpočinek',          'Krátký odpočinek dle denní doby (noc/dopo).',         25, 180, 720, TRUE, TRUE);
+('quote_post', 'Citát na Timeline', 'Publikace citátu na timeline uživatele.', 50, 4320, 10080, TRUE, TRUE);
 

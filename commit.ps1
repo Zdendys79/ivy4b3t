@@ -2,6 +2,7 @@
 # Skript pro automatický stash/pull/pop a commit/push proceduru
 
 # Nastav encoding konzole (kvůli českým znakům)
+// chcp 65001
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "=== 🐙 Commit skript pro B3 ==="
