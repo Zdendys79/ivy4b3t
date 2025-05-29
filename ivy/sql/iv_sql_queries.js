@@ -260,7 +260,7 @@ WHERE uap.user_id = ?
 update_user_action_plan: `UPDATE user_action_plan
   SET next_time = DATE_ADD(NOW(), INTERVAL ? MINUTE)
 WHERE user_id = ?
-  AND action_code = :actionCode;
+  AND action_code = ?;
 `,
 
 init_user_action_plan: `
