@@ -10,15 +10,12 @@
 import * as utio from './iv_utio.js';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
-import * as fb from './iv_fb.js';
-
-
 import md5 from 'md5';
 
-export async function addMeToGroup(user, group) {
+export async function addMeToGroup(user, group, fbBot) {
     const today = new Date().toISOString().split('T')[0];
     if (user.last_add_group === today) return false;
-    if (await fb.addMeToGroup()) {
+    if (await fbBot.addMeToGroup()) {
         await db.updateUserAddGroup(user, group.id);
         return true;
     }
@@ -45,17 +42,17 @@ export async function decrease_user_limit(user) {
     console.log(`User ${user.surname} daylimit updated to: ${new_limit}.`);
 }
 
-export async function raise(user) {
+export async function raise(user, fbBot) {
     const now = new Date();
     const is_raising_time = user.next_statement < now;
     let log_type = 0;
     if (is_raising_time) {
         let result = false;
         if (Math.random() < 0.5) {
-            result = await raise_url();
+            result = await raise_url(fbBot);
             log_type = 6;
         } else {
-            result = await raise_citation();
+            result = await raise_citation(fbBot);
             log_type = 5;
         }
         if (result) {
@@ -68,16 +65,16 @@ export async function raise(user) {
     }
 }
 
-export async function raise_url() {
+export async function raise_url(fbBot) {
     try {
         const url = await db.loadUrl();
         if (!url) throw "URL not obtained!";
         db.useUrl(url.url);
-        if (await fb.newThing(2)) {
-            await fb.clickNewThing();
-            await fb.pasteStatement(url.url);
+        if (await fbBot.newThing(2)) {
+            await fbBot.clickNewThing();
+            await fbBot.pasteStatement(url.url);
         } else {
-            throw `No \"new thing\" field found!`;
+            throw `No "new thing" field found!`;
         }
         return true;
     } catch (err) {
@@ -86,15 +83,15 @@ export async function raise_url() {
     }
 }
 
-export async function raise_citation() {
+export async function raise_citation(fbBot) {
     try {
         const statement = await db.getStatement();
         if (!statement) throw `New statement not obtained!`;
-        if (await fb.newThing(2)) {
-            await fb.clickNewThing();
-            await fb.pasteStatement(statement.statement);
+        if (await fbBot.newThing(2)) {
+            await fbBot.clickNewThing();
+            await fbBot.pasteStatement(statement.statement);
         } else {
-            throw `No \"new thing\" field found!`;
+            throw `No "new thing" field found!`;
         }
         return true;
     } catch (err) {
@@ -106,7 +103,6 @@ export async function raise_citation() {
 export async function randomReferer() {
     try {
         const result = await db.getRandomReferer();
-        //if (!result || result.length === 0) throw "No referer found in database!";
         const selected = result.url;
         console.log("Selected referer from DB: " + selected);
         return selected;
@@ -116,7 +112,7 @@ export async function randomReferer() {
     }
 }
 
-export async function pasteMsg(user, group) {
+export async function pasteMsg(user, group, fbBot) {
     let message = false;
     let cnt = 0;
     try {
@@ -131,10 +127,10 @@ export async function pasteMsg(user, group) {
         console.error(`URL from UTIO failed!\n${err}`);
         return false;
     }
-    if (message && await fb.clickNewThing()) {
-        let paste = await fb.pasteMessage(message);
+    if (message && await fbBot.clickNewThing()) {
+        let paste = await fbBot.pasteStatement(message[0]);
         if (paste) return message[0];
-        console.error("fb.pasteMessage failed!");
+        console.error("fbBot.pasteStatement failed!");
         return false;
     }
     console.error("clickNewThing or getting message failed!");
@@ -143,12 +139,10 @@ export async function pasteMsg(user, group) {
 
 export async function closeBlankTabs(context) {
     const pages = await context.pages();
-
     for (const page of pages) {
         try {
             const title = await page.title();
             const url = page.url();
-
             if ((title === '' || title === 'about:blank') && url === 'about:blank') {
                 if (pages.length > 1) {
                     console.log("Zavírám prázdnou výchozí záložku.");
@@ -162,4 +156,3 @@ export async function closeBlankTabs(context) {
         }
     }
 }
-

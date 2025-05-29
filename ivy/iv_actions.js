@@ -7,32 +7,31 @@
  */
 
 import * as db from './iv_sql.js';
-import * as fb from './iv_fb.js';
 import * as wait from './iv_wait.js';
 import { IvMath } from './iv_math.class.js';
 
-export async function runAction(user, action_code) {
+export async function runAction(user, fbBot, action_code) {
   switch (action_code) {
     case 'group_post':
-      return await groupPost(user);
+      return await groupPost(user, fbBot);
 
     case 'timeline_post':
-      return await timelinePost(user);
+      return await timelinePost(user, fbBot);
 
     case 'comment':
-      return await comment(user);
+      return await comment(user, fbBot);
 
     case 'react':
-      return await react(user);
+      return await react(user, fbBot);
 
     case 'share_post':
-      return await sharePost(user);
+      return await sharePost(user, fbBot);
 
     case 'messenger_check':
-      return await messengerCheck(user);
+      return await messengerCheck(user, fbBot);
 
     case 'messenger_reply':
-      return await messengerReply(user);
+      return await messengerReply(user, fbBot);
 
     case 'account_delay':
       return await accountDelay(user);
@@ -41,7 +40,7 @@ export async function runAction(user, action_code) {
       return await accountSleep(user);
 
     case 'quote_post':
-      return await quotePost(user);
+      return await quotePost(user, fbBot);
 
     default:
       console.warn(`Neznámý action_code: ${action_code}`);
@@ -51,10 +50,9 @@ export async function runAction(user, action_code) {
 
 // --- Implementované akce ---
 
-async function quotePost(user) {
+async function quotePost(user, fbBot) {
   console.log(`[${user.id}] Spouštím akci quote_post.`);
 
-  // 1️⃣ Vybrat citát z DB
   const quote = await db.getRandomQuote(user.id);
   if (!quote) {
     console.warn(`[${user.id}] Žádný vhodný citát k dispozici.`);
@@ -63,12 +61,11 @@ async function quotePost(user) {
 
   console.log(`[${user.id}] Vybraný citát: "${quote.text}" (${quote.author || 'Neznámý autor'})`);
 
-  // 2️⃣ Publikace na timeline
   try {
-    await fb.newThing(); // Otevřít editor příspěvku
+    await fbBot.newThing();
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
-    await fb.pasteStatement(postText);
-    await fb.clickSendButton("Zveřejnit");
+    await fbBot.pasteStatement(postText);
+    await fbBot.clickSendButton("Zveřejnit");
 
     console.log(`[${user.id}] Citát zveřejněn.`);
   } catch (err) {
@@ -76,10 +73,7 @@ async function quotePost(user) {
     return false;
   }
 
-  // 3️⃣ Log do action_log
   await db.logUserAction(user.id, 'quote_post', quote.id, quote.text);
-
-  // 4️⃣ Update next_seen
   await db.updateQuoteNextSeen(quote.id, 30); // +30 dní
 
   return true;
@@ -87,37 +81,37 @@ async function quotePost(user) {
 
 // --- Šablony ostatních akcí ---
 
-async function groupPost(user) {
+async function groupPost(user, fbBot) {
   console.warn(`[${user.id}] Akce group_post zatím není implementována.`);
   return false;
 }
 
-async function timelinePost(user) {
+async function timelinePost(user, fbBot) {
   console.warn(`[${user.id}] Akce timeline_post zatím není implementována.`);
   return false;
 }
 
-async function comment(user) {
+async function comment(user, fbBot) {
   console.warn(`[${user.id}] Akce comment zatím není implementována.`);
   return false;
 }
 
-async function react(user) {
+async function react(user, fbBot) {
   console.warn(`[${user.id}] Akce react zatím není implementována.`);
   return false;
 }
 
-async function sharePost(user) {
+async function sharePost(user, fbBot) {
   console.warn(`[${user.id}] Akce share_post zatím není implementována.`);
   return false;
 }
 
-async function messengerCheck(user) {
+async function messengerCheck(user, fbBot) {
   console.warn(`[${user.id}] Akce messenger_check zatím není implementována.`);
   return false;
 }
 
-async function messengerReply(user) {
+async function messengerReply(user, fbBot) {
   console.warn(`[${user.id}] Akce messenger_reply zatím není implementována.`);
   return false;
 }

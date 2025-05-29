@@ -10,14 +10,14 @@ import os from 'node:os';
 import * as support from './iv_support.js';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
-import * as fb from './iv_fb.js';
+import { FacebookBot } from './iv_fb.class.js';
 import puppeteerExtra from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import UserAgentOverride from 'puppeteer-extra-plugin-stealth/evasions/user-agent-override/index.js';
 
-
 let pause = 10;
 let browser;
+let fbBot;
 let currentCommand;
 let interval_ui_user;
 
@@ -85,7 +85,7 @@ async function callUser(command) {
     const user = await db.getUserById(data.user_id);
     if (!browser) {
         await openBrowser(data.user_id);
-        await fb.openFB(user);
+        await fbBot.openFB(user);
     }
 
     const newCommand = await Promise.race([
@@ -115,6 +115,7 @@ async function callUser(command) {
         if (newCommand.user_id !== command.user_id) {
             await browser.close();
             browser = null;
+            fbBot = null;
         }
         await solveUICommand(newCommand);
     } else {
@@ -123,6 +124,7 @@ async function callUser(command) {
     if (browser) {
         await browser.close();
         browser = null;
+        fbBot = null;
     }
     return true;
 }
@@ -135,10 +137,10 @@ async function openGroup(command) {
     const group = await db.getGroupById(data.group_id);
     if (!browser) {
         await openBrowser(data.user_id);
-        await fb.openFB(user);
+        await fbBot.openFB(user);
         await wait.delay(wait.timeout());
     }
-    await fb.openGroup(group);
+    await fbBot.openGroup(group);
     await wait.delay(wait.timeout());
     currentCommand = command;
 
@@ -168,6 +170,7 @@ async function openGroup(command) {
         if (newCommand.user_id !== command.user_id) {
             await browser.close();
             browser = null;
+            fbBot = null;
         }
         await solveUICommand(newCommand);
     } else {
@@ -176,6 +179,7 @@ async function openGroup(command) {
     if (browser) {
         await browser.close();
         browser = null;
+        fbBot = null;
     }
     return true;
 }
@@ -230,7 +234,9 @@ async function openBrowser(user_id) {
     context.overridePermissions("https://www.facebook.com", ["geolocation", "notifications"]);
     context.overridePermissions("https://m.facebook.com", ["geolocation", "notifications"]);
     context.overridePermissions("https://utio.b3group.cz", ["geolocation", "notifications"]);
-    await fb.newFbTab(context);
+
+    fbBot = new FacebookBot(context);
+    await fbBot.init();
 }
 
 async function closeBrowser() {
