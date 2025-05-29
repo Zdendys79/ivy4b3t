@@ -258,7 +258,7 @@ WHERE uap.user_id = ?
 `,
 
 update_user_action_plan: `UPDATE user_action_plan
-  SET next_time = DATE_ADD(NOW(), INTERVAL :randMinutes MINUTE)
+  SET next_time = DATE_ADD(NOW(), INTERVAL ? MINUTE)
 WHERE user_id = ?
   AND action_code = :actionCode;
 `,
@@ -267,6 +267,16 @@ init_user_action_plan: `
   INSERT IGNORE INTO user_action_plan (user_id, action_code, next_time)
   SELECT ?, action_code, NULL
   FROM action_definitions;
+`,
+
+get_random_quote: `
+SELECT q.id, q.text, q.author
+FROM quotes q
+LEFT JOIN action_log l ON l.reference_id = q.id AND l.action_code = 'quote_post' AND l.account_id = ?
+WHERE (q.next_seen IS NULL OR q.next_seen <= NOW())
+  AND l.id IS NULL
+ORDER BY RAND()
+LIMIT 1
 `,
 
 

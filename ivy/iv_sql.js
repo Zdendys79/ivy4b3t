@@ -106,6 +106,10 @@ export const useUrl = (url) => safeExecute('use_url', [url]);
 export const getStatement = () => safeQueryFirst('select_statement');
 export const verifyMsg = (group_id, md5) => safeQueryFirst('verify_posted_data', [group_id, md5]);
 export const getGroupById = (group_id) => safeQueryFirst('group_by_id', [group_id]);
+export const getRandomQuote = (user_id) => safeQueryFirst('get_random_quote', [user_id]);
+export const getUserActions = user_id => safeQueryAll('get_user_actions', [user_id, user_id]);
+export const updateUserActionPlan = (user_id, action_code, randMinutes) => safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
+export const initUserActionPlan = (user_id) => safeExecute('init_user_action_plan', [user_id]);
 
 export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
   .then(row => row && row.time ? new Date(row.time) : false);
@@ -130,36 +134,3 @@ export async function updateUserWorktime(user, worktime) {
   const log = await userLog(user, 4, worktime, `Updated worktime +${worktime} minutes.`);
   return update1 && log;
 }
-
-/**
- * Vrátí dostupné akce pro uživatele pro kolo štěstí.
- * Používá SQL query_id 'get_user_actions', které vyžaduje dva parametry: user_id (podmínka hlavní)
- * a znovu user_id ve vnořeném EXISTS.
- * @param {number} user_id
- * @returns {Promise<Array<{action_code: string, weight: number}>>}
- */
-export const getUserActions = user_id =>
-  safeQueryAll('get_user_actions', [user_id, user_id]);
-
-/**
- * Po provedení akce aktualizuje user_action_plan tím, že posune next_time o náhodný počet minut.
- * Používá SQL query_id 'update_user_action_plan', se třemi parametry:
- *   1) randMinutes – interval v minutách,
- *   2) user_id,
- *   3) action_code.
- * @param {number} user_id
- * @param {string} action_code
- * @param {number} randMinutes
- * @returns {Promise<boolean>}
- */
-export const updateUserActionPlan = (user_id, action_code, randMinutes) =>
-  safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
-
-/**
- * Inicializuje plán akcí pro uživatele (pokud ještě není vytvořen).
- * Vytvoří v `user_action_plan` řádky pro všechny akce z `action_definitions`.
- * @param {number} user_id
- * @returns {Promise<void>}
- */
-export const initUserActionPlan = (user_id) =>
-  safeExecute('init_user_action_plan', [user_id]);
