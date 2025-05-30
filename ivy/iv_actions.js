@@ -122,7 +122,7 @@ async function accountDelay(user) {
   const minutes = isNight
     ? IvMath.parabolicRandReverse(420, 600)  // noční režim: 7-10 hodin
     : IvMath.randInterval(180, 480); // denní režim: 3-8 hodin
-  await db.updateUserWorktime(user.id, minutes);
+  await db.updateUserWorktime(user, minutes);
   await db.systemLog("account_delay", `Čekání uživatele: ${minutes} minut.`, { user_id: user.id });
   return true;
 }
