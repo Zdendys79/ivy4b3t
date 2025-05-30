@@ -279,5 +279,10 @@ ORDER BY RAND()
 LIMIT 1
 `,
 
+insert_to_action_log: `
+INSERT INTO action_log (account_id, action_code, reference_id, text, timestamp)
+VALUES (?, ?, ?, ?, NOW());
+`,
+
 
 };

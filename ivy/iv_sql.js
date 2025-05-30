@@ -110,6 +110,8 @@ export const getRandomQuote = (user_id) => safeQueryFirst('get_random_quote', [u
 export const getUserActions = user_id => safeQueryAll('get_user_actions', [user_id, user_id]);
 export const updateUserActionPlan = (user_id, action_code, randMinutes) => safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
 export const initUserActionPlan = (user_id) => safeExecute('init_user_action_plan', [user_id]);
+export const logUserAction = (account_id, action_code, reference_id, text) => safeExecute('insert_to_action_log', [account_id, action_code, reference_id, text]);
+
 
 export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
   .then(row => row && row.time ? new Date(row.time) : false);
