@@ -124,7 +124,7 @@ async function accountDelay(user) {
     : IvMath.randInterval(180, 480); // denní režim: 3-8 hodin
   await db.updateUserWorktime(user, minutes);
   await db.systemLog("account_delay", `Čekání uživatele: ${minutes} minut.`, { user_id: user.id });
-  await db.userLog(user, 'account_delay', hours, `Delay mode aktivován.`);
+  await db.userLog(user, 'account_delay', minutes, `Delay mode aktivován.`);
   return true;
 }
 

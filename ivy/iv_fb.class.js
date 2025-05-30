@@ -107,7 +107,7 @@ export class FacebookBot {
       await this.page.type('#pass', user.fb_pass, { delay: wait.type() });
 
       await this._clickByText('Přihlásit se');
-      await this.page.waitForTimeout(15 * wait.timeout());
+      await wait.delay(15 * wait.timeout());
 
       if (await this.isProfileLoaded(user)) {
         console.log(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je nyní přihlášen.`);
@@ -127,7 +127,7 @@ export class FacebookBot {
       const [cookieBtn] = await this._findByText('Přijmout všechno');
       if (cookieBtn) {
         await cookieBtn.click();
-        await this.page.waitForTimeout(wait.timeout());
+        await wait.delay(wait.timeout());
         console.log(`[FB] Cookie banner odkliknut.`);
       } else {
         console.log(`[FB] Cookie banner nenalezen.`);
@@ -163,7 +163,7 @@ export class FacebookBot {
       if (!this.newThingElement) throw `newThingElement není definován.`;
       await this.bringToFront();
       await this.newThingElement.click();
-      await this.page.waitForTimeout(3 * wait.timeout());
+      await wait.delay(3 * wait.timeout());
       console.log(`[FB] Kliknuto na pole pro psaní příspěvku.`);
       return true;
     } catch (err) {
@@ -178,14 +178,14 @@ export class FacebookBot {
     try {
       if (!text) throw `Prázdný text pro příspěvek.`;
 
-      await this.page.waitForTimeout(10 * wait.timeout());
+      await wait.delay(10 * wait.timeout());
       await this._typeActive(text);
 
       console.log(`[FB] Text vložen: ${text}`);
 
       // Kliknout na "Přidat"
       await this._clickByText("Přidat");
-      await this.page.waitForTimeout(15 * wait.timeout());
+      await wait.delay(15 * wait.timeout());
 
       // Znovu kontrola (jestli tam "Přidat" není)
       const stillVisible = await this._findByText("Přidat");
@@ -202,7 +202,7 @@ export class FacebookBot {
   async clickSendButton(buttonText = "Zveřejnit") {
     try {
       await this._clickByText(buttonText);
-      await this.page.waitForTimeout(15 * wait.timeout());
+      await wait.delay(15 * wait.timeout());
 
       const stillVisible = await this._findByText(buttonText);
       if (stillVisible.length > 0) throw `Tlačítko "${buttonText}" je stále na obrazovce.`;
@@ -226,9 +226,9 @@ export class FacebookBot {
           await friends[friends.length - 2].click();
           const [done] = await this._findByText("Hotovo", { timeout: wait.timeout() });
           if (!done) throw `Tlačítko "Hotovo" nenalezeno.`;
-          await this.page.waitForTimeout(3 * wait.timeout());
+          await wait.delay(3 * wait.timeout());
           await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done);
-          await this.page.waitForTimeout(15 * wait.timeout());
+          await wait.delay(15 * wait.timeout());
           console.log(`[FB] Výchozí okruh uživatelů nastaven.`);
         } else {
           throw `SPAN "${t2}" nenalezen.`;
@@ -256,7 +256,7 @@ export class FacebookBot {
       const acceptBeforeUnload = dialog => dialog.type() === "beforeunload" && dialog.accept();
       await this.page.goto(fbGroupUrl, { waitUntil: 'networkidle2' });
       this.page.on("dialog", acceptBeforeUnload);
-      await this.page.waitForTimeout(2 * wait.timeout());
+      await wait.delay(2 * wait.timeout());
       console.log(`[FB] Skupina otevřena: ${fbGroupUrl}`);
       return true;
     } catch (err) {
@@ -297,7 +297,7 @@ export class FacebookBot {
   async addMeToGroup() {
     try {
       await this._clickByText("Přidat se ke skupině", wait.timeout());
-      await this.page.waitForTimeout(15 * wait.timeout());
+      await wait.delay(15 * wait.timeout());
       console.log(`[FB] Přidání do skupiny úspěšné.`);
       return true;
     } catch (err) {
@@ -314,7 +314,7 @@ export class FacebookBot {
         const randomLike = likes[Math.floor(Math.random() * likes.length)];
         await randomLike.click();
         console.log(`[FB] Kliknuto na tlačítko "To se mi líbí".`);
-        await this.page.waitForTimeout(5 * wait.timeout());
+        await wait.delay(5 * wait.timeout());
         return true;
       } catch (err) {
         console.error(`[FB] Chyba při klikání na "To se mi líbí": ${err}`);

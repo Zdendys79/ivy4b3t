@@ -113,6 +113,7 @@ export const initUserActionPlan = (user_id) => safeExecute('init_user_action_pla
 export const logUserAction = (account_id, action_code, reference_id, text) => safeExecute('insert_to_action_log', [account_id, action_code, reference_id, text]);
 export const systemLog = (title, text, data = {}) => safeExecute('insert_to_system_log', [os.hostname(), title, text, JSON.stringify(data)]);
 export const userLog = (user, action_code, reference_id, text) => logUserAction(user.id, action_code, reference_id, text);
+export const updateQuoteNextSeen = (quote_id, days) => safeExecute('update_quote_next_seen', [days, quote_id]);
 
 export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
   .then(row => row && row.time ? new Date(row.time) : false);
