@@ -201,6 +201,16 @@ CREATE TABLE `log` (
   CONSTRAINT `log_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `fb_groups` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE log_s (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  hostname VARCHAR(64),
+  title VARCHAR(255),
+  text TEXT,
+  data TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
 CREATE TABLE action_definitions (
     action_code VARCHAR(30) PRIMARY KEY,     -- Např. 'group_post', 'comment', 'account_sleep'
     label VARCHAR(64) NOT NULL,              -- Popis (např. 'Příspěvek do skupiny')

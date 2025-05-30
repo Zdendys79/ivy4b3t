@@ -89,7 +89,7 @@ VALUES (NOW(),?,?,?,?,?,?,?,?)`,
   insert_to_system_log: `
 INSERT LOW_PRIORITY INTO log_s
 ( time, hostname, title, text, data )
-VALUES (NOW(),?,?,?,?)`,
+VALUES (NOW(), ?, ?, ?, ?)`,
 
   insert_to_user_log: `
 INSERT INTO log_u (time, user_id, type, data, text)

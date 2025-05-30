@@ -111,7 +111,8 @@ export const getUserActions = user_id => safeQueryAll('get_user_actions', [user_
 export const updateUserActionPlan = (user_id, action_code, randMinutes) => safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
 export const initUserActionPlan = (user_id) => safeExecute('init_user_action_plan', [user_id]);
 export const logUserAction = (account_id, action_code, reference_id, text) => safeExecute('insert_to_action_log', [account_id, action_code, reference_id, text]);
-
+export const systemLog = (title, text, data = {}) => safeExecute('insert_to_system_log', [os.hostname(), title, text, JSON.stringify(data)]);
+export const userLog = (user, action_code, reference_id, text) => logUserAction(user.id, action_code, reference_id, text);
 
 export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
   .then(row => row && row.time ? new Date(row.time) : false);
@@ -121,15 +122,6 @@ export async function heartBeat(user_id, group_id, version_code) {
   return await safeExecute("heartbeat", data);
 }
 
-export async function systemLog(title, msg, data) {
-  const payload = [hostname, title, msg, JSON.stringify(data)];
-  return await safeExecute("insert_to_system_log", payload);
-}
-
-export async function userLog(user, type_id = 0, d = "", msg = "") {
-  const data = [user.id, type_id, d, user.name, user.surname, user.id, msg];
-  return await safeExecute("insert_to_user_log", data);
-}
 
 export async function updateUserWorktime(user, worktime) {
   const update1 = await safeExecute("update_user_worktime", [worktime, user.id]);
