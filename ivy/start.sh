@@ -27,7 +27,8 @@ do
 
     echo "[START] Spouštím robota..."
     cd "$TARGET_DIR" || exit 1
-    DEBUG="puppeteer:*" node ivy.js
-
+    export DEBUG="puppeteer:*"
+    node ivy.js
+    
     sleep 5
 done
