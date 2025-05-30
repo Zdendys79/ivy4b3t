@@ -10,6 +10,11 @@
  */
 
 export class IvMath {
+
+  static rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
   /**
    * Generuje náhodné celé číslo v daném intervalu (včetně krajních bodů)
    * Rovnoměrná distribuce - všechny hodnoty mají stejnou pravděpodobnost
