@@ -135,38 +135,48 @@ async function loginToUtioAndFacebook(user, context) {
  * @param {FacebookBot} fbBot
  * @returns {Promise<void>}
  */
+/**
+ * Název souboru: iv_worker.js
+ * Umístění: ~/ivy/iv_worker.js
+ *
+ * Popis: Spuštění jedné akce (z kola štěstí) pro daného uživatele.
+ */
 async function executeUserAction(user, fbBot) {
+  // 1) Inicializovat akční plán (pokud ještě neexistuje)
   await db.initUserActionPlan(user.id);
+
+  // 2) Načíst dostupné akce pro uživatele
   const actions = await db.getUserActions(user.id);
+  console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
+  console.log(actions.map(a => a.action_code).join(', ') || 'Žádné');
+  console.log('--- konec DEBUG ---');
 
   if (!actions.length) {
     console.log(`[${user.id}] Žádné dostupné akce.`);
     return;
   }
 
-  const actionCode = await getRandomActionCode(user);
-  if (!actionCode) {
-    console.warn(`[${user.id}] Nebyl nalezen action_code.`);
+  // 3) Vybrat náhodnou akci (dostaneme objekt { code, weight, min_minutes, max_minutes })
+  const picked = await getRandomActionCode(user);
+  if (!picked) {
+    console.warn(`[${user.id}] Kolo štěstí vrátilo null (žádné definice).`);
     return;
   }
+
+  const actionCode = picked.code;
+  const min = picked.min_minutes;
+  const max = picked.max_minutes;
 
   console.log(`[${user.id}] Vybrána akce: ${actionCode}`);
   const result = await runAction(user, fbBot, actionCode);
 
-  // Získání definice pouze pro vybraný actionCode
-  const defRow = await db.getActionDefinition(actionCode);
-  if (!defRow) {
-    console.warn(`[${user.id}] Definice akce ${actionCode} nenalezena.`);
-    return;
-  }
-
-  const randMin =
-    Math.floor(Math.random() * (defRow.max_minutes - defRow.min_minutes + 1)) +
-    defRow.min_minutes;
+  // 4) Spočítat náhodný interval pro příští spuštění (min–max)
+  const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
   await db.updateUserActionPlan(user.id, actionCode, randMin);
 
   console.log(
-    `[${user.id}] Akce ${actionCode} dokončena (${result}); další za ${randMin} minut.`
+    `[${user.id}] Akce ${actionCode} dokončena (${result}); ` +
+    `další za ${randMin} minut.`
   );
 }
 

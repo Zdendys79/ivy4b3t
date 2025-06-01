@@ -1,12 +1,14 @@
 /**
- * File: ivy/iv_wheel.js
- * Path: ivy/iv_wheel.js
- * Purpose: Wheel of Fortune – výběr náhodné aktivity na základě vah v tabulce action_definitions.
+ * Název souboru: iv_wheel.js
+ * Umístění: ~/ivy/iv_wheel.js
+ *
+ * Popis: Wheel of Fortune – výběr náhodné aktivity na základě váhy
+ *        (vrátí objekt { code, weight, min_minutes, max_minutes }).
  */
-import * as db from './iv_sql.js';
 
 class Wheel {
   constructor(activities) {
+    // activities = [{ code, weight, min_minutes, max_minutes }]
     this.activities = activities;
     this.totalWeight = activities.reduce((sum, a) => sum + a.weight, 0);
   }
@@ -21,27 +23,37 @@ class Wheel {
   }
 }
 
-/**
- * Načte definice akcí z DB a vrátí náhodný action_code.
- * @param {{ id: number }} user - objekt uživatele
- * @returns {Promise<string>} vybraný action_code
- */
 export async function getRandomActionCode(user) {
-  // Načtěte všechny akce, které jsou buď repeatable, nebo jednorázové (further logic can be added)
+  // Načteme všechny definice (včetně weight, min_minutes, max_minutes)
   const defs = await db.getActionDefinitions();
-  if (!defs || defs.length === 0) return null;
 
-  // DEBUG: vypsat všechny načtené definice a jejich váhy
+  // DEBUG: výpis načtených definic
   console.log('--- DEBUG: action_definitions ---');
   defs.forEach(d => {
-     console.log(`  code=${d.action_code}, weight=${d.weight}, min=${d.min_minutes}, max=${d.max_minutes}`);
+    console.log(
+      `  code=${d.action_code}, weight=${d.weight}, ` +
+      `min=${d.min_minutes}, max=${d.max_minutes}`
+    );
   });
   console.log('--- konec DEBUG ---');
 
-  const activities = defs.map(def => ({
+  // Připravíme pole objektů s váhami a intervaly
+  const wheelItems = defs.map(def => ({
     code: def.action_code,
-    weight: def.weight
+    weight: def.weight,
+    min_minutes: def.min_minutes,
+    max_minutes: def.max_minutes
   }));
-  const wheel = new Wheel(activities);
-  return wheel.pick();
+
+  if (!wheelItems.length) {
+    console.warn('[iv_wheel] Žádné aktivní definice akcí.');
+    return null;
+  }
+
+  // Vybereme náhodně podle váhy
+  const wheel = new Wheel(wheelItems);
+  const pickedCode = wheel.pick();
+
+  // Najdeme a vrátíme celou „item“ (máme i min/max)
+  return wheelItems.find(item => item.code === pickedCode) || null;
 }
