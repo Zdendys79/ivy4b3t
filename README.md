@@ -142,7 +142,17 @@ Po dokončení instalace spusť klienta pomocí skriptu start.sh:
 cd ~/ivy
 bash start.sh
 
+případně:
+chmod +x start.sh && ./start.sh
 ---
+
+## Zapnutí debug módu - nezavře prohlížeč při chybě na FB
+export DEBUG_KEEP_BROWSER_OPEN=true
+./start.sh
+
+## Vypnutí debug módu
+unset DEBUG_KEEP_BROWSER_OPEN
+./start.sh
 
 ## 🔁 Správa verzí systému
 Při git commit se spouští post-commit hook, který volá skript git_commit_version.js. Tento skript:
@@ -301,6 +311,7 @@ Skript spouštěj ručně v případě potřeby:
 ```
 bash ~/Sync/scripts/db_backup.sh
 ```
+
 
 ## Gitignore pravidla
 V projektu používáme .gitignore k zajištění, že citlivé, zbytečné či velké soubory nebudou verzovány.

@@ -1,10 +1,9 @@
 /**
- * Název souboru: iv_worker.js
+ * Soubor: iv_worker.js
  * Umístění: ~/ivy/iv_worker.js
  *
- * Popis: Hlavní pracovní smyčka robota – vybírá uživatele, připravuje prostředí,
- *       přihlašuje do UTIO a Facebooku, volí a spouští akce z “kola štěstí”,
- *       ukládá výsledky a provádí úklid.
+ * Popis: Hlavní smyčka robota – obsahuje helper pauseOnError,
+ *       který při selhání akce zastaví běh na 10 minut nebo do uzavření prohlížeče.
  */
 
 import fs from 'fs';
@@ -22,32 +21,31 @@ import { runAction } from './iv_actions.js';
 const isLinux = process.platform === 'linux';
 let nextWorktime = 0;
 
-/**
- * Ošetří případný UI příkaz z tabulky a vrátí true, pokud byl zpracován.
- * @returns {Promise<boolean>}
- */
-async function handleUICommand() {
-  const uiCommand = await db.getUICommand();
-  if (!uiCommand) return false;
+// Pokud DEBUG_KEEP_BROWSER_OPEN=true, prohlížeč se nezavře ani při chybě
+const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
 
-  console.log('UI příkaz detekován – zpracovávám...');
-  await ui.solveUICommand(uiCommand);
-  return true;
+/**
+ * Čeká buď dokud se prohlížeč nezavře, nebo uplyne 10 minut.
+ * @param {puppeteer.Browser} browser
+ * @param {boolean} browserClosed – true, pokud už byl browser předchozí chybou uzavřen
+ */
+async function pauseOnError(browser, browserClosed) {
+  console.warn('[iv_worker] Nastal error – čekám na ruční uzavření prohlížeče nebo 10 minut.');
+  if (browserClosed) {
+    // Pokud už byl prohlížeč uzavřen, stačí jen počkat 10 minut
+    await wait.delay(10 * 60 * 1000);
+    return;
+  }
+
+  // Jinak vyčkáme na událost "disconnected" nebo max. 10 minut
+  await Promise.race([
+    new Promise(resolve => browser.once('disconnected', resolve)),
+    new Promise(resolve => setTimeout(resolve, 10 * 60 * 1000))
+  ]);
 }
 
 /**
- * Kontroluje, zda nastal čas spustit další cyklus.
- * @returns {boolean}
- */
-function shouldRunNow() {
-  return Date.now() >= nextWorktime;
-}
-
-/**
- * Připraví a vrátí instanci prohlížeče a context pro daného uživatele.
- * Zajistí odstranění případného zámku profilu a spuštění Puppeteer.
- * @param {Object} user – objekt uživatele s vlastností id
- * @returns {Promise<{ browser: import('puppeteer').Browser, context: import('puppeteer').BrowserContext }>}
+ * Vytvoří a vrátí instanci prohlížeče + context + flag browserClosed.
  */
 async function prepareBrowser(user) {
   const profileDir = `Profile${user.id}`;
@@ -81,7 +79,7 @@ async function prepareBrowser(user) {
   let browserClosed = false;
   browser.on('disconnected', () => {
     browserClosed = true;
-    console.warn('Browser se odpojil, počkám minutu...');
+    console.warn('[iv_worker] Browser se odpojil.');
   });
 
   const context = browser.defaultBrowserContext();
@@ -97,11 +95,7 @@ async function prepareBrowser(user) {
 }
 
 /**
- * Přihlásí se na UTIO a poté na Facebook.
- * Pokud se účet zablokuje nebo heslo nesedí, označí účet v DB jako zablokovaný.
- * @param {Object} user – objekt uživatele s vlastnostmi u_login, u_pass a id
- * @param {import('puppeteer').BrowserContext} context
- * @returns {Promise<FacebookBot>}
+ * Přihlášení na UTIO a Facebook (beze změny).
  */
 async function loginToUtioAndFacebook(user, context) {
   await utio.newUtioTab(context);
@@ -131,27 +125,11 @@ async function loginToUtioAndFacebook(user, context) {
 
 /**
  * Provádí výběr a spuštění jedné akce pro uživatele.
- * @param {Object} user – objekt uživatele s vlastnostmi id
- * @param {FacebookBot} fbBot
- * @returns {Promise<void>}
+ * Pokud runAction vrátí false (chyba), zavolá pauseOnError.
  */
-/**
- * Název souboru: iv_worker.js
- * Umístění: ~/ivy/iv_worker.js
- *
- * Popis: Spuštění jedné akce (z kola štěstí) pro daného uživatele.
- */
-/**
- * Funkce: executeUserAction
- * Soubor: iv_worker.js (část kolem volání kola štěstí)
- */
-async function executeUserAction(user, fbBot) {
-  // … předchozí kód beze změny …
-
-  // 1) Inicializace akčního plánu
+async function executeUserAction(user, fbBot, browser, browserClosed) {
   await db.initUserActionPlan(user.id);
 
-  // 2) Načtení dostupných akcí pro uživatele
   const actions = await db.getUserActions(user.id);
   console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
   console.log(actions.map(a => a.action_code).join(', ') || 'Žádné');
@@ -162,7 +140,6 @@ async function executeUserAction(user, fbBot) {
     return;
   }
 
-  // 3) Nově: zavoláme getRandomAction, která vrací objekt { code, min_minutes, max_minutes }
   const picked = await getRandomAction(user);
   if (!picked) {
     console.warn(`[${user.id}] Kolo štěstí vrátilo null (žádné definice).`);
@@ -174,29 +151,35 @@ async function executeUserAction(user, fbBot) {
   const max = picked.max_minutes;
 
   console.log(`[${user.id}] Vybrána akce: ${actionCode}`);
+  const success = await runAction(user, fbBot, actionCode);
 
-  // 4) Spustíme vybranou akci
-  const result = await runAction(user, fbBot, actionCode);
+  if (!success) {
+    // Pokud něco selhalo, počkáme do ručního zavření okna nebo 10 minut
+    await pauseOnError(browser, browserClosed);
+    return;
+  }
 
-  // 5) Spočítáme náhodný interval (min–max) a uložíme do plánu
+  // Pokud vše proběhlo v pořádku, naplánujeme příští termín
   const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
   await db.updateUserActionPlan(user.id, actionCode, randMin);
 
   console.log(
-    `[${user.id}] Akce ${actionCode} dokončena (${result}); ` +
+    `[${user.id}] Akce ${actionCode} dokončena (true); ` +
     `další za ${randMin} minut.`
   );
 }
 
 /**
- * Ukončí instanci prohlížeče, pokud není již zavřená.
- * @param {import('puppeteer').Browser} browser
- * @param {boolean} browserClosed
- * @returns {Promise<void>}
+ * Ukončí instanci prohlížeče, pokud NENÍ zapnutý debug mód (tj. DEBUG_KEEP_BROWSER_OPEN=false).
  */
 async function cleanupBrowser(browser, browserClosed) {
+  if (DEBUG_KEEP_BROWSER_OPEN) {
+    console.log('[DEBUG] Debug režim: prohlížeč NEBUDE zavřen.');
+    return;
+  }
   if (!browserClosed) {
     await browser.close();
+    console.log('[iv_worker] Prohlížeč uzavřen.');
   }
 }
 
@@ -208,35 +191,58 @@ function updateNextWorktime() {
 }
 
 /**
- * Hlavní pracovní smyčka – zpracuje UI příkaz, přihlásí uživatele, provede akci a poté úklid.
+ * Hlavní pracovní smyčka – zpracuje UI příkaz, přihlásí uživatele, provede akci
+ *               a poté úklid (nebo pauzu, pokud došlo k chybě).
  */
 export async function tick() {
   try {
-    if (await handleUICommand()) {
+    // 1) zpracování UI příkazu (pokud existuje)
+    const uiCommand = await db.getUICommand();
+    if (uiCommand) {
+      console.log('UI příkaz detekován – zpracovávám...');
+      await ui.solveUICommand(uiCommand);
       return;
     }
 
-    if (!shouldRunNow()) {
+    // 2) kontrola, jestli je čas spustit další cyklus
+    if (Date.now() < nextWorktime) {
       console.log('Čekám na další cyklus.');
       return;
     }
 
+    // 3) načtení uživatele
     const user = await db.getUser();
     if (!user) {
       throw new Error('Žádný vhodný uživatel.');
     }
 
+    // 4) příprava prohlížeče
     const { browser, context, browserClosed } = await prepareBrowser(user);
+
+    // 5) přihlášení UTIO + FB
     const fbBot = await loginToUtioAndFacebook(user, context);
-    await executeUserAction(user, fbBot);
+
+    // 6) provedení akce s případnou pauzou při chybě
+    await executeUserAction(user, fbBot, browser, browserClosed);
+
+    // 7) krátké čekání (simulace lidské pauzy)
     await wait.delay(wait.timeout());
+
+    // 8) úklid (nebo ponechání okna otevřeného v debug módu)
     await cleanupBrowser(browser, browserClosed);
+
+    // 9) nastavení dalšího času spuštění
     updateNextWorktime();
+
   } catch (err) {
     const type = err?.name || typeof err;
     const message = err?.message || String(err);
     const stack = err?.stack ? '\n' + err.stack : '';
-    console.error(`[iv_worker] Chyba při zpracování uživatele [${type}]: ${message}${stack}`);
-    await wait.delay(30 * wait.timeout());
+    console.error(`[iv_worker] Chyba v hlavní smyčce [${type}]: ${message}${stack}`);
+
+    // Pokud došlo k chybě dřív, než se spustila akce, počkáme 10 minut
+    if (!DEBUG_KEEP_BROWSER_OPEN) {
+      await wait.delay(10 * 60 * 1000);
+    }
   }
 }
