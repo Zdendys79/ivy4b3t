@@ -124,12 +124,17 @@ async function loginToUtioAndFacebook(user, context) {
 }
 
 /**
+ * Funkce: executeUserAction
+ * Soubor: iv_worker.js
  * Provádí výběr a spuštění jedné akce pro uživatele.
  * Pokud runAction vrátí false (chyba), zavolá pauseOnError.
  */
+
 async function executeUserAction(user, fbBot, browser, browserClosed) {
+  // 1) Inicializace akčního plánu
   await db.initUserActionPlan(user.id);
 
+  // 2) Načteme všechny skutečně dostupné akce (obsahují code, weight, min_minutes, max_minutes)
   const actions = await db.getUserActions(user.id);
   console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
   console.log(actions.map(a => a.action_code).join(', ') || 'Žádné');
@@ -140,6 +145,7 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
     return;
   }
 
+  // 3) Vybereme jednu akci z kola (vrací { code, weight, min_minutes, max_minutes })
   const picked = await getRandomAction(user);
   if (!picked) {
     console.warn(`[${user.id}] Kolo štěstí vrátilo null (žádné definice).`);
@@ -151,15 +157,17 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
   const max = picked.max_minutes;
 
   console.log(`[${user.id}] Vybrána akce: ${actionCode}`);
-  const success = await runAction(user, fbBot, actionCode);
 
+  // 4) Spustíme runAction; pokud vrátí false, nerušíme plán, ale jen pauzujeme
+  const success = await runAction(user, fbBot, actionCode);
   if (!success) {
-    // Pokud něco selhalo, počkáme do ručního zavření okna nebo 10 minut
+    console.warn(`[${user.id}] Akce ${actionCode} NEPROVEDENA (runAction vrátil false).`);
+    // Pauza: počkáme buď na ruční uzavření prohlížeče, nebo 10 minut
     await pauseOnError(browser, browserClosed);
-    return;
+    return; // Nespouštíme updateUserActionPlan
   }
 
-  // Pokud vše proběhlo v pořádku, naplánujeme příští termín
+  // 5) Pokud uspěje, naplánujeme další spuštění podle randMin (min <= randMin <= max)
   const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
   await db.updateUserActionPlan(user.id, actionCode, randMin);
 

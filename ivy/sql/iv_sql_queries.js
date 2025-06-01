@@ -238,23 +238,26 @@ get_reference_sleep_time: `
 `,
 
 get_user_actions: `
-SELECT ad.action_code, ad.weight
-FROM action_definitions ad
-JOIN user_action_plan uap
-  ON ad.action_code = uap.action_code
-WHERE uap.user_id = ?
-  AND (uap.next_time IS NULL OR uap.next_time <= NOW())
-  -- blokování sleep/delay, pokud existuje jiná neprovedená akce
-  AND NOT (
-    ad.action_code IN ('account_sleep','account_delay')
-    AND EXISTS (
-      SELECT 1
-      FROM user_action_plan uap2
-      WHERE uap2.user_id = ?
-        AND uap2.action_code NOT IN ('account_sleep','account_delay')
-        AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
-    )
-  );
+  SELECT
+    ad.action_code,
+    ad.weight,
+    ad.min_minutes,
+    ad.max_minutes
+  FROM action_definitions ad
+  JOIN user_action_plan uap
+    ON ad.action_code = uap.action_code
+ WHERE uap.user_id = ?
+   AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+   AND NOT (
+     ad.action_code IN ('account_sleep','account_delay')
+     AND EXISTS (
+       SELECT 1
+         FROM user_action_plan uap2
+        WHERE uap2.user_id = ?
+          AND uap2.action_code NOT IN ('account_sleep','account_delay')
+          AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
+     )
+   );
 `,
 
 update_user_action_plan: `UPDATE user_action_plan
