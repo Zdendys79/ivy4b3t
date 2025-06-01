@@ -25,17 +25,21 @@ export class Wheel {
   }
 }
 
+/**
+ * Vrátí  objekt { code, weight, min_minutes, max_minutes }
+ * náhodně vybraný ze seznamu skutečně dostupných akcí pro daného uživatele.
+ * Pokud nejsou k dispozici žádné jiné akce než account_delay/account_sleep,
+ * ty se vyřadí.
+ */
 export async function getRandomAction(user) {
-  // 1) Nejdřív zjistíme, jaké akce jsou pro tohoto uživatele skutečně NAPŘ. "dostupné"
+  // 1) Zjistíme, jaké akce jsou uživateli skutečně dostupné
   const availableRows = await db.getUserActions(user.id);
-  // DEBUG: vypíše např. ["comment","quote_post",…], ale NE "account_delay"/"account_sleep"
   console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
   console.log(availableRows.map(r => r.action_code).join(', ') || 'Žádné');
   console.log('--- konec DEBUG ---');
 
-  // 2) Načteme kompletní seznam definic (abychom znali váhy a intervaly)
+  // 2) Načteme všechny aktivní definice, abychom znali váhy a intervaly
   const defs = await db.getActionDefinitions();
-  // DEBUG: všechny aktivní definice (včetně těch, které teď NEPOUŽIJEME)
   console.log('--- DEBUG: action_definitions ---');
   defs.forEach(d => {
     console.log(
@@ -45,7 +49,7 @@ export async function getRandomAction(user) {
   });
   console.log('--- konec DEBUG ---');
 
-  // 3) Z defs vybereme jen ty řádky, které jsou v availableRows
+  // 3) Ze všech definic vybereme jen ty, jejichž action_code je v availableRows
   const filteredDefs = defs.filter(def =>
     availableRows.some(a => a.action_code === def.action_code)
   );
@@ -55,7 +59,7 @@ export async function getRandomAction(user) {
     return null;
   }
 
-  // 4) Sestavíme “kolo” jen z této podmnožiny
+  // 4) Sestavíme "kolo" jen z filtrovaných definic
   const wheelItems = filteredDefs.map(def => ({
     code: def.action_code,
     weight: def.weight,
@@ -66,6 +70,6 @@ export async function getRandomAction(user) {
   const wheel = new Wheel(wheelItems);
   const pickedCode = wheel.pick();
 
-  // 5) Najdeme tu definici z wheelItems a vrátíme celý objekt
+  // 5) Vraťeme celý objekt (obsahuje i min/max) pro vybraný code
   return wheelItems.find(item => item.code === pickedCode) || null;
 }

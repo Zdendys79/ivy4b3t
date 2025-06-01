@@ -141,11 +141,17 @@ async function loginToUtioAndFacebook(user, context) {
  *
  * Popis: Spuštění jedné akce (z kola štěstí) pro daného uživatele.
  */
+/**
+ * Funkce: executeUserAction
+ * Soubor: iv_worker.js (část kolem volání kola štěstí)
+ */
 async function executeUserAction(user, fbBot) {
-  // 1) Inicializovat akční plán (pokud ještě neexistuje)
+  // … předchozí kód beze změny …
+
+  // 1) Inicializace akčního plánu
   await db.initUserActionPlan(user.id);
 
-  // 2) Načíst dostupné akce pro uživatele
+  // 2) Načtení dostupných akcí pro uživatele
   const actions = await db.getUserActions(user.id);
   console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
   console.log(actions.map(a => a.action_code).join(', ') || 'Žádné');
@@ -156,7 +162,7 @@ async function executeUserAction(user, fbBot) {
     return;
   }
 
-  // 3) Vybrat náhodnou akci (dostaneme objekt { code, weight, min_minutes, max_minutes })
+  // 3) Nově: zavoláme getRandomAction, která vrací objekt { code, min_minutes, max_minutes }
   const picked = await getRandomAction(user);
   if (!picked) {
     console.warn(`[${user.id}] Kolo štěstí vrátilo null (žádné definice).`);
@@ -168,9 +174,11 @@ async function executeUserAction(user, fbBot) {
   const max = picked.max_minutes;
 
   console.log(`[${user.id}] Vybrána akce: ${actionCode}`);
+
+  // 4) Spustíme vybranou akci
   const result = await runAction(user, fbBot, actionCode);
 
-  // 4) Spočítat náhodný interval pro příští spuštění (min–max)
+  // 5) Spočítáme náhodný interval (min–max) a uložíme do plánu
   const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
   await db.updateUserActionPlan(user.id, actionCode, randMin);
 
