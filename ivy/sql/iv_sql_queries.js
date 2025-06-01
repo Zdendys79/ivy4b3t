@@ -248,6 +248,7 @@ get_user_actions: `
     ON ad.action_code = uap.action_code
  WHERE uap.user_id = ?
    AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+   AND ad.active = 1
    AND NOT (
      ad.action_code IN ('account_sleep','account_delay')
      AND EXISTS (
