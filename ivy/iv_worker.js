@@ -16,7 +16,7 @@ import { FacebookBot } from './iv_fb.class.js';
 import * as ui from './iv_ui.js';
 import * as utio from './iv_utio.js';
 import * as support from './iv_support.js';
-import { getRandomActionCode } from './iv_wheel.js';
+import { getRandomAction } from './iv_wheel.js';
 import { runAction } from './iv_actions.js';
 
 const isLinux = process.platform === 'linux';
@@ -157,7 +157,7 @@ async function executeUserAction(user, fbBot) {
   }
 
   // 3) Vybrat náhodnou akci (dostaneme objekt { code, weight, min_minutes, max_minutes })
-  const picked = await getRandomActionCode(user);
+  const picked = await getRandomAction(user);
   if (!picked) {
     console.warn(`[${user.id}] Kolo štěstí vrátilo null (žádné definice).`);
     return;
