@@ -5,6 +5,7 @@
  * Popis: Wheel of Fortune – výběr náhodné aktivity na základě váhy
  *        (vrátí objekt { code, weight, min_minutes, max_minutes }).
  */
+import * as db from './iv_sql.js';
 
 class Wheel {
   constructor(activities) {
