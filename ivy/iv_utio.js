@@ -11,7 +11,8 @@ import * as wait from './iv_wait.js';
 let utio = false; // browser page
 
 export function getRandomRegion() {
-    return Math.floor(Math.random() * 14);
+  // Vrátí náhodný region 1–14
+  return Math.floor(1 + Math.random() * 14);
 }
 
 export function getRandomDistrict(region) {

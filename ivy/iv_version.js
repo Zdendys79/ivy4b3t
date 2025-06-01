@@ -2,18 +2,21 @@
  * Název souboru: iv_version.js
  * Umístění: ~/ivy/iv_version.js
  *
- * Popis: Načítá aktuální verzi klienta z package.json.
- *         Používá se při ověřování, zda je spuštěna správná verze.
+ * Popis: Načítá aktuální verzi klienta z package.json. Pokud se načtení nezdaří,
+ *        vrací výchozí '000' a zapíše chybu do logu.
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import fs from 'fs';
+import path from 'path';
 
 export function get() {
-  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json')));
-  return pkg.versionCode || '000';
+  try {
+    const pkgPath = path.join(__dirname, 'package.json');
+    const pkgData = fs.readFileSync(pkgPath, 'utf-8');
+    const pkg = JSON.parse(pkgData);
+    return pkg.versionCode || '000';
+  } catch (err) {
+    console.error(`Chyba při načítání package.json: ${err.message}`);
+    return '000';
+  }
 }

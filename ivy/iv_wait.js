@@ -45,7 +45,7 @@ export async function delay(delay_time, verbose = true) { // wait delay_time ms
     return new Promise(resolve => setTimeout(resolve, delay_time));
 }
 
-export async function toTime(minutes) {
+export function toTime(minutes) {
     const time = minutes * 60000;
     return new Promise(resolve => setTimeout(resolve, time));
 }

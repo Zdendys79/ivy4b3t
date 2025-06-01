@@ -5,9 +5,8 @@
  */
 import * as db from './iv_sql.js';
 
-export class Wheel {
+class Wheel {
   constructor(activities) {
-    // activities = [{ code, weight }]
     this.activities = activities;
     this.totalWeight = activities.reduce((sum, a) => sum + a.weight, 0);
   }
@@ -30,6 +29,15 @@ export class Wheel {
 export async function getRandomActionCode(user) {
   // Načtěte všechny akce, které jsou buď repeatable, nebo jednorázové (further logic can be added)
   const defs = await db.getActionDefinitions();
+  if (!defs || defs.length === 0) return null;
+
+  // DEBUG: vypsat všechny načtené definice a jejich váhy
+  console.log('--- DEBUG: action_definitions ---');
+  defs.forEach(d => {
+     console.log(`  code=${d.action_code}, weight=${d.weight}, min=${d.min_minutes}, max=${d.max_minutes}`);
+  });
+  console.log('--- konec DEBUG ---');
+
   const activities = defs.map(def => ({
     code: def.action_code,
     weight: def.weight
