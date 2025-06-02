@@ -134,7 +134,7 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
   // 1) Inicializace akčního plánu
   await db.initUserActionPlan(user.id);
 
-  // 2) Načteme všechny skutečně dostupné akce (obsahují code, weight, min_minutes, max_minutes)
+  // 2) Načtení dostupných akcí
   const actions = await db.getUserActions(user.id);
   console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
   console.log(actions.map(a => a.action_code).join(', ') || 'Žádné');
@@ -145,7 +145,7 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
     return;
   }
 
-  // 3) Vybereme jednu akci z kola (vrací { code, weight, min_minutes, max_minutes })
+  // 3) Výběr akce z kola
   const picked = await getRandomAction(user);
   if (!picked) {
     console.warn(`[${user.id}] Kolo štěstí vrátilo null (žádné definice).`);
@@ -158,16 +158,16 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
 
   console.log(`[${user.id}] Vybrána akce: ${actionCode}`);
 
-  // 4) Spustíme runAction; pokud vrátí false, nerušíme plán, ale jen pauzujeme
+  // 4) Spustíme runAction; při false neaktualizujeme plán, ale počkáme
   const success = await runAction(user, fbBot, actionCode);
   if (!success) {
     console.warn(`[${user.id}] Akce ${actionCode} NEPROVEDENA (runAction vrátil false).`);
-    // Pauza: počkáme buď na ruční uzavření prohlížeče, nebo 10 minut
+    // Pauza: čeká na ruční uzavření nebo 10 minut
     await pauseOnError(browser, browserClosed);
-    return; // Nespouštíme updateUserActionPlan
+    return;
   }
 
-  // 5) Pokud uspěje, naplánujeme další spuštění podle randMin (min <= randMin <= max)
+  // 5) Při úspěchu spočítáme interval (min ≤ randMin ≤ max) a uložíme
   const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
   await db.updateUserActionPlan(user.id, actionCode, randMin);
 

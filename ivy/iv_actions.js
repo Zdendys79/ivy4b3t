@@ -43,7 +43,7 @@ export async function runAction(user, fbBot, action_code) {
       return await quotePost(user, fbBot);
 
     default:
-      console.warn(`Neznámý action_code: ${action_code}`);
+      console.warn(`[${user.id}] Neznámý action_code: ${action_code}`);
       return false;
   }
 }
@@ -80,31 +80,25 @@ async function quotePost(user, fbBot) {
       return false;
     }
 
-    await fbBot.newThing().catch(err => {
-      console.error(`[${user.id}] [FB] newThing error: ${err}`);
-      throw new Error('FB: newThing selhalo');
-    });
-
+    // 1) Nový prvek – vyvolat postovací dialog
+    await fbBot.newThing();
+    
+    // 2) Vložit text citátu
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
+    await fbBot.pasteStatement(postText);
+    
+    // 3) Kliknout „Zveřejnit“
+    await fbBot.clickSendButton('Zveřejnit');
 
-    await fbBot.pasteStatement(postText).catch(err => {
-      console.error(`[${user.id}] [FB] Chyba při pasteStatement: ${err}`);
-      throw new Error('FB: pasteStatement selhalo');
-    });
-
-    await fbBot.clickSendButton('Zveřejnit').catch(err => {
-      console.error(`[${user.id}] [FB] Chyba při klikání na "Zveřejnit": ${err}`);
-      throw new Error('FB: clickSendButton selhalo');
-    });
-
-    // pokud jsme došli až sem, považujeme akci za úspěšnou
+    // 4) Zapsat úspěšný log do DB
     await db.logUserAction(user.id, 'quote_post', quote.id, postText);
     await db.updateQuoteNextSeen(quote.id, 30);
+
     console.log(`[${user.id}] Citát zveřejněn.`);
     return true;
 
   } catch (err) {
-    // Jakákoli chyba v postupu => vrátíme false
+    // Jediný try/catch: zachytí jakoukoli chybu z newThing/pasteStatement/clickSendButton
     console.error(`[${user.id}] quotePost selhalo: ${err.message}`);
     return false;
   }
