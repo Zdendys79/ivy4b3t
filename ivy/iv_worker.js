@@ -17,6 +17,7 @@ import * as utio from './iv_utio.js';
 import * as support from './iv_support.js';
 import { getRandomAction } from './iv_wheel.js';
 import { runAction } from './iv_actions.js';
+import { logError } from './iv_log.js';
 
 const isLinux = process.platform === 'linux';
 let nextWorktime = 0;
@@ -178,6 +179,47 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
 }
 
 /**
+ * Hlavní pracovní smyčka – zpracuje UI příkaz, přihlásí uživatele, provede akci
+ *               a poté úklid (nebo pauzu, pokud došlo k chybě).
+ */
+export async function tick() {
+  try {
+    // 1. Zpracování UI příkazu
+    const uiCommand = await db.getUICommand();
+    if (uiCommand) {
+      console.log('[tick] Detekován UI příkaz – zpracovávám...');
+      await ui.solveUICommand(uiCommand);
+      return;
+    }
+
+    // 2. Kontrola plánovaného času
+    if (Date.now() < nextWorktime) {
+      console.log('[tick] Ještě nenastal čas na další cyklus.');
+      return;
+    }
+
+    // 3. Načtení uživatele
+    const user = await db.getUser();
+    if (!user) throw new Error('[tick] Žádný vhodný uživatel.');
+
+    // 4. Spuštění hlavní sekvence
+    await runWithBrowser(user);
+
+    // 5. Nastavení dalšího času spuštění
+    updateNextWorktime();
+
+  } catch (err) {
+    logError('[tick]', err);
+
+    // Pokud došlo k chybě před spuštěním browseru
+    if (!DEBUG_KEEP_BROWSER_OPEN) {
+      await wait.delay(10 * 60 * 1000); // 10 minut pauza
+    }
+  }
+}
+
+
+/**
  * Ukončí instanci prohlížeče, pokud NENÍ zapnutý debug mód (tj. DEBUG_KEEP_BROWSER_OPEN=false).
  */
 async function cleanupBrowser(browser, browserClosed) {
@@ -198,59 +240,22 @@ function updateNextWorktime() {
   nextWorktime = Date.now() + Math.random() * 30000 + 30000;
 }
 
-/**
- * Hlavní pracovní smyčka – zpracuje UI příkaz, přihlásí uživatele, provede akci
- *               a poté úklid (nebo pauzu, pokud došlo k chybě).
- */
-export async function tick() {
+async function runWithBrowser(user) {
+  const { browser, context, browserClosed } = await prepareBrowser(user);
+  let fbBot = null;
+
   try {
-    // 1) zpracování UI příkazu (pokud existuje)
-    const uiCommand = await db.getUICommand();
-    if (uiCommand) {
-      console.log('UI příkaz detekován – zpracovávám...');
-      await ui.solveUICommand(uiCommand);
-      return;
-    }
-
-    // 2) kontrola, jestli je čas spustit další cyklus
-    if (Date.now() < nextWorktime) {
-      console.log('Čekám na další cyklus.');
-      return;
-    }
-
-    // 3) načtení uživatele
-    const user = await db.getUser();
-    if (!user) {
-      throw new Error('Žádný vhodný uživatel.');
-    }
-
-    // 4) příprava prohlížeče
-    const { browser, context, browserClosed } = await prepareBrowser(user);
-
-    // 5) přihlášení UTIO + FB
-    const fbBot = await loginToUtioAndFacebook(user, context);
-
-    // 6) provedení akce s případnou pauzou při chybě
+    fbBot = await loginToUtioAndFacebook(user, context);
     await executeUserAction(user, fbBot, browser, browserClosed);
-
-    // 7) krátké čekání (simulace lidské pauzy)
-    await wait.delay(wait.timeout());
-
-    // 8) úklid (nebo ponechání okna otevřeného v debug módu)
-    await cleanupBrowser(browser, browserClosed);
-
-    // 9) nastavení dalšího času spuštění
-    updateNextWorktime();
+    await wait.delay(wait.timeout()); // lidská pauza
 
   } catch (err) {
-    const type = err?.name || typeof err;
-    const message = err?.message || String(err);
-    const stack = err?.stack ? '\n' + err.stack : '';
-    console.error(`[iv_worker] Chyba v hlavní smyčce [${type}]: ${message}${stack}`);
-
-    // Pokud došlo k chybě dřív, než se spustila akce, počkáme 10 minut
+    logError(`[runWithBrowser][user:${user.id}]`, err);
     if (!DEBUG_KEEP_BROWSER_OPEN) {
       await wait.delay(10 * 60 * 1000);
     }
+
+  } finally {
+    await cleanupBrowser(browser, browserClosed);
   }
 }

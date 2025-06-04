@@ -1,8 +1,7 @@
 // iv_fb.class.js – Refaktorovaná verze
 
 import * as wait from './iv_wait.js';
-import { IvChar } from './iv_char.class.js';
-import fs from 'fs';
+import { Log } from './iv_log.class.js';
 
 export class FacebookBot {
   constructor(context) {
@@ -23,7 +22,7 @@ export class FacebookBot {
   async screenshot(name) {
     const filename = `errors/${name}_${Date.now()}.png`;
     await this.page.screenshot({ path: filename });
-    console.log(`[FB] Screenshot uložen: ${filename}`);
+    Log.info(`[FB] Screenshot uložen: ${filename}`);
   }
 
   // 🧩 Vnitřní helpery pro zjednodušení
@@ -50,40 +49,40 @@ export class FacebookBot {
     const [button] = await this._findByText(text, { timeout });
     if (!button) throw new Error(`Tlačítko "${text}" nenalezeno.`);
     await button.click();
-    console.log(`[FB] Kliknuto na "${text}".`);
+    Log.info(`[FB] Kliknuto na "${text}".`);
     return true;
   }
 
   async _typeActive(text) {
     const el = await this.page.evaluateHandle(() => document.activeElement);
     await el.type(text);
-    console.log(`[FB] Text napsán: ${text}`);
+    Log.info(`[FB] Text napsán: ${text}`);
   }
 
-// Pokračování třídy FacebookBot
+  // Pokračování třídy FacebookBot
 
   async openFB(user) {
     try {
       await this.bringToFront();
       await this.page.goto('https://facebook.com', { waitUntil: 'domcontentloaded' });
       await wait.delay(10000, false);
-      console.log(`[FB] Stránka Facebook načtena.`);
+      Log.info(`[FB] Stránka Facebook načtena.`);
     } catch (err) {
-      console.error(`[FB] Chyba při načítání stránky: ${err}`);
+      Log.error(`[FB] Chyba při načítání stránky: ${err}`);
       return false;
     }
 
     if (await this.isAccountLocked()) {
-      console.error(`[FB] Účet je zablokovaný.`);
+      Log.error(`[FB] Účet je zablokovaný.`);
       return 'account_locked';
     }
 
     if (await this.isProfileLoaded(user)) {
-      console.log(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
+      Log.info(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
       return 'still_loged';
     }
 
-    console.log(`[FB] Přihlašuji uživatele...`);
+    Log.info(`[FB] Přihlašuji uživatele...`);
     return await this.login(user);
   }
 
@@ -110,14 +109,14 @@ export class FacebookBot {
       await wait.delay(15 * wait.timeout());
 
       if (await this.isProfileLoaded(user)) {
-        console.log(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je nyní přihlášen.`);
+        Log.success(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je nyní přihlášen.`);
         return 'now_loged';
       } else {
-        console.error(`[FB] Přihlášení se nezdařilo – profilový element nenalezen.`);
+        Log.warn(`[FB] Uživatel není přihlášen na FB.`);
         return false;
       }
     } catch (err) {
-      console.error(`[FB] Chyba při loginu: ${err}`);
+      Log.error(`[FB] Chyba při loginu: ${err}`);
       return false;
     }
   }
@@ -128,9 +127,9 @@ export class FacebookBot {
       if (cookieBtn) {
         await cookieBtn.click();
         await wait.delay(wait.timeout());
-        console.log(`[FB] Cookie banner odkliknut.`);
+        Log.info(`[FB] Cookie banner odkliknut.`);
       } else {
-        console.log(`[FB] Cookie banner nenalezen.`);
+        Log.info(`[FB] Cookie banner nenalezen.`);
       }
     } catch (err) {
       console.warn(`[FB] Cookie banner error: ${err}`);
@@ -147,13 +146,14 @@ export class FacebookBot {
       const [thing] = await this._findByText(texts[index], { timeout: 2000 });
       if (thing) {
         this.newThingElement = thing;
-        console.log(`[FB] Našel jsem element pro psaní příspěvku.`);
+        Log.info('[FB]', 'Element pro psaní příspěvku nalezen.');
         return true;
       } else {
-        throw `Element "${texts[index]}" nenalezen.`;
+        throw new Error(`Element "${texts[index]}" nenalezen.`);
       }
     } catch (err) {
-      console.error(`[FB] newThing error: ${err}`);
+      Log.error('[FB] newThing()', err);
+      await this.debugFindText();
       return false;
     }
   }
@@ -164,15 +164,15 @@ export class FacebookBot {
       await this.bringToFront();
       await this.newThingElement.click();
       await wait.delay(3 * wait.timeout());
-      console.log(`[FB] Kliknuto na pole pro psaní příspěvku.`);
+      Log.info(`[FB] Kliknuto na pole pro psaní příspěvku.`);
       return true;
     } catch (err) {
-      console.error(`[FB] Klik na newThingElement selhal: ${err}`);
+      Log.error(`[FB] Klik na newThingElement selhal: ${err}`);
       return false;
     }
   }
 
-// Pokračování třídy FacebookBot
+  // Pokračování třídy FacebookBot
 
   async pasteStatement(text) {
     try {
@@ -181,7 +181,7 @@ export class FacebookBot {
       await wait.delay(10 * wait.timeout());
       await this._typeActive(text);
 
-      console.log(`[FB] Text vložen: ${text}`);
+      Log.info(`[FB] Text vložen: ${text}`);
 
       // Kliknout na "Přidat"
       await this._clickByText("Přidat");
@@ -191,10 +191,10 @@ export class FacebookBot {
       const stillVisible = await this._findByText("Přidat");
       if (stillVisible.length > 0) throw `Tlačítko "Přidat" je stále na obrazovce.`;
 
-      console.log(`[FB] Příspěvek úspěšně vložen.`);
+      Log.info(`[FB] Příspěvek úspěšně vložen.`);
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba při vkládání příspěvku: ${err}`);
+      Log.error(`[FB] Chyba při vkládání příspěvku: ${err}`);
       return false;
     }
   }
@@ -205,12 +205,13 @@ export class FacebookBot {
       await wait.delay(15 * wait.timeout());
 
       const stillVisible = await this._findByText(buttonText);
-      if (stillVisible.length > 0) throw `Tlačítko "${buttonText}" je stále na obrazovce.`;
+      if (stillVisible.length > 0) throw new Error(`Tlačítko "${buttonText}" je stále na obrazovce.`);
 
-      console.log(`[FB] Kliknuto na tlačítko "${buttonText}".`);
+      Log.info('[FB]', `Kliknuto na tlačítko "${buttonText}".`);
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba při klikání na tlačítko "${buttonText}": ${err}`);
+      Log.error(`[FB] clickSendButton("${buttonText}")`, err);
+      await this.debugFindText();
       return false;
     }
   }
@@ -229,7 +230,7 @@ export class FacebookBot {
           await wait.delay(3 * wait.timeout());
           await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done);
           await wait.delay(15 * wait.timeout());
-          console.log(`[FB] Výchozí okruh uživatelů nastaven.`);
+          Log.info(`[FB] Výchozí okruh uživatelů nastaven.`);
         } else {
           throw `SPAN "${t2}" nenalezen.`;
         }
@@ -238,12 +239,12 @@ export class FacebookBot {
       }
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba v defaultRange: ${err}`);
+      Log.error(`[FB] Chyba v defaultRange: ${err}`);
       return false;
     }
   }
 
-// Pokračování třídy FacebookBot
+  // Pokračování třídy FacebookBot
 
   async openGroup(group) {
     await this.bringToFront();
@@ -257,10 +258,10 @@ export class FacebookBot {
       await this.page.goto(fbGroupUrl, { waitUntil: 'networkidle2' });
       this.page.on("dialog", acceptBeforeUnload);
       await wait.delay(2 * wait.timeout());
-      console.log(`[FB] Skupina otevřena: ${fbGroupUrl}`);
+      Log.info(`[FB] Skupina otevřena: ${fbGroupUrl}`);
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba při otevírání skupiny ${group.fb_id}: ${err}`);
+      Log.error(`[FB] Chyba při otevírání skupiny ${group.fb_id}: ${err}`);
       return false;
     }
   }
@@ -276,7 +277,7 @@ export class FacebookBot {
           return this.getCounterValue(value);
         }
       } catch (err) {
-        console.error(`[FB] Counter "${label}" nenalezen: ${err}`);
+        Log.error(`[FB] Counter "${label}" nenalezen: ${err}`);
       }
     }
     return 0;
@@ -289,7 +290,7 @@ export class FacebookBot {
       if (str.includes("tis.")) floats *= 1000;
       return floats;
     } catch (err) {
-      console.error(`[FB] Chyba při parsování counter value: ${err}`);
+      Log.error(`[FB] Chyba při parsování counter value: ${err}`);
       return 0;
     }
   }
@@ -298,10 +299,10 @@ export class FacebookBot {
     try {
       await this._clickByText("Přidat se ke skupině", wait.timeout());
       await wait.delay(15 * wait.timeout());
-      console.log(`[FB] Přidání do skupiny úspěšné.`);
+      Log.info(`[FB] Přidání do skupiny úspěšné.`);
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba při přidávání do skupiny: ${err}`);
+      Log.error(`[FB] Chyba při přidávání do skupiny: ${err}`);
       return false;
     }
   }
@@ -313,20 +314,20 @@ export class FacebookBot {
         if (!likes.length) throw `Tlačítko "To se mi líbí" nenalezeno.`;
         const randomLike = likes[Math.floor(Math.random() * likes.length)];
         await randomLike.click();
-        console.log(`[FB] Kliknuto na tlačítko "To se mi líbí".`);
+        Log.info(`[FB] Kliknuto na tlačítko "To se mi líbí".`);
         await wait.delay(5 * wait.timeout());
         return true;
       } catch (err) {
-        console.error(`[FB] Chyba při klikání na "To se mi líbí": ${err}`);
+        Log.error(`[FB] Chyba při klikání na "To se mi líbí": ${err}`);
         return false;
       }
     } else {
-      console.log(`[FB] Kliknutí na "To se mi líbí" přeskočeno (náhodné).`);
+      Log.info(`[FB] Kliknutí na "To se mi líbí" přeskočeno (náhodné).`);
       return true;
     }
   }
 
-// Pokračování třídy FacebookBot
+  // Pokračování třídy FacebookBot
 
   async contentNotAvailable() {
     return await this._checkTexts("Obsah teď není dostupný", "Přejít do kanálu");
@@ -335,7 +336,7 @@ export class FacebookBot {
   async stillSendButton() {
     const found = await this._findByText("Zveřejnit", { timeout: wait.timeout() });
     if (found.length) {
-      console.log(`[FB] Tlačítko "Zveřejnit" stále nalezeno!`);
+      Log.info(`[FB] Tlačítko "Zveřejnit" stále nalezeno!`);
       return true;
     }
     return false;
@@ -356,7 +357,7 @@ export class FacebookBot {
   async loginFailedEn() {
     const found = await this._findByText("Forgot Account?", { timeout: 1500 });
     if (found.length) {
-      console.log(`[FB] Text "Forgot Account?" nalezen.`);
+      Log.info(`[FB] Text "Forgot Account?" nalezen.`);
       return true;
     }
     return false;
@@ -365,7 +366,7 @@ export class FacebookBot {
   async loginFailedCs() {
     const found = await this._findByText("Nepamatujete si svůj účet?", { timeout: 1500 });
     if (found.length) {
-      console.log(`[FB] Text "Nepamatujete si svůj účet?" nalezen.`);
+      Log.info(`[FB] Text "Nepamatujete si svůj účet?" nalezen.`);
       return true;
     }
     return false;
@@ -383,9 +384,9 @@ export class FacebookBot {
 
     try {
       await this.page.screenshot({ path: filename });
-      console.log(`[FB] Screenshot uložen: ${filename}`);
+      Log.info(`[FB] Screenshot uložen: ${filename}`);
     } catch (err) {
-      console.error(`[FB] Chyba při ukládání screenshotu: ${err}`);
+      Log.error(`[FB] Chyba při ukládání screenshotu: ${err}`);
     }
   }
 
@@ -394,17 +395,17 @@ export class FacebookBot {
       const image = await this.page.screenshot({ type: 'png' });
       return image;
     } catch (err) {
-      console.error(`[FB] Screenshot pro DB selhal: ${err}`);
+      Log.error(`[FB] Screenshot pro DB selhal: ${err}`);
       return null;
     }
   }
 
-// Pokračování třídy FacebookBot
+  // Pokračování třídy FacebookBot
 
   async isSellGroup() {
     const found = await this._findByText("Prodat", { timeout: 3500 });
     if (found.length) {
-      console.log(`[FB] Skupina je prodejní.`);
+      Log.info(`[FB] Skupina je prodejní.`);
       return true;
     }
     return false;
@@ -415,7 +416,7 @@ export class FacebookBot {
       await this._clickByText("Diskuze");
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba v clickDiscus: ${err}`);
+      Log.error(`[FB] Chyba v clickDiscus: ${err}`);
       return false;
     }
   }
@@ -425,7 +426,7 @@ export class FacebookBot {
       await this._clickByText("Přidat se ke skupině");
       return true;
     } catch (err) {
-      console.error(`[FB] Chyba v joinToGroup: ${err}`);
+      Log.error(`[FB] Chyba v joinToGroup: ${err}`);
       return false;
     }
   }
@@ -433,12 +434,46 @@ export class FacebookBot {
   async testXPath(selector) {
     try {
       const found = await this.page.$x(selector, { visible: true, timeout: 2000 });
-      console.log(`[FB] XPath ${selector} – nalezeno: ${found.length}`);
+      Log.info(`[FB] XPath ${selector} – nalezeno: ${found.length}`);
       if (!found.length) throw `Element pro XPath ${selector} nenalezen.`;
       return found[0];
     } catch (err) {
-      console.error(`[FB] Chyba v testXPath: ${err}`);
+      Log.error(`[FB] Chyba v testXPath: ${err}`);
       return false;
     }
   }
+
+  async debugFindText() {
+    Log.info('[DEBUG]', 'Ladění vyhledávání textu spuštěno. Zadej text pro hledání nebo "x" pro ukončení.');
+
+    const readline = await import('node:readline');
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: true
+    });
+
+    const ask = (prompt) => new Promise(resolve => rl.question(prompt, resolve));
+
+    while (true) {
+      const input = await ask('🔍 Text pro _findByText(): ');
+      if (input.trim().toLowerCase() === 'x') break;
+
+      try {
+        const elements = await this._findByText(input.trim(), { timeout: 3000 });
+        Log.info('[DEBUG]', `Nalezeno ${elements.length} prvků pro "${input.trim()}".`);
+
+        for (let i = 0; i < elements.length; i++) {
+          const text = await this.page.evaluate(el => el.innerText, elements[i]);
+          Log.info(`[${i + 1}]`, text.replace(/\n/g, ' '));
+        }
+      } catch (err) {
+        Log.error('[DEBUG]', err);
+      }
+    }
+
+    rl.close();
+    Log.info('[DEBUG]', 'Ladění vyhledávání textu ukončeno.');
+  }
+
 }

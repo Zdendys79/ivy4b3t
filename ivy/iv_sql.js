@@ -10,18 +10,17 @@ import os from 'node:os';
 import fs from 'node:fs';
 import mysql from 'mysql2/promise';
 import rawQueries from './sql/iv_sql_queries.js';
+import { Log } from './iv_log.class.js';
 
 const hostname = os.hostname();
 const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
 
-// Sloučení načítaných souborů do dotazového objektu
 const queries = {
   ...rawQueries,
   group: fs.readFileSync('./sql/iv_group.sql').toString(),
   user: fs.readFileSync('./sql/iv_user.sql').toString(),
 };
 
-// Inicializace připojení k databázi
 const pool = mysql.createPool({
   host: sql_setup.host,
   user: sql_setup.user,
@@ -32,7 +31,6 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Obecná dotazovací funkce
 async function query(query_id, data = []) {
   let success = false;
   let count = 0;
@@ -43,7 +41,7 @@ async function query(query_id, data = []) {
       results = rows;
       success = true;
     } catch (err) {
-      console.error(`[${count}] sql.query "${query_id}" failed\n${queries[query_id]}\n${err}`);
+      Log.error('[SQL]', new Error(`[${count}] sql.query "${query_id}" failed\n${queries[query_id]}\n${err.message}`));
       await new Promise(resolve => setTimeout(resolve, 5000));
       count++;
     }
@@ -51,14 +49,13 @@ async function query(query_id, data = []) {
   return success ? results : false;
 }
 
-// Wrappery
 async function safeQueryFirst(query_id, params = []) {
   try {
     const rows = await query(query_id, params);
     if (!rows || !rows.length || !rows[0]) return false;
     return rows[0];
   } catch (err) {
-    console.error(`[safeQueryFirst] ${query_id} failed:\n${err}`);
+    Log.error('[SQL][safeQueryFirst]', err);
     return false;
   }
 }
@@ -68,7 +65,7 @@ async function safeQueryAll(query_id, params = []) {
     const rows = await query(query_id, params);
     return rows || [];
   } catch (err) {
-    console.error(`[safeQueryAll] ${query_id} failed:\n${err}`);
+    Log.error('[SQL][safeQueryAll]', err);
     return [];
   }
 }
@@ -78,12 +75,12 @@ async function safeExecute(query_id, params = []) {
     await query(query_id, params);
     return true;
   } catch (err) {
-    console.error(`[safeExecute] ${query_id} failed:\n${err}`);
+    Log.error('[SQL][safeExecute]', err);
     return false;
   }
 }
 
-// Exportované funkce využívající wrappery
+// Exportované funkce
 export const getActionDefinitions = () => safeQueryAll('get_action_definitions');
 export const getAvailableActions = user_id => safeQueryAll('get_available_actions', [user_id]);
 export const insertToActionPlan = (user_id, action_code, next_time) => safeExecute('insert_to_action_plan', [user_id, action_code, next_time]);
@@ -122,7 +119,6 @@ export async function heartBeat(user_id, group_id, version_code) {
   const data = [hostname, user_id, group_id, version_code, user_id, group_id, version_code];
   return await safeExecute("heartbeat", data);
 }
-
 
 export async function updateUserWorktime(user, worktime) {
   const update1 = await safeExecute("update_user_worktime", [worktime, user.id]);
