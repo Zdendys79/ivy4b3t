@@ -294,5 +294,10 @@ SET next_seen = NOW() + INTERVAL ? DAY
 WHERE id = ?
 `,
 
+reset_quote_post_debug: `
+  UPDATE user_action_plan
+  SET next_time = NOW() - INTERVAL 5 MINUTE
+  WHERE action_code = 'quote_post'
+`,
 
 };

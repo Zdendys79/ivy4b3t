@@ -125,3 +125,7 @@ export async function updateUserWorktime(user, worktime) {
   const log = await userLog(user, 4, worktime, `Updated worktime +${worktime} minutes.`);
   return update1 && log;
 }
+
+// debug functions
+export const resetQuotePostDebug = () => safeExecute('reset_quote_post_debug');
+

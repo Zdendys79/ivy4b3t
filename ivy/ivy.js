@@ -16,8 +16,6 @@ import * as version from './iv_version.js';
 import * as worker from './iv_worker.js';
 import { Log } from './iv_log.class.js';
 
-
-
 const hostname = os.hostname();
 const versionCode = version.get();
 

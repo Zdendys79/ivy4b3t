@@ -112,6 +112,10 @@ async function loginToUtioAndFacebook(user, context) {
 
 async function executeUserAction(user, fbBot, browser, browserClosed) {
   await db.initUserActionPlan(user.id);
+  // DEBUG
+  await db.resetQuotePostDebug();
+  Log.info('[DEBUG]', 'Akce quote_post resetována pro všechny uživatele.');
+  // DEBUG
   const actions = await db.getUserActions(user.id);
 
   Log.db('[WORKER]', `getUserActions: ${actions.map(a => a.action_code).join(', ') || 'Žádné'}`);
