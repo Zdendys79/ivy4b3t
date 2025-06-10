@@ -189,16 +189,37 @@ export class FacebookBot {
 
       Log.info(`[FB] Text vložen: ${text}`);
 
-      // Kliknout na "Přidat"
-      await this._clickByText("Přidat");
-      await wait.delay(15 * wait.timeout());
+      // ✅ Počkej, než se objeví tlačítko „Zveřejnit“ nebo jiné
+      for (const sendText of CONFIG.submit_texts) {
+        const selector = `xpath//span[normalize-space(text())="${sendText}"]`;
+        try {
+          await this.page.waitForSelector(selector, {
+            timeout: 5000,
+            visible: true
+          });
 
-      // Znovu kontrola (jestli tam "Přidat" není)
-      const stillVisible = await this._findByText("Přidat");
-      if (stillVisible.length > 0) throw `Tlačítko "Přidat" je stále na obrazovce.`;
+          const [button] = await this.page.$$(selector);
+          if (!button) continue;
 
-      Log.info(`[FB] Příspěvek úspěšně vložen.`);
-      return true;
+          // 🧠 Můžeš případně otestovat style nebo disable stav
+          await button.click();
+          await wait.delay(15 * wait.timeout());
+
+          const stillVisible = await this._findByText(sendText);
+          if (stillVisible.length === 0) {
+            Log.info(`[FB] Příspěvek úspěšně vložen kliknutím na "${sendText}".`);
+            return true;
+          } else {
+            Log.warn(`[FB] Tlačítko "${sendText}" stále viditelné, něco se nepovedlo.`);
+          }
+
+        } catch (err) {
+          Log.warn(`[FB] Tlačítko "${sendText}" zatím neaktivní.`);
+        }
+      }
+
+      throw new Error(`Tlačítko pro odeslání příspěvku se neaktivovalo.`);
+
     } catch (err) {
       Log.error(`[FB] Chyba při vkládání příspěvku: ${err}`);
       return false;
