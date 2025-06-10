@@ -34,10 +34,8 @@ export class FacebookBot {
 
   async _findByText(text, options = {}) {
     try {
-      const elems = await this.page.$x(`//span[contains(text(), "${text}")]`, {
-        visible: true,
-        timeout: options.timeout || 2000
-      });
+      const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
+      const elems = await this.page.$x(xpath);
       return elems;
     } catch (err) {
       return [];
