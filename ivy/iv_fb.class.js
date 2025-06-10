@@ -143,13 +143,16 @@ export class FacebookBot {
 
   async newThing() {
     try {
-      for (const text of CONFIG.new_post_texts) {
-        const [thing] = await this._findByText(text, { timeout: 2000 });
-        if (thing) {
-          this.newThingElement = thing;
-          Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${text}"`);
-          return true;
-        }
+      const promises = CONFIG.new_post_texts.map(text => {
+        const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
+        return this.page.waitForXPath(xpath, { timeout: 5000 }).then(el => ({ el, text })).catch(() => null);
+      });
+
+      const result = await Promise.race(promises.filter(Boolean));
+      if (result && result.el) {
+        this.newThingElement = result.el;
+        Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
+        return true;
       }
 
       throw new Error('Žádný z možných textů nebyl nalezen.');
