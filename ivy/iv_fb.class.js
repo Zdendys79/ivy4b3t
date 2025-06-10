@@ -3,6 +3,9 @@
 import * as wait from './iv_wait.js';
 import { Log } from './iv_log.class.js';
 
+const CONFIG_PATH = path.resolve('./config.json');
+const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+
 export class FacebookBot {
   constructor(context) {
     this.context = context;
@@ -58,8 +61,6 @@ export class FacebookBot {
     await el.type(text);
     Log.info(`[FB] Text napsán: ${text}`);
   }
-
-  // Pokračování třídy FacebookBot
 
   async openFB(user) {
     try {
@@ -140,17 +141,18 @@ export class FacebookBot {
     return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován");
   }
 
-  async newThing(index = 0) {
-    const texts = ["Napište něco", "veřejný příspěvek", "Co se vám honí hlavou", "Podělte se se skupinou"];
+  async newThing() {
     try {
-      const [thing] = await this._findByText(texts[index], { timeout: 2000 });
-      if (thing) {
-        this.newThingElement = thing;
-        Log.info('[FB]', 'Element pro psaní příspěvku nalezen.');
-        return true;
-      } else {
-        throw new Error(`Element "${texts[index]}" nenalezen.`);
+      for (const text of CONFIG.new_post_texts) {
+        const [thing] = await this._findByText(text, { timeout: 2000 });
+        if (thing) {
+          this.newThingElement = thing;
+          Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${text}"`);
+          return true;
+        }
       }
+
+      throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
       Log.error('[FB] newThing()', err);
       await this.debugFindText();
@@ -171,8 +173,6 @@ export class FacebookBot {
       return false;
     }
   }
-
-  // Pokračování třídy FacebookBot
 
   async pasteStatement(text) {
     try {
