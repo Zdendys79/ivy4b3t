@@ -145,14 +145,15 @@ export class FacebookBot {
     try {
       const promises = CONFIG.new_post_texts.map(text => {
         const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
-        return this.page.waitForXPath(xpath, { timeout: 5000 })
-          .then(el => ({ el, text }))
+        const selector = `xpath/${xpath}`;
+        return page.waitForSelector(selector, { timeout: 5000 })
+          .then(handle => ({ handle, text }))
           .catch(() => null);
       });
 
       const result = await Promise.race(promises);
-      if (result && result.el) {
-        this.newThingElement = result.el;
+      if (result && result.handle) {
+        this.newThingElement = result.handle;
         Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
         return true;
       }
