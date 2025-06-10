@@ -146,7 +146,7 @@ export class FacebookBot {
       const promises = CONFIG.new_post_texts.map(text => {
         const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
         const selector = `xpath/${xpath}`;
-        return page.waitForSelector(selector, { timeout: 5000 })
+        return this.page.waitForSelector(selector, { timeout: 5000 })
           .then(handle => ({ handle, text }))
           .catch(() => null);
       });
