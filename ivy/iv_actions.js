@@ -85,12 +85,16 @@ async function quotePost(user, fbBot) {
     await fbBot.clickNewThing();
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
     await fbBot.pasteStatement(postText);
-    await fbBot.clickSendButton('Zveřejnit');
+    const success = await bot.clickSendButton();
+    if (!success) {
+      Log.error(`[FB] Příspěvek se nepodařilo odeslat.`);
+      return false;
+    }
+    Log.success(`[FB] Citát zveřejněn.`);
 
     await db.logUserAction(user.id, 'quote_post', quote.id, postText);
     await db.updateQuoteNextSeen(quote.id, 30);
 
-    Log.success(`[${user.id}]`, 'Citát zveřejněn.');
     return true;
 
   } catch (err) {
