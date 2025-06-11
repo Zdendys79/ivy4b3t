@@ -221,32 +221,25 @@ export class FacebookBot {
 
   async clickSendButton() {
     try {
-      const lookupPromises = CONFIG.submit_texts.map(async sendText => {
-        const xpath = `//div[@role="button"]//span[contains(normalize-space(.), "${sendText}")]`;
+      const results = [];
+
+      for (const sendText of CONFIG.submit_texts) {
+        const xpath = `//span[contains(normalize-space(.), "${sendText}")]`;
         const elements = await this.page.$x(xpath);
 
         if (elements.length === 0) {
-          Log.warn(`[FB] Tlačítko "${sendText}" nebylo nalezeno.`);
-        } else {
-          Log.info(`[FB] Tlačítek "${sendText}" nalezeno: ${elements.length}`);
-          for (let i = 0; i < elements.length; i++) {
-            const text = await this.page.evaluate(el => el.textContent, elements[i]);
-            const className = await this.page.evaluate(el => el.className, elements[i]);
-            Log.debug(`[${sendText} #${i + 1}]`, `"${text}"`, `class="${className}"`);
-          }
+          Log.debug(`[FB] Žádný <span> s textem "${sendText}" nenalezen.`);
+          continue;
         }
 
-        return elements.length > 0 ? { elements, sendText } : null;
-      });
-
-      const results = (await Promise.allSettled(lookupPromises))
-        .filter(r => r.status === 'fulfilled' && r.value)
-        .map(r => r.value);
+        results.push({ elements, sendText });
+      }
 
       if (!results.length) {
         throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
       }
 
+      // Najdeme první výsledek se spanem a z něj poslední výskyt
       const { elements, sendText } = results[0];
       const button = elements.at(-1);
 
@@ -260,7 +253,7 @@ export class FacebookBot {
       }, button);
 
       if (!isClickable) {
-        throw new Error(`Tlačítko "${sendText}" není klikatelné.`);
+        throw new Error(`Tlačítko "${sendText}" je viditelné, ale nelze na něj kliknout.`);
       }
 
       await button.click();
@@ -268,7 +261,7 @@ export class FacebookBot {
 
       const stillVisible = await this._findByText(sendText);
       if (stillVisible.length > 0) {
-        throw new Error(`Tlačítko "${sendText}" je stále viditelné – možná nebylo přijato.`);
+        throw new Error(`Tlačítko "${sendText}" je stále viditelné – kliknutí pravděpodobně selhalo.`);
       }
 
       Log.info(`[FB] Kliknuto na tlačítko "${sendText}".`);
