@@ -222,7 +222,7 @@ export class FacebookBot {
   async clickSendButton() {
     try {
       const lookupPromises = CONFIG.submit_texts.map(async sendText => {
-        const xpath = `//span[starts-with(normalize-space(.), "${sendText}")]`;
+        const xpath = `//span[contains(normalize-space(string(.)), "${sendText}")]`;
         const elements = await this.page.$x(xpath);
 
         if (elements.length === 0) {
