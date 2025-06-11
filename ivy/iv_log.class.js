@@ -6,25 +6,25 @@ import path from 'path';
 
 const CONFIG_PATH = path.resolve('./config.json');
 const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-
 const BRANCH = CONFIG.branch || 'main'; // default fallback
 const LOG_LEVEL = CONFIG.log_levels?.[BRANCH] || 'info';
-
-const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const USE_ICONS = CONFIG.use_icons !== false;
 
 const icons = {
-  info: CONFIG.icons?.info || '[INFO]',
-  warn: CONFIG.icons?.warn || '[WARN]',
-  error: CONFIG.icons?.error || '[ERROR]',
-  success: CONFIG.icons?.success || '[OK]',
-  debug: CONFIG.icons?.debug || '[DEBUG]',
-  db: CONFIG.icons?.db || '[DB]'
+  info: USE_ICONS ? CONFIG.icons?.info || '[INFO]' : '[INFO]',
+  warn: USE_ICONS ? CONFIG.icons?.warn || '[WARN]' : '[WARN]',
+  error: USE_ICONS ? CONFIG.icons?.error || '[ERROR]' : '[ERROR]',
+  success: USE_ICONS ? CONFIG.icons?.success || '[OK]' : '[OK]',
+  debug: USE_ICONS ? CONFIG.icons?.debug || '[DEBUG]' : '[DEBUG]',
+  db: USE_ICONS ? CONFIG.icons?.db || '[DB]' : '[DB]'
 };
 
 const shouldLog = (level) => {
   const levels = ['error', 'warn', 'info', 'debug'];
   return levels.indexOf(level) <= levels.indexOf(LOG_LEVEL);
 };
+
+const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 
 export class Log {
   static info(prefix, ...msg) {
