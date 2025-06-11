@@ -56,7 +56,10 @@ export class FacebookBot {
         xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
       }
 
-      return await this.page.$x(xpath);
+      console.log(`XPath dotaz: ${xpath}`);
+      const found = await this.page.$x(xpath);
+      console.log(`Počet nalezených: ${found.length}`);
+      return found;
 
     } catch (err) {
       Log.warn('[FB] _findByText selhalo:', err);
@@ -289,6 +292,7 @@ export class FacebookBot {
       }
 
       if (!results.length) {
+        await this.debugFindText(sendText);
         throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
       }
 
