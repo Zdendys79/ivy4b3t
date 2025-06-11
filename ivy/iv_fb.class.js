@@ -275,60 +275,70 @@ export class FacebookBot {
     }
   }
 
-async clickSendButton() {
-  try {
-    // Obnovení this.page, pokud byl kontext ztracen (např. po přerenderování)
-    if (!this.page || typeof this.page.$x !== 'function') {
-      const pages = await this.browser.pages();
-      this.page = pages.at(-1);
+  async clickSendButton() {
+    try {
+      // Obnovení this.page, pokud byl kontext ztracen (např. po přerenderování)
       if (!this.page || typeof this.page.$x !== 'function') {
-        Log.warn('[FB] clickSendButton() selhal: this.page není připraven ani po obnovení.');
-        return false;
-      }
-    }
-
-    const results = [];
-
-    for (const sendText of CONFIG.submit_texts) {
-      const elements = await this._findByText(sendText, { match: 'contains' });
-
-      if (elements.length === 0) {
-        Log.debug(`[FB] Žádný <span> s textem "${sendText}" nenalezen.`);
-        continue;
+        const pages = await this.browser.pages();
+        this.page = pages.at(-1);
+        if (!this.page || typeof this.page.$x !== 'function') {
+          Log.warn('[FB] clickSendButton() selhal: this.page není připraven ani po obnovení.');
+          return false;
+        }
       }
 
-      Log.info(`[FB] Nalezeno ${elements.length} výskytů tlačítka "${sendText}".`);
-      results.push({ elements, sendText });
-    }
+      const results = [];
 
-    if (!results.length) {
+      for (const sendText of CONFIG.submit_texts) {
+        const elements = await this._findByText(sendText, { match: 'contains' });
+
+        if (elements.length === 0) {
+          Log.debug(`[FB] Žádný <span> s textem "${sendText}" nenalezen.`);
+          continue;
+        }
+
+        Log.info(`[FB] Nalezeno ${elements.length} výskytů tlačítka "${sendText}".`);
+        results.push({ elements, sendText });
+      }
+
+      if (!results.length) {
+        await this.debugFindText();
+        throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
+      }
+
+      const { elements, sendText } = results[0];
+      const button = elements.at(-1);
+
+      const isClickable = await this.page.evaluate(el => {
+        const style = window.getComputedStyle(el);
+        return (
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          style.pointerEvents !== 'none'
+        );
+      }, button);
+
+      if (!isClickable) {
+        throw new Error(`Tlačítko "${sendText}" je viditelné, ale nelze na něj kliknout.`);
+      }
+
+      await button.click();
+      await wait.delay(15 * wait.timeout());
+
+      const stillVisible = await this._findByText(sendText, { match: 'contains' });
+      if (stillVisible.length > 0) {
+        throw new Error(`Tlačítko "${sendText}" je stále viditelné – kliknutí pravděpodobně selhalo.`);
+      }
+
+      Log.info(`[FB] Kliknuto na tlačítko "${sendText}".`);
+      return true;
+
+    } catch (err) {
+      Log.error(`[FB] clickSendButton()`, err);
       await this.debugFindText();
-      throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
+      return false;
     }
-
-    const { elements, sendText } = results[0];
-    const button = elements.at(-1);
-
-    const isClickable = await this.page.evaluate(el => {
-      const style = window.getComputedStyle(el);
-      return (
-        style.visibility !== 'hidden' &&
-        style.display !== 'none' &&
-        style.pointerEvents !== 'none'
-      );
-    }, button);
-
-    if (!isClickable) {
-      throw new Error(`Tlačítko "${sendText}" je viditelné, ale nelze na něj kliknout.`);
-    }
-
-    await button.click();
-    await wait.delay(15 * wait.timeout());
-
-    const stillVisible = await this._findByText(sendText, { match: 'contains' });
-    if (stillVisible.length > 0) {
-      throw new Error(`Tlačítko "${sendText}" je stále viditelné – kliknutí pravděpodobně selhalo.`);
-    }
+  }
 
   async defaultRange() {
     const t1 = "Výchozí okruh uživatelů";
