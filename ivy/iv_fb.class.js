@@ -38,23 +38,47 @@ export class FacebookBot {
    * @param {object} options - Volby:
    *    - match: "startsWith" | "exact" | "contains"
    * @returns {Promise<ElementHandle[]>}
-   * Čeká na výskyt <span> s textem podle strategie (race-friendly)
-*/
-async _waitForText(text, options = {}) {
-  const { match = 'startsWith', timeout = 5000 } = options;
+   */
+  async _findByText(text, options = {}) {
+    try {
+      const { match = 'startsWith' } = options;
 
-  let xpath;
-  if (match === 'startsWith') {
-    xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-  } else if (match === 'exact') {
-    xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-  } else {
-    xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+      let xpath;
+      if (match === 'startsWith') {
+        xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+      } else if (match === 'exact') {
+        xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+      } else {
+        xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+      }
+
+      return await this.page.$x(xpath);
+
+    } catch (err) {
+      Log.warn('[FB] _findByText selhalo:', err);
+      return [];
+    }
   }
 
-  const selector = `xpath/${xpath}`;
-  return await this.page.waitForSelector(selector, { timeout }).catch(() => null);
-}
+  /**
+   * Čeká na výskyt <span> s textem podle strategie (race-friendly)
+   */
+  async _waitForText(text, options = {}) {
+    const { match = 'startsWith', timeout = 5000 } = options;
+
+    let xpath;
+    if (match === 'startsWith') {
+      xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+    } else if (match === 'exact') {
+      xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+    } else {
+      xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+    }
+
+    const selector = `xpath/${xpath}`;
+    return await this.page.waitForSelector(selector, { timeout }).catch(() => null);
+  }
+
 
   async _checkTexts(text1, text2) {
     const t1 = await this._findByText(text1);
@@ -180,27 +204,29 @@ async _waitForText(text, options = {}) {
   }
 
   async newThing() {
-  try {
-    const promises = CONFIG.new_post_texts.map(text => {
-      return this._waitForText(text, { match: 'startsWith', timeout: 5000 })
-        .then(handle => handle ? { handle, text } : null)
-        .catch(() => null);
-    });
+    try {
+      const promises = CONFIG.new_post_texts.map(text => {
+        const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
+        const selector = `xpath/${xpath}`;
+        return this.page.waitForSelector(selector, { timeout: 5000 })
+          .then(handle => ({ handle, text }))
+          .catch(() => null);
+      });
 
-    const result = await Promise.race(promises);
-    if (result && result.handle) {
-      this.newThingElement = result.handle;
-      Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
-      return true;
+      const result = await Promise.race(promises);
+      if (result && result.handle) {
+        this.newThingElement = result.handle;
+        Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
+        return true;
+      }
+
+      throw new Error('Žádný z možných textů nebyl nalezen.');
+    } catch (err) {
+      Log.error('[FB] newThing()', err);
+      await this.debugFindText();
+      return false;
     }
-
-    throw new Error('Žádný z možných textů nebyl nalezen.');
-  } catch (err) {
-    Log.error('[FB] newThing()', err);
-    await this.debugFindText();
-    return false;
   }
-}
 
   async clickNewThing() {
     try {
@@ -231,59 +257,59 @@ async _waitForText(text, options = {}) {
     }
   }
 
-async clickSendButton() {
-  try {
-    const results = [];
+  async clickSendButton() {
+    try {
+      const results = [];
 
-    for (const sendText of CONFIG.submit_texts) {
-      const elements = await this._findByText(sendText, { match: 'contains' });
+      for (const sendText of CONFIG.submit_texts) {
+        const elements = await this._findByText(sendText, { match: 'contains' });
 
-      if (elements.length === 0) {
-        Log.debug(`[FB] Žádný <span> s textem "${sendText}" nenalezen.`);
-        continue;
+        if (elements.length === 0) {
+          Log.debug(`[FB] Žádný <span> s textem "${sendText}" nenalezen.`);
+          continue;
+        }
+
+        Log.info(`[FB] Nalezeno ${elements.length} výskytů tlačítka "${sendText}".`);
+        results.push({ elements, sendText });
       }
 
-      Log.info(`[FB] Nalezeno ${elements.length} výskytů tlačítka "${sendText}".`);
-      results.push({ elements, sendText });
+      if (!results.length) {
+        throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
+      }
+
+      const { elements, sendText } = results[0];
+      const button = elements.at(-1); // poslední výskyt
+
+      const isClickable = await this.page.evaluate(el => {
+        const style = window.getComputedStyle(el);
+        return (
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          style.pointerEvents !== 'none'
+        );
+      }, button);
+
+      if (!isClickable) {
+        throw new Error(`Tlačítko "${sendText}" je viditelné, ale nelze na něj kliknout.`);
+      }
+
+      await button.click();
+      await wait.delay(15 * wait.timeout());
+
+      const stillVisible = await this._findByText(sendText, { match: 'contains' });
+      if (stillVisible.length > 0) {
+        throw new Error(`Tlačítko "${sendText}" je stále viditelné – kliknutí pravděpodobně selhalo.`);
+      }
+
+      Log.info(`[FB] Kliknuto na tlačítko "${sendText}".`);
+      return true;
+
+    } catch (err) {
+      Log.error(`[FB] clickSendButton()`, err);
+      await this.debugFindText();
+      return false;
     }
-
-    if (!results.length) {
-      throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
-    }
-
-    const { elements, sendText } = results[0];
-    const button = elements.at(-1); // poslední výskyt
-
-    const isClickable = await this.page.evaluate(el => {
-      const style = window.getComputedStyle(el);
-      return (
-        style.visibility !== 'hidden' &&
-        style.display !== 'none' &&
-        style.pointerEvents !== 'none'
-      );
-    }, button);
-
-    if (!isClickable) {
-      throw new Error(`Tlačítko "${sendText}" je viditelné, ale nelze na něj kliknout.`);
-    }
-
-    await button.click();
-    await wait.delay(15 * wait.timeout());
-
-    const stillVisible = await this._findByText(sendText, { match: 'contains' });
-    if (stillVisible.length > 0) {
-      throw new Error(`Tlačítko "${sendText}" je stále viditelné – kliknutí pravděpodobně selhalo.`);
-    }
-
-    Log.info(`[FB] Kliknuto na tlačítko "${sendText}".`);
-    return true;
-
-  } catch (err) {
-    Log.error(`[FB] clickSendButton()`, err);
-    await this.debugFindText();
-    return false;
   }
-}
 
   async defaultRange() {
     const t1 = "Výchozí okruh uživatelů";
