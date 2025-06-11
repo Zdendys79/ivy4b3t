@@ -1,25 +1,24 @@
 ﻿// iv_log.class.js – Centrální logovací nástroje pro IVY
-// Cíl: Řízení výstupu podle úrovně (error, warn, info, debug)
+// Cíl: Výpis informací podle logovací úrovně z config.json (např. main=debug)
+
+import fs from 'fs';
+import path from 'path';
+
+const CONFIG_PATH = path.resolve('./config.json');
+const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+
+const BRANCH = CONFIG.branch || 'main'; // default fallback
+const LOG_LEVEL = CONFIG.log_levels?.[BRANCH] || 'info';
 
 const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 
-// Možnosti: 'debug', 'info', 'warn', 'error'
-import { CONFIG } from './config.js';
-
-const BRANCH = CONFIG.branch || 'main';
-const LOG_LEVEL = CONFIG.log_levels?.[BRANCH] || 'info';
-
-
-// Ikony zapnuty?
-const USE_ICONS = false;
-
 const icons = {
-  info: USE_ICONS ? 'ℹ️' : '[INFO]',
-  warn: USE_ICONS ? '⚠️' : '[WARN]',
-  error: USE_ICONS ? '❌' : '[ERROR]',
-  success: USE_ICONS ? '✅' : '[OK]',
-  debug: USE_ICONS ? '🐛' : '[DEBUG]',
-  db: USE_ICONS ? '🗄️' : '[DB]'
+  info: CONFIG.icons?.info || '[INFO]',
+  warn: CONFIG.icons?.warn || '[WARN]',
+  error: CONFIG.icons?.error || '[ERROR]',
+  success: CONFIG.icons?.success || '[OK]',
+  debug: CONFIG.icons?.debug || '[DEBUG]',
+  db: CONFIG.icons?.db || '[DB]'
 };
 
 const shouldLog = (level) => {

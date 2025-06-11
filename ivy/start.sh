@@ -8,7 +8,7 @@
 REPO_DIR=~/git/ivy4b3t         # Git repozitář
 SOURCE_SUBFOLDER=ivy           # Podsložka v repozitáři
 TARGET_DIR=~/ivy               # Kam kopírovat ivy
-BRANCH=main                    # Větev
+BRANCH=$(jq -r .branch ~/ivy/config.json) # Větev
 
 # Limity pro pokusy
 MAX_RETRIES=3

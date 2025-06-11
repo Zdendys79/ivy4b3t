@@ -1,4 +1,18 @@
 {
+  "branch": "main",
+  "use_icons": false,
+  "log_levels": {
+    "main": "debug",
+    "release": "info"
+  },
+  "icons": {
+    "info": "ℹ️",
+    "warn": "⚠️",
+    "error": "❌",
+    "success": "✅",
+    "debug": "🐛",
+    "db": "🗄️"
+  },
   "new_post_texts": [
     "Napište něco",
     "veřejný příspěvek",
@@ -11,9 +25,5 @@
     "Post",
     "Publikovat",
     "Hotovo"
-  ],
-  "log_levels": {
-    "main": "debug",
-    "release": "info"
-  }
+  ]
 }
