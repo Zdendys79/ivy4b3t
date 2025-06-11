@@ -33,17 +33,21 @@ export class FacebookBot {
   // 🧩 Vnitřní helpery pro zjednodušení
 
   /**
-   * Vyhledá prvky <span> podle textu.
-   * @param {string} text - Hledaný text
-   * @param {object} options - Volby:
-   *    - match: "startsWith" | "exact" | "contains"
+   * Vyhledá <span> elementy podle obsahu textu.
+   * @param {string} text - hledaný text
+   * @param {object} options - volby (match: startsWith|exact|contains)
    * @returns {Promise<ElementHandle[]>}
    */
   async _findByText(text, options = {}) {
     try {
-      const { match = 'startsWith' } = options;
+      if (!this.page || !this.page.$x) {
+        Log.warn('[FB] _findByText selhalo: this.page není připraven.');
+        return [];
+      }
 
+      const { match = 'startsWith' } = options;
       let xpath;
+
       if (match === 'startsWith') {
         xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
       } else if (match === 'exact') {
@@ -60,25 +64,36 @@ export class FacebookBot {
     }
   }
 
+
   /**
-   * Čeká na výskyt <span> s textem podle strategie (race-friendly)
+   * Čeká na <span> s textem podle dané strategie (např. startsWith)
+   * Vhodné pro použití v Promise.race().
    */
   async _waitForText(text, options = {}) {
-    const { match = 'startsWith', timeout = 5000 } = options;
+    try {
+      if (!this.page || !this.page.waitForSelector) {
+        Log.warn('[FB] _waitForText selhalo: this.page není připraven.');
+        return null;
+      }
 
-    let xpath;
-    if (match === 'startsWith') {
-      xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-    } else if (match === 'exact') {
-      xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-    } else {
-      xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+      const { match = 'startsWith', timeout = 5000 } = options;
+
+      let xpath;
+      if (match === 'startsWith') {
+        xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+      } else if (match === 'exact') {
+        xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+      } else {
+        xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+      }
+
+      const selector = `xpath/${xpath}`;
+      return await this.page.waitForSelector(selector, { timeout });
+    } catch (err) {
+      Log.warn('[FB] _waitForText selhalo:', err);
+      return null;
     }
-
-    const selector = `xpath/${xpath}`;
-    return await this.page.waitForSelector(selector, { timeout }).catch(() => null);
   }
-
 
   async _checkTexts(text1, text2) {
     const t1 = await this._findByText(text1);
