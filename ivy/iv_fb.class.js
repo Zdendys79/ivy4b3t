@@ -40,8 +40,8 @@ export class FacebookBot {
    */
   async _findByText(text, options = {}) {
     try {
-      if (!this.page || !this.page.$x) {
-        Log.warn('[FB] _findByText selhalo: this.page není připraven.');
+      if (!this.page || typeof this.page.$x !== 'function') {
+        Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje $x.');
         return [];
       }
 
@@ -277,6 +277,11 @@ export class FacebookBot {
 
   async clickSendButton() {
     try {
+      if (!this.page || typeof this.page.$x !== 'function') {
+        Log.warn('[FB] clickSendButton() selhal: this.page není připraven.');
+        return false;
+      }
+
       const results = [];
 
       for (const sendText of CONFIG.submit_texts) {
@@ -292,12 +297,12 @@ export class FacebookBot {
       }
 
       if (!results.length) {
-        await this.debugFindText(sendText);
+        await this.debugFindText(); // odstraněno sendText
         throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
       }
 
       const { elements, sendText } = results[0];
-      const button = elements.at(-1); // poslední výskyt
+      const button = elements.at(-1);
 
       const isClickable = await this.page.evaluate(el => {
         const style = window.getComputedStyle(el);
