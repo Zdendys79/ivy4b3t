@@ -56,11 +56,35 @@ export class FacebookBot {
     return true;
   }
 
-  async _typeActive(text) {
+  async _typeLikeHuman(text) {
     const el = await this.page.evaluateHandle(() => document.activeElement);
-    await el.type(text);
+    const chars = text.split('');
+
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i];
+
+      // 📉 5–10 % šance na překlep
+      if (Math.random() < 0.07 && /[a-zá-ž]/i.test(char)) {
+        const typo = String.fromCharCode(char.charCodeAt(0) + 1); // např. o -> p
+        await el.type(typo);
+        await new Promise(resolve => setTimeout(resolve, wait.type()));
+
+        await el.press('Backspace'); // oprava
+        await new Promise(resolve => setTimeout(resolve, wait.type()));
+      }
+
+      await el.type(char);
+      await new Promise(resolve => setTimeout(resolve, wait.type()));
+
+      // ⌛️ Pauza po některých slovech
+      if (char === ' ' && Math.random() < 0.4) {
+        await wait.pauseBetweenWords();
+      }
+    }
+
     Log.info(`[FB] Text napsán: ${text}`);
   }
+
 
   async openFB(user) {
     try {
@@ -180,68 +204,66 @@ export class FacebookBot {
     }
   }
 
-async pasteStatement(text) {
-  try {
-    if (!text) throw `Prázdný text pro příspěvek.`;
-
-    let targetButton = null;
-
-    // ⏳ Hledání tlačítka ještě před vložením textu
-    for (const sendText of CONFIG.submit_texts) {
-      const xpath = `//span[starts-with(normalize-space(.), "${sendText}")]`;
-      const elements = await this.page.$x(xpath);
-
-      if (elements.length >= 2) {
-        targetButton = elements[1]; // ⬅️ druhý výskyt
-        Log.info(`[FB] Předem nalezený 2. výskyt tlačítka "${sendText}".`);
-        break;
-      }
-    }
-
-    if (!targetButton) {
-      throw new Error('Tlačítko pro odeslání příspěvku nebylo předem nalezeno.');
-    }
-
-    await wait.delay(10 * wait.timeout());
-    await this._typeActive(text);
-    Log.info(`[FB] Text vložen: ${text}`);
-
-    // ✅ Klikneme na předem vybraný druhý element
-    const isClickable = await this.page.evaluate(el => {
-      const style = window.getComputedStyle(el);
-      return (
-        style.visibility !== 'hidden' &&
-        style.display !== 'none' &&
-        style.pointerEvents !== 'none'
-      );
-    }, targetButton);
-
-    if (!isClickable) throw new Error('Tlačítko není klikatelné.');
-
-    await targetButton.click();
-    await wait.delay(15 * wait.timeout());
-
-    Log.info(`[FB] Kliknuto na druhý výskyt tlačítka "Přidat".`);
-    return true;
-
-  } catch (err) {
-    Log.error(`[FB] Chyba při vkládání příspěvku: ${err}`);
-    return false;
-  }
-}
-
-  async clickSendButton(buttonText = "Zveřejnit") {
+  async pasteStatement(text) {
     try {
-      await this._clickByText(buttonText);
+      if (!text) throw `Prázdný text pro příspěvek.`;
+
+      await wait.delay(10 * wait.timeout());
+      await this._typeLikeHuman(text);
+      Log.info(`[FB] Text vložen: ${text}`);
+      return true;
+
+    } catch (err) {
+      Log.error(`[FB] Chyba při psaní příspěvku: ${err}`);
+      return false;
+    }
+  }
+
+  async clickSendButton() {
+    try {
+      const lookupPromises = CONFIG.submit_texts.map(async sendText => {
+        const xpath = `//span[starts-with(normalize-space(.), "${sendText}")]`;
+        const elements = await this.page.$x(xpath);
+        return elements.length > 0 ? { elements, sendText } : null;
+      });
+
+      const results = (await Promise.allSettled(lookupPromises))
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => r.value);
+
+      if (!results.length) {
+        throw new Error(`Žádné z tlačítek z config.submit_texts nebylo nalezeno.`);
+      }
+
+      const { elements, sendText } = results[0];
+      const button = elements.at(-1);
+
+      const isClickable = await this.page.evaluate(el => {
+        const style = window.getComputedStyle(el);
+        return (
+          style.visibility !== 'hidden' &&
+          style.display !== 'none' &&
+          style.pointerEvents !== 'none'
+        );
+      }, button);
+
+      if (!isClickable) {
+        throw new Error(`Tlačítko "${sendText}" není klikatelné.`);
+      }
+
+      await button.click();
       await wait.delay(15 * wait.timeout());
 
-      const stillVisible = await this._findByText(buttonText);
-      if (stillVisible.length > 0) throw new Error(`Tlačítko "${buttonText}" je stále na obrazovce.`);
+      const stillVisible = await this._findByText(sendText);
+      if (stillVisible.length > 0) {
+        throw new Error(`Tlačítko "${sendText}" je stále viditelné – možná nebylo přijato.`);
+      }
 
-      Log.info('[FB]', `Kliknuto na tlačítko "${buttonText}".`);
+      Log.info(`[FB] Kliknuto na tlačítko "${sendText}".`);
       return true;
+
     } catch (err) {
-      Log.error(`[FB] clickSendButton("${buttonText}")`, err);
+      Log.error(`[FB] clickSendButton()`, err);
       await this.debugFindText();
       return false;
     }
