@@ -82,7 +82,7 @@ export class FacebookBot {
       }
     }
 
-    Log.info(`[FB] Text napsán: ${text}`);
+    // Log.info(`[FB] Text napsán: ${text}`);
   }
 
 
@@ -224,6 +224,18 @@ export class FacebookBot {
       const lookupPromises = CONFIG.submit_texts.map(async sendText => {
         const xpath = `//span[starts-with(normalize-space(.), "${sendText}")]`;
         const elements = await this.page.$x(xpath);
+
+        if (elements.length === 0) {
+          Log.warn(`[FB] Tlačítko "${sendText}" nebylo nalezeno.`);
+        } else {
+          Log.info(`[FB] Tlačítek "${sendText}" nalezeno: ${elements.length}`);
+          for (let i = 0; i < elements.length; i++) {
+            const text = await this.page.evaluate(el => el.textContent, elements[i]);
+            const className = await this.page.evaluate(el => el.className, elements[i]);
+            Log.debug(`[${sendText} #${i + 1}]`, `"${text}"`, `class="${className}"`);
+          }
+        }
+
         return elements.length > 0 ? { elements, sendText } : null;
       });
 
