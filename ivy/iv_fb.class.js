@@ -38,27 +38,23 @@ export class FacebookBot {
    * @param {object} options - Volby:
    *    - match: "startsWith" | "exact" | "contains"
    * @returns {Promise<ElementHandle[]>}
-   */
-  async _findByText(text, options = {}) {
-    try {
-      const { match = 'startsWith' } = options;
+   * Čeká na výskyt <span> s textem podle strategie (race-friendly)
+*/
+async _waitForText(text, options = {}) {
+  const { match = 'startsWith', timeout = 5000 } = options;
 
-      let xpath;
-      if (match === 'startsWith') {
-        xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-      } else if (match === 'exact') {
-        xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-      } else {
-        xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
-      }
-
-      return await this.page.$x(xpath);
-
-    } catch (err) {
-      Log.warn('[FB] _findByText selhalo:', err);
-      return [];
-    }
+  let xpath;
+  if (match === 'startsWith') {
+    xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+  } else if (match === 'exact') {
+    xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+  } else {
+    xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
   }
+
+  const selector = `xpath/${xpath}`;
+  return await this.page.waitForSelector(selector, { timeout }).catch(() => null);
+}
 
   async _checkTexts(text1, text2) {
     const t1 = await this._findByText(text1);
@@ -184,29 +180,27 @@ export class FacebookBot {
   }
 
   async newThing() {
-    try {
-      const promises = CONFIG.new_post_texts.map(text => {
-        const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
-        const selector = `xpath/${xpath}`;
-        return this.page.waitForSelector(selector, { timeout: 5000 })
-          .then(handle => ({ handle, text }))
-          .catch(() => null);
-      });
+  try {
+    const promises = CONFIG.new_post_texts.map(text => {
+      return this._waitForText(text, { match: 'startsWith', timeout: 5000 })
+        .then(handle => handle ? { handle, text } : null)
+        .catch(() => null);
+    });
 
-      const result = await Promise.race(promises);
-      if (result && result.handle) {
-        this.newThingElement = result.handle;
-        Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
-        return true;
-      }
-
-      throw new Error('Žádný z možných textů nebyl nalezen.');
-    } catch (err) {
-      Log.error('[FB] newThing()', err);
-      await this.debugFindText();
-      return false;
+    const result = await Promise.race(promises);
+    if (result && result.handle) {
+      this.newThingElement = result.handle;
+      Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
+      return true;
     }
+
+    throw new Error('Žádný z možných textů nebyl nalezen.');
+  } catch (err) {
+    Log.error('[FB] newThing()', err);
+    await this.debugFindText();
+    return false;
   }
+}
 
   async clickNewThing() {
     try {
