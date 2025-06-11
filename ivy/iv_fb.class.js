@@ -279,10 +279,14 @@ export class FacebookBot {
     try {
       // Obnovení this.page, pokud byl kontext ztracen (např. po přerenderování)
       if (!this.page || typeof this.page.$x !== 'function') {
+        if (!this.browser) {
+          Log.error('[FB] clickSendButton(): this.browser není definovaný.');
+          return false;
+        }
         const pages = await this.browser.pages();
         this.page = pages.at(-1);
         if (!this.page || typeof this.page.$x !== 'function') {
-          Log.warn('[FB] clickSendButton() selhal: this.page není připraven ani po obnovení.');
+          Log.warn('[FB] clickSendButton() selhal: stránku nelze obnovit.');
           return false;
         }
       }
