@@ -82,6 +82,7 @@ async function quotePost(user, fbBot) {
     }
 
     await fbBot.newThing();
+    await fbBot.clickNewThing();
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
     await fbBot.pasteStatement(postText);
     await fbBot.clickSendButton('Zveřejnit');
