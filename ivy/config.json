@@ -4,5 +4,12 @@
     "veřejný příspěvek",
     "Co se vám honí hlavou",
     "Podělte se se skupinou"
+  ],
+  "submit_texts": [
+    "Zveřejnit",
+    "Přidat",
+    "Post",
+    "Publikovat",
+    "Hotovo"
   ]
 }

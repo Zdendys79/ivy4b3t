@@ -186,35 +186,44 @@ export class FacebookBot {
 
       await wait.delay(10 * wait.timeout());
       await this._typeActive(text);
-
       Log.info(`[FB] Text vložen: ${text}`);
 
-      // ✅ Počkej, než se objeví tlačítko „Zveřejnit“ nebo jiné
       for (const sendText of CONFIG.submit_texts) {
-        const selector = `xpath//span[normalize-space(text())="${sendText}"]`;
+        const xpath = `//span[contains(normalize-space(.), "${sendText}")]`;
+        const selector = `xpath/${xpath}`;
+
         try {
           await this.page.waitForSelector(selector, {
             timeout: 5000,
             visible: true
           });
 
-          const [button] = await this.page.$$(selector);
-          if (!button) continue;
+          const buttons = await this.page.$$(selector);
+          for (const button of buttons) {
+            const isClickable = await this.page.evaluate(el => {
+              const style = window.getComputedStyle(el);
+              return (
+                style.visibility !== 'hidden' &&
+                style.display !== 'none' &&
+                style.pointerEvents !== 'none'
+              );
+            }, button);
 
-          // 🧠 Můžeš případně otestovat style nebo disable stav
-          await button.click();
-          await wait.delay(15 * wait.timeout());
+            if (isClickable) {
+              await button.click();
+              await wait.delay(15 * wait.timeout());
 
-          const stillVisible = await this._findByText(sendText);
-          if (stillVisible.length === 0) {
-            Log.info(`[FB] Příspěvek úspěšně vložen kliknutím na "${sendText}".`);
-            return true;
-          } else {
-            Log.warn(`[FB] Tlačítko "${sendText}" stále viditelné, něco se nepovedlo.`);
+              const stillVisible = await this._findByText(sendText);
+              if (stillVisible.length === 0) {
+                Log.info(`[FB] Příspěvek úspěšně vložen kliknutím na "${sendText}".`);
+                return true;
+              } else {
+                Log.warn(`[FB] Tlačítko "${sendText}" stále viditelné, něco se nepovedlo.`);
+              }
+            }
           }
-
         } catch (err) {
-          Log.warn(`[FB] Tlačítko "${sendText}" zatím neaktivní.`);
+          Log.warn(`[FB] Tlačítko "${sendText}" zatím neaktivní nebo nenalezeno.`);
         }
       }
 
