@@ -1,6 +1,7 @@
 {
   "branch": "main",
   "use_icons": false,
+  "debug_mode": true,
   "log_levels": {
     "main": "debug",
     "release": "info"
@@ -20,10 +21,20 @@
     "Podělte se se skupinou"
   ],
   "submit_texts": [
-    "Zveřejnit",
     "Přidat",
+    "Zveřejnit",
     "Post",
     "Publikovat",
     "Hotovo"
-  ]
+  ],
+  "human_behavior": {
+    "typing_mistakes_chance": 0.07,
+    "hesitation_chance": 0.3,
+    "reading_time_min": 2000,
+    "reading_time_max": 5000,
+    "hesitation_time_min": 3000,
+    "hesitation_time_max": 8000,
+    "review_time_min": 5000,
+    "review_time_max": 15000
+  }
 }

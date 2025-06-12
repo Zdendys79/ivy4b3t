@@ -278,56 +278,82 @@ export class FacebookBot {
   async clickSendButton() {
     try {
       if (!this.page || this.page.isClosed()) {
-        Log.error('[FB] clickSendButton() selhal: this.page není připraven.');
+        Log.error('[FB] Stránka není dostupná.');
         return false;
       }
 
       await this.bringToFront();
-      await wait.delay(1000);
 
-      Log.info('[FB] Čekám na aktivaci tlačítka po napsání textu...');
+      // Lidské chování - přečteme si co jsme napsali (krátká pauza)
+      Log.info('[FB] Kontrolujem napsaný text...');
+      await wait.delay(wait.timeout() * 2); // 1-2.4 sekundy
 
-      // Čekáme na změny v DOM
-      await wait.delay(2000);
+      // Čekáme až Facebook aktivuje tlačítko
+      Log.info('[FB] Čekám než se tlačítko aktivuje...');
+      await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
 
-      // Pokusíme se najít tlačítka několikrát
-      const maxAttempts = 3;
-      let attempt = 0;
+      // Najdeme tlačítko - jednoduše a lidsky
+      const spans = await this.page.$$('span');
+      Log.info(`[FB] Hledám odeslací tlačítko...`);
 
-      while (attempt < maxAttempts) {
-        attempt++;
-        Log.info(`[FB] Pokus ${attempt}/${maxAttempts} - hledám aktivní tlačítko...`);
+      for (const targetText of CONFIG.submit_texts) {
+        for (const span of spans) {
+          try {
+            const spanInfo = await this.page.evaluate(el => {
+              const text = el.textContent.trim();
+              const rect = el.getBoundingClientRect();
+              const button = el.closest('button, div[role="button"], [tabindex]');
 
-        const candidates = await this.findActiveSendButtons();
+              return {
+                text,
+                visible: rect.width > 0 && rect.height > 0,
+                hasButton: !!button,
+                isActionText: text.includes('k příspěvku') || text.includes('příspěvku')
+              };
+            }, span);
 
-        if (candidates.length > 0) {
-          const bestCandidate = this.selectBestCandidate(candidates);
+            // Hledáme přesně náš text, bez "k příspěvku"
+            if (spanInfo.text === targetText &&
+              spanInfo.visible &&
+              spanInfo.hasButton &&
+              !spanInfo.isActionText) {
 
-          if (bestCandidate) {
-            Log.info(`[FB] Nalezeno aktivní tlačítko: "${bestCandidate.text}"`);
+              Log.info(`[FB] Našel jsem tlačítko: "${targetText}"`);
 
-            const clickSuccess = await this.performClick(bestCandidate.element);
-            if (clickSuccess) {
-              return true;
+              // Lidské chování - krátké váhání před kliknutím
+              await wait.delay(800 + Math.random() * 1200); // 0.8-2 sekundy
+
+              // Klikneme
+              await span.click();
+              Log.info(`[FB] Kliknuto na "${targetText}".`);
+
+              // Čekáme na odeslání
+              await wait.delay(2000);
+
+              // Kontrola - pokud tlačítko zmizelo, bylo to úspěšné
+              const stillExists = await this.page.evaluate(el => {
+                return document.contains(el);
+              }, span).catch(() => false);
+
+              if (!stillExists) {
+                Log.success(`[FB] Příspěvek úspěšně odeslán!`);
+                return true;
+              }
             }
+          } catch (spanErr) {
+            // Element neexistuje, pokračujeme
           }
         }
-
-        // Krátké čekání před dalším pokusem
-        await wait.delay(2000);
       }
 
-      Log.warn('[FB] Nepodařilo se najít aktivní tlačítko po všech pokusech.');
-
-      // Fallback - zkusíme kliknout na jakékoli tlačítko s textem z naší konfigurace
-      return await this.fallbackClick();
+      Log.warn('[FB] Nepodařilo se najít odeslací tlačítko.');
+      return false;
 
     } catch (err) {
-      Log.error(`[FB] clickSendButton() chyba:`, err);
+      Log.error(`[FB] Chyba při odesílání:`, err);
       return false;
     }
   }
-
   async fallbackClick() {
     Log.info('[FB] Spouštím fallback klikání...');
 

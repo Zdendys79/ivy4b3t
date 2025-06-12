@@ -9,6 +9,7 @@
 import * as db from './iv_sql.js';
 import { IvMath } from './iv_math.class.js';
 import { Log } from './iv_log.class.js';
+import { isDebugMode } from './iv_debug.js';
 
 export async function runAction(user, fbBot, action_code) {
   switch (action_code) {
@@ -81,19 +82,57 @@ async function quotePost(user, fbBot) {
       return false;
     }
 
+    Log.info(`[${user.id}]`, 'Začínám psát citát...');
+
+    // Lidské chování - najdeme pole pro psaní
     await fbBot.newThing();
+    await wait.delay(wait.timeout()); // krátká pauza
+
     await fbBot.clickNewThing();
+    await wait.delay(wait.timeout() * 2); // čekáme než se otevře editor
+
+    // Připravíme text
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
+    Log.info(`[${user.id}]`, 'Píšu text citátu...');
+
+    // Napíšeme text (už je v něm lidské chování - překlepy, pauzy)
     await fbBot.pasteStatement(postText);
+
+    // Lidské chování - přečteme si co jsme napsali a možná něco opravíme
+    Log.info(`[${user.id}]`, 'Kontroluji napsaný text...');
+    await wait.delay(2000 + Math.random() * 3000); // 2-5 sekund čtení
+
+    // Občas si rozmyslíme a chvíli váhám před odesláním
+    if (Math.random() < 0.3) { // 30% šance na váhání
+      Log.info(`[${user.id}]`, 'Chvíli váhám...');
+      await wait.delay(3000 + Math.random() * 5000); // 3-8 sekund váhání
+    }
+
+    Log.info(`[${user.id}]`, 'Odesílám příspěvek...');
     const success = await fbBot.clickSendButton();
+
     if (!success) {
-      Log.error(`[FB] Příspěvek se nepodařilo odeslat.`);
+      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek.');
       return false;
     }
-    Log.success(`[FB] Citát zveřejněn.`);
 
+    Log.success(`[${user.id}]`, 'Citát byl úspěšně zveřejněn!');
+
+    // Uložíme do databáze
     await db.logUserAction(user.id, 'quote_post', quote.id, postText);
     await db.updateQuoteNextSeen(quote.id, 30);
+
+    // Lidské chování - chvíli si prohlédneme výsledek
+    Log.info(`[${user.id}]`, 'Prohlížím si zveřejněný příspěvek...');
+    await wait.delay(5000 + Math.random() * 10000); // 5-15 sekund
+
+    // DEBUG REŽIM podle config.json
+    if (isDebugMode()) {
+      Log.info(`[DEBUG]`, 'Debug režim (main): čekám 60 sekund pro kontrolu...');
+      await wait.delay(60000);
+    } else {
+      Log.info(`[RELEASE]`, 'Release režim (public): pokračuji normálně...');
+    }
 
     return true;
 
