@@ -121,9 +121,10 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
     return;
   }
 
-  const picked = await getRandomAction(user);
+  // Předáme akce do kola štěstí místo nového dotazu
+  const picked = await getRandomAction(actions);
   if (!picked) {
-    Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null (žádné definice).');
+    Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null.');
     return;
   }
 

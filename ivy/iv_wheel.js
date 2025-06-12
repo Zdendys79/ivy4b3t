@@ -27,19 +27,16 @@ export class Wheel {
 
 /**
  * Vrátí objekt { code, weight, min_minutes, max_minutes }
- * náhodně vybraný z těch řádků, které skutečně vrátí getUserActions(user.id).
+ * náhodně vybraný z předaných akcí (už nepotřebuje volat databázi).
  */
-export async function getRandomAction(user) {
-  // 1) getUserActions nyní vrací i min_minutes, max_minutes
-  const availableRows = await db.getUserActions(user.id);
-
-  if (!availableRows.length) {
-    console.warn('[iv_wheel] Žádné “dostupné” definice na výběr.');
+export async function getRandomAction(availableActions) {
+  if (!availableActions || !availableActions.length) {
+    console.warn('[iv_wheel] Žádné dostupné akce na výběr.');
     return null;
   }
 
-  // 2) Sestavíme „kolo“ přímo z availableRows
-  const wheelItems = availableRows.map(def => ({
+  // Sestavíme „kolo" přímo z předaných dat
+  const wheelItems = availableActions.map(def => ({
     code: def.action_code,
     weight: def.weight,
     min_minutes: def.min_minutes,
@@ -49,6 +46,6 @@ export async function getRandomAction(user) {
   const wheel = new Wheel(wheelItems);
   const pickedCode = wheel.pick();
 
-  // 3) Najdeme a vrátíme vybraný objekt
+  // Najdeme a vrátíme vybraný objekt
   return wheelItems.find(item => item.code === pickedCode) || null;
 }
