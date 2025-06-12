@@ -287,39 +287,11 @@ export class FacebookBot {
 
       Log.info('[FB] Čekám na aktivaci tlačítka po napsání textu...');
 
-      // 1. Čekáme na DOM mutace po napsání textu
-      await this.page.evaluate(() => {
-        return new Promise((resolve) => {
-          const observer = new MutationObserver((mutations) => {
-            // Sledujeme změny v DOM které mohou indikovat aktivaci tlačítka
-            const hasRelevantChanges = mutations.some(mutation =>
-              mutation.type === 'attributes' ||
-              mutation.type === 'childList'
-            );
-            if (hasRelevantChanges) {
-              observer.disconnect();
-              // Krátké čekání pro dokončení všech změn
-              setTimeout(resolve, 500);
-            }
-          });
+      // Čekáme na změny v DOM
+      await wait.delay(2000);
 
-          observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['disabled', 'aria-disabled', 'class', 'style']
-          });
-
-          // Fallback timeout
-          setTimeout(() => {
-            observer.disconnect();
-            resolve();
-          }, 3000);
-        });
-      });
-
-      // 2. Nyní hledáme aktivní tlačítka
-      const maxAttempts = 5;
+      // Pokusíme se najít tlačítka několikrát
+      const maxAttempts = 3;
       let attempt = 0;
 
       while (attempt < maxAttempts) {
@@ -342,20 +314,58 @@ export class FacebookBot {
         }
 
         // Krátké čekání před dalším pokusem
-        await wait.delay(1000);
-
-        // Força refresh DOM query
-        await this.page.evaluate(() => {
-          // Trigger reflow
-          document.body.offsetHeight;
-        });
+        await wait.delay(2000);
       }
 
       Log.warn('[FB] Nepodařilo se najít aktivní tlačítko po všech pokusech.');
-      return false;
+
+      // Fallback - zkusíme kliknout na jakékoli tlačítko s textem z naší konfigurace
+      return await this.fallbackClick();
 
     } catch (err) {
       Log.error(`[FB] clickSendButton() chyba:`, err);
+      return false;
+    }
+  }
+
+  async fallbackClick() {
+    Log.info('[FB] Spouštím fallback klikání...');
+
+    try {
+      // Jednoduchý fallback - najdi všechny span elementy a klikni na první "Přidat"
+      const spans = await this.page.$$('span');
+
+      for (const span of spans) {
+        try {
+          const text = await this.page.evaluate(el => el.textContent.trim(), span);
+
+          if (text === 'Přidat' || text === 'Zveřejnit') {
+            Log.info(`[FB] Fallback našel: "${text}"`);
+
+            // Zkusíme kliknout
+            await span.click();
+            await wait.delay(3000);
+
+            // Kontrola - pokud span zmizelo, pravděpodobně se to povedlo
+            const stillExists = await this.page.evaluate(el => {
+              return document.contains(el);
+            }, span).catch(() => false);
+
+            if (!stillExists) {
+              Log.success('[FB] Fallback kliknutí bylo úspěšné!');
+              return true;
+            }
+          }
+        } catch (spanErr) {
+          // Pokračujeme na další span
+        }
+      }
+
+      Log.warn('[FB] Fallback klikání nenašlo vhodné tlačítko.');
+      return false;
+
+    } catch (err) {
+      Log.error('[FB] Fallback klikání selhalo:', err);
       return false;
     }
   }
@@ -364,66 +374,151 @@ export class FacebookBot {
     const candidates = [];
 
     try {
-      // Hledáme všechny možné kombinace
-      const searchStrategies = [
-        // Strategie 1: Přímé hledání spans
-        {
-          method: 'xpath',
-          queries: CONFIG.submit_texts.map(text => `//span[normalize-space(text()) = "${text}"]`)
-        },
-        // Strategie 2: Hledání v buttonech
-        {
-          method: 'xpath',
-          queries: CONFIG.submit_texts.map(text => `//button//span[normalize-space(text()) = "${text}"]`)
-        },
-        // Strategie 3: Hledání podle aria-label
-        {
-          method: 'xpath',
-          queries: CONFIG.submit_texts.map(text => `//*[@aria-label="${text}" or @aria-label="Zveřejnit příspěvek"]`)
+      Log.info('[FB] Hledám tlačítka pomocí standardních selektorů...');
+
+      // Strategie 1: Hledání všech span elementů a filtrování podle textu
+      const allSpans = await this.page.$$('span');
+      Log.info(`[FB] Nalezeno ${allSpans.length} span elementů.`);
+
+      for (const span of allSpans) {
+        try {
+          const context = await this.page.evaluate(el => {
+            if (!el) return null;
+
+            const text = el.textContent.trim();
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            const button = el.closest('button, div[role="button"], [onclick], [tabindex]');
+
+            return {
+              text: text,
+              visible: rect.width > 0 && rect.height > 0,
+              enabled: !el.hasAttribute('disabled') &&
+                !el.hasAttribute('aria-disabled') &&
+                style.pointerEvents !== 'none',
+              hasButton: !!button,
+              buttonDisabled: button ? (
+                button.hasAttribute('disabled') ||
+                button.hasAttribute('aria-disabled') ||
+                button.getAttribute('aria-disabled') === 'true' ||
+                window.getComputedStyle(button).pointerEvents === 'none'
+              ) : false,
+              hasActionText: text.includes('k příspěvku') || text.includes('příspěvku'),
+              opacity: parseFloat(style.opacity || 1),
+              display: style.display,
+              visibility: style.visibility,
+              buttonAriaLabel: button ? button.getAttribute('aria-label') : null
+            };
+          }, span);
+
+          if (context && this.isTargetText(context.text) && this.isValidCandidate(context)) {
+            candidates.push({ element: span, context, text: context.text });
+            Log.info(`[FB] Nalezen kandidát: "${context.text}" (enabled: ${context.enabled}, buttonDisabled: ${context.buttonDisabled})`);
+          }
+        } catch (evalErr) {
+          // Tichá chyba - element už neexistuje
         }
+      }
+
+      // Strategie 2: Hledání buttonů s aria-label
+      const buttons = await this.page.$$('button, div[role="button"]');
+      Log.info(`[FB] Nalezeno ${buttons.length} button elementů.`);
+
+      for (const button of buttons) {
+        try {
+          const context = await this.page.evaluate(el => {
+            if (!el) return null;
+
+            const ariaLabel = el.getAttribute('aria-label') || '';
+            const text = el.textContent.trim();
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+
+            return {
+              text: ariaLabel || text,
+              ariaLabel: ariaLabel,
+              innerText: text,
+              visible: rect.width > 0 && rect.height > 0,
+              enabled: !el.hasAttribute('disabled') &&
+                !el.hasAttribute('aria-disabled') &&
+                el.getAttribute('aria-disabled') !== 'true' &&
+                style.pointerEvents !== 'none',
+              hasButton: true,
+              buttonDisabled: el.hasAttribute('disabled') ||
+                el.hasAttribute('aria-disabled') ||
+                el.getAttribute('aria-disabled') === 'true',
+              hasActionText: (ariaLabel + text).includes('k příspěvku') || (ariaLabel + text).includes('příspěvku'),
+              opacity: parseFloat(style.opacity || 1),
+              display: style.display,
+              visibility: style.visibility
+            };
+          }, button);
+
+          if (context &&
+            (this.isTargetText(context.ariaLabel) || this.isTargetText(context.innerText)) &&
+            this.isValidCandidate(context)) {
+            candidates.push({ element: button, context, text: context.ariaLabel || context.innerText });
+            Log.info(`[FB] Nalezen button kandidát: "${context.text}" (aria: "${context.ariaLabel}")`);
+          }
+        } catch (evalErr) {
+          // Tichá chyba
+        }
+      }
+
+      // Strategie 3: Pokročilé hledání v compose area
+      const composeSelectors = [
+        '[data-testid*="composer"] button',
+        '[data-pagelet="composer"] button',
+        '.composer button',
+        '[role="dialog"] button',
+        '[data-testid*="post"] button'
       ];
 
-      for (const strategy of searchStrategies) {
-        for (const query of strategy.queries) {
-          try {
-            const elements = await this.page.$x(query);
-
-            for (const element of elements) {
+      for (const selector of composeSelectors) {
+        try {
+          const elements = await this.page.$$(selector);
+          for (const element of elements) {
+            try {
               const context = await this.page.evaluate(el => {
-                if (!el) return null;
-
+                const text = el.textContent.trim();
+                const ariaLabel = el.getAttribute('aria-label') || '';
                 const rect = el.getBoundingClientRect();
                 const style = window.getComputedStyle(el);
-                const button = el.closest('button, div[role="button"], [onclick], [tabindex]');
 
                 return {
-                  text: el.textContent.trim(),
+                  text: text || ariaLabel,
+                  ariaLabel: ariaLabel,
                   visible: rect.width > 0 && rect.height > 0,
                   enabled: !el.hasAttribute('disabled') &&
                     !el.hasAttribute('aria-disabled') &&
                     style.pointerEvents !== 'none',
-                  hasButton: !!button,
-                  buttonDisabled: button ? button.hasAttribute('disabled') ||
-                    button.hasAttribute('aria-disabled') ||
-                    button.getAttribute('aria-disabled') === 'true' : false,
-                  hasActionText: el.textContent.includes('k příspěvku'),
+                  hasButton: true,
+                  buttonDisabled: false,
+                  hasActionText: false,
                   opacity: parseFloat(style.opacity || 1),
                   display: style.display,
                   visibility: style.visibility
                 };
               }, element);
 
-              if (context && this.isValidCandidate(context)) {
-                candidates.push({ element, context, text: context.text });
+              if (context && this.isTargetText(context.text) && this.isValidCandidate(context)) {
+                // Kontrola, zda už není v candidates
+                const exists = candidates.some(c => c.text === context.text);
+                if (!exists) {
+                  candidates.push({ element, context, text: context.text });
+                  Log.info(`[FB] Nalezen compose kandidát: "${context.text}"`);
+                }
               }
+            } catch (evalErr) {
+              // Tichá chyba
             }
-          } catch (queryErr) {
-            Log.debug(`[FB] Query "${query}" selhala: ${queryErr.message}`);
           }
+        } catch (selectorErr) {
+          Log.debug(`[FB] Selector "${selector}" selhal: ${selectorErr.message}`);
         }
       }
 
-      Log.info(`[FB] Nalezeno ${candidates.length} kandidátů na tlačítka.`);
+      Log.info(`[FB] Celkem nalezeno ${candidates.length} kandidátů na tlačítka.`);
       return candidates;
 
     } catch (err) {
@@ -432,6 +527,25 @@ export class FacebookBot {
     }
   }
 
+  isTargetText(text) {
+    if (!text) return false;
+    const normalizedText = text.trim().toLowerCase();
+    const targets = CONFIG.submit_texts.map(t => t.toLowerCase());
+    return targets.includes(normalizedText);
+  }
+
+  isValidCandidate(context) {
+    return (
+      context.visible &&
+      context.enabled &&
+      !context.buttonDisabled &&
+      context.hasButton &&
+      !context.hasActionText &&
+      context.opacity > 0.3 &&
+      context.display !== 'none' &&
+      context.visibility !== 'hidden'
+    );
+  }
   isValidCandidate(context) {
     return (
       context.visible &&
