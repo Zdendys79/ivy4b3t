@@ -85,7 +85,7 @@ async function quotePost(user, fbBot) {
     await fbBot.clickNewThing();
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
     await fbBot.pasteStatement(postText);
-    const success = await bot.clickSendButton();
+    const success = await fbBot.clickSendButton();
     if (!success) {
       Log.error(`[FB] Příspěvek se nepodařilo odeslat.`);
       return false;
