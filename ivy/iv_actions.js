@@ -7,6 +7,7 @@
  */
 
 import * as db from './iv_sql.js';
+import * as wait from './iv_wait.js';
 import { IvMath } from './iv_math.class.js';
 import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';

@@ -3,7 +3,7 @@
  * Umístění: ~/ivy/iv_sql.js
  *
  * Popis: Poskytuje funkce pro komunikaci s databází MariaDB pomocí předdefinovaných SQL dotazů.
- * Používá connection pool. Obsahuje obalové metody safeQueryFirst, safeQueryAll, safeExecute.
+ * Používá connection pool. Obsahuje obalové metody s podmíněným logováním podle debug režimu.
  */
 
 import os from 'node:os';
@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import mysql from 'mysql2/promise';
 import rawQueries from './sql/iv_sql_queries.js';
 import { Log } from './iv_log.class.js';
+import { isDebugMode } from './iv_debug.js';
 
 const hostname = os.hostname();
 const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
@@ -32,50 +33,143 @@ const pool = mysql.createPool({
 });
 
 async function query(query_id, data = []) {
+  const debugMode = isDebugMode();
   let success = false;
   let count = 0;
   let results = false;
+
+  if (debugMode) {
+    Log.debug('[SQL]', `Executing query: ${query_id} with params: ${JSON.stringify(data)}`);
+  }
+
   do {
     try {
       const [rows] = await pool.execute(queries[query_id], data);
       results = rows;
       success = true;
+
+      if (debugMode) {
+        Log.debug('[SQL]', `Query ${query_id} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
+      }
     } catch (err) {
-      Log.error('[SQL]', new Error(`[${count}] sql.query "${query_id}" failed\n${queries[query_id]}\n${err.message}`));
-      await new Promise(resolve => setTimeout(resolve, 5000));
       count++;
+
+      if (debugMode) {
+        // Debug režim - podrobné informace
+        Log.error('[SQL][DEBUG]', `Attempt ${count}/3 failed for query: ${query_id}`);
+        Log.error('[SQL][DEBUG]', `SQL: ${queries[query_id]}`);
+        Log.error('[SQL][DEBUG]', `Params: ${JSON.stringify(data)}`);
+        Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
+        if (err.code) Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
+        if (err.sqlState) Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);
+      } else {
+        // Ostrý režim - jen základní info
+        Log.error('[SQL]', `Query ${query_id} failed (attempt ${count}/3): ${err.code || err.message}`);
+      }
+
+      if (count < 3) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * count)); // 1s, 2s, 3s
+      }
     }
   } while (!success && count < 3);
+
+  if (!success) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `Query ${query_id} completely failed after 3 attempts`);
+    } else {
+      Log.error('[SQL]', `Query ${query_id} failed permanently`);
+    }
+  }
+
   return success ? results : false;
 }
 
 async function safeQueryFirst(query_id, params = []) {
+  const debugMode = isDebugMode();
+
   try {
+    if (debugMode) {
+      Log.debug('[SQL]', `safeQueryFirst: ${query_id}`);
+    }
+
     const rows = await query(query_id, params);
-    if (!rows || !rows.length || !rows[0]) return false;
+    if (!rows || !rows.length || !rows[0]) {
+      if (debugMode) {
+        Log.debug('[SQL]', `safeQueryFirst ${query_id} returned no results`);
+      }
+      return false;
+    }
+
+    if (debugMode) {
+      Log.debug('[SQL]', `safeQueryFirst ${query_id} returned 1 row`);
+    }
+
     return rows[0];
   } catch (err) {
-    Log.error('[SQL][safeQueryFirst]', err);
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `safeQueryFirst ${query_id} exception: ${err.message}`);
+    } else {
+      Log.error('[SQL]', `safeQueryFirst ${query_id} failed`);
+    }
     return false;
   }
 }
 
 async function safeQueryAll(query_id, params = []) {
+  const debugMode = isDebugMode();
+
   try {
+    if (debugMode) {
+      Log.debug('[SQL]', `safeQueryAll: ${query_id}`);
+    }
+
     const rows = await query(query_id, params);
+    const resultCount = rows ? rows.length : 0;
+
+    if (debugMode) {
+      Log.debug('[SQL]', `safeQueryAll ${query_id} returned ${resultCount} rows`);
+    }
+
     return rows || [];
   } catch (err) {
-    Log.error('[SQL][safeQueryAll]', err);
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `safeQueryAll ${query_id} exception: ${err.message}`);
+    } else {
+      Log.error('[SQL]', `safeQueryAll ${query_id} failed`);
+    }
     return [];
   }
 }
 
 async function safeExecute(query_id, params = []) {
+  const debugMode = isDebugMode();
+
   try {
-    await query(query_id, params);
-    return true;
+    if (debugMode) {
+      Log.debug('[SQL]', `safeExecute: ${query_id}`);
+    }
+
+    const result = await query(query_id, params);
+
+    if (result !== false) {
+      if (debugMode) {
+        Log.debug('[SQL]', `safeExecute ${query_id} successful`);
+      }
+      return true;
+    } else {
+      if (debugMode) {
+        Log.error('[SQL][DEBUG]', `safeExecute ${query_id} returned false`);
+      } else {
+        Log.error('[SQL]', `safeExecute ${query_id} failed`);
+      }
+      return false;
+    }
   } catch (err) {
-    Log.error('[SQL][safeExecute]', err);
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `safeExecute ${query_id} exception: ${err.message}`);
+    } else {
+      Log.error('[SQL]', `safeExecute ${query_id} failed`);
+    }
     return false;
   }
 }
@@ -107,25 +201,110 @@ export const getRandomQuote = (user_id) => safeQueryFirst('get_random_quote', [u
 export const getUserActions = user_id => safeQueryAll('get_user_actions', [user_id, user_id]);
 export const updateUserActionPlan = (user_id, action_code, randMinutes) => safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
 export const initUserActionPlan = (user_id) => safeExecute('init_user_action_plan', [user_id]);
-export const logUserAction = (account_id, action_code, reference_id, text) => safeExecute('insert_to_action_log', [account_id, action_code, reference_id, text]);
-export const systemLog = (title, text, data = {}) => safeExecute('insert_to_system_log', [os.hostname(), title, text, JSON.stringify(data)]);
-export const userLog = (user, action_code, reference_id, text) => logUserAction(user.id, action_code, reference_id, text);
 export const updateQuoteNextSeen = (quote_id, days) => safeExecute('update_quote_next_seen', [days, quote_id]);
 
 export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
   .then(row => row && row.time ? new Date(row.time) : false);
 
+// Speciální funkce s vlastním logováním
+export async function logUserAction(account_id, action_code, reference_id, text) {
+  const debugMode = isDebugMode();
+
+  if (debugMode) {
+    Log.debug('[SQL]', `logUserAction: user=${account_id}, action=${action_code}, ref=${reference_id}`);
+  }
+
+  const result = await safeExecute('insert_to_action_log', [account_id, action_code, reference_id, text]);
+
+  if (result) {
+    if (debugMode) {
+      Log.success('[SQL]', `Action logged: ${action_code} for user ${account_id}`);
+    } else {
+      Log.info('[SQL]', `Action logged: ${action_code}`);
+    }
+  } else {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `Failed to log action: ${action_code} for user ${account_id}`);
+    } else {
+      Log.error('[SQL]', `Failed to log action: ${action_code}`);
+    }
+  }
+
+  return result;
+}
+
+export async function systemLog(title, text, data = {}) {
+  const debugMode = isDebugMode();
+
+  if (debugMode) {
+    Log.debug('[SQL]', `systemLog: ${title}`);
+  }
+
+  const result = await safeExecute('insert_to_system_log', [os.hostname(), title, text, JSON.stringify(data)]);
+
+  if (!result && debugMode) {
+    Log.error('[SQL][DEBUG]', `Failed to write system log: ${title}`);
+  }
+
+  return result;
+}
+
+export const userLog = (user, action_code, reference_id, text) => logUserAction(user.id, action_code, reference_id, text);
+
 export async function heartBeat(user_id, group_id, version_code) {
+  const debugMode = isDebugMode();
   const data = [hostname, user_id, group_id, version_code, user_id, group_id, version_code];
+
+  if (debugMode) {
+    Log.debug('[SQL]', `Heartbeat: user=${user_id}, group=${group_id}, version=${version_code}`);
+  }
+
   return await safeExecute("heartbeat", data);
 }
 
 export async function updateUserWorktime(user, worktime) {
+  const debugMode = isDebugMode();
+
+  if (debugMode) {
+    Log.debug('[SQL]', `Updating worktime for user ${user.id}: +${worktime} minutes`);
+  }
+
   const update1 = await safeExecute("update_user_worktime", [worktime, user.id]);
   const log = await userLog(user, 4, worktime, `Updated worktime +${worktime} minutes.`);
+
+  if (debugMode) {
+    Log.debug('[SQL]', `Worktime update result: ${update1 && log}`);
+  }
+
   return update1 && log;
 }
 
-// debug functions
-export const resetQuotePostDebug = () => safeExecute('reset_quote_post_debug');
+// Debug functions
+export const resetQuotePostDebug = () => {
+  const debugMode = isDebugMode();
+  if (debugMode) {
+    Log.debug('[SQL]', 'Resetting quote_post debug');
+  }
+  return safeExecute('reset_quote_post_debug');
+};
 
+// Enhanced function for getting production version with better logging
+export async function getProductionVersionCode() {
+  const debugMode = isDebugMode();
+
+  if (debugMode) {
+    Log.debug('[SQL]', 'Getting production version code');
+  }
+
+  const result = await safeQueryFirst("get_version_code");
+
+  if (debugMode) {
+    if (result) {
+      Log.debug('[SQL]', `Production version: ${result.code}`);
+    } else {
+      Log.error('[SQL][DEBUG]', 'Failed to get production version code');
+    }
+  }
+
+  return result || { code: 'unknown' };
+}
