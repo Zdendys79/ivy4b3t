@@ -12,18 +12,32 @@ import { Log } from './iv_log.class.js';
 
 const CONFIG_PATH = path.resolve('./config.json');
 
-export function isDebugMode() {
-  try {
-    const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-    const branch = config.branch || 'main';
-    const debugMode = (branch === 'main');
+let _debugMode = null;
+let _debugLogged = false;
 
-    Log.info('[DEBUG]', `Větev: ${branch}, Debug režim: ${debugMode ? 'ZAPNUT' : 'VYPNUT'}`);
-    return debugMode;
-  } catch (err) {
-    Log.error('[DEBUG]', `Chyba při čtení config.json: ${err.message}`);
-    return true; // fallback na debug režim
+export function isDebugMode() {
+  if (_debugMode === null) {
+    try {
+      const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+      const branch = config.branch || 'main';
+      _debugMode = (branch === 'main');
+
+      // Log pouze jednou při první detekci
+      if (!_debugLogged) {
+        Log.info('[DEBUG]', `Větev: ${branch}, Debug režim: ${_debugMode ? 'ZAPNUT' : 'VYPNUT'}`);
+        _debugLogged = true;
+      }
+    } catch (err) {
+      Log.error('[DEBUG]', `Chyba při čtení config.json: ${err.message}`);
+      _debugMode = true; // fallback na debug režim
+    }
   }
+  return _debugMode;
+}
+
+export function resetDebugCache() {
+  _debugMode = null;
+  _debugLogged = false;
 }
 
 export function getDebugPause() {

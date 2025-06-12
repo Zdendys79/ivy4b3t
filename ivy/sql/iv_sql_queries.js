@@ -130,11 +130,6 @@ UPDATE LOW_PRIORITY fb_users
 SET next_worktime = NOW() + INTERVAL ? MINUTE
 WHERE id = ?`,
 
-  update_worktime_to_tomorow: `
-UPDATE LOW_PRIORITY fb_users
-SET next_worktime = NOW() + INTERVAL 12 HOUR
-WHERE id = ?`,
-
   update_user_next_statement: `
 UPDATE LOW_PRIORITY fb_users
 SET next_statement = NOW() + INTERVAL ? HOUR

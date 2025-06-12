@@ -184,7 +184,6 @@ export const getUICommand = () => safeQueryFirst("get_ui_command", [hostname]);
 export const uICommandSolved = id => safeExecute("ui_command_solved", [id]);
 export const uICommandAccepted = id => safeExecute("ui_command_accepted", [id]);
 export const getRandomReferer = () => safeQueryFirst("get_random_referer");
-export const setWorktimeToTomorow = user_id => safeExecute("update_worktime_to_tomorow", [user_id]);
 export const getRecentlyLogedUserFromMyNeighborhood = () => safeQueryFirst("get_recently_loged_user_from_neighborhood", [hostname, 30]);
 export const lockAccount = (user_id) => safeExecute("lock_account", [user_id]);
 export const userLogedToFB = (user_id) => safeExecute("update_user_loged_to_fb", [hostname, user_id, user_id]);

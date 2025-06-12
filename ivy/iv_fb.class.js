@@ -328,7 +328,7 @@ export class FacebookBot {
               Log.info(`[FB] Kliknuto na "${targetText}".`);
 
               // Čekáme na odeslání
-              await wait.delay(2000);
+              await wait.delay(10 * wait.timeout(), false);
 
               // Kontrola - pokud tlačítko zmizelo, bylo to úspěšné
               const stillExists = await this.page.evaluate(el => {
