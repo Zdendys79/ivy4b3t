@@ -282,54 +282,84 @@ export class FacebookBot {
         return false;
       }
 
-      const allMatches = [];
+      // Hledáme všechny kandidáty na tlačítka
+      const candidates = [];
 
       for (const sendText of CONFIG.submit_texts) {
-        const matches = await this._findByText(sendText, { match: 'contains' });
+        const matches = await this._findByText(sendText, { match: 'exact' });
 
         if (matches.length > 0) {
           Log.info(`[FB] Nalezeno ${matches.length} prvků obsahujících "${sendText}".`);
-          allMatches.push({ sendText, matches });
+
+          // Přidáme každý nalezený element s jeho kontextovými informacemi
+          for (const match of matches) {
+            const context = await this.page.evaluate(el => {
+              const parent = el.closest('div[role="button"], button, [onclick]');
+              const hasActionText = el.textContent.includes('k příspěvku');
+              return {
+                isButton: !!parent,
+                hasActionText,
+                text: el.textContent.trim(),
+                parentTag: parent?.tagName || 'NONE'
+              };
+            }, match);
+
+            candidates.push({ element: match, sendText, context });
+          }
         } else {
           Log.debug(`[FB] Žádný prvek pro text "${sendText}" nenalezen.`);
         }
       }
 
-      if (allMatches.length === 0) {
+      if (candidates.length === 0) {
         Log.warn('[FB] Žádný kandidát na tlačítko nebyl nalezen.');
         await this.debugFindText();
         return false;
       }
 
-      // Vezmeme poslední prvek z prvního nalezeného výrazu (např. Přidat)
-      const { sendText, matches } = allMatches[0];
-      const button = matches.at(-1);
+      // Filtrujeme kandidáty - preferujeme krátký text "Přidat" bez kontextu "k příspěvku"
+      const filteredCandidates = candidates.filter(c =>
+        !c.context.hasActionText &&
+        c.context.isButton &&
+        c.sendText === 'Přidat'
+      );
 
+      // Vybereme nejlepší kandidát
+      const finalCandidate = filteredCandidates.length > 0
+        ? filteredCandidates[filteredCandidates.length - 1] // poslední z filtrovaných
+        : candidates[candidates.length - 1]; // nebo poslední z všech
+
+      Log.info(`[FB] Vybírám tlačítko: "${finalCandidate.sendText}" (kontext: ${JSON.stringify(finalCandidate.context)})`);
+
+      // Kontrola kliknutelnosti
       const isClickable = await this.page.evaluate(el => {
         const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
         return (
           style.visibility !== 'hidden' &&
           style.display !== 'none' &&
-          style.pointerEvents !== 'none'
+          style.pointerEvents !== 'none' &&
+          rect.width > 0 && rect.height > 0
         );
-      }, button);
+      }, finalCandidate.element);
 
       if (!isClickable) {
-        Log.warn(`[FB] Prvek "${sendText}" byl nalezen, ale není kliknutelný.`);
+        Log.warn(`[FB] Prvek "${finalCandidate.sendText}" byl nalezen, ale není kliknutelný.`);
         return false;
       }
 
-      await button.click();
+      // Klikneme na vybraný element
+      await finalCandidate.element.click();
       await wait.delay(10 * wait.timeout());
 
       // Kontrola zda tlačítko po kliknutí zmizelo
-      const remains = await this._findByText(sendText, { match: 'contains' });
+      const remains = await this._findByText(finalCandidate.sendText, { match: 'exact' });
       if (remains.length > 0) {
-        Log.warn(`[FB] Tlačítko "${sendText}" zůstává viditelné po kliknutí.`);
+        Log.warn(`[FB] Tlačítko "${finalCandidate.sendText}" zůstává viditelné po kliknutí.`);
         return false;
       }
 
-      Log.success(`[FB] Kliknutí na tlačítko "${sendText}" proběhlo úspěšně.`);
+      Log.success(`[FB] Kliknutí na tlačítko "${finalCandidate.sendText}" proběhlo úspěšně.`);
       return true;
 
     } catch (err) {
