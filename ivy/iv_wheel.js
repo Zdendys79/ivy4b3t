@@ -32,9 +32,6 @@ export class Wheel {
 export async function getRandomAction(user) {
   // 1) getUserActions nyní vrací i min_minutes, max_minutes
   const availableRows = await db.getUserActions(user.id);
-  console.log(`--- DEBUG: getUserActions pro user.id=${user.id} ---`);
-  console.log(availableRows.map(r => r.action_code).join(', ') || 'Žádné');
-  console.log('--- konec DEBUG ---');
 
   if (!availableRows.length) {
     console.warn('[iv_wheel] Žádné “dostupné” definice na výběr.');

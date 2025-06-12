@@ -277,94 +277,270 @@ export class FacebookBot {
 
   async clickSendButton() {
     try {
-      if (!this.page || typeof this.page.$x !== 'function') {
+      if (!this.page || this.page.isClosed()) {
         Log.error('[FB] clickSendButton() selhal: this.page není připraven.');
         return false;
       }
 
-      // Hledáme všechny kandidáty na tlačítka
-      const candidates = [];
+      await this.bringToFront();
+      await wait.delay(1000);
 
-      for (const sendText of CONFIG.submit_texts) {
-        const matches = await this._findByText(sendText, { match: 'exact' });
+      Log.info('[FB] Čekám na aktivaci tlačítka po napsání textu...');
 
-        if (matches.length > 0) {
-          Log.info(`[FB] Nalezeno ${matches.length} prvků obsahujících "${sendText}".`);
+      // 1. Čekáme na DOM mutace po napsání textu
+      await this.page.evaluate(() => {
+        return new Promise((resolve) => {
+          const observer = new MutationObserver((mutations) => {
+            // Sledujeme změny v DOM které mohou indikovat aktivaci tlačítka
+            const hasRelevantChanges = mutations.some(mutation =>
+              mutation.type === 'attributes' ||
+              mutation.type === 'childList'
+            );
+            if (hasRelevantChanges) {
+              observer.disconnect();
+              // Krátké čekání pro dokončení všech změn
+              setTimeout(resolve, 500);
+            }
+          });
 
-          // Přidáme každý nalezený element s jeho kontextovými informacemi
-          for (const match of matches) {
-            const context = await this.page.evaluate(el => {
-              const parent = el.closest('div[role="button"], button, [onclick]');
-              const hasActionText = el.textContent.includes('k příspěvku');
-              return {
-                isButton: !!parent,
-                hasActionText,
-                text: el.textContent.trim(),
-                parentTag: parent?.tagName || 'NONE'
-              };
-            }, match);
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['disabled', 'aria-disabled', 'class', 'style']
+          });
 
-            candidates.push({ element: match, sendText, context });
+          // Fallback timeout
+          setTimeout(() => {
+            observer.disconnect();
+            resolve();
+          }, 3000);
+        });
+      });
+
+      // 2. Nyní hledáme aktivní tlačítka
+      const maxAttempts = 5;
+      let attempt = 0;
+
+      while (attempt < maxAttempts) {
+        attempt++;
+        Log.info(`[FB] Pokus ${attempt}/${maxAttempts} - hledám aktivní tlačítko...`);
+
+        const candidates = await this.findActiveSendButtons();
+
+        if (candidates.length > 0) {
+          const bestCandidate = this.selectBestCandidate(candidates);
+
+          if (bestCandidate) {
+            Log.info(`[FB] Nalezeno aktivní tlačítko: "${bestCandidate.text}"`);
+
+            const clickSuccess = await this.performClick(bestCandidate.element);
+            if (clickSuccess) {
+              return true;
+            }
           }
-        } else {
-          Log.debug(`[FB] Žádný prvek pro text "${sendText}" nenalezen.`);
+        }
+
+        // Krátké čekání před dalším pokusem
+        await wait.delay(1000);
+
+        // Força refresh DOM query
+        await this.page.evaluate(() => {
+          // Trigger reflow
+          document.body.offsetHeight;
+        });
+      }
+
+      Log.warn('[FB] Nepodařilo se najít aktivní tlačítko po všech pokusech.');
+      return false;
+
+    } catch (err) {
+      Log.error(`[FB] clickSendButton() chyba:`, err);
+      return false;
+    }
+  }
+
+  async findActiveSendButtons() {
+    const candidates = [];
+
+    try {
+      // Hledáme všechny možné kombinace
+      const searchStrategies = [
+        // Strategie 1: Přímé hledání spans
+        {
+          method: 'xpath',
+          queries: CONFIG.submit_texts.map(text => `//span[normalize-space(text()) = "${text}"]`)
+        },
+        // Strategie 2: Hledání v buttonech
+        {
+          method: 'xpath',
+          queries: CONFIG.submit_texts.map(text => `//button//span[normalize-space(text()) = "${text}"]`)
+        },
+        // Strategie 3: Hledání podle aria-label
+        {
+          method: 'xpath',
+          queries: CONFIG.submit_texts.map(text => `//*[@aria-label="${text}" or @aria-label="Zveřejnit příspěvek"]`)
+        }
+      ];
+
+      for (const strategy of searchStrategies) {
+        for (const query of strategy.queries) {
+          try {
+            const elements = await this.page.$x(query);
+
+            for (const element of elements) {
+              const context = await this.page.evaluate(el => {
+                if (!el) return null;
+
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                const button = el.closest('button, div[role="button"], [onclick], [tabindex]');
+
+                return {
+                  text: el.textContent.trim(),
+                  visible: rect.width > 0 && rect.height > 0,
+                  enabled: !el.hasAttribute('disabled') &&
+                    !el.hasAttribute('aria-disabled') &&
+                    style.pointerEvents !== 'none',
+                  hasButton: !!button,
+                  buttonDisabled: button ? button.hasAttribute('disabled') ||
+                    button.hasAttribute('aria-disabled') ||
+                    button.getAttribute('aria-disabled') === 'true' : false,
+                  hasActionText: el.textContent.includes('k příspěvku'),
+                  opacity: parseFloat(style.opacity || 1),
+                  display: style.display,
+                  visibility: style.visibility
+                };
+              }, element);
+
+              if (context && this.isValidCandidate(context)) {
+                candidates.push({ element, context, text: context.text });
+              }
+            }
+          } catch (queryErr) {
+            Log.debug(`[FB] Query "${query}" selhala: ${queryErr.message}`);
+          }
         }
       }
 
-      if (candidates.length === 0) {
-        Log.warn('[FB] Žádný kandidát na tlačítko nebyl nalezen.');
-        await this.debugFindText();
-        return false;
-      }
-
-      // Filtrujeme kandidáty - preferujeme krátký text "Přidat" bez kontextu "k příspěvku"
-      const filteredCandidates = candidates.filter(c =>
-        !c.context.hasActionText &&
-        c.context.isButton &&
-        c.sendText === 'Přidat'
-      );
-
-      // Vybereme nejlepší kandidát
-      const finalCandidate = filteredCandidates.length > 0
-        ? filteredCandidates[filteredCandidates.length - 1] // poslední z filtrovaných
-        : candidates[candidates.length - 1]; // nebo poslední z všech
-
-      Log.info(`[FB] Vybírám tlačítko: "${finalCandidate.sendText}" (kontext: ${JSON.stringify(finalCandidate.context)})`);
-
-      // Kontrola kliknutelnosti
-      const isClickable = await this.page.evaluate(el => {
-        const style = window.getComputedStyle(el);
-        const rect = el.getBoundingClientRect();
-        return (
-          style.visibility !== 'hidden' &&
-          style.display !== 'none' &&
-          style.pointerEvents !== 'none' &&
-          rect.width > 0 && rect.height > 0
-        );
-      }, finalCandidate.element);
-
-      if (!isClickable) {
-        Log.warn(`[FB] Prvek "${finalCandidate.sendText}" byl nalezen, ale není kliknutelný.`);
-        return false;
-      }
-
-      // Klikneme na vybraný element
-      await finalCandidate.element.click();
-      await wait.delay(10 * wait.timeout());
-
-      // Kontrola zda tlačítko po kliknutí zmizelo
-      const remains = await this._findByText(finalCandidate.sendText, { match: 'exact' });
-      if (remains.length > 0) {
-        Log.warn(`[FB] Tlačítko "${finalCandidate.sendText}" zůstává viditelné po kliknutí.`);
-        return false;
-      }
-
-      Log.success(`[FB] Kliknutí na tlačítko "${finalCandidate.sendText}" proběhlo úspěšně.`);
-      return true;
+      Log.info(`[FB] Nalezeno ${candidates.length} kandidátů na tlačítka.`);
+      return candidates;
 
     } catch (err) {
-      Log.error(`[FB] clickSendButton()`, err);
-      await this.debugFindText();
+      Log.error(`[FB] Chyba při hledání tlačítek: ${err}`);
+      return [];
+    }
+  }
+
+  isValidCandidate(context) {
+    return (
+      context.visible &&
+      context.enabled &&
+      !context.buttonDisabled &&
+      context.hasButton &&
+      !context.hasActionText &&
+      context.opacity > 0.5 &&
+      context.display !== 'none' &&
+      context.visibility !== 'hidden'
+    );
+  }
+
+  selectBestCandidate(candidates) {
+    // Prioritizujeme kandidáty podle preferencí
+    const priorities = ['Přidat', 'Zveřejnit', 'Post', 'Publikovat', 'Hotovo'];
+
+    for (const priority of priorities) {
+      const matching = candidates.filter(c => c.text === priority);
+      if (matching.length > 0) {
+        // Vrátíme poslední matching element (často je to ten správný)
+        return matching[matching.length - 1];
+      }
+    }
+
+    // Fallback - vrátíme poslední dostupný kandidát
+    return candidates.length > 0 ? candidates[candidates.length - 1] : null;
+  }
+
+  async performClick(element) {
+    try {
+      // Dvojitá kontrola před kliknutím
+      const stillValid = await this.page.evaluate(el => {
+        if (!el) return false;
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        const button = el.closest('button, div[role="button"], [onclick], [tabindex]');
+
+        return rect.width > 0 &&
+          rect.height > 0 &&
+          style.pointerEvents !== 'none' &&
+          (!button || !button.hasAttribute('disabled'));
+      }, element);
+
+      if (!stillValid) {
+        Log.warn('[FB] Element už není platný pro kliknutí.');
+        return false;
+      }
+
+      // Scroll element into view
+      await this.page.evaluate(el => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, element);
+
+      await wait.delay(500);
+
+      // Zkusíme několik metod kliknutí
+      const clickMethods = [
+        // Metoda 1: Běžné kliknutí
+        async () => {
+          await element.click();
+          Log.info('[FB] Použito běžné kliknutí.');
+        },
+        // Metoda 2: JavaScript kliknutí
+        async () => {
+          await this.page.evaluate(el => el.click(), element);
+          Log.info('[FB] Použito JavaScript kliknutí.');
+        },
+        // Metoda 3: Kliknutí na parent button
+        async () => {
+          await this.page.evaluate(el => {
+            const button = el.closest('button, div[role="button"]');
+            if (button) button.click();
+          }, element);
+          Log.info('[FB] Použito kliknutí na parent button.');
+        }
+      ];
+
+      for (const [index, clickMethod] of clickMethods.entries()) {
+        try {
+          await clickMethod();
+          await wait.delay(2000);
+
+          // Kontrola úspěchu - hledáme zda se objevilo nějaké potvrzení nebo zmizely elementy
+          const success = await this.page.evaluate(() => {
+            // Hledáme indikátory úspěšného odeslání
+            const indicators = [
+              document.querySelector('[data-testid="toast"]'), // Toast notifikace
+              document.querySelector('.feedback'), // Feedback message
+              !document.querySelector('span:contains("Přidat")'), // Tlačítko zmizelo
+            ];
+            return indicators.some(Boolean);
+          });
+
+          if (success) {
+            Log.success(`[FB] Kliknutí metodou ${index + 1} bylo úspěšné.`);
+            return true;
+          }
+
+        } catch (clickErr) {
+          Log.warn(`[FB] Metoda kliknutí ${index + 1} selhala: ${clickErr.message}`);
+        }
+      }
+
+      Log.warn('[FB] Všechny metody kliknutí selhaly.');
+      return false;
+
+    } catch (err) {
+      Log.error(`[FB] Chyba při klikání: ${err}`);
       return false;
     }
   }
@@ -396,8 +572,6 @@ export class FacebookBot {
       return false;
     }
   }
-
-  // Pokračování třídy FacebookBot
 
   async openGroup(group) {
     await this.bringToFront();
