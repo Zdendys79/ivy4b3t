@@ -1,9 +1,9 @@
 /**
- * Soubor: iv_worker.js
+ * Název souboru: iv_worker.js
  * Umístění: ~/ivy/iv_worker.js
  *
- * Popis: Hlavní smyčka robota – obsahuje helper pauseOnError,
- *       který při selhání akce zastaví běh na 10 minut nebo do uzavření prohlížeče.
+ * Popis: Hlavní smyčka robota s optimalizovaným otevíráním záložek.
+ *        Otevírá Facebook/UTIO pouze když je to potřeba pro konkrétní akci.
  */
 
 import fs from 'fs';
@@ -16,7 +16,7 @@ import * as ui from './iv_ui.js';
 import * as utio from './iv_utio.js';
 import * as support from './iv_support.js';
 import { getRandomAction } from './iv_wheel.js';
-import { runAction } from './iv_actions.js';
+import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
 
 const isLinux = process.platform === 'linux';
@@ -84,33 +84,49 @@ async function prepareBrowser(user) {
   return { browser, context, browserClosed };
 }
 
-async function loginToUtioAndFacebook(user, context) {
-  await utio.newUtioTab(context);
-  if (!(await utio.openUtio(user.u_login, user.u_pass))) {
-    throw new Error('Login na UTIO selhal.');
+async function initializeRequiredServices(user, context, requirements) {
+  let fbBot = null;
+  let utioInitialized = false;
+
+  // Inicializuj UTIO pouze pokud je potřeba
+  if (requirements.needsUtio) {
+    Log.info(`[${user.id}]`, 'Inicializuji UTIO pro akci...');
+    await utio.newUtioTab(context);
+    if (!(await utio.openUtio(user.u_login, user.u_pass))) {
+      throw new Error('Login na UTIO selhal.');
+    }
+    utioInitialized = true;
   }
 
-  const fbBot = new FacebookBot(context);
-  await fbBot.init();
-  const fbStatus = await fbBot.openFB(user);
+  // Inicializuj Facebook pouze pokud je potřeba
+  if (requirements.needsFacebook) {
+    Log.info(`[${user.id}]`, 'Inicializuji Facebook pro akci...');
+    fbBot = new FacebookBot(context);
+    await fbBot.init();
+    const fbStatus = await fbBot.openFB(user);
 
-  if (fbStatus === 'account_locked') {
-    await db.lockAccount(user.id);
-    throw new Error('Účet je zablokován.');
+    if (fbStatus === 'account_locked') {
+      await db.lockAccount(user.id);
+      throw new Error('Účet je zablokován.');
+    }
+
+    if (!['still_loged', 'now_loged'].includes(fbStatus)) {
+      await db.lockAccount(user.id);
+      throw new Error('Login na FB selhal.');
+    }
+
+    await db.userLogedToFB(user.id);
   }
 
-  if (!['still_loged', 'now_loged'].includes(fbStatus)) {
-    await db.lockAccount(user.id);
-    throw new Error('Login na FB selhal.');
+  // Zavři prázdné záložky pouze když něco otevíráme
+  if (requirements.needsFacebook || requirements.needsUtio) {
+    await support.closeBlankTabs(context);
   }
 
-  await db.userLogedToFB(user.id);
-  await support.closeBlankTabs(context);
-
-  return fbBot;
+  return { fbBot, utioInitialized };
 }
 
-async function executeUserAction(user, fbBot, browser, browserClosed) {
+async function executeUserAction(user, browser, context, browserClosed) {
   await db.initUserActionPlan(user.id);
   const actions = await db.getUserActions(user.id);
 
@@ -121,7 +137,7 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
     return;
   }
 
-  // Předáme akce do kola štěstí místo nového dotazu
+  // Vyber akci pomocí kola štěstí
   const picked = await getRandomAction(actions);
   if (!picked) {
     Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null.');
@@ -134,6 +150,14 @@ async function executeUserAction(user, fbBot, browser, browserClosed) {
 
   Log.info(`[${user.id}]`, `Vybrána akce: ${actionCode}`);
 
+  // Zjisti požadavky akce
+  const requirements = getActionRequirements(actionCode);
+  Log.info(`[${user.id}]`, `Požadavky akce: FB=${requirements.needsFacebook}, UTIO=${requirements.needsUtio}`);
+
+  // Inicializuj pouze potřebné služby
+  const { fbBot } = await initializeRequiredServices(user, context, requirements);
+
+  // Proveď akci
   const success = await runAction(user, fbBot, actionCode);
   if (!success) {
     Log.warn(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA.`);
@@ -191,11 +215,9 @@ function updateNextWorktime() {
 
 async function runWithBrowser(user) {
   const { browser, context, browserClosed } = await prepareBrowser(user);
-  let fbBot = null;
 
   try {
-    fbBot = await loginToUtioAndFacebook(user, context);
-    await executeUserAction(user, fbBot, browser, browserClosed);
+    await executeUserAction(user, browser, context, browserClosed);
     await wait.delay(wait.timeout());
   } catch (err) {
     Log.error(`[WORKER][user:${user.id}]`, err);

@@ -2,7 +2,7 @@
  * Název souboru: iv_actions.js
  * Umístění: ~/ivy/iv_actions.js
  *
- * Popis: Obsahuje jednotlivé akce, které může uživatel vykonat v rámci "kola štěstí".
+ * Popis: Obsahuje jednotlivé akce a funkci pro určení jejich požadavků.
  * Každá akce odpovídá hodnotě `action_code` z tabulky `action_definitions`.
  */
 
@@ -11,6 +11,52 @@ import * as wait from './iv_wait.js';
 import { IvMath } from './iv_math.class.js';
 import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';
+
+/**
+ * Určuje požadavky konkrétní akce na služby (Facebook, UTIO)
+ * @param {string} actionCode - kód akce
+ * @returns {object} - {needsFacebook: boolean, needsUtio: boolean}
+ */
+export function getActionRequirements(actionCode) {
+  const requirements = {
+    needsFacebook: false,
+    needsUtio: false
+  };
+
+  switch (actionCode) {
+    // Akce vyžadující Facebook
+    case 'group_post':
+    case 'timeline_post':
+    case 'comment':
+    case 'react':
+    case 'share_post':
+    case 'messenger_check':
+    case 'messenger_reply':
+    case 'quote_post':
+      requirements.needsFacebook = true;
+      break;
+
+    // Akce vyžadující UTIO
+    case 'group_post': // vyžaduje i UTIO pro získání zprávy
+      requirements.needsUtio = true;
+      break;
+
+    // Akce nevyžadující ani Facebook ani UTIO
+    case 'account_delay':
+    case 'account_sleep':
+      // Tyto akce nepotřebují ani Facebook ani UTIO
+      break;
+
+    default:
+      Log.warn('[ACTIONS]', `Neznámý action_code pro požadavky: ${actionCode}`);
+      // Bezpečnostní fallback - otevřeme vše
+      requirements.needsFacebook = true;
+      requirements.needsUtio = true;
+      break;
+  }
+
+  return requirements;
+}
 
 export async function runAction(user, fbBot, action_code) {
   switch (action_code) {
