@@ -1,5 +1,5 @@
 {
-    "README":"Copy/rename this file to sql_config.json in the project folder /web/restricted. Type in valid values ​​and delete this line if necessary.",
+    "README":"Copy/rename this file to sql_config.json in the project folder /web/restricted. Type in valid values and delete this line if necessary.",
     "host":"localhost",
     "user":"database_user",
     "password":"unbreakable_database_password",
