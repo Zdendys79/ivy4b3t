@@ -137,10 +137,10 @@ async function executeUserAction(user, browser, context, browserClosed) {
     return;
   }
 
-  // Vyber akci pomocí kola štěstí
-  const picked = await getRandomAction(actions);
+  // Vyber akci pomocí kola štěstí s kontrolou limitů
+  const picked = await getRandomAction(actions, user.id);
   if (!picked) {
-    Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null.');
+    Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null (možná blokováno limity).');
     return;
   }
 

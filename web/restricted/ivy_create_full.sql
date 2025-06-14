@@ -210,7 +210,6 @@ CREATE TABLE log_s (
   data TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
 CREATE TABLE action_definitions (
     action_code VARCHAR(30) PRIMARY KEY,     -- Např. 'group_post', 'comment', 'account_sleep'
     label VARCHAR(64) NOT NULL,              -- Popis (např. 'Příspěvek do skupiny')
@@ -228,6 +227,19 @@ CREATE TABLE user_action_plan (
     next_time DATETIME NOT NULL,
     PRIMARY KEY (user_id, action_code),
     FOREIGN KEY (user_id) REFERENCES fb_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Nová tabulka pro individuální limity uživatelů na typy skupin
+CREATE TABLE `user_group_limits` (
+  `user_id` SMALLINT(5) UNSIGNED NOT NULL,
+  `group_type` VARCHAR(3) NOT NULL COMMENT 'G, GV, P, Z',
+  `max_posts` SMALLINT(3) UNSIGNED NOT NULL DEFAULT 15 COMMENT 'Maximální počet příspěvků',
+  `time_window_hours` SMALLINT(3) UNSIGNED NOT NULL DEFAULT 24 COMMENT 'Časové okno v hodinách',
+  `created` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `group_type`),
+  FOREIGN KEY (`user_id`) REFERENCES `fb_users`(`id`) ON DELETE CASCADE,
+  INDEX `idx_group_type` (`group_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Konec skriptu

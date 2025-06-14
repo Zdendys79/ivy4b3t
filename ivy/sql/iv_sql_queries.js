@@ -295,4 +295,58 @@ reset_quote_post_debug: `
   WHERE action_code = 'quote_post'
 `,
 
+// Získání limitů uživatele pro konkrétní typ skupiny
+get_user_group_limit: `
+  SELECT max_posts, time_window_hours
+  FROM user_group_limits
+  WHERE user_id = ? AND group_type = ?
+`,
+
+// Počet příspěvků uživatele v daném typu skupin za časové okno
+count_user_posts_in_timeframe: `
+  SELECT COUNT(*) as post_count
+  FROM action_log al
+  JOIN fb_groups fg ON al.reference_id = fg.id
+  WHERE al.account_id = ?
+    AND al.action_code LIKE 'share_post_%'
+    AND fg.typ = ?
+    AND al.timestamp >= NOW() - INTERVAL ? HOUR
+`,
+
+// Získání dostupných skupin podle typu pro sdílení
+get_available_groups_by_type: `
+  SELECT fg.*
+  FROM fb_groups fg
+  WHERE fg.typ = ?
+    AND fg.priority > 0
+    AND fg.id NOT IN (
+      SELECT ug.group_id
+      FROM user_groups ug
+      WHERE ug.user_id = ?
+        AND ug.time > NOW() - INTERVAL 3 DAY
+    )
+    AND COALESCE(fg.next_seen, NOW() - INTERVAL 1 MINUTE) < NOW()
+    AND COALESCE(fg.last_seen, NOW() - INTERVAL 6 MINUTE) < (NOW() - INTERVAL 5 MINUTE)
+  ORDER BY COALESCE(fg.last_seen, NOW() - INTERVAL 6 MINUTE) ASC
+  LIMIT 5
+`,
+
+// Aktualizace nebo vytvoření limitů pro uživatele
+upsert_user_group_limit: `
+  INSERT INTO user_group_limits (user_id, group_type, max_posts, time_window_hours)
+  VALUES (?, ?, ?, ?)
+  ON DUPLICATE KEY UPDATE
+    max_posts = VALUES(max_posts),
+    time_window_hours = VALUES(time_window_hours),
+    updated = CURRENT_TIMESTAMP
+`,
+
+// Získání všech limitů uživatele
+get_user_all_limits: `
+  SELECT group_type, max_posts, time_window_hours
+  FROM user_group_limits
+  WHERE user_id = ?
+  ORDER BY group_type
+`
+
 };

@@ -2,7 +2,7 @@
  * Název souboru: iv_actions.js
  * Umístění: ~/ivy/iv_actions.js
  *
- * Popis: Obsahuje jednotlivé akce a funkci pro určení jejich požadavků.
+ * Popis: Obsahuje jednotlivé akce včetně nových typů share_post pro různé typy skupin.
  * Každá akce odpovídá hodnotě `action_code` z tabulky `action_definitions`.
  */
 
@@ -29,7 +29,10 @@ export function getActionRequirements(actionCode) {
     case 'timeline_post':
     case 'comment':
     case 'react':
-    case 'share_post':
+    case 'share_post_g':
+    case 'share_post_gv':
+    case 'share_post_p':
+    case 'share_post_z':
     case 'messenger_check':
     case 'messenger_reply':
     case 'quote_post':
@@ -72,8 +75,17 @@ export async function runAction(user, fbBot, action_code) {
     case 'react':
       return await react(user, fbBot);
 
-    case 'share_post':
-      return await sharePost(user, fbBot);
+    case 'share_post_g':
+      return await sharePostByType(user, fbBot, 'G');
+
+    case 'share_post_gv':
+      return await sharePostByType(user, fbBot, 'GV');
+
+    case 'share_post_p':
+      return await sharePostByType(user, fbBot, 'P');
+
+    case 'share_post_z':
+      return await sharePostByType(user, fbBot, 'Z');
 
     case 'messenger_check':
       return await messengerCheck(user, fbBot);
@@ -119,6 +131,89 @@ async function accountSleep(user) {
   await db.systemLog('account_sleep', `Sleep na ${hours} hodin.`, { user_id: user.id });
   await db.userLog(user, 'account_sleep', hours, `Sleep mode aktivován.`);
   return true;
+}
+
+async function sharePostByType(user, fbBot, groupType) {
+  try {
+    Log.info(`[${user.id}]`, `Spouštím sdílení do skupin typu ${groupType}`);
+
+    // Zkontroluj, zda může uživatel přidat příspěvek do tohoto typu skupin
+    const canPost = await db.canUserPostToGroupType(user.id, groupType);
+    if (!canPost) {
+      Log.warn(`[${user.id}]`, `Dosažen limit příspěvků pro skupiny typu ${groupType}`);
+      return false;
+    }
+
+    // Najdi dostupné skupiny tohoto typu
+    const availableGroups = await db.getAvailableGroupsByType(groupType, user.id);
+    if (!availableGroups.length) {
+      Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu ${groupType}`);
+      return false;
+    }
+
+    // Vyber náhodnou skupinu
+    const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
+    Log.info(`[${user.id}]`, `Vybrána skupina: ${selectedGroup.nazev} (${selectedGroup.fb_id})`);
+
+    // Otevři skupinu
+    await fbBot.openGroup(selectedGroup);
+    await wait.delay(wait.timeout() * 2);
+
+    // Najdi existující příspěvek k sdílení
+    const shareSuccess = await performShareAction(user, fbBot, selectedGroup);
+
+    if (shareSuccess) {
+      // Zaloguj akci
+      const actionCode = `share_post_${groupType.toLowerCase()}`;
+      await db.logUserAction(user.id, actionCode, selectedGroup.id, `Sdílení do ${groupType}: ${selectedGroup.nazev}`);
+
+      // Aktualizuj čas posledního použití skupiny
+      await db.updateGroupLastSeen(selectedGroup.id);
+      await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
+
+      Log.success(`[${user.id}]`, `Úspěšné sdílení do skupiny ${groupType}: ${selectedGroup.nazev}`);
+      return true;
+    } else {
+      Log.error(`[${user.id}]`, `Nepodařilo se sdílet do skupiny ${selectedGroup.nazev}`);
+      return false;
+    }
+
+  } catch (err) {
+    Log.error(`[${user.id}] sharePostByType(${groupType})`, err);
+    return false;
+  }
+}
+
+async function performShareAction(user, fbBot, group) {
+  try {
+    // Najdi příspěvek k sdílení (simulace - v realitě by se hledal konkrétní příspěvek)
+    Log.info(`[${user.id}]`, 'Hledám příspěvek k sdílení...');
+
+    // Lidské chování - chvíli procházíme feed
+    await wait.delay(2000 + Math.random() * 3000);
+
+    // Simulace kliknutí na "Sdílet" tlačítko
+    // TODO: Implementovat skutečné hledání a klikání na sdílení
+    Log.info(`[${user.id}]`, 'Klikám na tlačítko Sdílet...');
+    await wait.delay(1000 + Math.random() * 2000);
+
+    // Simulace výběru cílové skupiny a potvrzení
+    Log.info(`[${user.id}]`, 'Vybírám cílovou skupinu a potvrzujem...');
+    await wait.delay(3000 + Math.random() * 2000);
+
+    // Lidské chování - krátká kontrola před odesláním
+    if (Math.random() < 0.3) { // 30% šance na váhání
+      Log.info(`[${user.id}]`, 'Chvíli váhám před sdílením...');
+      await wait.delay(2000 + Math.random() * 3000);
+    }
+
+    Log.success(`[${user.id}]`, 'Příspěvek úspěšně sdílen');
+    return true;
+
+  } catch (err) {
+    Log.error(`[${user.id}] performShareAction`, err);
+    return false;
+  }
 }
 
 async function quotePost(user, fbBot) {
@@ -208,11 +303,6 @@ async function comment(user, fbBot) {
 
 async function react(user, fbBot) {
   Log.warn(`[${user.id}]`, 'Akce react zatím není implementována.');
-  return false;
-}
-
-async function sharePost(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'Akce share_post zatím není implementována.');
   return false;
 }
 
