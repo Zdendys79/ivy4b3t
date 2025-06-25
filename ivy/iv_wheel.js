@@ -2,7 +2,7 @@
  * Soubor: iv_wheel.js
  * Umístění: ~/ivy/iv_wheel.js
  *
- * Purpose: Wheel of Fortune s kontrolou limitů pro share_post akce.
+ * Purpose: Wheel of Fortune s kontrolou limitů pro post_utio akce.
  *          Vyfiltruje akce, které překračují individuální limity uživatele.
  */
 
@@ -29,28 +29,28 @@ export class Wheel {
 }
 
 /**
- * Filtruje share_post akce podle limitů uživatele
+ * Filtruje post_utio akce podle limitů uživatele
  * @param {number} userId - ID uživatele
  * @param {Array} actions - Dostupné akce z databáze
  * @returns {Promise<Array>} - Filtrované akce respektující limity
  */
-async function filterSharePostActions(userId, actions) {
+async function filterPostUtioActions(userId, actions) {
   const filteredActions = [];
 
   for (const action of actions) {
-    // Zkontroluj jestli je to share_post akce
-    if (action.action_code.startsWith('share_post_')) {
-      // Extrahuj typ skupiny z action_code (share_post_g -> G)
-      const groupType = action.action_code.replace('share_post_', '').toUpperCase();
+    // Zkontroluj jestli je to post_utio akce
+    if (action.action_code.startsWith('post_utio_')) {
+      // Extrahuj typ skupiny z action_code (post_utio_g -> G)
+      const groupType = action.action_code.replace('post_utio_', '').toUpperCase();
 
       // Zkontroluj limit pro tento typ skupiny
       const canPost = await db.canUserPostToGroupType(userId, groupType);
 
       if (canPost) {
         filteredActions.push(action);
-        Log.debug('[WHEEL]', `Share akce ${action.action_code} povolena pro user ${userId}`);
+        Log.debug('[WHEEL]', `Post UTIO akce ${action.action_code} povolena pro user ${userId}`);
       } else {
-        Log.debug('[WHEEL]', `Share akce ${action.action_code} blokována limitem pro user ${userId}`);
+        Log.debug('[WHEEL]', `Post UTIO akce ${action.action_code} blokována limitem pro user ${userId}`);
       }
     } else {
       // Pro ostatní akce není kontrola limitů potřeba
@@ -73,9 +73,9 @@ export async function getRandomAction(availableActions, userId = null) {
 
   let filteredActions = availableActions;
 
-  // Pokud máme userId, filtruj share_post akce podle limitů
+  // Pokud máme userId, filtruj post_utio akce podle limitů
   if (userId) {
-    filteredActions = await filterSharePostActions(userId, availableActions);
+    filteredActions = await filterPostUtioActions(userId, availableActions);
   }
 
   if (!filteredActions.length) {
@@ -112,19 +112,19 @@ export async function getRandomAction(availableActions, userId = null) {
 export async function getActionStats(userId) {
   try {
     const allActions = await db.getUserActions(userId);
-    const filteredActions = await filterSharePostActions(userId, allActions);
+    const filteredActions = await filterPostUtioActions(userId, allActions);
 
     const stats = {
       total_actions: allActions.length,
       available_actions: filteredActions.length,
       blocked_by_limits: allActions.length - filteredActions.length,
-      share_actions: {
-        total: allActions.filter(a => a.action_code.startsWith('share_post_')).length,
-        available: filteredActions.filter(a => a.action_code.startsWith('share_post_')).length
+      post_utio_actions: {
+        total: allActions.filter(a => a.action_code.startsWith('post_utio_')).length,
+        available: filteredActions.filter(a => a.action_code.startsWith('post_utio_')).length
       },
       other_actions: {
-        total: allActions.filter(a => !a.action_code.startsWith('share_post_')).length,
-        available: filteredActions.filter(a => !a.action_code.startsWith('share_post_')).length
+        total: allActions.filter(a => !a.action_code.startsWith('post_utio_')).length,
+        available: filteredActions.filter(a => !a.action_code.startsWith('post_utio_')).length
       }
     };
 

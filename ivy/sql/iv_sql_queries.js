@@ -308,7 +308,7 @@ count_user_posts_in_timeframe: `
   FROM action_log al
   JOIN fb_groups fg ON al.reference_id = fg.id
   WHERE al.account_id = ?
-    AND al.action_code LIKE 'share_post_%'
+    AND al.action_code LIKE 'post_utio_%'
     AND fg.typ = ?
     AND al.timestamp >= NOW() - INTERVAL ? HOUR
 `,
