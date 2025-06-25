@@ -164,7 +164,7 @@ INSERT IGNORE INTO referers (url) VALUES
 ('https://www.reflex.cz'),
 ('https://www.e15.cz');
 
--- 19 data pro jednotlivé druhy akcí
+-- 19 Data pro jednotlivé druhy akcí
 INSERT INTO action_definitions (action_code, label, description, weight, min_minutes, max_minutes, repeatable, active)
 VALUES
 -- plánované akce
@@ -174,12 +174,12 @@ VALUES
 ('react',             'Reakce (like)',            'Like nebo jiná emoce na příspěvek.',                  20, 60, 180, TRUE, FALSE),
 ('messenger_check',   'Prohlédnout Messenger',    'Načíst a projít všechny zprávy v Messengeru.',        20, 120, 240, TRUE, FALSE),
 ('messenger_reply',   'Zpráva známému',           'Napsat příteli.',                                     50, 60, 960, TRUE, FALSE),
-('share_post_gv', 'Sdílení do skupin GV',  'Sdílení příspěvku do vlastních skupin (GV)',        15, 240, 720, TRUE, FALSE),
-('share_post_p',  'Sdílení do skupin P',   'Sdílení příspěvku do prodejních skupin (P)',        25, 180, 600, TRUE, FALSE),
-('share_post_z',  'Sdílení do skupin Z',   'Sdílení příspěvku do zájmových skupin (Z)',         10, 360, 1440, TRUE, FALSE),
+('post_utio_gv',      'UTIO post do skupin GV',   'Postování UTIO zprávy do vlastních skupin (GV)',     15, 240, 720, TRUE, FALSE),
+('post_utio_p',       'UTIO post do skupin P',    'Postování UTIO zprávy do prodejních skupin (P)',     25, 180, 600, TRUE, FALSE),
+('post_utio_z',       'UTIO post do skupin Z',    'Postování UTIO zprávy do zájmových skupin (Z)',      10, 360, 1440, TRUE, FALSE),
 -- funkční akce
-('share_post_g',  'Sdílení do skupin G',   'Sdílení příspěvku do běžných skupin (G)',           20, 120, 480, TRUE, TRUE),
-('quote_post', 'Citát na Timeline', 'Publikace citátu na timeline uživatele.', 50, 4320, 10080, TRUE, TRUE),
+('post_utio_g',       'UTIO post do skupin G',    'Postování UTIO zprávy do běžných skupin (G)',        20, 120, 480, TRUE, TRUE),
+('quote_post',        'Citát na Timeline',        'Publikace citátu na timeline uživatele.',            50, 4320, 10080, TRUE, TRUE),
 -- uspávací akce
 ('account_delay',     'Denní odpočinek',          'Krátký odpočinek dle denní doby (noc/dopo).',         25, 180, 720, TRUE, TRUE),
 ('account_sleep',     'Uspání účtu',              'Odpočinek účtu na 24-72h.',                           1, 10080, 17280, FALSE, TRUE);

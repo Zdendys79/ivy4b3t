@@ -2,12 +2,13 @@
  * Název souboru: iv_actions.js
  * Umístění: ~/ivy/iv_actions.js
  *
- * Popis: Obsahuje jednotlivé akce včetně nových typů share_post pro různé typy skupin.
+ * Popis: Obsahuje jednotlivé akce včetně nových typů post_utio pro různé typy skupin.
  * Každá akce odpovídá hodnotě `action_code` z tabulky `action_definitions`.
  */
 
 import * as db from './iv_sql.js';
 import * as wait from './iv_wait.js';
+import * as support from './iv_support.js';
 import { IvMath } from './iv_math.class.js';
 import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';
@@ -29,10 +30,10 @@ export function getActionRequirements(actionCode) {
     case 'timeline_post':
     case 'comment':
     case 'react':
-    case 'share_post_g':
-    case 'share_post_gv':
-    case 'share_post_p':
-    case 'share_post_z':
+    case 'post_utio_g':
+    case 'post_utio_gv':
+    case 'post_utio_p':
+    case 'post_utio_z':
     case 'messenger_check':
     case 'messenger_reply':
     case 'quote_post':
@@ -41,6 +42,10 @@ export function getActionRequirements(actionCode) {
 
     // Akce vyžadující UTIO
     case 'group_post': // vyžaduje i UTIO pro získání zprávy
+    case 'post_utio_g':
+    case 'post_utio_gv':
+    case 'post_utio_p':
+    case 'post_utio_z':
       requirements.needsUtio = true;
       break;
 
@@ -75,17 +80,17 @@ export async function runAction(user, fbBot, action_code) {
     case 'react':
       return await react(user, fbBot);
 
-    case 'share_post_g':
-      return await sharePostByType(user, fbBot, 'G');
+    case 'post_utio_g':
+      return await postUtioByType(user, fbBot, 'G');
 
-    case 'share_post_gv':
-      return await sharePostByType(user, fbBot, 'GV');
+    case 'post_utio_gv':
+      return await postUtioByType(user, fbBot, 'GV');
 
-    case 'share_post_p':
-      return await sharePostByType(user, fbBot, 'P');
+    case 'post_utio_p':
+      return await postUtioByType(user, fbBot, 'P');
 
-    case 'share_post_z':
-      return await sharePostByType(user, fbBot, 'Z');
+    case 'post_utio_z':
+      return await postUtioByType(user, fbBot, 'Z');
 
     case 'messenger_check':
       return await messengerCheck(user, fbBot);
@@ -133,9 +138,9 @@ async function accountSleep(user) {
   return true;
 }
 
-async function sharePostByType(user, fbBot, groupType) {
+async function postUtioByType(user, fbBot, groupType) {
   try {
-    Log.info(`[${user.id}]`, `Spouštím sdílení do skupin typu ${groupType}`);
+    Log.info(`[${user.id}]`, `Spouštím postování UTIO zprávy do skupin typu ${groupType}`);
 
     // Zkontroluj, zda může uživatel přidat příspěvek do tohoto typu skupin
     const canPost = await db.canUserPostToGroupType(user.id, groupType);
@@ -159,59 +164,47 @@ async function sharePostByType(user, fbBot, groupType) {
     await fbBot.openGroup(selectedGroup);
     await wait.delay(wait.timeout() * 2);
 
-    // Najdi existující příspěvek k sdílení
-    const shareSuccess = await performShareAction(user, fbBot, selectedGroup);
+    // Získej zprávu z UTIO a publikuj ji
+    const postSuccess = await performUtioPost(user, fbBot, selectedGroup);
 
-    if (shareSuccess) {
+    if (postSuccess) {
       // Zaloguj akci
-      const actionCode = `share_post_${groupType.toLowerCase()}`;
-      await db.logUserAction(user.id, actionCode, selectedGroup.id, `Sdílení do ${groupType}: ${selectedGroup.nazev}`);
+      const actionCode = `post_utio_${groupType.toLowerCase()}`;
+      await db.logUserAction(user.id, actionCode, selectedGroup.id, `UTIO post do ${groupType}: ${selectedGroup.nazev}`);
 
       // Aktualizuj čas posledního použití skupiny
       await db.updateGroupLastSeen(selectedGroup.id);
       await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
 
-      Log.success(`[${user.id}]`, `Úspěšné sdílení do skupiny ${groupType}: ${selectedGroup.nazev}`);
+      Log.success(`[${user.id}]`, `Úspěšné postování UTIO zprávy do skupiny ${groupType}: ${selectedGroup.nazev}`);
       return true;
     } else {
-      Log.error(`[${user.id}]`, `Nepodařilo se sdílet do skupiny ${selectedGroup.nazev}`);
+      Log.error(`[${user.id}]`, `Nepodařilo se poslat UTIO zprávu do skupiny ${selectedGroup.nazev}`);
       return false;
     }
 
   } catch (err) {
-    Log.error(`[${user.id}] sharePostByType(${groupType})`, err);
+    Log.error(`[${user.id}] postUtioByType(${groupType})`, err);
     return false;
   }
 }
 
-async function performShareAction(user, fbBot, group) {
+async function performUtioPost(user, fbBot, group) {
   try {
-    // Najdi příspěvek k sdílení (simulace - v realitě by se hledal konkrétní příspěvek)
-    Log.info(`[${user.id}]`, 'Hledám příspěvek k sdílení...');
+    Log.info(`[${user.id}]`, 'Získávám zprávu z UTIO...');
 
-    // Lidské chování - chvíli procházíme feed
-    await wait.delay(2000 + Math.random() * 3000);
-
-    // Simulace kliknutí na "Sdílet" tlačítko
-    // TODO: Implementovat skutečné hledání a klikání na sdílení
-    Log.info(`[${user.id}]`, 'Klikám na tlačítko Sdílet...');
-    await wait.delay(1000 + Math.random() * 2000);
-
-    // Simulace výběru cílové skupiny a potvrzení
-    Log.info(`[${user.id}]`, 'Vybírám cílovou skupinu a potvrzujem...');
-    await wait.delay(3000 + Math.random() * 2000);
-
-    // Lidské chování - krátká kontrola před odesláním
-    if (Math.random() < 0.3) { // 30% šance na váhání
-      Log.info(`[${user.id}]`, 'Chvíli váhám před sdílením...');
-      await wait.delay(2000 + Math.random() * 3000);
+    // Získej zprávu z UTIO pomocí iv_support.js funkce
+    const message = await support.pasteMsg(user, group, fbBot);
+    if (!message) {
+      Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
+      return false;
     }
 
-    Log.success(`[${user.id}]`, 'Příspěvek úspěšně sdílen');
+    Log.success(`[${user.id}]`, 'UTIO zpráva úspěšně publikována!');
     return true;
 
   } catch (err) {
-    Log.error(`[${user.id}] performShareAction`, err);
+    Log.error(`[${user.id}] performUtioPost`, err);
     return false;
   }
 }
