@@ -14,29 +14,36 @@ if (!defined('IVY_FRAMEWORK')) {
 }
 
 require_once dirname(__DIR__) . '/core/BaseController.php';
+require_once dirname(__DIR__) . '/core/Database.php';
 
 class DashboardController extends BaseController
 {
+    private $queries;
+
     protected function init()
     {
         // Require authentication for all dashboard actions
         $this->require_auth();
+
+        // Load dashboard queries
+        $this->load_queries();
+
+        // Use enhanced Database class
+        $this->db = new Database($this->debug_mode);
     }
 
     /**
-     * Get recent actions with limit
+     * Load dashboard-specific queries
      */
-    private function get_recent_actions_limited($limit = 10)
+    private function load_queries()
     {
-        $result = $this->db->safe_query("
-            SELECT al.timestamp, al.action_code, u.name, u.surname, al.text
-            FROM action_log al
-            JOIN fb_users u ON al.account_id = u.id
-            ORDER BY al.timestamp DESC
-            LIMIT ?
-        ", [$limit]);
+        $queries_path = dirname(__DIR__) . "/queries/DashboardQueries.php";
 
-        return $result['success'] ? $result['statement']->fetchAll() : [];
+        if (!file_exists($queries_path)) {
+            throw new Exception("Dashboard queries file not found: {$queries_path}");
+        }
+
+        $this->queries = require $queries_path;
     }
 
     /**
@@ -47,8 +54,8 @@ class DashboardController extends BaseController
         try {
             // Get dashboard data
             $system_status = $this->get_system_status();
-            $recent_actions = $this->get_recent_actions_limited(10);
-            $user_activity = $this->get_user_activity_today();
+            $recent_actions = $this->db->query_all('user_activity', 'get_recent_actions', [10]);
+            $user_activity = $this->db->query_all('user_activity', 'get_user_activity_today');
             $system_health = $this->get_system_health();
             $flash = $this->get_flash();
 
@@ -85,7 +92,7 @@ class DashboardController extends BaseController
         try {
             $data = [
                 'system_status' => $this->get_system_status(),
-                'recent_actions' => $this->get_recent_actions_limited(5),
+                'recent_actions' => $this->db->query_all('user_activity', 'get_recent_actions', [5]),
                 'timestamp' => date('Y-m-d H:i:s'),
                 'success' => true
             ];
@@ -115,22 +122,19 @@ class DashboardController extends BaseController
                     break;
 
                 case 'recent_actions':
-                    $result = $this->db->safe_query("
-                        SELECT al.timestamp, al.action_code, u.name, u.surname, al.text
-                        FROM action_log al
-                        JOIN fb_users u ON al.account_id = u.id
-                        ORDER BY al.timestamp DESC
-                        LIMIT 10
-                    ");
-                    $data = $result['success'] ? $result['statement']->fetchAll() : [];
+                    $data = $this->db->query_all('user_activity', 'get_recent_actions', [10]);
                     break;
 
                 case 'user_activity':
-                    $data = $this->get_user_activity_today();
+                    $data = $this->db->query_all('user_activity', 'get_user_activity_today');
                     break;
 
                 case 'system_health':
                     $data = $this->get_system_health();
+                    break;
+
+                case 'user_stats':
+                    $data = $this->db->query_all('user_activity', 'get_user_activity_stats');
                     break;
 
                 default:
@@ -168,7 +172,9 @@ class DashboardController extends BaseController
         $this->render('dashboard/controls', [
             'page_title' => 'System Controls',
             'current_user' => $user,
-            'csrf_token' => $this->csrf_token()
+            'csrf_token' => $this->csrf_token(),
+            'system_variables' => $this->db->query_all('maintenance', 'get_system_variables'),
+            'database_info' => $this->db->query_all('maintenance', 'get_database_size')
         ]);
     }
 
@@ -182,7 +188,7 @@ class DashboardController extends BaseController
         }
 
         $validation = $this->validate([
-            'command' => 'required|in:restart_system,backup_database,clear_logs,update_system',
+            'command' => 'required|in:restart_system,backup_database,clear_logs,update_system,optimize_tables',
             'csrf_token' => 'required'
         ]);
 
@@ -222,7 +228,7 @@ class DashboardController extends BaseController
 
         $validation = $this->validate([
             'user_id' => 'required|numeric',
-            'action' => 'required|in:lock,unlock,reset_limits',
+            'action' => 'required|in:lock,unlock,reset_limits,get_details',
             'csrf_token' => 'required'
         ]);
 
@@ -240,7 +246,7 @@ class DashboardController extends BaseController
             $current_user = $this->get_current_user();
 
             $result = $this->execute_user_action($user_id, $action, $current_user);
-            $this->json(['success' => true, 'message' => $result['message']]);
+            $this->json(['success' => true, 'message' => $result['message'], 'data' => $result['data'] ?? null]);
 
         } catch (Exception $e) {
             $this->json(['success' => false, 'message' => 'Action failed'], 500);
@@ -262,18 +268,23 @@ class DashboardController extends BaseController
                     break;
 
                 case 'user_activity':
-                    $data = $this->get_user_activity_today();
+                    $data = $this->db->query_all('user_activity', 'get_user_activity_today');
                     break;
 
                 case 'recent_actions':
-                    $result = $this->db->safe_query("
-                        SELECT al.timestamp, al.action_code, u.name, u.surname, al.text
-                        FROM action_log al
-                        JOIN fb_users u ON al.account_id = u.id
-                        ORDER BY al.timestamp DESC
-                        LIMIT 100
-                    ");
-                    $data = $result['success'] ? $result['statement']->fetchAll() : [];
+                    $data = $this->db->query_all('user_activity', 'get_recent_actions', [100]);
+                    break;
+
+                case 'daily_report':
+                    $data = $this->db->query_all('reporting', 'get_daily_activity_report');
+                    break;
+
+                case 'user_performance':
+                    $data = $this->db->query_all('reporting', 'get_user_performance_report');
+                    break;
+
+                case 'system_performance':
+                    $data = $this->db->query_all('reporting', 'get_system_performance_report');
                     break;
 
                 default:
@@ -293,6 +304,31 @@ class DashboardController extends BaseController
         }
     }
 
+    /**
+     * Get reports page
+     */
+    public function reports()
+    {
+        try {
+            $daily_report = $this->db->query_all('reporting', 'get_daily_activity_report');
+            $user_performance = $this->db->query_all('reporting', 'get_user_performance_report');
+            $system_performance = $this->db->query_all('reporting', 'get_system_performance_report');
+
+            $this->render('dashboard/reports', [
+                'page_title' => 'System Reports',
+                'daily_report' => $daily_report,
+                'user_performance' => $user_performance,
+                'system_performance' => $system_performance,
+                'current_user' => $this->get_current_user(),
+                'csrf_token' => $this->csrf_token()
+            ]);
+
+        } catch (Exception $e) {
+            $this->flash('error', 'Error loading reports data.');
+            $this->redirect('/dashboard');
+        }
+    }
+
     // ================================
     // PRIVATE HELPER METHODS
     // ================================
@@ -302,32 +338,9 @@ class DashboardController extends BaseController
      */
     private function get_system_status()
     {
-        // Use the available methods from db_class.php
-        $heartbeats_result = $this->db->safe_query("
-            SELECT host, up, user_id, group_id, version
-            FROM heartbeat
-            WHERE up > NOW() - INTERVAL 5 MINUTE
-            ORDER BY up DESC
-        ");
-        $heartbeats = $heartbeats_result['success'] ? $heartbeats_result['statement']->fetchAll() : [];
-
-        $user_stats_result = $this->db->safe_query("
-            SELECT
-                COUNT(*) as total_users,
-                COUNT(CASE WHEN locked IS NULL THEN 1 END) as active_users,
-                COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked_users
-            FROM fb_users
-        ");
-        $user_stats = $user_stats_result['success'] ? $user_stats_result['statement']->fetch() : [];
-
-        $dashboard_summary_result = $this->db->safe_query("
-            SELECT
-                (SELECT COUNT(*) FROM fb_users WHERE locked IS NULL) as active_users,
-                (SELECT COUNT(*) FROM fb_groups WHERE priority > 0) as active_groups,
-                (SELECT COUNT(*) FROM heartbeat WHERE up > NOW() - INTERVAL 5 MINUTE) as online_hosts,
-                (SELECT COUNT(*) FROM action_log WHERE timestamp > NOW() - INTERVAL 1 HOUR) as recent_actions
-        ");
-        $dashboard_summary = $dashboard_summary_result['success'] ? $dashboard_summary_result['statement']->fetch() : [];
+        $heartbeats = $this->db->query_all('system_status', 'get_active_heartbeats');
+        $user_stats = $this->db->query_first('system_status', 'get_user_statistics');
+        $dashboard_summary = $this->db->query_first('system_status', 'get_dashboard_summary');
 
         return [
             'heartbeats' => $heartbeats,
@@ -339,74 +352,26 @@ class DashboardController extends BaseController
     }
 
     /**
-     * Get user activity for today
-     */
-    private function get_user_activity_today()
-    {
-        try {
-            $result = $this->db->safe_query("
-                SELECT
-                    u.id, u.name, u.surname,
-                    COUNT(al.id) as actions_today
-                FROM fb_users u
-                LEFT JOIN action_log al ON u.id = al.account_id
-                    AND DATE(al.timestamp) = CURDATE()
-                WHERE u.locked IS NULL
-                GROUP BY u.id, u.name, u.surname
-                ORDER BY actions_today DESC
-                LIMIT 10
-            ");
-
-            return $result['success'] ? $result['statement']->fetchAll() : [];
-
-        } catch (Exception $e) {
-            if ($this->debug_mode) {
-                error_log("[DashboardController] Error getting user activity: " . $e->getMessage());
-            }
-            return [];
-        }
-    }
-
-    /**
      * Get system health indicators
      */
     private function get_system_health()
     {
         try {
-            $result = $this->db->safe_query("
-                SELECT
-                    'database' as component,
-                    'healthy' as status,
-                    NOW() as last_check
-                UNION ALL
-                SELECT
-                    'heartbeat' as component,
-                    CASE
-                        WHEN COUNT(*) > 0 THEN 'healthy'
-                        ELSE 'warning'
-                    END as status,
-                    MAX(up) as last_check
-                FROM heartbeat
-                WHERE up > NOW() - INTERVAL 10 MINUTE
-            ");
+            $health_data = $this->db->query_all('system_status', 'get_system_health');
 
             $health = [
                 'overall' => 'healthy',
                 'components' => []
             ];
 
-            if ($result['success']) {
-                $health_data = $result['statement']->fetchAll();
+            foreach ($health_data as $component) {
+                $health['components'][$component['component']] = [
+                    'status' => $component['status'],
+                    'last_check' => $component['last_check']
+                ];
 
-                foreach ($health_data as $component) {
-                    $health['components'][$component['component']] = [
-                        'status' => $component['status'],
-                        'last_check' => $component['last_check']
-                    ];
-
-                    if ($component['status'] !== 'healthy') {
-                        $health['overall'] = 'warning';
-                    }
+                if ($component['status'] !== 'healthy') {
+                    $health['overall'] = 'warning';
                 }
             }
 
@@ -441,6 +406,9 @@ class DashboardController extends BaseController
 
             case 'update_system':
                 return $this->update_system($user);
+
+            case 'optimize_tables':
+                return $this->optimize_tables($user);
 
             default:
                 throw new Exception("Unknown system command: {$command}");
@@ -495,13 +463,16 @@ class DashboardController extends BaseController
         );
 
         // Clear old logs (keep last 30 days)
-        $result = $this->db->safe_query("
-            DELETE FROM action_log WHERE timestamp < DATE_SUB(NOW(), INTERVAL ? DAY)
-        ", [30]);
+        $action_logs_cleared = $this->db->execute('maintenance', 'clear_old_logs', [30]);
+        $system_logs_cleared = $this->db->execute('maintenance', 'clear_old_system_logs', [30]);
 
         return [
             'message' => 'Log cleanup completed successfully',
-            'timestamp' => date('Y-m-d H:i:s')
+            'timestamp' => date('Y-m-d H:i:s'),
+            'details' => [
+                'action_logs' => $action_logs_cleared ? 'cleared' : 'failed',
+                'system_logs' => $system_logs_cleared ? 'cleared' : 'failed'
+            ]
         ];
     }
 
@@ -524,17 +495,33 @@ class DashboardController extends BaseController
     }
 
     /**
+     * Optimize database tables
+     */
+    private function optimize_tables($user)
+    {
+        $this->log_event(
+            'System Command',
+            'Database optimization requested',
+            ['user_id' => $user['id'], 'command' => 'optimize_tables']
+        );
+
+        $result = $this->db->execute('maintenance', 'optimize_tables');
+
+        return [
+            'message' => $result ? 'Database optimization completed successfully' : 'Database optimization failed',
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+    }
+
+    /**
      * Execute user management actions
      */
     private function execute_user_action($user_id, $action, $current_user)
     {
         switch ($action) {
             case 'lock':
-                $result = $this->db->safe_query("
-                    UPDATE fb_users SET locked = NOW() WHERE id = ?
-                ", [$user_id]);
-
-                if ($result['success'] && $result['affected_rows'] > 0) {
+                $result = $this->db->execute('user_management', 'lock_user', [$user_id]);
+                if ($result) {
                     $this->log_event(
                         'User Management',
                         "User {$user_id} locked by {$current_user['name']}",
@@ -545,11 +532,8 @@ class DashboardController extends BaseController
                 throw new Exception('Failed to lock user');
 
             case 'unlock':
-                $result = $this->db->safe_query("
-                    UPDATE fb_users SET locked = NULL WHERE id = ?
-                ", [$user_id]);
-
-                if ($result['success'] && $result['affected_rows'] > 0) {
+                $result = $this->db->execute('user_management', 'unlock_user', [$user_id]);
+                if ($result) {
                     $this->log_event(
                         'User Management',
                         "User {$user_id} unlocked by {$current_user['name']}",
@@ -569,14 +553,7 @@ class DashboardController extends BaseController
                 ];
 
                 foreach ($default_limits as [$type, $posts, $hours]) {
-                    $this->db->safe_query("
-                        INSERT INTO user_group_limits (user_id, group_type, max_posts, time_window_hours, updated)
-                        VALUES (?, ?, ?, ?, NOW())
-                        ON DUPLICATE KEY UPDATE
-                            max_posts = VALUES(max_posts),
-                            time_window_hours = VALUES(time_window_hours),
-                            updated = NOW()
-                    ", [$user_id, $type, $posts, $hours]);
+                    $this->db->execute('user_management', 'reset_user_limits', [$user_id, $type, $posts, $hours]);
                 }
 
                 $this->log_event(
@@ -587,9 +564,32 @@ class DashboardController extends BaseController
 
                 return ['message' => 'User limits reset successfully'];
 
+            case 'get_details':
+                $user_details = $this->db->query_first('user_management', 'get_user_details', [$user_id]);
+                $limit_usage = $this->db->query_all('user_management', 'get_user_limit_usage', [$user_id]);
+
+                return [
+                    'message' => 'User details retrieved successfully',
+                    'data' => [
+                        'user' => $user_details,
+                        'limit_usage' => $limit_usage
+                    ]
+                ];
+
             default:
                 throw new Exception("Unknown user action: {$action}");
         }
+    }
+
+    /**
+     * Log system events
+     */
+    private function log_event($title, $text, $data = [])
+    {
+        $hostname = gethostname() ?: 'unknown';
+        return $this->db->execute('logging', 'insert_system_log', [
+            $hostname, $title, $text, json_encode($data)
+        ]);
     }
 
     /**
@@ -626,7 +626,9 @@ class DashboardController extends BaseController
 
         echo json_encode([
             'export_date' => date('Y-m-d H:i:s'),
-            'data' => $data
+            'export_type' => $filename,
+            'data' => $data,
+            'total_records' => count($data)
         ], JSON_PRETTY_PRINT);
 
         exit;
