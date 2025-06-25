@@ -1,7 +1,7 @@
 <?php
 /**
  * Název souboru: group_limits_manager.php
- * Umístění: ~/web/system/group_limits_manager.php
+ * Umístění: ~/web/group_limits_manager.php
  *
  * Popis: PHP funkce pro správu limitů uživatelů na jednotlivé typy skupin.
  * Umožňuje načítání, úpravu a validaci limitů přes webové rozhraní.
