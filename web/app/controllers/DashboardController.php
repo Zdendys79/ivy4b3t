@@ -190,6 +190,17 @@ class DashboardController extends BaseController
     }
 
     /**
+     * Validate CSRF token from request
+     */
+    private function validate_csrf()
+    {
+        $csrf_token = $this->get_input('csrf_token');
+        if (!$this->verify_csrf($csrf_token)) {
+            throw new Exception('Invalid CSRF token');
+        }
+    }
+
+    /**
      * Execute system commands (AJAX endpoint)
      */
     public function command()
@@ -202,7 +213,11 @@ class DashboardController extends BaseController
                 throw new Exception('Insufficient privileges');
             }
 
-            $command = $this->get_input('command', true);
+            $command = $this->get_input('command');
+            if (empty($command)) {
+                throw new Exception('Command parameter is required');
+            }
+
             $result = $this->commandService->execute_command($command, $user);
 
             $this->json([
@@ -237,8 +252,12 @@ class DashboardController extends BaseController
                 throw new Exception('Insufficient privileges');
             }
 
-            $user_id = $this->get_input('user_id', true);
-            $action = $this->get_input('action', true);
+            $user_id = $this->get_input('user_id');
+            $action = $this->get_input('action');
+
+            if (empty($user_id) || empty($action)) {
+                throw new Exception('User ID and action parameters are required');
+            }
 
             $result = $this->userService->execute_user_action($user_id, $action, $user);
 
@@ -274,8 +293,12 @@ class DashboardController extends BaseController
                 throw new Exception('Insufficient privileges');
             }
 
-            $type = $this->get_input('type', true);
-            $format = $this->get_input('format', true);
+            $type = $this->get_input('type');
+            $format = $this->get_input('format');
+
+            if (empty($type) || empty($format)) {
+                throw new Exception('Type and format parameters are required');
+            }
 
             $this->logger->log_event(
                 'Data Export',
