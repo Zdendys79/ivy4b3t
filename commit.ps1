@@ -1,8 +1,7 @@
-# commit.ps1 - Hlavní složka projektu ivy4b3t
-# Skript pro automatický stash/pull/pop a commit/push proceduru
+# commit.ps1 - Automatický commit skript pro projekt ivy4b3t
+# Uchovává všechny původní kroky + umožňuje zadat víceřádkový popis v Notepadu
 
 # Nastav encoding konzole (kvůli českým znakům)
-# chcp 65001  # nefunguje úplně správně
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "=== 🐙 Commit skript pro B3 ==="
@@ -11,36 +10,50 @@ Write-Host "=== 🐙 Commit skript pro B3 ==="
 $hasChanges = git status --porcelain
 
 # 2️⃣ Pokud změny existují, proveď stash
+$stashed = $false
 if ($hasChanges) {
     Write-Host "[GIT] Necommitované změny nalezeny, provádím stash..."
     git stash save "Auto-stash před pull"
+    $stashed = $true
 } else {
     Write-Host "[GIT] Žádné změny, stash není potřeba."
 }
 
-# 3️⃣ Proveď git pull
-Write-Host "[GIT] Provádím git pull..."
+# 3️⃣ Pull aktuálního stavu z GITu
+Write-Host "[GIT] Aktualizuji repozitář (git pull)..."
 git pull
 
-# 4️⃣ Pokud byl stash proveden, proveď pop
-if ($hasChanges) {
-    Write-Host "[GIT] Vrácení změn ze stash (pop)..."
+# 4️⃣ Vrácení stashnutých změn (pokud byly)
+if ($stashed) {
+    Write-Host "[GIT] Vracím stash zpět..."
     git stash pop
 }
 
-# 5️⃣ Zapiš verzi do package.json (tvůj pre-commit krok)
-$hash = git rev-parse --short HEAD
-Write-Host "[PRE-COMMIT] Zapisování verze do souboru package.json"
-(Get-Content package.json -Raw) -replace '(?<=("version": ")(.*?)(?="))', $hash | Set-Content package.json -Encoding utf8
-Write-Host "[PRE-COMMIT] Zapsána verze $hash do package.json."
+# 5️⃣ Získání zprávy z externího editoru
+$tempFile = "$env:TEMP\commit_message.txt"
+if (Test-Path $tempFile) { Remove-Item $tempFile }
+New-Item -ItemType File -Path $tempFile | Out-Null
 
-# 6️⃣ Připrav commit
-$commitMessage = Read-Host "Zadej zprávu pro commit"
-git add .
-git commit -m "$commitMessage"
+$p = Start-Process -FilePath "notepad.exe" -ArgumentList $tempFile -PassThru
+$p.WaitForExit()
 
-# 7️⃣ Push na vzdálený repozitář
-Write-Host "[GIT] Odesílám změny na GitHub..."
+if ((Get-Content $tempFile -Raw).Trim().Length -eq 0) {
+    Write-Host "❌ Commit message je prázdná. Commit zrušen."
+    exit 1
+}
+
+# 6️⃣ Commit změn
+Write-Host "[GIT] Přidávám všechny změny..."
+git add -A
+
+Write-Host "[GIT] Vytvářím commit..."
+git commit -F $tempFile
+
+# 7️⃣ Push
+Write-Host "[GIT] Odesílám commit na vzdálený repozitář..."
 git push
 
-Write-Host "=== ✅ Commit skript dokončen ==="
+# Úklid
+Remove-Item $tempFile
+
+Write-Host "✅ Commit byl úspěšně proveden a odeslán."
