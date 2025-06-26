@@ -2,7 +2,9 @@
 # Uchovává všechny původní kroky + umožňuje zadat víceřádkový popis v Notepadu
 
 # Nastav encoding konzole (kvůli českým znakům)
+$OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+chcp 65001 > $null
 
 Write-Host "=== 🐙 Commit skript pro B3 ==="
 
