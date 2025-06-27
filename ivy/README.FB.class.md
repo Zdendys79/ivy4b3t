@@ -75,10 +75,6 @@ import puppeteer from 'puppeteer';
 
 ## 🛡️ Poznámky
 
-✅ Třída je optimalizovaná pro Puppeteer + Facebook UI (stav k roku 2024).
+✅ Třída je optimalizovaná pro Puppeteer + Facebook UI (stav k roku 2025).
 ✅ Čekací doby (`wait.timeout()`) lze upravit v `iv_wait.js` podle rychlosti serveru a připojení.
 ✅ Přesnost závisí na stabilitě DOM struktury Facebooku (možné budoucí změny).
-
----
-
-✅ Dej vědět, jestli chceš doplnit příklady pro skupiny, nebo připravit diagram toků volání!
