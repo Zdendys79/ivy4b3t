@@ -313,34 +313,6 @@ async function executeUserAction(user, browser, context, browserClosed) {
   Log.success(`[${user.id}]`, `Akce ${actionCode} dokončena, další za ${randMin} minut.`);
 }
 
-export async function tick() {
-  try {
-    const uiCommand = await db.getUICommand();
-    if (uiCommand) {
-      Log.info('[TICK]', 'Detekován UI příkaz – zpracovávám...');
-      await ui.solveUICommand(uiCommand);
-      return;
-    }
-
-    if (Date.now() < nextWorktime) {
-      Log.info('[TICK]', 'Ještě nenastal čas na další cyklus.');
-      return;
-    }
-
-    const user = await db.getUser();
-    if (!user) throw new Error('Žádný vhodný uživatel.');
-
-    await runWithBrowser(user);
-    updateNextWorktime();
-
-  } catch (err) {
-    Log.error('[TICK]', err);
-    if (!DEBUG_KEEP_BROWSER_OPEN) {
-      await wait.delay(10 * 60 * 1000);
-    }
-  }
-}
-
 async function cleanupBrowser(browser, browserClosed) {
   if (DEBUG_KEEP_BROWSER_OPEN) {
     Log.info('[WORKER]', 'Debug režim: prohlížeč NEBUDE zavřen.');
@@ -349,25 +321,5 @@ async function cleanupBrowser(browser, browserClosed) {
   if (!browserClosed) {
     await browser.close();
     Log.info('[WORKER]', 'Prohlížeč uzavřen.');
-  }
-}
-
-function updateNextWorktime() {
-  nextWorktime = Date.now() + Math.random() * 30000 + 30000;
-}
-
-async function runWithBrowser(user) {
-  const { browser, context, browserClosed } = await prepareBrowser(user);
-
-  try {
-    await executeUserAction(user, browser, context, browserClosed);
-    await wait.delay(wait.timeout());
-  } catch (err) {
-    Log.error(`[WORKER][user:${user.id}]`, err);
-    if (!DEBUG_KEEP_BROWSER_OPEN) {
-      await wait.delay(10 * 60 * 1000);
-    }
-  } finally {
-    await cleanupBrowser(browser, browserClosed);
   }
 }
