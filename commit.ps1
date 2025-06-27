@@ -1,37 +1,37 @@
-# commit.ps1 - Automatický commit skript pro projekt ivy4b3t
-# Uchovává všechny původní kroky + umožňuje zadat víceřádkový popis v Notepadu
+# commit.ps1 - Automatic commit script for ivy4b3t project
+# Preserves all original steps + allows multi-line description input via Notepad
 
-# Nastav encoding konzole (kvůli českým znakům)
+# Set console encoding (for proper character handling)
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 chcp 65001 > $null
 
-Write-Host "=== 🐙 Commit skript pro B3 ==="
+Write-Host "=== 🐙 Commit Script for B3 ==="
 
-# 1️⃣ Kontrola, jestli jsou změny
+# 1️⃣ Check if there are changes
 $hasChanges = git status --porcelain
 
-# 2️⃣ Pokud změny existují, proveď stash
+# 2️⃣ If changes exist, perform stash
 $stashed = $false
 if ($hasChanges) {
-    Write-Host "[GIT] Necommitované změny nalezeny, provádím stash..."
-    git stash save "Auto-stash před pull"
+    Write-Host "[GIT] Uncommitted changes found, performing stash..."
+    git stash save "Auto-stash before pull"
     $stashed = $true
 } else {
-    Write-Host "[GIT] Žádné změny, stash není potřeba."
+    Write-Host "[GIT] No changes found, stash not needed."
 }
 
-# 3️⃣ Pull aktuálního stavu z GITu
-Write-Host "[GIT] Aktualizuji repozitář (git pull)..."
+# 3️⃣ Pull current state from GIT
+Write-Host "[GIT] Updating repository (git pull)..."
 git pull
 
-# 4️⃣ Vrácení stashnutých změn (pokud byly)
+# 4️⃣ Restore stashed changes (if any)
 if ($stashed) {
-    Write-Host "[GIT] Vracím stash zpět..."
+    Write-Host "[GIT] Restoring stash..."
     git stash pop
 }
 
-# 5️⃣ Získání zprávy z externího editoru
+# 5️⃣ Get commit message from external editor
 $tempFile = "$env:TEMP\commit_message.txt"
 if (Test-Path $tempFile) { Remove-Item $tempFile }
 New-Item -ItemType File -Path $tempFile | Out-Null
@@ -40,22 +40,22 @@ $p = Start-Process -FilePath "notepad.exe" -ArgumentList $tempFile -PassThru
 $p.WaitForExit()
 
 if ((Get-Content $tempFile -Raw).Trim().Length -eq 0) {
-    Write-Host "❌ Commit message je prázdná. Commit zrušen."
+    Write-Host "❌ Commit message is empty. Commit cancelled."
     exit 1
 }
 
-# 6️⃣ Commit změn
-Write-Host "[GIT] Přidávám všechny změny..."
+# 6️⃣ Commit changes
+Write-Host "[GIT] Adding all changes..."
 git add -A
 
-Write-Host "[GIT] Vytvářím commit..."
+Write-Host "[GIT] Creating commit..."
 git commit -F $tempFile
 
 # 7️⃣ Push
-Write-Host "[GIT] Odesílám commit na vzdálený repozitář..."
+Write-Host "[GIT] Pushing commit to remote repository..."
 git push
 
-# Úklid
+# Cleanup
 Remove-Item $tempFile
 
-Write-Host "✅ Commit byl úspěšně proveden a odeslán."
+Write-Host "✅ Commit was successfully created and pushed."
