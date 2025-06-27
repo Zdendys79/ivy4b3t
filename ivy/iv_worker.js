@@ -8,6 +8,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import os from 'node:os';
 import puppeteer from 'puppeteer';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
@@ -20,6 +21,7 @@ import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
 
 const isLinux = process.platform === 'linux';
+const hostname = os.hostname();
 let nextWorktime = 0;
 
 const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
@@ -105,36 +107,44 @@ async function initializeRequiredServices(user, context, requirements) {
     await fbBot.init();
     const fbStatus = await fbBot.openFB(user);
 
-    // Použij novou detekci zablokovaných účtů
-    if (fbStatus === 'account_locked' || (typeof fbStatus === 'object' && fbStatus.locked)) {
-      let lockReason = 'Nespecifikovaný problém';
-      let lockType = 'UNKNOWN';
+    // Použij novou detekci, ale jako fallback zachovej původní chování
+    if (fbStatus === 'account_locked') {
+      await db.lockAccount(user.id);
+      throw new Error('Účet je zablokován.');
+    }
+    
+    // Pokud je fbStatus objekt s detailními informacemi (nová detekce)
+    if (typeof fbStatus === 'object' && fbStatus.locked) {
+      const lockReason = fbStatus.reason || 'Nespecifikovaný problém';
+      const lockType = fbStatus.type || 'UNKNOWN';
       
-      if (typeof fbStatus === 'object') {
-        lockReason = fbStatus.reason || lockReason;
-        lockType = fbStatus.type || lockType;
+      // Pokud existují nové funkce, použij je, jinak fallback na staré
+      if (typeof db.lockAccountWithReason === 'function') {
+        await db.lockAccountWithReason(user.id, lockReason, lockType, hostname);
+        
+        if (typeof db.logAccountIssue === 'function') {
+          await db.logAccountIssue(user.id, lockReason, lockType, {
+            detection_method: 'enhanced_facebook_detection',
+            timestamp: new Date().toISOString(),
+            hostname: hostname
+          }, hostname);
+        }
       } else {
-        // Fallback pro starou detekci
-        lockReason = 'Účet je zablokován (starší detekce)';
-        lockType = 'ACCOUNT_LOCKED';
+        // Fallback na původní metodu
+        await db.lockAccount(user.id);
       }
-
-      // Zablokuj účet s důvodem a typem
-      await db.lockAccountWithReason(user.id, lockReason, lockType, hostname);
-      
-      // Přidej záznam do systémového logu
-      await db.logAccountIssue(user.id, lockReason, lockType, {
-        detection_method: 'enhanced_facebook_detection',
-        timestamp: new Date().toISOString(),
-        hostname: hostname
-      }, hostname);
 
       Log.error(`[${user.id}] Účet zablokován: ${lockReason} (${lockType})`);
       throw new Error(`Účet je zablokován: ${lockReason}`);
     }
 
     if (!['still_loged', 'now_loged'].includes(fbStatus)) {
-      await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
+      // Podobný fallback pro neúspěšné přihlášení
+      if (typeof db.lockAccountWithReason === 'function') {
+        await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
+      } else {
+        await db.lockAccount(user.id);
+      }
       throw new Error('Login na FB selhal.');
     }
 

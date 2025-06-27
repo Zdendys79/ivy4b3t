@@ -218,18 +218,25 @@ export class FacebookBot {
   }
 
   /**
-   * Rozšířená detekce zablokovaných účtů kombinující textovou analýzu a analýzu stránky
-   * @returns {Object} Objekt s výsledkem detekce a důvodem
+   * Rozšířená detekce zablokovaných účtů - kompatibilní se stávajícím kódem
+   * @returns {Object|string} Objekt s výsledkem detekce nebo string pro zpětnou kompatibilitu
    */
   async isAccountLocked() {
     try {
-      // 1. Analýza komplexnosti stránky
+      // 1. Nejprve zkus původní textovou detekci pro zpětnou kompatibilitu
+      const originalCheck = await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován");
+      if (originalCheck) {
+        Log.warn(`[FB] Detekován zablokovaný účet (původní detekce)`);
+        return 'account_locked'; // Zpětná kompatibilita
+      }
+
+      // 2. Analýza komplexnosti stránky
       const pageComplexity = await this.analyzePageComplexity();
 
-      // 2. Detekce specifických chybových textů
+      // 3. Detekce specifických chybových textů
       const errorDetection = await this.detectErrorPatterns();
 
-      // 3. Kontrola přítomnosti FB navigace
+      // 4. Kontrola přítomnosti FB navigace
       const hasNavigation = await this.hasStandardNavigation();
 
       // Vyhodnocení výsledků
@@ -252,11 +259,17 @@ export class FacebookBot {
         };
       }
 
-      return { locked: false, reason: null, type: null };
+      return false; // Zpětná kompatibilita - žádný problém
 
     } catch (err) {
       Log.error(`[FB] Chyba při detekci zablokovaného účtu: ${err}`);
-      return { locked: false, reason: null, type: null };
+      // Fallback na původní metodu při chybě
+      try {
+        return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován") ? 'account_locked' : false;
+      } catch (fallbackErr) {
+        Log.error(`[FB] Fallback detekce také selhala: ${fallbackErr}`);
+        return false;
+      }
     }
   }
 
@@ -308,7 +321,7 @@ export class FacebookBot {
   }
 
   /**
-   * Detekuje specifické chybové patterny na stránce
+   * Detekuje specifické chybové patterny na stránce - BEZPEČNÁ verze
    * @returns {Object} Výsledek detekce s důvodem
    */
   async detectErrorPatterns() {
@@ -365,14 +378,21 @@ export class FacebookBot {
 
     for (const pattern of patterns) {
       for (const text of pattern.texts) {
-        const found = await this._findByText(text, { timeout: 2000 });
-        if (found.length > 0) {
-          return {
-            detected: true,
-            reason: pattern.reason,
-            type: pattern.type,
-            foundText: text
-          };
+        try {
+          // Bezpečná verze _findByText s timeout a error handling
+          const found = await this.safelyFindByText(text);
+          if (found && found.length > 0) {
+            return {
+              detected: true,
+              reason: pattern.reason,
+              type: pattern.type,
+              foundText: text
+            };
+          }
+        } catch (err) {
+          // Pokračuj na další text při chybě
+          Log.warn(`[FB] Chyba při hledání textu "${text}": ${err}`);
+          continue;
         }
       }
     }
@@ -381,11 +401,42 @@ export class FacebookBot {
   }
 
   /**
+   * Bezpečná verze _findByText s lepším error handlingem
+   * @param {string} text - Text k vyhledání
+   * @returns {Array} Pole nalezených elementů
+   */
+  async safelyFindByText(text) {
+    try {
+      if (!this.page || typeof this.page.evaluate !== 'function') {
+        Log.warn(`[FB] Page objektu není k dispozici pro hledání textu`);
+        return [];
+      }
+
+      // Použij page.evaluate místo $x pro lepší kompatibilitu
+      const found = await this.page.evaluate((searchText) => {
+        const xpath = `//span[contains(normalize-space(text()), "${searchText}")]`;
+        const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        return result.snapshotLength > 0 ? [true] : []; // Vrať jednoduchý indikátor
+      }, text);
+
+      return found;
+
+    } catch (err) {
+      Log.warn(`[FB] safelyFindByText selhalo pro "${text}": ${err}`);
+      return [];
+    }
+  }
+
+  /**
    * Kontroluje přítomnost standardní FB navigace
    * @returns {Boolean} True pokud má stránka FB navigaci
    */
   async hasStandardNavigation() {
     try {
+      if (!this.page || typeof this.page.$ !== 'function') {
+        return false;
+      }
+
       const navigationSelectors = [
         '[aria-label="Váš profil"]',
         '[aria-label="Facebook"]',
@@ -396,8 +447,10 @@ export class FacebookBot {
 
       for (const selector of navigationSelectors) {
         try {
-          await this.page.waitForSelector(selector, { timeout: 2000 });
-          return true;
+          const element = await this.page.$(selector);
+          if (element) {
+            return true;
+          }
         } catch (err) {
           // Pokračuj na další selektor
           continue;
