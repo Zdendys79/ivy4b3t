@@ -298,7 +298,7 @@ export class FacebookBot {
 
       // Normální FB stránka má obvykle:
       // - více než 500 elementů
-      // - více než 10 obrázků  
+      // - více než 10 obrázků
       // - více než 20 scriptů
       // - více než 50 odkazů
       const isNormal = metrics.elements > 500 &&
@@ -505,6 +505,32 @@ export class FacebookBot {
 
     return false;
   }
+
+    async newThing() {
+    try {
+      const promises = CONFIG.new_post_texts.map(text => {
+        const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
+        const selector = `xpath/${xpath}`;
+        return this.page.waitForSelector(selector, { timeout: 5000 })
+          .then(handle => ({ handle, text }))
+          .catch(() => null);
+      });
+
+      const result = await Promise.race(promises);
+      if (result && result.handle) {
+        this.newThingElement = result.handle;
+        Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
+        return true;
+      }
+
+      throw new Error('Žádný z možných textů nebyl nalezen.');
+    } catch (err) {
+      Log.error('[FB] newThing()', err);
+      await this.debugFindText();
+      return false;
+    }
+  }
+
   async clickNewThing() {
     try {
       if (!this.newThingElement) throw `newThingElement není definován.`;
@@ -613,6 +639,7 @@ export class FacebookBot {
       return false;
     }
   }
+
   async fallbackClick() {
     Log.info('[FB] Spouštím fallback klikání...');
 
