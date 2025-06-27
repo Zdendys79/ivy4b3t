@@ -14,12 +14,25 @@ echo "[FIX] Instaluji Xfce4 a základní komponenty..."
 sudo apt-get update
 sudo apt-get install -y xfce4 xfce4-terminal xserver-xorg-core xinit dbus-x11
 
+echo "[FIX] Kopíruji přednastavenou konfiguraci XFCE ze Sync/scripts/xfce4..."
+mkdir -p ~/.config
+rsync -av ~/Sync/scripts/xfce4/ ~/.config/xfce4/
+
+
 echo "[FIX] Odstraňuji/zneplatňuji přihlašovací správce (gdm3, lightdm)..."
 sudo systemctl disable gdm3 || true
 sudo systemctl disable lightdm || true
 sudo apt-get remove -y gdm3 lightdm || true
 
 echo "[FIX] Ukládám ~/.profile s potlačením DISPLAY a podporou keyring..."
+
+echo "[KEYBOARD] Nastavuji českou klávesnici pro terminál a grafiku..."
+sudo localectl set-keymap cz
+echo 'setxkbmap cz' >> ~/.xsessionrc
+chmod +x ~/.xsessionrc
+
+echo "[XFCE] Nastavuji počet pracovních ploch na 1..."
+xfconf-query -c xfwm4 -p /general/workspace_count -s 1
 
 cat > ~/.profile <<'EOF'
 # ~/.profile: spouští se při login shellu
