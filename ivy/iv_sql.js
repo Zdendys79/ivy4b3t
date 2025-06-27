@@ -361,3 +361,60 @@ export async function canUserPostToGroupType(user_id, group_type) {
     return false;
   }
 }
+
+/**
+ * Zablokuje účet s důvodem a typem problému
+ * @param {number} userId - ID uživatele
+ * @param {string} reason - Důvod zablokování 
+ * @param {string} type - Typ problému (VIDEOSELFIE, ACCOUNT_LOCKED, atd.)
+ * @param {string} hostname - Hostname serveru
+ */
+export const lockAccountWithReason = (userId, reason, type, hostname) =>
+  safeExecute('lock_account_with_reason', [userId, reason, type, hostname]);
+
+/**
+ * Přidá záznam o detekci problému do log_s
+ * @param {number} userId - ID uživatele
+ * @param {string} reason - Důvod problému
+ * @param {string} type - Typ problému
+ * @param {Object} details - Dodatečné detaily (JSON)
+ * @param {string} hostname - Hostname serveru
+ */
+export const logAccountIssue = (userId, reason, type, details, hostname) =>
+  safeExecute('log_account_issue', [userId, reason, type, JSON.stringify(details), hostname]);
+
+/**
+ * Získá statistiky zablokovaných účtů podle typu problému
+ */
+export const getLockedAccountsStats = () =>
+  safeQueryAll('get_locked_accounts_stats');
+
+/**
+ * Získá seznam zablokovaných účtů s detaily
+ * @param {number} limit - Limit počtu záznamů
+ */
+export const getLockedAccountsDetails = (limit = 50) =>
+  safeQueryAll('get_locked_accounts_details', [limit]);
+
+/**
+ * Odemkne účet a přidá záznam do logu
+ * @param {number} userId - ID uživatele
+ * @param {string} hostname - Hostname serveru
+ * @param {string} note - Poznámka k odemčení
+ */
+export const unlockAccountWithLog = (userId, hostname, note = 'Manual unlock') =>
+  safeExecute('unlock_account_with_log', [userId, hostname, note]);
+
+/**
+ * Zkontroluje, zda je účet zablokován a vrátí detaily
+ * @param {number} userId - ID uživatele
+ */
+export const checkAccountLockStatus = (userId) =>
+  safeQueryFirst('check_account_lock_status', [userId]);
+
+/**
+ * Získá počet zablokovaných účtů podle typu za posledních X dní
+ * @param {number} days - Počet dní zpět
+ */
+export const getRecentLocksByType = (days = 7) =>
+  safeQueryAll('get_recent_locks_by_type', [days]);

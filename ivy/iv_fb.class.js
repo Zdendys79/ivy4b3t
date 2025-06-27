@@ -217,35 +217,241 @@ export class FacebookBot {
     }
   }
 
+  /**
+   * Rozšířená detekce zablokovaných účtů kombinující textovou analýzu a analýzu stránky
+   * @returns {Object} Objekt s výsledkem detekce a důvodem
+   */
   async isAccountLocked() {
-    return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován");
-  }
-
-  async newThing() {
     try {
-      const promises = CONFIG.new_post_texts.map(text => {
-        const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
-        const selector = `xpath/${xpath}`;
-        return this.page.waitForSelector(selector, { timeout: 5000 })
-          .then(handle => ({ handle, text }))
-          .catch(() => null);
-      });
+      // 1. Analýza komplexnosti stránky
+      const pageComplexity = await this.analyzePageComplexity();
 
-      const result = await Promise.race(promises);
-      if (result && result.handle) {
-        this.newThingElement = result.handle;
-        Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
-        return true;
+      // 2. Detekce specifických chybových textů
+      const errorDetection = await this.detectErrorPatterns();
+
+      // 3. Kontrola přítomnosti FB navigace
+      const hasNavigation = await this.hasStandardNavigation();
+
+      // Vyhodnocení výsledků
+      if (errorDetection.detected) {
+        Log.warn(`[FB] Detekován chybový stav: ${errorDetection.reason}`);
+        return {
+          locked: true,
+          reason: errorDetection.reason,
+          type: errorDetection.type
+        };
       }
 
-      throw new Error('Žádný z možných textů nebyl nalezen.');
+      // Pokud stránka je podezřele jednoduchá a nemá FB navigaci
+      if (!pageComplexity.isNormal && !hasNavigation) {
+        Log.warn(`[FB] Stránka je podezřele jednoduchá - možný checkpoint`);
+        return {
+          locked: true,
+          reason: 'Podezřelá jednoduchá stránka - možný checkpoint',
+          type: 'SIMPLE_PAGE'
+        };
+      }
+
+      return { locked: false, reason: null, type: null };
+
     } catch (err) {
-      Log.error('[FB] newThing()', err);
-      await this.debugFindText();
+      Log.error(`[FB] Chyba při detekci zablokovaného účtu: ${err}`);
+      return { locked: false, reason: null, type: null };
+    }
+  }
+
+  /**
+   * Analyzuje komplexnost stránky pro detekci chybových stavů
+   * @returns {Object} Informace o komplexnosti stránky
+   */
+  async analyzePageComplexity() {
+    try {
+      const metrics = await this.page.evaluate(() => {
+        const elementCount = document.querySelectorAll('*').length;
+        const imageCount = document.querySelectorAll('img').length;
+        const scriptCount = document.querySelectorAll('script').length;
+        const linkCount = document.querySelectorAll('a').length;
+        const buttonCount = document.querySelectorAll('button, input[type="button"], input[type="submit"]').length;
+
+        return {
+          elements: elementCount,
+          images: imageCount,
+          scripts: scriptCount,
+          links: linkCount,
+          buttons: buttonCount,
+          bodyText: document.body ? document.body.innerText.length : 0
+        };
+      });
+
+      // Normální FB stránka má obvykle:
+      // - více než 500 elementů
+      // - více než 10 obrázků  
+      // - více než 20 scriptů
+      // - více než 50 odkazů
+      const isNormal = metrics.elements > 500 &&
+        metrics.images > 10 &&
+        metrics.scripts > 20 &&
+        metrics.links > 50;
+
+      Log.info(`[FB] Analýza stránky: ${metrics.elements} elementů, ${metrics.images} obrázků, komplexní: ${isNormal}`);
+
+      return {
+        isNormal,
+        metrics,
+        suspiciouslySimple: metrics.elements < 100 && metrics.images < 5
+      };
+
+    } catch (err) {
+      Log.error(`[FB] Chyba při analýze komplexnosti: ${err}`);
+      return { isNormal: true, metrics: null, suspiciouslySimple: false };
+    }
+  }
+
+  /**
+   * Detekuje specifické chybové patterny na stránce
+   * @returns {Object} Výsledek detekce s důvodem
+   */
+  async detectErrorPatterns() {
+    const patterns = [
+      // Videoselfie požadavky
+      {
+        texts: ['videoselfie', 'video selfie', 'Please take a video selfie'],
+        reason: 'Požadavek na videoselfie',
+        type: 'VIDEOSELFIE'
+      },
+
+      // Klasické zablokování
+      {
+        texts: ['váš účet jsme uzamkli', 'Account restricted', 'temporarily restricted'],
+        reason: 'Účet je zablokován',
+        type: 'ACCOUNT_LOCKED'
+      },
+
+      // Ověření identity
+      {
+        texts: ['Verify your identity', 'ověření identity', 'identity verification'],
+        reason: 'Požadavek na ověření identity',
+        type: 'IDENTITY_VERIFICATION'
+      },
+
+      // Podezřelá aktivita
+      {
+        texts: ['suspicious activity', 'podezřelá aktivita', 'unusual activity'],
+        reason: 'Detekována podezřelá aktivita',
+        type: 'SUSPICIOUS_ACTIVITY'
+      },
+
+      // Ověření telefonu
+      {
+        texts: ['Please confirm your phone', 'potvrďte telefon', 'phone verification'],
+        reason: 'Požadavek na ověření telefonu',
+        type: 'PHONE_VERIFICATION'
+      },
+
+      // Checkpoint obecně
+      {
+        texts: ['Security check', 'bezpečnostní kontrola', 'checkpoint'],
+        reason: 'Bezpečnostní checkpoint',
+        type: 'SECURITY_CHECKPOINT'
+      },
+
+      // Chyby přihlášení
+      {
+        texts: ['Nepamatujete si svůj účet?', 'Forgot Account?'],
+        reason: 'Neúspěšné přihlášení',
+        type: 'LOGIN_FAILED'
+      }
+    ];
+
+    for (const pattern of patterns) {
+      for (const text of pattern.texts) {
+        const found = await this._findByText(text, { timeout: 2000 });
+        if (found.length > 0) {
+          return {
+            detected: true,
+            reason: pattern.reason,
+            type: pattern.type,
+            foundText: text
+          };
+        }
+      }
+    }
+
+    return { detected: false, reason: null, type: null };
+  }
+
+  /**
+   * Kontroluje přítomnost standardní FB navigace
+   * @returns {Boolean} True pokud má stránka FB navigaci
+   */
+  async hasStandardNavigation() {
+    try {
+      const navigationSelectors = [
+        '[aria-label="Váš profil"]',
+        '[aria-label="Facebook"]',
+        '[data-pagelet="LeftRail"]',
+        '[role="banner"]',
+        'nav[aria-label]'
+      ];
+
+      for (const selector of navigationSelectors) {
+        try {
+          await this.page.waitForSelector(selector, { timeout: 2000 });
+          return true;
+        } catch (err) {
+          // Pokračuj na další selektor
+          continue;
+        }
+      }
+
+      return false;
+
+    } catch (err) {
+      Log.error(`[FB] Chyba při kontrole navigace: ${err}`);
       return false;
     }
   }
 
+  /**
+   * Pokročilá detekce videoselfie požadavku
+   * @returns {Boolean} True pokud je detekován videoselfie požadavek
+   */
+  async detectVideoselfieRequest() {
+    const videoselfieIndicators = [
+      'videoselfie',
+      'video selfie',
+      'take a video',
+      'record yourself',
+      'nahrát video',
+      'video sebe sama'
+    ];
+
+    for (const indicator of videoselfieIndicators) {
+      const found = await this._findByText(indicator, { timeout: 1500 });
+      if (found.length > 0) {
+        Log.warn(`[FB] Detekován videoselfie požadavek: "${indicator}"`);
+        return true;
+      }
+    }
+
+    // Kontrola na přítomnost video elementů nebo camera ikonů
+    try {
+      const hasVideoElements = await this.page.evaluate(() => {
+        const videos = document.querySelectorAll('video').length;
+        const cameraIcons = document.querySelectorAll('[aria-label*="camera"], [aria-label*="video"]').length;
+        return videos > 0 || cameraIcons > 0;
+      });
+
+      if (hasVideoElements) {
+        Log.warn(`[FB] Detekována video/camera rozhraní - možný videoselfie`);
+        return true;
+      }
+    } catch (err) {
+      Log.error(`[FB] Chyba při detekci video elementů: ${err}`);
+    }
+
+    return false;
+  }
   async clickNewThing() {
     try {
       if (!this.newThingElement) throw `newThingElement není definován.`;

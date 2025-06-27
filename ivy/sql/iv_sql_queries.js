@@ -347,6 +347,73 @@ get_user_all_limits: `
   FROM user_group_limits
   WHERE user_id = ?
   ORDER BY group_type
-`
+`,
 
+// Rozšíření pro správu zablokovaných účtů
+lock_account_with_reason: `
+  UPDATE fb_users
+  SET locked = NOW(), 
+      lock_reason = ?,
+      lock_type = ?
+  WHERE id = ?`,
+
+log_account_issue: `
+  INSERT INTO log_s (time, hostname, title, text, data)
+  VALUES (NOW(), ?, 
+          CONCAT('Account Lock - User ', ?), 
+          CONCAT('Account locked: ', ?, ' (Type: ', ?, ')'),
+          ?)`,
+
+get_locked_accounts_stats: `
+  SELECT 
+    lock_type,
+    COUNT(*) as count,
+    COUNT(CASE WHEN locked > NOW() - INTERVAL 24 HOUR THEN 1 END) as last_24h,
+    COUNT(CASE WHEN locked > NOW() - INTERVAL 7 DAY THEN 1 END) as last_7d
+  FROM fb_users 
+  WHERE locked IS NOT NULL AND lock_type IS NOT NULL
+  GROUP BY lock_type
+  ORDER BY count DESC`,
+
+get_locked_accounts_details: `
+  SELECT 
+    id, name, surname, host, locked, lock_reason, lock_type,
+    TIMESTAMPDIFF(HOUR, locked, NOW()) as hours_locked
+  FROM fb_users 
+  WHERE locked IS NOT NULL 
+  ORDER BY locked DESC 
+  LIMIT ?`,
+
+unlock_account_with_log: `
+  UPDATE fb_users 
+  SET locked = NULL, 
+      lock_reason = NULL, 
+      lock_type = NULL,
+      unlocked = CURDATE()
+  WHERE id = ?`,
+
+check_account_lock_status: `
+  SELECT id, locked, lock_reason, lock_type,
+         CASE WHEN locked IS NOT NULL THEN TRUE ELSE FALSE END as is_locked
+  FROM fb_users 
+  WHERE id = ?`,
+
+get_recent_locks_by_type: `
+  SELECT 
+    lock_type,
+    DATE(locked) as lock_date,
+    COUNT(*) as daily_count
+  FROM fb_users 
+  WHERE locked > NOW() - INTERVAL ? DAY 
+    AND lock_type IS NOT NULL
+  GROUP BY lock_type, DATE(locked)
+  ORDER BY lock_date DESC, daily_count DESC`,
+
+// Aktualizace user_for_statement pro vyloučení zablokovaných  
+user_for_statement: `
+  SELECT * FROM fb_users
+  WHERE host = ?
+    AND locked IS NULL
+  ORDER BY COALESCE(next_statement, NOW())
+  LIMIT 1`,
 };

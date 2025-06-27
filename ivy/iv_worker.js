@@ -105,13 +105,36 @@ async function initializeRequiredServices(user, context, requirements) {
     await fbBot.init();
     const fbStatus = await fbBot.openFB(user);
 
-    if (fbStatus === 'account_locked') {
-      await db.lockAccount(user.id);
-      throw new Error('Účet je zablokován.');
+    // Použij novou detekci zablokovaných účtů
+    if (fbStatus === 'account_locked' || (typeof fbStatus === 'object' && fbStatus.locked)) {
+      let lockReason = 'Nespecifikovaný problém';
+      let lockType = 'UNKNOWN';
+      
+      if (typeof fbStatus === 'object') {
+        lockReason = fbStatus.reason || lockReason;
+        lockType = fbStatus.type || lockType;
+      } else {
+        // Fallback pro starou detekci
+        lockReason = 'Účet je zablokován (starší detekce)';
+        lockType = 'ACCOUNT_LOCKED';
+      }
+
+      // Zablokuj účet s důvodem a typem
+      await db.lockAccountWithReason(user.id, lockReason, lockType, hostname);
+      
+      // Přidej záznam do systémového logu
+      await db.logAccountIssue(user.id, lockReason, lockType, {
+        detection_method: 'enhanced_facebook_detection',
+        timestamp: new Date().toISOString(),
+        hostname: hostname
+      }, hostname);
+
+      Log.error(`[${user.id}] Účet zablokován: ${lockReason} (${lockType})`);
+      throw new Error(`Účet je zablokován: ${lockReason}`);
     }
 
     if (!['still_loged', 'now_loged'].includes(fbStatus)) {
-      await db.lockAccount(user.id);
+      await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
       throw new Error('Login na FB selhal.');
     }
 
@@ -124,6 +147,126 @@ async function initializeRequiredServices(user, context, requirements) {
   }
 
   return { fbBot, utioInitialized };
+}
+
+// Přidej novou funkce pro monitoring zablokovaných účtů
+async function checkAccountHealth(user) {
+  try {
+    const lockStatus = await db.checkAccountLockStatus(user.id);
+    
+    if (lockStatus && lockStatus.is_locked) {
+      Log.warn(`[${user.id}] Účet je označen jako zablokovaný: ${lockStatus.lock_reason} (${lockStatus.lock_type})`);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    Log.error(`[${user.id}] Chyba při kontrole stavu účtu: ${err}`);
+    return true; // V případě chyby pokračuj
+  }
+}
+
+// Aktualizace hlavní tick() funkce
+export async function tick() {
+  try {
+    const uiCommand = await db.getUICommand();
+    if (uiCommand) {
+      Log.info('[TICK]', 'Detekován UI příkaz – zpracovávám...');
+      await ui.solveUICommand(uiCommand);
+      return;
+    }
+
+    if (Date.now() < nextWorktime) {
+      Log.info('[TICK]', 'Ještě nenastal čas na další cyklus.');
+      return;
+    }
+
+    const user = await db.getUser(); // Už obsahuje AND locked IS NULL
+    if (!user) {
+      Log.info('[TICK]', 'Žádný dostupný uživatel (všichni zablokovaní nebo zaneprázdněni).');
+      
+      // Zkus najít zablokovaného uživatele pro debug info
+      const lockedStats = await db.getLockedAccountsStats();
+      if (lockedStats.length > 0) {
+        Log.info('[TICK]', `Zablokované účty: ${lockedStats.map(s => `${s.lock_type}: ${s.count}`).join(', ')}`);
+      }
+      
+      nextWorktime = Date.now() + (30 * 1000); // Zkus znovu za 30 sekund
+      return;
+    }
+
+    // Dodatečná kontrola stavu účtu
+    if (!(await checkAccountHealth(user))) {
+      Log.warn(`[${user.id}] Přeskakujem uživatele kvůli problémům s účtem`);
+      nextWorktime = Date.now() + (10 * 1000);
+      return;
+    }
+
+    Log.info('[TICK]', `Zpracovávám uživatele ${user.id} ${user.name} ${user.surname}`);
+
+    const { browser, context, browserClosed } = await prepareBrowser(user);
+
+    try {
+      await executeUserAction(user, browser, context, browserClosed);
+      
+      const sleepTime = await db.getReferenceSleepTime(user.id);
+      nextWorktime = Date.now() + sleepTime;
+      
+      Log.info('[TICK]', `Další cyklus za ${Math.round(sleepTime / 1000)}s`);
+
+    } catch (err) {
+      Log.error('[TICK]', `Chyba při zpracování uživatele ${user.id}: ${err}`);
+      
+      // Pokud je chyba související se zablokováním, nezablokuj znovu
+      if (!err.message.includes('zablokován')) {
+        await pauseOnError(browser, browserClosed);
+      }
+      
+      nextWorktime = Date.now() + (60 * 1000); // Zkus znovu za minutu
+    } finally {
+      if (!DEBUG_KEEP_BROWSER_OPEN && browser && !browserClosed) {
+        try {
+          await browser.close();
+          Log.info('[TICK]', 'Prohlížeč uzavřen.');
+        } catch (err) {
+          Log.warn('[TICK]', `Chyba při zavírání prohlížeče: ${err}`);
+        }
+      }
+    }
+
+  } catch (err) {
+    Log.error('[TICK]', err);
+    nextWorktime = Date.now() + (5 * 60 * 1000); // Zkus znovu za 5 minut při systémové chybě
+  }
+}
+
+// Přidej funkci pro reporting statistik zablokovaných účtů
+export async function reportLockStatistics() {
+  try {
+    const stats = await db.getLockedAccountsStats();
+    const recentLocks = await db.getRecentLocksByType(7);
+    
+    Log.info('[STATS]', '=== Statistiky zablokovaných účtů ===');
+    
+    if (stats.length === 0) {
+      Log.info('[STATS]', 'Žádné zablokované účty.');
+      return;
+    }
+    
+    stats.forEach(stat => {
+      Log.info('[STATS]', `${stat.lock_type}: ${stat.count} celkem (${stat.last_24h} za 24h, ${stat.last_7d} za 7d)`);
+    });
+    
+    if (recentLocks.length > 0) {
+      Log.info('[STATS]', '=== Nedávná zablokování ===');
+      recentLocks.forEach(lock => {
+        Log.info('[STATS]', `${lock.lock_date}: ${lock.lock_type} - ${lock.daily_count}x`);
+      });
+    }
+    
+  } catch (err) {
+    Log.error('[STATS]', `Chyba při načítání statistik: ${err}`);
+  }
 }
 
 async function executeUserAction(user, browser, context, browserClosed) {
