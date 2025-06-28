@@ -71,10 +71,7 @@ export const LIMITS = {
       WHERE al.account_id = ?
         AND al.action_code LIKE 'post_utio_%'
         AND fg.typ = ?
-        AND al.timestamp >= NOW() - INTERVAL (
-          SELECT time_window_hours FROM user_group_limits
-          WHERE user_id = ? AND group_type = ?
-        ) HOUR
+        AND al.timestamp >= NOW() - INTERVAL ? HOUR
     ) current_usage ON 1=1
     WHERE ugl.user_id = ? AND ugl.group_type = ?
   `,
@@ -319,5 +316,21 @@ export const LIMITS = {
     WHERE u.locked IS NULL
     GROUP BY ugl.group_type, ugl.user_id, u.name, u.surname, ugl.max_posts
     ORDER BY ugl.group_type, actual_posts_24h DESC
-  `
+  `,
+
+    canUserPostSimple: `
+    SELECT max_posts, time_window_hours
+    FROM user_group_limits
+    WHERE user_id = ? AND group_type = ?
+  `,
+
+  countUserPostsInWindow: `
+    SELECT COUNT(*) as post_count
+    FROM action_log al
+    JOIN fb_groups fg ON al.reference_id = fg.id
+    WHERE al.account_id = ?
+      AND al.action_code LIKE 'post_utio_%'
+      AND fg.typ = ?
+      AND al.timestamp >= NOW() - INTERVAL ? HOUR
+  `,
 };

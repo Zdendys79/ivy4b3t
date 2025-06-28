@@ -216,11 +216,13 @@ export class QueryBuilder {
     const limit = await this.getUserLimit(userId, groupType);
     if (!limit) return false;
 
-    const result = await safeQueryFirst('limits.canUserPost', [
-      userId, groupType, limit.time_window_hours, userId, groupType
+    // Použijeme existující dotaz countPostsInTimeframe
+    const postCount = await safeQueryFirst('limits.countPostsInTimeframe', [
+      userId, groupType, limit.time_window_hours
     ]);
 
-    return result?.can_post === 1;
+    const currentPosts = postCount ? postCount.post_count : 0;
+    return currentPosts < limit.max_posts;
   }
 
   // Groups
@@ -248,7 +250,7 @@ export class QueryBuilder {
 export const db = new QueryBuilder();
 
 // =========================================================
-// LEGACY EXPORTS (zachovat pro zpětnou kompatibilitu)
+// MODERNIZED EXPORTS (bez legacy závislostí)
 // =========================================================
 
 // Základní systémové funkce
@@ -311,10 +313,10 @@ export const getUICommand = () => safeQueryFirst('system.getUICommand', [hostnam
 export const uICommandSolved = id => safeExecute('system.uiCommandSolved', [id]);
 export const uICommandAccepted = id => safeExecute('system.uiCommandAccepted', [id]);
 
-// Quotes
-export const getRandomQuote = (user_id) => safeQueryFirst('quotes.selectForPosting', [user_id]);
-export const updateQuoteNextSeen = (quote_id, days) =>
-  safeExecute('quotes.markAsPosted', [quote_id]);
+// Quotes (používá tabulku quotes místo statements)
+export const getRandomQuote = (user_id) => safeQueryFirst('quotes.getRandomForUser', [user_id]);
+export const updateQuoteNextSeen = (quote_id, days = 7) =>
+  safeExecute('quotes.markAsUsed', [quote_id]);
 
 // Logging
 export const systemLog = async (title, text, data = {}) => {
