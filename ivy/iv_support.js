@@ -104,7 +104,9 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       if (!m || !Array.isArray(m) || m.length === 0) {
         Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Žádná zpráva z UTIO`);
         cnt++;
-        await wait.delay(2000); // Počkej před dalším pokusem
+        if (cnt < 5) {
+          await wait.delay(2000); // Počkej před dalším pokusem
+        }
         continue;
       }
 
@@ -112,6 +114,9 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       if (!m[0] || typeof m[0] !== 'string' || m[0].trim().length === 0) {
         Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: První řádek zprávy je prázdný`);
         cnt++;
+        if (cnt < 5) {
+          await wait.delay(1000);
+        }
         continue;
       }
 
@@ -134,7 +139,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
         }
 
       } catch (hashErr) {
-        Log.error(`[${user.id}]`, `Chyba při vytváření MD5 hash: ${hashErr}`);
+        Log.error(`[${user.id}]`, `Chyba při vytváření MD5 hash: ${hashErr.message}`);
         // Pokud se MD5 nepodaří, použij zprávu stejně (lepší než selhání)
         message = m;
         break;
@@ -162,47 +167,271 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
   try {
     Log.info(`[${user.id}]`, 'Vkládám zprávu do Facebooku...');
 
+    // Lidské chování - krátká pauza před začátkem psaní
+    await wait.delay(500 + Math.random() * 1000);
+
+    // Klik na pole pro psaní nového příspěvku
+    if (!await fbBot.newThing()) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku');
+      return false;
+    }
+
+    await wait.delay(wait.timeout());
+
     if (!await fbBot.clickNewThing()) {
       Log.error(`[${user.id}]`, 'Nepodařilo se kliknout na pole pro psaní');
       return false;
     }
 
+    // Lidské chování - krátká pauza po kliknutí
+    await wait.delay(wait.timeout());
+
     const messageText = message[0].trim();
+    Log.info(`[${user.id}]`, `Píšu zprávu (${messageText.length} znaků)...`);
+
+    // Vložení textu zprávy
     const paste = await fbBot.pasteStatement(messageText);
 
-    if (paste) {
-      Log.success(`[${user.id}]`, `Zpráva vložena do skupiny ${group.fb_id}`);
-      Log.info(`[${user.id}]`, `Text zprávy: "${messageText.substring(0, 100)}..."`);
-      return messageText;
-    } else {
+    if (!paste) {
       Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do pole');
       return false;
     }
 
+    // Lidské chování - přečteme si co jsme napsali
+    Log.info(`[${user.id}]`, 'Kontroluji napsaný text...');
+    await wait.delay(2000 + Math.random() * 3000); // 2-5 sekund čtení
+
+    // Občas si rozmyslíme a chvíli váhám před odesláním
+    if (Math.random() < 0.2) { // 20% šance na váhání
+      Log.info(`[${user.id}]`, 'Chvíli váhám před odesláním...');
+      await wait.delay(3000 + Math.random() * 5000); // 3-8 sekund váhání
+    }
+
+    Log.info(`[${user.id}]`, 'Odesílám příspěvek...');
+
+    // Odeslání příspěvku
+    const sent = await fbBot.clickSendButton();
+
+    if (!sent) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek');
+      return false;
+    }
+
+    // Lidské chování - krátká pauza po odeslání
+    await wait.delay(1000 + Math.random() * 2000);
+
+    Log.success(`[${user.id}]`, `Zpráva úspěšně publikována do skupiny ${group.fb_id}`);
+    Log.info(`[${user.id}]`, `Text zprávy: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`);
+
+    // Uložíme hash zprávy do databáze pro zabránění duplicit
+    try {
+      const messageHash = md5(messageText);
+      if (typeof db.saveMessageHash === 'function') {
+        await db.saveMessageHash(group.id, messageHash, messageText.substring(0, 50));
+      }
+    } catch (hashSaveErr) {
+      Log.warn(`[${user.id}]`, `Nepodařilo se uložit hash zprávy: ${hashSaveErr.message}`);
+      // Není kritické, pokračujeme
+    }
+
+    return messageText;
+
   } catch (pasteErr) {
-    Log.error(`[${user.id}]`, `Chyba při vkládání zprávy: ${pasteErr}`);
+    Log.error(`[${user.id}]`, `Chyba při vkládání zprávy: ${pasteErr.message}`);
     return false;
   }
 }
 
+/**
+ * Zavře prázdné záložky v browseru
+ * @param {Object} context - Browser context
+ * @returns {Promise<void>}
+ */
 export async function closeBlankTabs(context) {
-  const pages = await context.pages();
+  try {
+    const pages = await context.pages();
 
-  for (const page of pages) {
-    try {
-      const title = await page.title();
-      const url = page.url();
-
-      if ((title === '' || title === 'about:blank') && url === 'about:blank') {
-        if (pages.length > 1) {
-          Log.info('[BROWSER]', 'Zavírám prázdnou výchozí záložku.');
-          await page.close();
-        } else {
-          Log.warn('[BROWSER]', 'Nelze zavřít jedinou záložku.');
-        }
-      }
-    } catch (err) {
-      Log.error('[BROWSER]', err);
+    if (!pages || pages.length === 0) {
+      Log.info('[BROWSER]', 'Žádné záložky k zavření');
+      return;
     }
+
+    let closedCount = 0;
+
+    for (const page of pages) {
+      try {
+        const title = await page.title();
+        const url = page.url();
+
+        if ((title === '' || title === 'about:blank') && url === 'about:blank') {
+          if (pages.length > 1) {
+            Log.info('[BROWSER]', 'Zavírám prázdnou výchozí záložku.');
+            await page.close();
+            closedCount++;
+          } else {
+            Log.warn('[BROWSER]', 'Nelze zavřít jedinou záložku.');
+          }
+        }
+      } catch (err) {
+        Log.warn('[BROWSER]', `Chyba při kontrole záložky: ${err.message}`);
+      }
+    }
+
+    if (closedCount > 0) {
+      Log.info('[BROWSER]', `Zavřeno ${closedCount} prázdných záložek`);
+    }
+
+  } catch (err) {
+    Log.error('[BROWSER]', `Chyba při zavírání prázdných záložek: ${err.message}`);
+  }
+}
+
+/**
+ * Ověří, zda skupina splňuje podmínky pro postování
+ * @param {Object} group - Data skupiny
+ * @param {Object} user - Data uživatele
+ * @returns {Promise<boolean>} True pokud lze do skupiny postovat
+ */
+export async function canPostToGroup(group, user) {
+  try {
+    // Kontrola základních parametrů
+    if (!group || !group.fb_id || !user || !user.id) {
+      Log.warn('[SUPPORT]', 'canPostToGroup: Chybí povinné parametry');
+      return false;
+    }
+
+    // Kontrola, zda skupina není zablokována
+    if (group.blocked || group.status === 'blocked') {
+      Log.warn(`[${user.id}]`, `Skupina ${group.fb_id} je zablokována`);
+      return false;
+    }
+
+    // Kontrola časového okna pro skupinu
+    if (group.next_seen && new Date(group.next_seen) > new Date()) {
+      Log.info(`[${user.id}]`, `Skupina ${group.fb_id} je v časovém okně (next_seen: ${group.next_seen})`);
+      return false;
+    }
+
+    // Kontrola denních limitů uživatele
+    if (user.day_count >= user.day_limit) {
+      Log.info(`[${user.id}]`, `Dosažen denní limit uživatele (${user.day_count}/${user.day_limit})`);
+      return false;
+    }
+
+    return true;
+
+  } catch (err) {
+    Log.error('[SUPPORT]', `Chyba při kontrole skupiny: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Aktualizuje statistiky po úspěšném postování
+ * @param {Object} group - Data skupiny
+ * @param {Object} user - Data uživatele
+ * @param {string} actionCode - Kód akce
+ * @returns {Promise<boolean>} True pokud bylo úspěšné
+ */
+export async function updatePostStats(group, user, actionCode) {
+  try {
+    // Aktualizuj čas posledního použití skupiny
+    if (typeof db.updateGroupLastSeen === 'function') {
+      await db.updateGroupLastSeen(group.id);
+    }
+
+    // Nastav další možný čas použití skupiny
+    if (typeof db.updateGroupNextSeen === 'function') {
+      const nextSeenMinutes = 120 + Math.random() * 360; // 2-8 hodin
+      await db.updateGroupNextSeen(group.id, nextSeenMinutes);
+    }
+
+    // Aktualizuj statistiky uživatele
+    if (typeof db.updateUserDayCount === 'function') {
+      await db.updateUserDayCount(user.id);
+    }
+
+    // Zaloguj akci
+    await db.logUserAction(user.id, actionCode, group.id, `Post do skupiny: ${group.nazev || group.name || group.fb_id}`);
+
+    Log.success(`[${user.id}]`, `Statistiky aktualizovány pro skupinu ${group.fb_id}`);
+    return true;
+
+  } catch (err) {
+    Log.error('[SUPPORT]', `Chyba při aktualizaci statistik: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Generuje náhodnou pauzu před akcí na základě typu akce
+ * @param {string} actionType - Typ akce ('post', 'comment', 'like', 'browse')
+ * @returns {Promise<void>}
+ */
+export async function humanPause(actionType = 'default') {
+  let minDelay, maxDelay;
+
+  switch (actionType) {
+    case 'post':
+      minDelay = 2000;
+      maxDelay = 8000;
+      break;
+    case 'comment':
+      minDelay = 1000;
+      maxDelay = 4000;
+      break;
+    case 'like':
+      minDelay = 500;
+      maxDelay = 2000;
+      break;
+    case 'browse':
+      minDelay = 1000;
+      maxDelay = 5000;
+      break;
+    default:
+      minDelay = 500;
+      maxDelay = 2000;
+      break;
+  }
+
+  const delay = minDelay + Math.random() * (maxDelay - minDelay);
+  await wait.delay(delay, false);
+}
+
+/**
+ * Ověří, zda je Facebook stránka připravená k použití
+ * @param {Object} fbBot - FacebookBot instance
+ * @returns {Promise<boolean>} True pokud je stránka připravená
+ */
+export async function isFacebookReady(fbBot) {
+  try {
+    if (!fbBot || !fbBot.page) {
+      return false;
+    }
+
+    // Zkontroluj, zda stránka není zavřená
+    if (fbBot.page.isClosed()) {
+      return false;
+    }
+
+    // Zkontroluj URL
+    const url = fbBot.page.url();
+    if (!url.includes('facebook.com')) {
+      return false;
+    }
+
+    // Zkontroluj, zda nejsme na error stránce
+    const title = await fbBot.page.title();
+    if (title.toLowerCase().includes('error') ||
+        title.toLowerCase().includes('not found') ||
+        title.toLowerCase().includes('blocked')) {
+      return false;
+    }
+
+    return true;
+
+  } catch (err) {
+    Log.warn('[SUPPORT]', `Chyba při kontrole Facebook stránky: ${err.message}`);
+    return false;
   }
 }

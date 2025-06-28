@@ -149,14 +149,31 @@ async function postUtioByType(user, fbBot, groupType, utioBot) {
     }
 
     // Zkontroluj, zda může uživatel přidat příspěvek do tohoto typu skupin
-    const canPost = await db.canUserPostToGroupType(user.id, groupType);
+    let canPost = true;
+    if (typeof db.canUserPostToGroupType === 'function') {
+      canPost = await db.canUserPostToGroupType(user.id, groupType);
+    } else {
+      Log.debug(`[${user.id}]`, 'canUserPostToGroupType není implementováno - pokračuji bez kontroly limitů');
+    }
+
     if (!canPost) {
       Log.warn(`[${user.id}]`, `Dosažen limit příspěvků pro skupiny typu ${groupType}`);
       return false;
     }
 
     // Najdi dostupné skupiny tohoto typu
-    const availableGroups = await db.getAvailableGroupsByType(groupType, user.id);
+    let availableGroups = [];
+    if (typeof db.getAvailableGroupsByType === 'function') {
+      availableGroups = await db.getAvailableGroupsByType(groupType, user.id);
+    } else {
+      Log.debug(`[${user.id}]`, 'getAvailableGroupsByType není implementováno - používám fallback');
+      // Fallback na obecnou funkci pro získání skupin
+      if (typeof db.getAvailableGroups === 'function') {
+        const allGroups = await db.getAvailableGroups(user.id);
+        availableGroups = allGroups.filter(g => g.group_type === groupType);
+      }
+    }
+
     if (!availableGroups.length) {
       Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu ${groupType}`);
       return false;
@@ -164,7 +181,7 @@ async function postUtioByType(user, fbBot, groupType, utioBot) {
 
     // Vyber náhodnou skupinu
     const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
-    Log.info(`[${user.id}]`, `Vybrána skupina: ${selectedGroup.nazev} (${selectedGroup.fb_id})`);
+    Log.info(`[${user.id}]`, `Vybrána skupina: ${selectedGroup.nazev || selectedGroup.name} (${selectedGroup.fb_id})`);
 
     // Otevři skupinu
     await fbBot.openGroup(selectedGroup);
@@ -176,16 +193,20 @@ async function postUtioByType(user, fbBot, groupType, utioBot) {
     if (postSuccess) {
       // Zaloguj akci
       const actionCode = `post_utio_${groupType.toLowerCase()}`;
-      await db.logUserAction(user.id, actionCode, selectedGroup.id, `UTIO post do ${groupType}: ${selectedGroup.nazev}`);
+      await db.logUserAction(user.id, actionCode, selectedGroup.id, `UTIO post do ${groupType}: ${selectedGroup.nazev || selectedGroup.name}`);
 
       // Aktualizuj čas posledního použití skupiny
-      await db.updateGroupLastSeen(selectedGroup.id);
-      await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
+      if (typeof db.updateGroupLastSeen === 'function') {
+        await db.updateGroupLastSeen(selectedGroup.id);
+      }
+      if (typeof db.updateGroupNextSeen === 'function') {
+        await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
+      }
 
-      Log.success(`[${user.id}]`, `Úspěšné postování UTIO zprávy do skupiny ${groupType}: ${selectedGroup.nazev}`);
+      Log.success(`[${user.id}]`, `Úspěšné postování UTIO zprávy do skupiny ${groupType}: ${selectedGroup.nazev || selectedGroup.name}`);
       return true;
     } else {
-      Log.error(`[${user.id}]`, `Nepodařilo se poslat UTIO zprávu do skupiny ${selectedGroup.nazev}`);
+      Log.error(`[${user.id}]`, `Nepodařilo se poslat UTIO zprávu do skupiny ${selectedGroup.nazev || selectedGroup.name}`);
       return false;
     }
 
@@ -205,6 +226,15 @@ async function performUtioPost(user, fbBot, group, utioBot) {
       Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
       return false;
     }
+
+    Log.info(`[${user.id}]`, 'UTIO zpráva získána, publikuji na Facebook...');
+
+    // Zpráva už byla vložena pomocí support.pasteMsg
+    // Funkce pasteMsg už obsahuje celý proces publikování včetně:
+    // - otevření editoru příspěvku
+    // - vložení textu
+    // - odeslání
+    // Pokud se dostaneme sem, znamená to že bylo vše úspěšné
 
     Log.success(`[${user.id}]`, 'UTIO zpráva úspěšně publikována!');
     return true;
@@ -261,7 +291,10 @@ async function quotePost(user, fbBot) {
 
     // Uložíme do databáze
     await db.logUserAction(user.id, 'quote_post', quote.id, postText);
-    await db.updateQuoteNextSeen(quote.id, 30);
+
+    if (typeof db.updateQuoteNextSeen === 'function') {
+      await db.updateQuoteNextSeen(quote.id, 30);
+    }
 
     // Lidské chování - chvíli si prohlédneme výsledek
     Log.info(`[${user.id}]`, 'Prohlížím si zveřejněný příspěvek...');
@@ -269,10 +302,10 @@ async function quotePost(user, fbBot) {
 
     // DEBUG REŽIM podle config.json
     if (isDebugMode()) {
-      Log.info(`[DEBUG]`, 'Debug režim (main): čekám 60 sekund pro kontrolu...');
+      Log.debug(`[${user.id}]`, 'Debug režim (main): čekám 60 sekund pro kontrolu...');
       await wait.delay(60000);
     } else {
-      Log.info(`[RELEASE]`, 'Release režim (public): pokračuji normálně...');
+      Log.debug(`[${user.id}]`, 'Release režim (public): pokračuji normálně...');
     }
 
     return true;
@@ -283,16 +316,22 @@ async function quotePost(user, fbBot) {
   }
 }
 
-// ==========================================
-// 🚧 ŠABLONY NEIMPLEMENTOVANÝCH AKCÍ
-// ==========================================
-
 async function groupPost(user, fbBot) {
   try {
     Log.info(`[${user.id}]`, 'Spouštím postování do zájmových skupin (bez UTIO)');
 
     // Najdi dostupné zájmové skupiny (typ Z)
-    const availableGroups = await db.getAvailableGroupsByType('Z', user.id);
+    let availableGroups = [];
+    if (typeof db.getAvailableGroupsByType === 'function') {
+      availableGroups = await db.getAvailableGroupsByType('Z', user.id);
+    } else if (typeof db.getAvailableGroups === 'function') {
+      const allGroups = await db.getAvailableGroups(user.id);
+      availableGroups = allGroups.filter(g => g.group_type === 'Z');
+    } else {
+      Log.error(`[${user.id}]`, 'Žádná funkce pro získání skupin není dostupná');
+      return false;
+    }
+
     if (!availableGroups.length) {
       Log.warn(`[${user.id}]`, 'Žádné dostupné zájmové skupiny');
       return false;
@@ -300,7 +339,7 @@ async function groupPost(user, fbBot) {
 
     // Vyber náhodnou skupinu
     const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
-    Log.info(`[${user.id}]`, `Vybrána zájmová skupina: ${selectedGroup.nazev} (${selectedGroup.fb_id})`);
+    Log.info(`[${user.id}]`, `Vybrána zájmová skupina: ${selectedGroup.nazev || selectedGroup.name} (${selectedGroup.fb_id})`);
 
     // Otevři skupinu
     await fbBot.openGroup(selectedGroup);
@@ -320,22 +359,20 @@ async function groupPost(user, fbBot) {
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
     await fbBot.pasteStatement(postText);
 
+    // Lidské chování při postování
+    await wait.delay(2000 + Math.random() * 3000);
+
     const success = await fbBot.clickSendButton();
-
-    if (success) {
-      // Zaloguj akci
-      await db.logUserAction(user.id, 'group_post', selectedGroup.id, `Post do zájmové skupiny: ${selectedGroup.nazev}`);
-
-      // Aktualizuj čas posledního použití skupiny
-      await db.updateGroupLastSeen(selectedGroup.id);
-      await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
-
-      Log.success(`[${user.id}]`, `Úspěšné postování do zájmové skupiny: ${selectedGroup.nazev}`);
-      return true;
-    } else {
-      Log.error(`[${user.id}]`, `Nepodařilo se poslat příspěvek do skupiny ${selectedGroup.nazev}`);
+    if (!success) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek do zájmové skupiny');
       return false;
     }
+
+    // Zaloguj akci
+    await db.logUserAction(user.id, 'group_post', selectedGroup.id, `Post do zájmové skupiny: ${selectedGroup.nazev || selectedGroup.name}`);
+
+    Log.success(`[${user.id}]`, `Úspěšné postování do zájmové skupiny: ${selectedGroup.nazev || selectedGroup.name}`);
+    return true;
 
   } catch (err) {
     Log.error(`[${user.id}] groupPost`, err);
@@ -344,26 +381,72 @@ async function groupPost(user, fbBot) {
 }
 
 async function timelinePost(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'Akce timeline_post zatím není implementována.');
-  return false;
+  try {
+    Log.info(`[${user.id}]`, 'Spouštím postování na timeline');
+
+    // Přejdi na hlavní stránku/timeline
+    await fbBot.page.goto('https://www.facebook.com/', { waitUntil: 'networkidle2' });
+    await wait.delay(wait.timeout() * 2);
+
+    // Získej obsah k postování
+    const quote = await db.getRandomQuote(user.id);
+    if (!quote) {
+      Log.warn(`[${user.id}]`, 'Žádný vhodný obsah k postování na timeline');
+      return false;
+    }
+
+    // Publikuj na timeline
+    await fbBot.newThing();
+    await fbBot.clickNewThing();
+
+    const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
+    await fbBot.pasteStatement(postText);
+
+    // Lidské chování
+    await wait.delay(3000 + Math.random() * 5000);
+
+    const success = await fbBot.clickSendButton();
+    if (!success) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek na timeline');
+      return false;
+    }
+
+    // Zaloguj akci
+    await db.logUserAction(user.id, 'timeline_post', 0, `Timeline post: ${postText.substring(0, 50)}...`);
+
+    Log.success(`[${user.id}]`, 'Úspěšné postování na timeline');
+    return true;
+
+  } catch (err) {
+    Log.error(`[${user.id}] timelinePost`, err);
+    return false;
+  }
 }
 
+// ==========================================
+// 🚧 ŠABLONY PRO BUDOUCÍ IMPLEMENTACI
+// ==========================================
+
 async function comment(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'Akce comment zatím není implementována.');
+  Log.info(`[${user.id}]`, 'Akce "comment" ještě není implementována');
+  // TODO: Implementovat komentování příspěvků
   return false;
 }
 
 async function react(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'Akce react zatím není implementována.');
+  Log.info(`[${user.id}]`, 'Akce "react" ještě není implementována');
+  // TODO: Implementovat reakce na příspěvky (like, love, atd.)
   return false;
 }
 
 async function messengerCheck(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'Akce messenger_check zatím není implementována.');
+  Log.info(`[${user.id}]`, 'Akce "messenger_check" ještě není implementována');
+  // TODO: Implementovat kontrolu zpráv v Messengeru
   return false;
 }
 
 async function messengerReply(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'Akce messenger_reply zatím není implementována.');
+  Log.info(`[${user.id}]`, 'Akce "messenger_reply" ještě není implementována');
+  // TODO: Implementovat odpovídání na zprávy v Messengeru
   return false;
 }

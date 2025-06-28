@@ -91,144 +91,179 @@ async function initializeRequiredServices(user, context, requirements) {
   let fbBot = null;
   let utioBot = null;
 
-  // Inicializuj UTIO pouze pokud je potřeba
-  if (requirements.needsUtio) {
-    Log.info(`[${user.id}]`, 'Inicializuji UTIO pro akci...');
-    utioBot = new UtioBot(context);
+  try {
+    // Inicializuj UTIO pouze pokud je potřeba
+    if (requirements.needsUtio) {
+      Log.info(`[${user.id}]`, 'Inicializuji UTIO pro akci...');
+      utioBot = new UtioBot(context);
 
-    if (!(await utioBot.init())) {
-      throw new Error('Inicializace UTIO selhala');
+      if (!await utioBot.init()) {
+        Log.error(`[${user.id}]`, 'Inicializace UTIO selhala');
+        throw new Error('UTIO initialization failed');
+      }
+
+      if (!await utioBot.openUtio(user)) {
+        Log.error(`[${user.id}]`, 'Přihlášení do UTIO selhalo');
+        throw new Error('UTIO login failed');
+      }
+
+      Log.success(`[${user.id}]`, 'UTIO úspěšně inicializováno a přihlášeno');
     }
 
-    if (!(await utioBot.openUtio(user))) {
-      throw new Error('Login na UTIO selhal');
-    }
+    // Inicializuj Facebook pouze pokud je potřeba
+    if (requirements.needsFacebook) {
+      Log.info(`[${user.id}]`, 'Inicializuji Facebook pro akci...');
+      fbBot = new FacebookBot(context);
 
-    Log.success(`[${user.id}]`, 'UTIO úspěšně inicializováno a přihlášeno');
-  }
+      if (!await fbBot.init()) {
+        Log.error(`[${user.id}]`, 'Inicializace Facebook selhala');
+        throw new Error('Facebook initialization failed');
+      }
 
-  // Inicializuj Facebook pouze pokud je potřeba
-  if (requirements.needsFacebook) {
-    Log.info(`[${user.id}]`, 'Inicializuji Facebook pro akci...');
-    fbBot = new FacebookBot(context);
-    await fbBot.init();
-    const fbStatus = await fbBot.openFB(user);
-
-    // Použij novou detekci, ale jako fallback zachovej původní chování
-    if (fbStatus === 'account_locked') {
-      await db.lockAccount(user.id);
-      throw new Error('Účet je zablokován.');
-    }
-
-    // Pokud je fbStatus objekt s detailními informacemi (nová detekce)
-    if (typeof fbStatus === 'object' && fbStatus.locked) {
-      const lockReason = fbStatus.reason || 'Nespecifikovaný problém';
-      const lockType = fbStatus.type || 'UNKNOWN';
-
-      // Pokud existují nové funkce, použij je, jinak fallback na staré
-      if (typeof db.lockAccountWithReason === 'function') {
-        await db.lockAccountWithReason(user.id, lockReason, lockType, hostname);
-
-        if (typeof db.logAccountIssue === 'function') {
-          await db.logAccountIssue(user.id, lockReason, lockType, {
-            detection_method: 'enhanced_facebook_detection',
-            timestamp: new Date().toISOString(),
-            hostname: hostname
-          }, hostname);
+      const fbStatus = await fbBot.openFB(user);
+      if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
+        // Fallback pro neúspěšné přihlášení
+        if (typeof db.lockAccountWithReason === 'function') {
+          await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
+        } else {
+          await db.lockAccount(user.id);
         }
-      } else {
-        // Fallback na původní metodu
-        await db.lockAccount(user.id);
+        throw new Error('Login na FB selhal');
       }
 
-      Log.error(`[${user.id}] Účet zablokován: ${lockReason} (${lockType})`);
-      throw new Error(`Účet je zablokován: ${lockReason}`);
+      Log.success(`[${user.id}]`, 'Facebook úspěšně inicializován a přihlášen');
     }
 
-    if (!['still_loged', 'now_loged'].includes(fbStatus)) {
-      // Podobný fallback pro neúspěšné přihlášení
-      if (typeof db.lockAccountWithReason === 'function') {
-        await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
-      } else {
-        await db.lockAccount(user.id);
+    return { fbBot, utioBot };
+
+  } catch (err) {
+    // Cleanup při chybě
+    if (fbBot) {
+      try {
+        await fbBot.close();
+      } catch (cleanupErr) {
+        Log.warn('[WORKER]', `Chyba při cleanup FacebookBot: ${cleanupErr.message}`);
       }
-      throw new Error('Login na FB selhal');
     }
 
-    Log.success(`[${user.id}]`, 'Facebook úspěšně inicializován a přihlášen');
+    if (utioBot) {
+      try {
+        await utioBot.close();
+      } catch (cleanupErr) {
+        Log.warn('[WORKER]', `Chyba při cleanup UtioBot: ${cleanupErr.message}`);
+      }
+    }
+
+    throw err;
   }
-
-  return { fbBot, utioBot };
 }
 
 async function showAccountLockStats() {
   try {
-    const stats = await db.getAccountLockStats();
-    const recentLocks = await db.getRecentAccountLocks();
+    // Zkontroluj dostupnost funkcí před jejich voláním
+    if (typeof db.getAccountLockStats === 'function') {
+      const stats = await db.getAccountLockStats();
 
-    if (!stats || stats.length === 0) {
-      Log.info('[STATS]', 'Žádné statistiky zablokování účtů k dispozici');
-      return;
+      if (stats && stats.length > 0) {
+        stats.forEach(stat => {
+          Log.info('[STATS]', `${stat.lock_type}: ${stat.count} celkem (${stat.last_24h} za 24h, ${stat.last_7d} za 7d)`);
+        });
+      } else {
+        Log.info('[STATS]', 'Žádné statistiky zablokování účtů k dispozici');
+      }
     }
 
-    stats.forEach(stat => {
-      Log.info('[STATS]', `${stat.lock_type}: ${stat.count} celkem (${stat.last_24h} za 24h, ${stat.last_7d} za 7d)`);
-    });
+    if (typeof db.getRecentAccountLocks === 'function') {
+      const recentLocks = await db.getRecentAccountLocks();
 
-    if (recentLocks.length > 0) {
-      Log.info('[STATS]', '=== Nedávná zablokování ===');
-      recentLocks.forEach(lock => {
-        Log.info('[STATS]', `${lock.lock_date}: ${lock.lock_type} - ${lock.daily_count}x`);
-      });
+      if (recentLocks && recentLocks.length > 0) {
+        Log.info('[STATS]', '=== Nedávná zablokování ===');
+        recentLocks.forEach(lock => {
+          Log.info('[STATS]', `${lock.lock_date}: ${lock.lock_type} - ${lock.daily_count}x`);
+        });
+      }
+    }
+
+    // Fallback - zobrazit základní info pokud pokročilé funkce nejsou dostupné
+    if (typeof db.getAccountLockStats !== 'function' && typeof db.getRecentAccountLocks !== 'function') {
+      Log.info('[STATS]', 'Pokročilé statistiky nejsou k dispozici - používám základní informace');
+      // Můžeme přidat základní dotaz na počet zablokovaných účtů
+      if (typeof db.getLockedUsersCount === 'function') {
+        const lockedCount = await db.getLockedUsersCount();
+        Log.info('[STATS]', `Aktuálně zablokovaných účtů: ${lockedCount}`);
+      }
     }
 
   } catch (err) {
-    Log.error('[STATS]', `Chyba při načítání statistik: ${err}`);
+    Log.error('[STATS]', `Chyba při načítání statistik: ${err.message}`);
   }
 }
 
 async function executeUserAction(user, browser, context, browserClosed) {
-  await db.initUserActionPlan(user.id);
-  const actions = await db.getUserActions(user.id);
+  try {
+    await db.initUserActionPlan(user.id);
+    const actions = await db.getUserActions(user.id);
 
-  Log.db('[WORKER]', `getUserActions: ${actions.map(a => a.action_code).join(', ') || 'Žádné'}`);
+    Log.db('[WORKER]', `getUserActions: ${actions.map(a => a.action_code).join(', ') || 'Žádné'}`);
 
-  if (!actions.length) {
-    Log.warn(`[${user.id}]`, 'Žádné dostupné akce.');
-    return;
+    if (!actions.length) {
+      Log.warn(`[${user.id}]`, 'Žádné dostupné akce.');
+      return;
+    }
+
+    // Vyber akci pomocí kola štěstí s kontrolou limitů
+    const picked = await getRandomAction(actions, user.id);
+    if (!picked) {
+      Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null (možná blokováno limity).');
+      return;
+    }
+
+    const actionCode = picked.code;
+    const min = picked.min_minutes;
+    const max = picked.max_minutes;
+
+    Log.info(`[${user.id}]`, `Vybrána akce: ${actionCode}`);
+
+    // Zjisti požadavky akce
+    const requirements = getActionRequirements(actionCode);
+    Log.info(`[${user.id}]`, `Požadavky akce: FB=${requirements.needsFacebook}, UTIO=${requirements.needsUtio}`);
+
+    // Inicializuj pouze potřebné služby
+    const { fbBot, utioBot } = await initializeRequiredServices(user, context, requirements);
+
+    // Proveď akci - předej oba bot objekty pro zpětnou kompatibilitu
+    const success = await runAction(user, fbBot, actionCode, utioBot);
+    if (!success) {
+      Log.warn(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA.`);
+      await pauseOnError(browser, browserClosed);
+      return;
+    }
+
+    const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
+    await db.updateUserActionPlan(user.id, actionCode, randMin);
+    Log.success(`[${user.id}]`, `Akce ${actionCode} dokončena, další za ${randMin} minut.`);
+
+    // Cleanup bot objektů
+    if (fbBot) {
+      try {
+        await fbBot.close();
+      } catch (err) {
+        Log.warn('[WORKER]', `Chyba při cleanup FacebookBot: ${err.message}`);
+      }
+    }
+
+    if (utioBot) {
+      try {
+        await utioBot.close();
+      } catch (err) {
+        Log.warn('[WORKER]', `Chyba při cleanup UtioBot: ${err.message}`);
+      }
+    }
+
+  } catch (err) {
+    Log.error(`[${user.id}] executeUserAction`, err);
+    throw err;
   }
-
-  // Vyber akci pomocí kola štěstí s kontrolou limitů
-  const picked = await getRandomAction(actions, user.id);
-  if (!picked) {
-    Log.warn(`[${user.id}]`, 'Kolo štěstí vrátilo null (možná blokováno limity).');
-    return;
-  }
-
-  const actionCode = picked.code;
-  const min = picked.min_minutes;
-  const max = picked.max_minutes;
-
-  Log.info(`[${user.id}]`, `Vybrána akce: ${actionCode}`);
-
-  // Zjisti požadavky akce
-  const requirements = getActionRequirements(actionCode);
-  Log.info(`[${user.id}]`, `Požadavky akce: FB=${requirements.needsFacebook}, UTIO=${requirements.needsUtio}`);
-
-  // Inicializuj pouze potřebné služby
-  const { fbBot, utioBot } = await initializeRequiredServices(user, context, requirements);
-
-  // Proveď akci - předej oba bot objekty pro zpětnou kompatibilitu
-  const success = await runAction(user, fbBot, actionCode, utioBot);
-  if (!success) {
-    Log.warn(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA.`);
-    await pauseOnError(browser, browserClosed);
-    return;
-  }
-
-  const randMin = Math.floor(Math.random() * (max - min + 1)) + min;
-  await db.updateUserActionPlan(user.id, actionCode, randMin);
-  Log.success(`[${user.id}]`, `Akce ${actionCode} dokončena, další za ${randMin} minut.`);
 }
 
 async function cleanupBrowser(browser, browserClosed) {
@@ -236,9 +271,39 @@ async function cleanupBrowser(browser, browserClosed) {
     Log.info('[WORKER]', 'Debug režim: prohlížeč NEBUDE zavřen.');
     return;
   }
-  if (!browserClosed) {
-    await browser.close();
-    Log.info('[WORKER]', 'Prohlížeč uzavřen.');
+
+  if (browserClosed) {
+    Log.info('[WORKER]', 'Prohlížeč již byl uzavřen.');
+    return;
+  }
+
+  try {
+    // Dej browseru čas na dokončení operací
+    await wait.delay(2000, false);
+
+    // Pokus o graceful shutdown s timeoutem
+    const closePromise = browser.close();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Browser close timeout')), 30000)
+    );
+
+    await Promise.race([closePromise, timeoutPromise]);
+    Log.info('[WORKER]', 'Prohlížeč úspěšně uzavřen.');
+
+  } catch (err) {
+    Log.warn('[WORKER]', `Chyba při uzavírání prohlížeče: ${err.message}`);
+
+    // Force kill pokud graceful shutdown selhal
+    try {
+      const pages = await browser.pages();
+      for (const page of pages) {
+        await page.close();
+      }
+      await browser.close();
+      Log.info('[WORKER]', 'Prohlížeč force-uzavřen.');
+    } catch (forceErr) {
+      Log.error('[WORKER]', `Force close také selhal: ${forceErr.message}`);
+    }
   }
 }
 
@@ -320,7 +385,7 @@ export async function tick() {
     }
 
   } catch (err) {
-    Log.error('[WORKER]', `Neočekávaná chyba v hlavním cyklu: ${err}`);
+    Log.error('[WORKER]', `Neočekávaná chyba v hlavním cyklu: ${err.message}`);
     await wait.delay(60000); // Čekej minutu před dalším pokusem
   }
 }
