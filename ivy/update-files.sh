@@ -66,41 +66,7 @@ show_status() {
     echo ""
 }
 
-# Vytvoří backup cílového adresáře
-create_backup() {
-    if [[ -d "$TARGET_DIR" ]]; then
-        local backup_dir="${TARGET_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
-        log_info "Vytvářím zálohu do $backup_dir..."
 
-        if cp -r "$TARGET_DIR" "$backup_dir"; then
-            log_success "Záloha vytvořena: $backup_dir"
-            return 0
-        else
-            log_error "Vytvoření zálohy selhalo"
-            return 1
-        fi
-    else
-        log_info "Cílový adresář neexistuje, záloha není potřeba"
-        return 0
-    fi
-}
-
-# Vyčistí staré zálohy (starší než 7 dní)
-cleanup_old_backups() {
-    local backup_pattern="${TARGET_DIR}.backup.*"
-    local found_backups=$(find "$(dirname "$TARGET_DIR")" -maxdepth 1 -name "$(basename "$TARGET_DIR").backup.*" -type d -mtime +7 2>/dev/null)
-
-    if [[ -n "$found_backups" ]]; then
-        log_info "Mažu staré zálohy (starší než 7 dní)..."
-        echo "$found_backups" | while read -r backup; do
-            log_info "Mažu: $backup"
-            rm -rf "$backup"
-        done
-        log_success "Staré zálohy vymazány"
-    else
-        log_info "Žádné staré zálohy k vymazání"
-    fi
-}
 
 # Instaluje/aktualizuje Node.js závislosti
 install_dependencies() {
@@ -153,7 +119,7 @@ main() {
             fi
             ;;
         "backup"|"b")
-            create_backup
+            log_info "Zálohy nejsou potřeba - vše je uloženo v Git repozitáři"
             ;;
         "update"|"u")
             log_info "🚀 SPOUŠTÍM AKTUALIZACI SOUBORŮ"
@@ -172,32 +138,19 @@ main() {
                 fi
             fi
 
-            # 3. Vytvoř zálohu
-            if ! create_backup; then
-                log_error "Záloha selhala, pokračovat? (y/N)"
-                read -r response
-                if [[ ! "$response" =~ ^[Yy]$ ]]; then
-                    log_error "Aktualizace zrušena"
-                    exit 1
-                fi
-            fi
-
-            # 4. Aktualizuj a synchronizuj
+            # 3. Aktualizuj a synchronizuj
             if ! update_and_sync; then
                 log_error "Aktualizace selhala!"
                 exit 1
             fi
 
-            # 5. Nainstaluj závislosti
+            # 4. Nainstaluj závislosti
             if ! install_dependencies; then
                 log_error "Instalace závislostí selhala!"
                 exit 1
             fi
 
-            # 6. Vyčisti staré zálohy
-            cleanup_old_backups
-
-            # 7. Zobraz finální stav
+            # 5. Zobraz finální stav
             echo ""
             log_success "🎉 AKTUALIZACE DOKONČENA!"
             show_status
@@ -214,14 +167,14 @@ Dostupné režimy:
   update, u     - Aktualizuje soubory z Git repozitáře (výchozí)
   status, s     - Zobrazí aktuální stav repozitáře a souborů
   check, c      - Zkontroluje dostupné aktualizace
-  backup, b     - Vytvoří zálohu aktuálních souborů
+  backup, b     - Informace o zálohách (Git je naše záloha)
   help, h       - Zobrazí tuto nápovědu
 
 Příklady:
   ./update-files.sh           # Aktualizuje soubory
   ./update-files.sh status    # Zobrazí stav
   ./update-files.sh check     # Zkontroluje aktualizace
-  ./update-files.sh backup    # Vytvoří zálohu
+  ./update-files.sh backup    # Informace o zálohování
 
 Cesty (lze přepsat pomocí proměnných prostředí):
   REPO_DIR="$REPO_DIR"
