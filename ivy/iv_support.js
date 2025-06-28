@@ -64,11 +64,11 @@ export async function randomReferer() {
 }
 
 /**
- * Získá zprávu z UTIO a vloží ji do Facebooku
+ * Získá zprávu z UTIO a vloží ji do Facebooku pomocí schránky (Ctrl+V)
  * @param {Object} user - Uživatelské data
  * @param {Object} group - Data skupiny
  * @param {Object} fbBot - FacebookBot instance
- * @param {Object} utioBot - UtioBot instance (optional pro zpětnou kompatibilitu)
+ * @param {Object} utioBot - UtioBot instance
  * @returns {string|false} Text zprávy nebo false při chybě
  */
 export async function pasteMsg(user, group, fbBot, utioBot = null) {
@@ -105,17 +105,19 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
         Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Žádná zpráva z UTIO`);
         cnt++;
         if (cnt < 5) {
-          await wait.delay(2000); // Počkej před dalším pokusem
+          await wait.delay(2000);
         }
         continue;
       }
 
-      // Kontrola, že první řádek zprávy není prázdný
-      if (!m[0] || typeof m[0] !== 'string' || m[0].trim().length === 0) {
-        Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: První řádek zprávy je prázdný`);
+      // UTIO zkopíruje celou zprávu do schránky - použijeme celý obsah
+      const fullMessage = m.join('\n').trim();
+
+      if (!fullMessage || fullMessage.length === 0) {
+        Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Prázdná zpráva z UTIO`);
         cnt++;
         if (cnt < 5) {
-          await wait.delay(1000);
+          await wait.delay(2000);
         }
         continue;
       }
@@ -124,14 +126,12 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
 
       // Ověř, že zpráva nebyla už použita (kontrola MD5)
       try {
-        const messageText = m[0].trim();
-        const messageHash = md5(messageText);
-
+        const messageHash = md5(fullMessage);
         Log.info(`[${user.id}]`, `Kontroluji duplicitu pro hash: ${messageHash.substring(0, 8)}...`);
 
         const isDuplicate = await db.verifyMsg(group.id, messageHash);
         if (!isDuplicate || isDuplicate.c === 0) {
-          message = m;
+          message = [fullMessage]; // Celá zpráva jako jeden řetězec
           Log.success(`[${user.id}]`, `Zpráva prošla kontrolou duplicity`);
           break;
         } else {
@@ -140,15 +140,13 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
 
       } catch (hashErr) {
         Log.error(`[${user.id}]`, `Chyba při vytváření MD5 hash: ${hashErr.message}`);
-        // Pokud se MD5 nepodaří, použij zprávu stejně (lepší než selhání)
-        message = m;
+        message = [fullMessage];
         break;
       }
 
       cnt++;
-
       if (cnt < 5) {
-        await wait.delay(1000); // Krátká pauza před dalším pokusem
+        await wait.delay(1000);
       }
 
     } while (!message && cnt < 5);
@@ -163,14 +161,14 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     return false;
   }
 
-  // Vložení zprávy do Facebooku
+  // Vložení zprávy do Facebooku ze schránky
   try {
     Log.info(`[${user.id}]`, 'Vkládám zprávu do Facebooku...');
 
-    // Lidské chování - krátká pauza před začátkem psaní
+    // Lidské chování - krátká pauza před začátkem
     await wait.delay(500 + Math.random() * 1000);
 
-    // Klik na pole pro psaní nového příspěvku
+    // Najdi pole pro psaní nového příspěvku
     if (!await fbBot.newThing()) {
       Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku');
       return false;
@@ -183,28 +181,27 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       return false;
     }
 
-    // Lidské chování - krátká pauza po kliknutí
     await wait.delay(wait.timeout());
 
     const messageText = message[0].trim();
-    Log.info(`[${user.id}]`, `Píšu zprávu (${messageText.length} znaků)...`);
+    Log.info(`[${user.id}]`, `Vkládám zprávu ze schránky (${messageText.length} znaků)...`);
 
-    // Vložení textu zprávy
-    const paste = await fbBot.pasteStatement(messageText);
+    // VLOŽENÍ ZE SCHRÁNKY pomocí Ctrl+V
+    const paste = await fbBot.pasteFromClipboard();
 
     if (!paste) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do pole');
+      Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu ze schránky');
       return false;
     }
 
-    // Lidské chování - přečteme si co jsme napsali
-    Log.info(`[${user.id}]`, 'Kontroluji napsaný text...');
-    await wait.delay(2000 + Math.random() * 3000); // 2-5 sekund čtení
+    // Lidské chování - přečteme si co jsme vložili
+    Log.info(`[${user.id}]`, 'Kontroluji vložený text...');
+    await wait.delay(2000 + Math.random() * 3000);
 
     // Občas si rozmyslíme a chvíli váhám před odesláním
-    if (Math.random() < 0.2) { // 20% šance na váhání
+    if (Math.random() < 0.2) {
       Log.info(`[${user.id}]`, 'Chvíli váhám před odesláním...');
-      await wait.delay(3000 + Math.random() * 5000); // 3-8 sekund váhání
+      await wait.delay(3000 + Math.random() * 5000);
     }
 
     Log.info(`[${user.id}]`, 'Odesílám příspěvek...');
@@ -231,13 +228,91 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       }
     } catch (hashSaveErr) {
       Log.warn(`[${user.id}]`, `Nepodařilo se uložit hash zprávy: ${hashSaveErr.message}`);
-      // Není kritické, pokračujeme
     }
 
     return messageText;
 
   } catch (pasteErr) {
     Log.error(`[${user.id}]`, `Chyba při vkládání zprávy: ${pasteErr.message}`);
+    return false;
+  }
+}
+
+// Přidání do iv_support.js
+/**
+ * Napíše vlastní text na Facebook (pro citáty, komentáře atd.)
+ * @param {Object} user - Uživatelské data
+ * @param {string} text - Text k napsání
+ * @param {Object} fbBot - FacebookBot instance
+ * @returns {string|false} Text zprávy nebo false při chybě
+ */
+export async function writeMsg(user, text, fbBot) {
+  try {
+    // Kontrola vstupních parametrů
+    if (!user || !text || !fbBot) {
+      Log.error('[SUPPORT]', 'writeMsg: Chybí povinné parametry');
+      return false;
+    }
+
+    if (!text.trim()) {
+      Log.error('[SUPPORT]', 'writeMsg: Prázdný text');
+      return false;
+    }
+
+    Log.info(`[${user.id}]`, `Píšu zprávu (${text.length} znaků)...`);
+
+    // Najdi pole pro psaní nového příspěvku
+    if (!await fbBot.newThing()) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku');
+      return false;
+    }
+
+    await wait.delay(wait.timeout());
+
+    if (!await fbBot.clickNewThing()) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se kliknout na pole pro psaní');
+      return false;
+    }
+
+    await wait.delay(wait.timeout());
+
+    // PÍŠEME text znak po znaku (lidské chování)
+    const written = await fbBot.pasteStatement(text);
+
+    if (!written) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se napsat text');
+      return false;
+    }
+
+    // Lidské chování - přečteme si co jsme napsali
+    Log.info(`[${user.id}]`, 'Kontroluji napsaný text...');
+    await wait.delay(2000 + Math.random() * 3000);
+
+    // Občas si rozmyslíme a chvíli váhám před odesláním
+    if (Math.random() < 0.2) {
+      Log.info(`[${user.id}]`, 'Chvíli váhám před odesláním...');
+      await wait.delay(3000 + Math.random() * 5000);
+    }
+
+    Log.info(`[${user.id}]`, 'Odesílám příspěvek...');
+
+    // Odeslání příspěvku
+    const sent = await fbBot.clickSendButton();
+
+    if (!sent) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek');
+      return false;
+    }
+
+    await wait.delay(1000 + Math.random() * 2000);
+
+    Log.success(`[${user.id}]`, `Zpráva úspěšně napsána a publikována`);
+    Log.info(`[${user.id}]`, `Text zprávy: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
+
+    return text;
+
+  } catch (err) {
+    Log.error(`[${user.id}] writeMsg`, err);
     return false;
   }
 }
@@ -423,8 +498,8 @@ export async function isFacebookReady(fbBot) {
     // Zkontroluj, zda nejsme na error stránce
     const title = await fbBot.page.title();
     if (title.toLowerCase().includes('error') ||
-        title.toLowerCase().includes('not found') ||
-        title.toLowerCase().includes('blocked')) {
+      title.toLowerCase().includes('not found') ||
+      title.toLowerCase().includes('blocked')) {
       return false;
     }
 

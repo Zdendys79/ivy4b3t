@@ -220,21 +220,11 @@ async function performUtioPost(user, fbBot, group, utioBot) {
   try {
     Log.info(`[${user.id}]`, 'Získávám zprávu z UTIO...');
 
-    // Získej zprávu z UTIO pomocí iv_support.js funkce
     const message = await support.pasteMsg(user, group, fbBot, utioBot);
     if (!message) {
       Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
       return false;
     }
-
-    Log.info(`[${user.id}]`, 'UTIO zpráva získána, publikuji na Facebook...');
-
-    // Zpráva už byla vložena pomocí support.pasteMsg
-    // Funkce pasteMsg už obsahuje celý proces publikování včetně:
-    // - otevření editoru příspěvku
-    // - vložení textu
-    // - odeslání
-    // Pokud se dostaneme sem, znamená to že bylo vše úspěšné
 
     Log.success(`[${user.id}]`, 'UTIO zpráva úspěšně publikována!');
     return true;
@@ -245,6 +235,7 @@ async function performUtioPost(user, fbBot, group, utioBot) {
   }
 }
 
+// Pro citáty - používáme writeMsg (psaní)
 async function quotePost(user, fbBot) {
   try {
     const quote = await db.getRandomQuote(user.id);
@@ -255,59 +246,20 @@ async function quotePost(user, fbBot) {
 
     Log.info(`[${user.id}]`, 'Začínám psát citát...');
 
-    // Lidské chování - najdeme pole pro psaní
-    await fbBot.newThing();
-    await wait.delay(wait.timeout()); // krátká pauza
-
-    await fbBot.clickNewThing();
-    await wait.delay(wait.timeout() * 2); // čekáme než se otevře editor
-
-    // Připravíme text
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
-    Log.info(`[${user.id}]`, 'Píšu text citátu...');
 
-    // Napíšeme text (už je v něm lidské chování - překlepy, pauzy)
-    await fbBot.pasteStatement(postText);
+    // PÍŠEME citát místo vkládání ze schránky
+    const result = await support.writeMsg(user, postText, fbBot);
 
-    // Lidské chování - přečteme si co jsme napsali a možná něco opravíme
-    Log.info(`[${user.id}]`, 'Kontroluji napsaný text...');
-    await wait.delay(2000 + Math.random() * 3000); // 2-5 sekund čtení
-
-    // Občas si rozmyslíme a chvíli váhám před odesláním
-    if (Math.random() < 0.3) { // 30% šance na váhání
-      Log.info(`[${user.id}]`, 'Chvíli váhám...');
-      await wait.delay(3000 + Math.random() * 5000); // 3-8 sekund váhání
-    }
-
-    Log.info(`[${user.id}]`, 'Odesílám příspěvek...');
-    const success = await fbBot.clickSendButton();
-
-    if (!success) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek.');
+    if (!result) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se napsat citát.');
       return false;
     }
 
+    await db.logUserAction(user.id, 'quote_post', quote.id, `Citát: ${quote.text.substring(0, 50)}...`);
+    await db.updateQuoteNextSeen(quote.id, IvMath.randInterval(7, 30));
+
     Log.success(`[${user.id}]`, 'Citát byl úspěšně zveřejněn!');
-
-    // Uložíme do databáze
-    await db.logUserAction(user.id, 'quote_post', quote.id, postText);
-
-    if (typeof db.updateQuoteNextSeen === 'function') {
-      await db.updateQuoteNextSeen(quote.id, 30);
-    }
-
-    // Lidské chování - chvíli si prohlédneme výsledek
-    Log.info(`[${user.id}]`, 'Prohlížím si zveřejněný příspěvek...');
-    await wait.delay(5000 + Math.random() * 10000); // 5-15 sekund
-
-    // DEBUG REŽIM podle config.json
-    if (isDebugMode()) {
-      Log.debug(`[${user.id}]`, 'Debug režim (main): čekám 60 sekund pro kontrolu...');
-      await wait.delay(60000);
-    } else {
-      Log.debug(`[${user.id}]`, 'Release režim (public): pokračuji normálně...');
-    }
-
     return true;
 
   } catch (err) {
@@ -352,24 +304,30 @@ async function groupPost(user, fbBot) {
       return false;
     }
 
-    // Publikuj obsah
-    await fbBot.newThing();
-    await fbBot.clickNewThing();
-
+    // Publikuj obsah pomocí writeMsg (psaní textu)
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
-    await fbBot.pasteStatement(postText);
 
-    // Lidské chování při postování
-    await wait.delay(2000 + Math.random() * 3000);
-
-    const success = await fbBot.clickSendButton();
-    if (!success) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek do zájmové skupiny');
+    const result = await support.writeMsg(user, postText, fbBot);
+    if (!result) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se napsat příspěvek do zájmové skupiny');
       return false;
     }
 
     // Zaloguj akci
     await db.logUserAction(user.id, 'group_post', selectedGroup.id, `Post do zájmové skupiny: ${selectedGroup.nazev || selectedGroup.name}`);
+
+    // Aktualizuj čas posledního použití skupiny
+    if (typeof db.updateGroupLastSeen === 'function') {
+      await db.updateGroupLastSeen(selectedGroup.id);
+    }
+    if (typeof db.updateGroupNextSeen === 'function') {
+      await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
+    }
+
+    // Aktualizuj databázi citátu
+    if (typeof db.updateQuoteNextSeen === 'function') {
+      await db.updateQuoteNextSeen(quote.id, IvMath.randInterval(7, 30));
+    }
 
     Log.success(`[${user.id}]`, `Úspěšné postování do zájmové skupiny: ${selectedGroup.nazev || selectedGroup.name}`);
     return true;

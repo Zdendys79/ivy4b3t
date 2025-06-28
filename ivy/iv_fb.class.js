@@ -640,6 +640,31 @@ export class FacebookBot {
     }
   }
 
+  async pasteFromClipboard() {
+    try {
+      if (!this.page || this.page.isClosed()) {
+        Log.error('[FB] Stránka není dostupná pro vložení ze schránky.');
+        return false;
+      }
+
+      await this.bringToFront();
+
+      // Použijeme Ctrl+V pro vložení ze schránky
+      await this.page.keyboard.down('Control');
+      await this.page.keyboard.press('KeyV');
+      await this.page.keyboard.up('Control');
+
+      await wait.delay(wait.timeout() * 2); // Počkáme na vložení
+
+      Log.info('[FB] Text vložen ze schránky pomocí Ctrl+V');
+      return true;
+
+    } catch (err) {
+      Log.error(`[FB] Chyba při vkládání ze schránky: ${err}`);
+      return false;
+    }
+  }
+
   async clickSendButton() {
     try {
       if (!this.page || this.page.isClosed()) {
