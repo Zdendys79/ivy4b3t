@@ -412,3 +412,326 @@ export const checkAccountLockStatus = (userId) =>
  */
 export const getRecentLocksByType = (days = 7) =>
   safeQueryAll('get_recent_locks_by_type', [days]);
+
+// Nové funkce pro správu limitů
+
+/**
+ * Získá detailní informace o využití limitů pro konkrétní typ skupiny
+ * @param {number} userId - ID uživatele
+ * @param {string} groupType - Typ skupiny (G, GV, P, Z)
+ * @returns {Promise<Object|null>} - Detailní informace o limitech
+ */
+export async function getUserLimitUsageDetailed(userId, groupType) {
+  const debugMode = isDebugMode();
+
+  try {
+    const result = await safeQueryFirst('get_user_limit_usage_detailed', [
+      userId, groupType,
+      // Pro získání time_window_hours potřebujeme nejdříve získat limit
+      24, // fallback na 24 hodin pokud limit neexistuje
+      userId, groupType
+    ]);
+
+    if (debugMode && result) {
+      Log.debug('[SQL]', `Limit usage for user ${userId}, type ${groupType}: ${result.current_posts}/${result.max_posts}, cycle: ${result.posts_available_this_cycle}`);
+    }
+
+    return result;
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getUserLimitUsageDetailed error: ${err.message}`);
+    }
+    return null;
+  }
+}
+
+/**
+ * Získá všechny limity uživatele včetně aktuálního využití
+ * @param {number} userId - ID uživatele
+ * @returns {Promise<Array>} - Seznam všech limitů s využitím
+ */
+export async function getUserAllLimitsWithUsage(userId) {
+  const debugMode = isDebugMode();
+
+  try {
+    const results = await safeQueryAll('get_user_all_limits_with_usage', [userId, userId]);
+
+    if (debugMode) {
+      Log.debug('[SQL]', `All limits for user ${userId}:`, results);
+    }
+
+    return results || [];
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getUserAllLimitsWithUsage error: ${err.message}`);
+    }
+    return [];
+  }
+}
+
+/**
+ * Optimalizovaná verze kontroly možnosti postování
+ * @param {number} userId - ID uživatele
+ * @param {string} groupType - Typ skupiny
+ * @returns {Promise<boolean>} - True pokud může postovat
+ */
+export async function canUserPostToGroupTypeOptimized(userId, groupType) {
+  const debugMode = isDebugMode();
+
+  try {
+    const result = await safeQueryFirst('can_user_post_to_group_type_optimized', [
+      userId, groupType, userId, groupType, userId, groupType
+    ]);
+
+    if (!result) {
+      if (debugMode) {
+        Log.warn('[SQL][DEBUG]', `No limit found for user ${userId}, type ${groupType}`);
+      }
+      return false;
+    }
+
+    const canPost = result.can_post === 1;
+
+    if (debugMode) {
+      Log.debug('[SQL]', `canUserPost: user=${userId}, type=${groupType}, current=${result.current_posts}/${result.max_posts}, canPost=${canPost}`);
+    }
+
+    return canPost;
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `canUserPostToGroupTypeOptimized error: ${err.message}`);
+    }
+    return false;
+  }
+}
+
+/**
+ * Získá dostupné skupiny s respektováním cooldownů
+ * @param {string} groupType - Typ skupiny
+ * @param {number} userId - ID uživatele
+ * @returns {Promise<Array>} - Seznam dostupných skupin
+ */
+export async function getAvailableGroupsByTypeWithCooldown(groupType, userId) {
+  const debugMode = isDebugMode();
+
+  try {
+    const results = await safeQueryAll('get_available_groups_by_type_with_cooldown', [groupType, userId]);
+
+    if (debugMode) {
+      Log.debug('[SQL]', `Available groups for type ${groupType}, user ${userId}: ${results.length} groups`);
+    }
+
+    return results || [];
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getAvailableGroupsByTypeWithCooldown error: ${err.message}`);
+    }
+    return [];
+  }
+}
+
+/**
+ * Získá akce uživatele s respektováním limitů pro kolo štěstí
+ * @param {number} userId - ID uživatele
+ * @returns {Promise<Array>} - Seznam dostupných akcí s upravenými váhami
+ */
+export async function getUserActionsWithLimits(userId) {
+  const debugMode = isDebugMode();
+
+  try {
+    const results = await safeQueryAll('get_user_actions_with_limits', [
+      userId, userId, userId, userId
+    ]);
+
+    // Filtruj akce s nulovou váhou (blokované limity)
+    const availableActions = results.filter(action => action.effective_weight > 0);
+
+    if (debugMode) {
+      const blockedActions = results.filter(action => action.effective_weight === 0);
+      Log.debug('[SQL]', `Actions for user ${userId}: ${availableActions.length} available, ${blockedActions.length} blocked by limits`);
+
+      if (blockedActions.length > 0) {
+        Log.debug('[SQL]', `Blocked actions: ${blockedActions.map(a => a.action_code).join(', ')}`);
+      }
+    }
+
+    return availableActions;
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getUserActionsWithLimits error: ${err.message}`);
+    }
+    return [];
+  }
+}
+
+/**
+ * Vypočítá kolik postů může uživatel udělat v aktuálním cyklu
+ * @param {number} userId - ID uživatele
+ * @param {string} groupType - Typ skupiny
+ * @returns {Promise<number>} - Počet dostupných postů pro cyklus
+ */
+export async function getPostsAvailableForCycle(userId, groupType) {
+  const debugMode = isDebugMode();
+
+  try {
+    const limitInfo = await getUserLimitUsageDetailed(userId, groupType);
+    if (!limitInfo) {
+      if (debugMode) {
+        Log.warn('[SQL][DEBUG]', `No limit info for user ${userId}, type ${groupType}`);
+      }
+      return 0;
+    }
+
+    const postsForCycle = limitInfo.posts_available_this_cycle || 0;
+
+    if (debugMode) {
+      Log.debug('[SQL]', `Posts available for cycle: user=${userId}, type=${groupType}, available=${postsForCycle}`);
+    }
+
+    return postsForCycle;
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getPostsAvailableForCycle error: ${err.message}`);
+    }
+    return 0;
+  }
+}
+
+/**
+ * Inicializuje výchozí limity pro nového uživatele
+ * @param {number} userId - ID uživatele
+ * @returns {Promise<boolean>} - True pokud bylo úspěšné
+ */
+export async function initializeDefaultLimitsForUser(userId) {
+  const debugMode = isDebugMode();
+
+  try {
+    const defaultLimits = [
+      { type: 'G', max_posts: 15, time_window: 24 },
+      { type: 'GV', max_posts: 1, time_window: 8 },
+      { type: 'P', max_posts: 2, time_window: 8 },
+      { type: 'Z', max_posts: 1, time_window: 48 }
+    ];
+
+    for (const limit of defaultLimits) {
+      await upsertUserGroupLimit(userId, limit.type, limit.max_posts, limit.time_window);
+    }
+
+    if (debugMode) {
+      Log.debug('[SQL]', `Default limits initialized for user ${userId}`);
+    }
+
+    return true;
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `initializeDefaultLimitsForUser error: ${err.message}`);
+    }
+    return false;
+  }
+}
+
+/**
+ * Získá statistiky systému pro administrativní účely
+ * @returns {Promise<Array>} - Statistiky limitů
+ */
+export async function getSystemLimitStats() {
+  const debugMode = isDebugMode();
+
+  try {
+    const results = await safeQueryAll('get_system_limit_stats');
+
+    if (debugMode) {
+      Log.debug('[SQL]', 'System limit stats:', results);
+    }
+
+    return results || [];
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getSystemLimitStats error: ${err.message}`);
+    }
+    return [];
+  }
+}
+
+/**
+ * Získá nedávné posty s informacemi o limitech
+ * @param {number} limit - Počet záznamů
+ * @returns {Promise<Array>} - Seznam nedávných postů
+ */
+export async function getRecentPostsWithLimits(limit = 50) {
+  const debugMode = isDebugMode();
+
+  try {
+    const results = await safeQueryAll('get_recent_posts_with_limits', [limit]);
+
+    if (debugMode) {
+      Log.debug('[SQL]', `Recent posts with limits: ${results.length} records`);
+    }
+
+    return results || [];
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `getRecentPostsWithLimits error: ${err.message}`);
+    }
+    return [];
+  }
+}
+
+/**
+ * Zkontroluje a případně vytvoří chybějící limity pro uživatele
+ * @param {number} userId - ID uživatele
+ * @returns {Promise<boolean>} - True pokud byly limity zkontrolovány/vytvořeny
+ */
+export async function ensureUserLimitsExist(userId) {
+  const debugMode = isDebugMode();
+
+  try {
+    const existingLimits = await getUserAllLimits(userId);
+    const requiredTypes = ['G', 'GV', 'P', 'Z'];
+    const existingTypes = existingLimits.map(limit => limit.group_type);
+    const missingTypes = requiredTypes.filter(type => !existingTypes.includes(type));
+
+    if (missingTypes.length > 0) {
+      if (debugMode) {
+        Log.debug('[SQL]', `Creating missing limits for user ${userId}: ${missingTypes.join(', ')}`);
+      }
+
+      const defaultValues = {
+        'G': { max_posts: 15, time_window: 24 },
+        'GV': { max_posts: 1, time_window: 8 },
+        'P': { max_posts: 2, time_window: 8 },
+        'Z': { max_posts: 1, time_window: 48 }
+      };
+
+      for (const type of missingTypes) {
+        const defaults = defaultValues[type];
+        await upsertUserGroupLimit(userId, type, defaults.max_posts, defaults.time_window);
+      }
+    }
+
+    return true;
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `ensureUserLimitsExist error: ${err.message}`);
+    }
+    return false;
+  }
+}
+
+/**
+ * Aktualizuje původní canUserPostToGroupType funkci pro používání optimalizované verze
+ */
+export async function canUserPostToGroupType(userId, groupType) {
+  // Ujisti se, že uživatel má nastavené limity
+  await ensureUserLimitsExist(userId);
+
+  // Použij optimalizovanou verzi
+  return await canUserPostToGroupTypeOptimized(userId, groupType);
+}
+
+/**
+ * Aktualizuje původní getAvailableGroupsByType pro používání verze s cooldownem
+ */
+export async function getAvailableGroupsByType(groupType, userId) {
+  return await getAvailableGroupsByTypeWithCooldown(groupType, userId);
+}

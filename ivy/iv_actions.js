@@ -15,6 +15,212 @@ import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';
 
 /**
+ * Vypočítá maximální počet příspěvků pro jeden cyklus (1/3 denního limitu)
+ * @param {number} userId - ID uživatele
+ * @param {string} groupType - Typ skupiny (G, GV, P, Z)
+ * @returns {Promise<number>} - Maximální počet postů pro cyklus
+ */
+async function calculateMaxPostsPerCycle(userId, groupType) {
+  try {
+    const limit = await db.getUserGroupLimit(userId, groupType);
+    if (!limit) {
+      Log.warn(`[${userId}]`, `Žádné limity nalezeny pro typ ${groupType}`);
+      return 1; // Fallback na 1 post
+    }
+
+    // Spočítej současné využití
+    const postCount = await db.countUserPostsInTimeframe(userId, groupType, limit.time_window_hours);
+    const currentPosts = postCount ? postCount.post_count : 0;
+    const remainingPosts = Math.max(0, limit.max_posts - currentPosts);
+
+    // Maximálně 1/3 denního limitu v jednom cyklu
+    const maxPerCycle = Math.floor(limit.max_posts / 3);
+    const postsForThisCycle = Math.min(maxPerCycle, remainingPosts);
+
+    Log.debug(`[${userId}]`, `Limit calculation: current=${currentPosts}/${limit.max_posts}, remaining=${remainingPosts}, maxPerCycle=${maxPerCycle}, thiscycle=${postsForThisCycle}`);
+
+    return Math.max(1, postsForThisCycle); // Minimum 1 post pokud je to možné
+  } catch (err) {
+    Log.error(`[${userId}] calculateMaxPostsPerCycle`, err);
+    return 1;
+  }
+}
+
+/**
+ * Hlavní funkce pro UTIO postování s podporou opakování
+ * @param {Object} user - Uživatelská data
+ * @param {Object} fbBot - FacebookBot instance
+ * @param {string} groupType - Typ skupiny (G, GV, P, Z)
+ * @param {Object} utioBot - UtioBot instance
+ * @returns {Promise<boolean>} - True pokud byla alespoň jedna akce úspěšná
+ */
+async function postUtioByType(user, fbBot, groupType, utioBot) {
+  try {
+    Log.info(`[${user.id}]`, `🎯 Spouštím UTIO postování do skupin typu ${groupType}`);
+
+    // Zkontroluj dostupnost UTIO
+    if (!utioBot || !utioBot.isReady()) {
+      Log.error(`[${user.id}]`, 'UtioBot není k dispozici pro postování');
+      return false;
+    }
+
+    // Zkontroluj základní možnost postování
+    const canPost = await db.canUserPostToGroupType(user.id, groupType);
+    if (!canPost) {
+      Log.warn(`[${user.id}]`, `Dosažen celkový limit příspěvků pro skupiny typu ${groupType}`);
+      return false;
+    }
+
+    // Spočítej kolik postů můžeme udělat v tomto cyklu
+    const maxPostsThisCycle = await calculateMaxPostsPerCycle(user.id, groupType);
+    if (maxPostsThisCycle <= 0) {
+      Log.warn(`[${user.id}]`, `Žádné příspěvky povoleny pro typ ${groupType} v tomto cyklu`);
+      return false;
+    }
+
+    Log.info(`[${user.id}]`, `📊 Plánuji až ${maxPostsThisCycle} příspěvků typu ${groupType} v tomto cyklu`);
+
+    let successfulPosts = 0;
+    let attempts = 0;
+    const maxAttempts = maxPostsThisCycle * 2; // Umožní několik neúspěšných pokusů
+
+    while (successfulPosts < maxPostsThisCycle && attempts < maxAttempts) {
+      attempts++;
+
+      Log.info(`[${user.id}]`, `📝 Pokus ${attempts}: Hledám skupinu pro post ${successfulPosts + 1}/${maxPostsThisCycle}`);
+
+      // Znovu zkontroluj limit před každým postem (možná už byl dosažen)
+      const stillCanPost = await db.canUserPostToGroupType(user.id, groupType);
+      if (!stillCanPost) {
+        Log.warn(`[${user.id}]`, `Limit dosažen během cyklu po ${successfulPosts} úspěšných postech`);
+        break;
+      }
+
+      // Najdi dostupné skupiny tohoto typu
+      const availableGroups = await getAvailableGroups(user.id, groupType);
+      if (!availableGroups.length) {
+        Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu ${groupType} pro další post`);
+        break;
+      }
+
+      // Vyber náhodnou skupinu
+      const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
+      Log.info(`[${user.id}]`, `🎲 Vybrána skupina: ${selectedGroup.nazev || selectedGroup.name} (${selectedGroup.fb_id})`);
+
+      try {
+        // Otevři skupinu
+        await fbBot.openGroup(selectedGroup);
+        await wait.delay(wait.timeout() * 2);
+
+        // Získej zprávu z UTIO a publikuj ji
+        const postSuccess = await performUtioPost(user, fbBot, selectedGroup, utioBot);
+
+        if (postSuccess) {
+          successfulPosts++;
+
+          // Zaloguj akci
+          const actionCode = `post_utio_${groupType.toLowerCase()}`;
+          await db.logUserAction(user.id, actionCode, selectedGroup.id,
+            `UTIO post ${successfulPosts}/${maxPostsThisCycle} do ${groupType}: ${selectedGroup.nazev || selectedGroup.name}`);
+
+          // Aktualizuj čas posledního použití skupiny
+          if (typeof db.updateGroupLastSeen === 'function') {
+            await db.updateGroupLastSeen(selectedGroup.id);
+          }
+          if (typeof db.updateGroupNextSeen === 'function') {
+            await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
+          }
+
+          Log.success(`[${user.id}]`, `✅ Post ${successfulPosts}/${maxPostsThisCycle} úspěšně publikován do ${selectedGroup.nazev || selectedGroup.name}`);
+
+          // Pokud máme více postů, počkej mezi nimi
+          if (successfulPosts < maxPostsThisCycle) {
+            const pauseBetweenPosts = IvMath.randInterval(60, 180); // 1-3 minuty mezi posty
+            Log.info(`[${user.id}]`, `⏱️ Pauza ${pauseBetweenPosts}s před dalším postem...`);
+            await wait.delay(pauseBetweenPosts * 1000);
+          }
+        } else {
+          Log.warn(`[${user.id}]`, `❌ Nepodařilo se poslat UTIO zprávu do skupiny ${selectedGroup.nazev || selectedGroup.name}`);
+        }
+
+      } catch (err) {
+        Log.error(`[${user.id}]`, `Chyba při pokusu ${attempts}: ${err.message}`);
+      }
+    }
+
+    // Shrnutí výsledků
+    if (successfulPosts > 0) {
+      Log.success(`[${user.id}]`, `🎉 Cyklus UTIO ${groupType} dokončen: ${successfulPosts}/${maxPostsThisCycle} úspěšných postů za ${attempts} pokusů`);
+      return true;
+    } else {
+      Log.warn(`[${user.id}]`, `😞 Žádné úspěšné posty v cyklu ${groupType} za ${attempts} pokusů`);
+      return false;
+    }
+
+  } catch (err) {
+    Log.error(`[${user.id}] postUtioByType(${groupType})`, err);
+    return false;
+  }
+}
+
+/**
+ * Získá dostupné skupiny pro daný typ a uživatele
+ * @param {number} userId - ID uživatele
+ * @param {string} groupType - Typ skupiny
+ * @returns {Promise<Array>} - Seznam dostupných skupin
+ */
+async function getAvailableGroups(userId, groupType) {
+  try {
+    // Pokud existuje specifická funkce pro typ skupiny, použij ji
+    if (typeof db.getAvailableGroupsByType === 'function') {
+      return await db.getAvailableGroupsByType(groupType, userId);
+    }
+
+    // Fallback na obecnou funkci
+    if (typeof db.getAvailableGroups === 'function') {
+      const allGroups = await db.getAvailableGroups(userId);
+      return allGroups.filter(g => g.group_type === groupType || g.typ === groupType);
+    }
+
+    Log.warn(`[${userId}]`, 'Žádná funkce pro získání skupin není dostupná');
+    return [];
+  } catch (err) {
+    Log.error(`[${userId}] getAvailableGroups`, err);
+    return [];
+  }
+}
+
+/**
+ * Provede skutečné postování UTIO zprávy
+ * @param {Object} user - Uživatelská data
+ * @param {Object} fbBot - FacebookBot instance
+ * @param {Object} group - Skupina kam postovat
+ * @param {Object} utioBot - UtioBot instance
+ * @returns {Promise<boolean>} - True pokud byl post úspěšný
+ */
+async function performUtioPost(user, fbBot, group, utioBot) {
+  try {
+    Log.info(`[${user.id}]`, '📤 Získávám zprávu z UTIO...');
+
+    const message = await support.pasteMsg(user, group, fbBot, utioBot);
+    if (!message) {
+      Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
+      return false;
+    }
+
+    Log.success(`[${user.id}]`, '✅ UTIO zpráva úspěšně publikována!');
+    return true;
+
+  } catch (err) {
+    Log.error(`[${user.id}] performUtioPost`, err);
+    return false;
+  }
+}
+
+// Export přepracované funkce
+export { postUtioByType };
+
+/**
  * Určuje požadavky konkrétní akce na služby (Facebook, UTIO)
  * @param {string} actionCode - kód akce
  * @returns {object} - {needsFacebook: boolean, needsUtio: boolean}
