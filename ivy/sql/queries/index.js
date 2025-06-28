@@ -4,7 +4,7 @@
  *
  * Popis: Hlavní exportní bod pro všechny SQL dotazy
  * Načítá a kombinuje všechny moduly dotazů do jednoho objektu
- * POZOR: Legacy dotazy jsou odstraněny, používáme pouze novou modulární strukturu
+ * KOMPLETNĚ BEZ LEGACY DOTAZŮ - pouze čistý modulární systém
  */
 
 import { USERS } from './users.js';
@@ -149,7 +149,8 @@ export const SQL_CONSTANTS = {
     POST_GENERAL: 'post_utio_G',
     POST_SALE: 'post_utio_GV',
     POST_PRIVATE: 'post_utio_P',
-    POST_REGIONAL: 'post_utio_Z'
+    POST_REGIONAL: 'post_utio_Z',
+    QUOTE_POST: 'quote_post'
   }
 };
 
@@ -202,6 +203,128 @@ export const QueryBuilder = {
       clause: `ORDER BY ${field} ${validDirection}`,
       params: []
     };
+  },
+
+  /**
+   * Sestaví WHERE podmínku pro časový rozsah
+   */
+  buildTimeRangeClause(field, hours) {
+    if (!field || typeof hours !== 'number') {
+      throw new Error('Invalid time range parameters');
+    }
+
+    return {
+      clause: `${field} >= NOW() - INTERVAL ? HOUR`,
+      params: [hours]
+    };
+  },
+
+  /**
+   * Sestaví podmínku pro stránkování
+   */
+  buildPaginationParams(page = 1, limit = SQL_CONSTANTS.DEFAULT_LIMIT) {
+    const validPage = Math.max(1, parseInt(page));
+    const validLimit = Math.min(Math.max(1, parseInt(limit)), SQL_CONSTANTS.MAX_LIMIT);
+    const offset = (validPage - 1) * validLimit;
+
+    return {
+      limit: validLimit,
+      offset: offset,
+      params: [offset, validLimit]
+    };
+  }
+};
+
+/**
+ * Utility funkce pro debug a diagnostiku
+ */
+export const SQLDebug = {
+  /**
+   * Vypíše všechny dostupné dotazy
+   */
+  listAllQueries() {
+    const queries = [];
+
+    for (const [category, categoryQueries] of Object.entries(SQL)) {
+      for (const queryName of Object.keys(categoryQueries)) {
+        queries.push(`${category}.${queryName}`);
+      }
+    }
+
+    return queries.sort();
+  },
+
+  /**
+   * Vyhledá dotazy podle klíčového slova
+   */
+  searchQueries(keyword) {
+    const results = [];
+    const lowerKeyword = keyword.toLowerCase();
+
+    for (const [category, categoryQueries] of Object.entries(SQL)) {
+      for (const [queryName, querySQL] of Object.entries(categoryQueries)) {
+        if (queryName.toLowerCase().includes(lowerKeyword) ||
+            querySQL.toLowerCase().includes(lowerKeyword)) {
+          results.push({
+            path: `${category}.${queryName}`,
+            category,
+            name: queryName,
+            sql: querySQL
+          });
+        }
+      }
+    }
+
+    return results;
+  },
+
+  /**
+   * Zkontroluje integritu všech dotazů
+   */
+  validateAllQueries() {
+    const issues = [];
+
+    for (const [category, categoryQueries] of Object.entries(SQL)) {
+      for (const [queryName, querySQL] of Object.entries(categoryQueries)) {
+        if (typeof querySQL !== 'string') {
+          issues.push({
+            path: `${category}.${queryName}`,
+            issue: `Not a string (${typeof querySQL})`
+          });
+          continue;
+        }
+
+        if (querySQL.trim().length === 0) {
+          issues.push({
+            path: `${category}.${queryName}`,
+            issue: 'Empty query'
+          });
+          continue;
+        }
+
+        // Základní SQL syntax checks
+        const trimmed = querySQL.trim().toUpperCase();
+        if (!['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'WITH'].some(keyword => trimmed.startsWith(keyword))) {
+          issues.push({
+            path: `${category}.${queryName}`,
+            issue: 'Does not start with valid SQL keyword'
+          });
+        }
+      }
+    }
+
+    return issues;
+  },
+
+  /**
+   * Spočítá parametry v dotazu
+   */
+  countParameters(queryPath) {
+    const query = QueryUtils.getQuery(queryPath);
+    if (!query) return null;
+
+    const matches = query.match(/\?/g);
+    return matches ? matches.length : 0;
   }
 };
 

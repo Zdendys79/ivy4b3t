@@ -2,7 +2,7 @@
  * Název souboru: quotes.js
  * Umístění: ~/ivy/sql/queries/quotes.js
  *
- * Popis: SQL dotazy pro správu citátů a výroků (statements)
+ * Popis: SQL dotazy pro správu citátů a výroků (quotes)
  * Obsahuje výběr, aktualizace a statistiky pro timeline příspěvky
  */
 
@@ -10,210 +10,193 @@ export const QUOTES = {
   // ===== ZÁKLADNÍ CRUD OPERACE =====
 
   getAll: `
-    SELECT hash, statement, topic, posted, created, counter
-    FROM statements
-    ORDER BY COALESCE(posted, '1970-01-01') ASC, created ASC
+    SELECT id, text, author, hash, next_seen, user_id
+    FROM quotes
+    ORDER BY COALESCE(next_seen, '1970-01-01') ASC, id ASC
   `,
 
   getByHash: `
-    SELECT hash, statement, topic, posted, created, counter
-    FROM statements
+    SELECT id, text, author, hash, next_seen, user_id
+    FROM quotes
     WHERE hash = ?
   `,
 
-  getByTopic: `
-    SELECT hash, statement, topic, posted, created, counter
-    FROM statements
-    WHERE topic = ?
-    ORDER BY COALESCE(posted, '1970-01-01') ASC, created ASC
+  getById: `
+    SELECT id, text, author, hash, next_seen, user_id
+    FROM quotes
+    WHERE id = ?
   `,
 
   insert: `
-    INSERT INTO statements (hash, statement, topic)
+    INSERT INTO quotes (text, author, user_id)
     VALUES (?, ?, ?)
     ON DUPLICATE KEY UPDATE
-      statement = VALUES(statement),
-      topic = VALUES(topic)
+      text = VALUES(text),
+      author = VALUES(author)
   `,
 
   // ===== VÝBĚR PRO POSTOVÁNÍ =====
 
   selectForPosting: `
-    SELECT hash, statement, topic, posted, counter
-    FROM statements
-    ORDER BY COALESCE(posted, NOW() - INTERVAL 90 DAY) ASC
+    SELECT id, text, author, hash
+    FROM quotes
+    WHERE next_seen IS NULL OR next_seen <= NOW()
+    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
     LIMIT 1
   `,
 
   selectRandomUnused: `
-    SELECT hash, statement, topic, counter
-    FROM statements
-    WHERE posted IS NULL
+    SELECT id, text, author, hash
+    FROM quotes
+    WHERE next_seen IS NULL
     ORDER BY RAND()
     LIMIT 1
   `,
 
   selectOldestUsed: `
-    SELECT hash, statement, topic, posted, counter
-    FROM statements
-    WHERE posted IS NOT NULL
-    ORDER BY posted ASC
+    SELECT id, text, author, hash, next_seen
+    FROM quotes
+    WHERE next_seen IS NOT NULL
+    ORDER BY next_seen ASC
     LIMIT 1
   `,
 
-  selectByTopicForPosting: `
-    SELECT hash, statement, topic, posted, counter
-    FROM statements
-    WHERE topic = ?
-    ORDER BY COALESCE(posted, NOW() - INTERVAL 90 DAY) ASC
+  selectByAuthor: `
+    SELECT id, text, author, hash
+    FROM quotes
+    WHERE author = ?
+      AND (next_seen IS NULL OR next_seen <= NOW())
+    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
     LIMIT 1
   `,
 
   // ===== AKTUALIZACE STAVU =====
 
   markAsPosted: `
-    UPDATE statements
-    SET posted = NOW(), counter = COALESCE(counter, 0) + 1
-    WHERE hash = ?
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL ? DAY
+    WHERE id = ?
   `,
 
-  updateCounter: `
-    UPDATE statements
-    SET counter = COALESCE(counter, 0) + 1
-    WHERE hash = ?
+  markAsUsed: `
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL 7 DAY
+    WHERE id = ?
   `,
 
   resetPostedStatus: `
-    UPDATE statements
-    SET posted = NULL, counter = 0
-    WHERE hash = ?
+    UPDATE quotes
+    SET next_seen = NULL
+    WHERE id = ?
   `,
 
   resetAllPostedStatus: `
-    UPDATE statements
-    SET posted = NULL, counter = 0
+    UPDATE quotes
+    SET next_seen = NULL
   `,
 
   // ===== STATISTIKY A MONITORING =====
 
   getStatistics: `
     SELECT
-      COUNT(*) as total_statements,
-      COUNT(CASE WHEN posted IS NULL THEN 1 END) as unused_statements,
-      COUNT(CASE WHEN posted IS NOT NULL THEN 1 END) as used_statements,
-      MAX(posted) as last_posted,
-      AVG(counter) as avg_usage,
-      MAX(counter) as max_usage
-    FROM statements
+      COUNT(*) as total_quotes,
+      COUNT(CASE WHEN next_seen IS NULL THEN 1 END) as unused_quotes,
+      COUNT(CASE WHEN next_seen IS NOT NULL THEN 1 END) as used_quotes,
+      MAX(next_seen) as last_posted,
+      COUNT(DISTINCT author) as unique_authors
+    FROM quotes
   `,
 
-  getTopicStatistics: `
+  getAuthorStatistics: `
     SELECT
-      topic,
+      author,
       COUNT(*) as total_count,
-      COUNT(CASE WHEN posted IS NULL THEN 1 END) as unused_count,
-      COUNT(CASE WHEN posted IS NOT NULL THEN 1 END) as used_count,
-      MAX(posted) as last_posted,
-      AVG(counter) as avg_usage
-    FROM statements
-    GROUP BY topic
+      COUNT(CASE WHEN next_seen IS NULL THEN 1 END) as unused_count,
+      COUNT(CASE WHEN next_seen IS NOT NULL THEN 1 END) as used_count,
+      MAX(next_seen) as last_posted
+    FROM quotes
+    WHERE author IS NOT NULL
+    GROUP BY author
     ORDER BY total_count DESC
   `,
 
-  getMostUsed: `
-    SELECT hash, statement, topic, counter, posted
-    FROM statements
-    WHERE counter > 0
-    ORDER BY counter DESC
+  getMostRecentlyUsed: `
+    SELECT id, text, author, next_seen
+    FROM quotes
+    WHERE next_seen IS NOT NULL
+    ORDER BY next_seen DESC
     LIMIT ?
   `,
 
-  getLeastUsed: `
-    SELECT hash, statement, topic, COALESCE(counter, 0) as counter, posted
-    FROM statements
-    ORDER BY COALESCE(counter, 0) ASC, COALESCE(posted, '1970-01-01') ASC
+  getLeastRecentlyUsed: `
+    SELECT id, text, author, COALESCE(next_seen, '1970-01-01') as next_seen
+    FROM quotes
+    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
     LIMIT ?
   `,
 
-  getRecentlyPosted: `
-    SELECT hash, statement, topic, posted, counter
-    FROM statements
-    WHERE posted IS NOT NULL
-    ORDER BY posted DESC
+  getAvailableNow: `
+    SELECT id, text, author
+    FROM quotes
+    WHERE next_seen IS NULL OR next_seen <= NOW()
+    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
     LIMIT ?
   `,
 
   // ===== MAINTENANCE OPERACE =====
 
   findDuplicates: `
-    SELECT statement, COUNT(*) as count
-    FROM statements
-    GROUP BY statement
+    SELECT text, COUNT(*) as count
+    FROM quotes
+    GROUP BY text
     HAVING COUNT(*) > 1
     ORDER BY count DESC
   `,
 
   findDuplicateHashes: `
     SELECT hash, COUNT(*) as count
-    FROM statements
+    FROM quotes
     GROUP BY hash
     HAVING COUNT(*) > 1
     ORDER BY count DESC
   `,
 
   deleteDuplicates: `
-    DELETE s1 FROM statements s1
-    INNER JOIN statements s2
-    WHERE s1.hash > s2.hash
-      AND s1.statement = s2.statement
+    DELETE q1 FROM quotes q1
+    INNER JOIN quotes q2
+    WHERE q1.id > q2.id
+      AND q1.text = q2.text
   `,
 
   cleanupOldPosted: `
-    UPDATE statements
-    SET posted = NULL
-    WHERE posted < DATE_SUB(NOW(), INTERVAL ? DAY)
+    UPDATE quotes
+    SET next_seen = NULL
+    WHERE next_seen < DATE_SUB(NOW(), INTERVAL ? DAY)
   `,
 
   // ===== POKROČILÉ DOTAZY =====
 
   getDistributionByMonth: `
     SELECT
-      DATE_FORMAT(posted, '%Y-%m') as month,
-      COUNT(*) as posts_count,
-      COUNT(DISTINCT topic) as unique_topics
-    FROM statements
-    WHERE posted IS NOT NULL
-      AND posted >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-    GROUP BY DATE_FORMAT(posted, '%Y-%m')
+      DATE_FORMAT(next_seen, '%Y-%m') as month,
+      COUNT(*) as quotes_used,
+      COUNT(DISTINCT author) as unique_authors
+    FROM quotes
+    WHERE next_seen IS NOT NULL
+      AND next_seen >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    GROUP BY DATE_FORMAT(next_seen, '%Y-%m')
     ORDER BY month DESC
   `,
 
-  getUnbalancedTopics: `
-    SELECT
-      topic,
-      COUNT(*) as total_statements,
-      SUM(CASE WHEN posted IS NOT NULL THEN 1 ELSE 0 END) as used_statements,
-      ROUND(
-        SUM(CASE WHEN posted IS NOT NULL THEN 1 ELSE 0 END) * 100.0 / COUNT(*),
-        2
-      ) as usage_percentage
-    FROM statements
-    WHERE topic IS NOT NULL
-    GROUP BY topic
-    HAVING usage_percentage > 80 OR usage_percentage < 20
-    ORDER BY usage_percentage DESC
-  `,
-
-  getRandomWeightedStatement: `
-    SELECT hash, statement, topic
-    FROM statements
-    WHERE posted IS NULL OR posted < DATE_SUB(NOW(), INTERVAL ? DAY)
+  getRandomWeightedQuote: `
+    SELECT id, text, author, hash
+    FROM quotes
+    WHERE next_seen IS NULL OR next_seen < DATE_SUB(NOW(), INTERVAL ? DAY)
     ORDER BY
       CASE
-        WHEN posted IS NULL THEN 1
+        WHEN next_seen IS NULL THEN 1
         ELSE 2
       END,
-      COALESCE(counter, 0) ASC,
       RAND()
     LIMIT 1
   `,
@@ -221,53 +204,71 @@ export const QUOTES = {
   // ===== IMPORT/EXPORT OPERACE =====
 
   bulkInsert: `
-    INSERT IGNORE INTO statements (hash, statement, topic)
+    INSERT IGNORE INTO quotes (text, author, user_id)
     VALUES %s
   `,
 
   exportAll: `
-    SELECT hash, statement, topic, posted, created, counter
-    FROM statements
-    ORDER BY created
+    SELECT id, text, author, hash, next_seen, user_id
+    FROM quotes
+    ORDER BY id
   `,
 
-  exportByTopic: `
-    SELECT hash, statement, topic, posted, created, counter
-    FROM statements
-    WHERE topic = ?
-    ORDER BY created
+  exportByAuthor: `
+    SELECT id, text, author, hash, next_seen, user_id
+    FROM quotes
+    WHERE author = ?
+    ORDER BY id
   `,
 
   // ===== VALIDACE =====
 
-  validateStatements: `
+  validateQuotes: `
     SELECT
-      hash,
-      statement,
+      id,
+      text,
       CASE
-        WHEN LENGTH(statement) < 10 THEN 'Too short'
-        WHEN LENGTH(statement) > 500 THEN 'Too long'
-        WHEN statement REGEXP '^[[:space:]]*$' THEN 'Empty or whitespace only'
-        WHEN statement LIKE '%[placeholder]%' THEN 'Contains placeholder'
+        WHEN LENGTH(text) < 10 THEN 'Too short'
+        WHEN LENGTH(text) > 500 THEN 'Too long'
+        WHEN text REGEXP '^[[:space:]]*$' THEN 'Empty or whitespace only'
+        WHEN text LIKE '%[placeholder]%' THEN 'Contains placeholder'
         ELSE 'OK'
       END as validation_status
-    FROM statements
+    FROM quotes
     HAVING validation_status != 'OK'
-    ORDER BY validation_status, hash
+    ORDER BY validation_status, id
   `,
 
-  getEmptyStatements: `
-    SELECT hash, statement, topic
-    FROM statements
-    WHERE statement IS NULL
-       OR statement = ''
-       OR statement REGEXP '^[[:space:]]*$'
+  getEmptyQuotes: `
+    SELECT id, text, author
+    FROM quotes
+    WHERE text IS NULL
+       OR text = ''
+       OR text REGEXP '^[[:space:]]*$'
   `,
 
-  getLongStatements: `
-    SELECT hash, statement, topic, LENGTH(statement) as length
-    FROM statements
-    WHERE LENGTH(statement) > ?
-    ORDER BY LENGTH(statement) DESC
+  getLongQuotes: `
+    SELECT id, text, author, LENGTH(text) as length
+    FROM quotes
+    WHERE LENGTH(text) > ?
+    ORDER BY LENGTH(text) DESC
+  `,
+
+  // ===== FUNKCE PRO KOLO ŠTĚSTÍ =====
+
+  getRandomForUser: `
+    SELECT id, text, author
+    FROM quotes
+    WHERE (next_seen IS NULL OR next_seen <= NOW())
+      AND id NOT IN (
+        SELECT DISTINCT reference_id
+        FROM action_log
+        WHERE account_id = ?
+          AND action_code = 'quote_post'
+          AND reference_id IS NOT NULL
+          AND timestamp >= NOW() - INTERVAL 7 DAY
+      )
+    ORDER BY RAND()
+    LIMIT 1
   `
 };
