@@ -26,27 +26,22 @@ export function getActionRequirements(actionCode) {
   };
 
   switch (actionCode) {
-    // Akce vyžadující Facebook
-    case 'group_post':
+    // Akce vyžadující POUZE Facebook (bez UTIO)
+    case 'group_post':        // Příspěvky do zájmových skupin (bez UTIO)
     case 'timeline_post':
     case 'comment':
     case 'react':
-    case 'post_utio_g':
-    case 'post_utio_gv':
-    case 'post_utio_p':
-    case 'post_utio_z':
     case 'messenger_check':
     case 'messenger_reply':
     case 'quote_post':
       requirements.needsFacebook = true;
       break;
 
-    // Akce vyžadující UTIO
-    case 'group_post': // vyžaduje i UTIO pro získání zprávy
-    case 'post_utio_g':
-    case 'post_utio_gv':
-    case 'post_utio_p':
-    case 'post_utio_z':
+    // Akce vyžadující FACEBOOK + UTIO
+    case 'post_utio_g':       // UTIO post do běžných skupin
+    case 'post_utio_gv':      // UTIO post do vlastních skupin
+    case 'post_utio_p':       // UTIO post do prodejních skupin
+      requirements.needsFacebook = true;
       requirements.needsUtio = true;
       break;
 
@@ -78,7 +73,7 @@ export function getActionRequirements(actionCode) {
 export async function runAction(user, fbBot, action_code, utioBot = null) {
   switch (action_code) {
     case 'group_post':
-      return await groupPost(user, fbBot, utioBot);
+      return await groupPost(user, fbBot);
 
     case 'timeline_post':
       return await timelinePost(user, fbBot);
@@ -97,9 +92,6 @@ export async function runAction(user, fbBot, action_code, utioBot = null) {
 
     case 'post_utio_p':
       return await postUtioByType(user, fbBot, 'P', utioBot);
-
-    case 'post_utio_z':
-      return await postUtioByType(user, fbBot, 'Z', utioBot);
 
     case 'messenger_check':
       return await messengerCheck(user, fbBot);
@@ -295,9 +287,60 @@ async function quotePost(user, fbBot) {
 // 🚧 ŠABLONY NEIMPLEMENTOVANÝCH AKCÍ
 // ==========================================
 
-async function groupPost(user, fbBot, utioBot) {
-  Log.warn(`[${user.id}]`, 'Akce group_post zatím není implementována.');
-  return false;
+async function groupPost(user, fbBot) {
+  try {
+    Log.info(`[${user.id}]`, 'Spouštím postování do zájmových skupin (bez UTIO)');
+
+    // Najdi dostupné zájmové skupiny (typ Z)
+    const availableGroups = await db.getAvailableGroupsByType('Z', user.id);
+    if (!availableGroups.length) {
+      Log.warn(`[${user.id}]`, 'Žádné dostupné zájmové skupiny');
+      return false;
+    }
+
+    // Vyber náhodnou skupinu
+    const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
+    Log.info(`[${user.id}]`, `Vybrána zájmová skupina: ${selectedGroup.nazev} (${selectedGroup.fb_id})`);
+
+    // Otevři skupinu
+    await fbBot.openGroup(selectedGroup);
+    await wait.delay(wait.timeout() * 2);
+
+    // Získej vlastní obsah (ne z UTIO) - například citát nebo připravený text
+    const quote = await db.getRandomQuote(user.id);
+    if (!quote) {
+      Log.warn(`[${user.id}]`, 'Žádný vhodný obsah k postování do zájmové skupiny');
+      return false;
+    }
+
+    // Publikuj obsah
+    await fbBot.newThing();
+    await fbBot.clickNewThing();
+
+    const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
+    await fbBot.pasteStatement(postText);
+
+    const success = await fbBot.clickSendButton();
+
+    if (success) {
+      // Zaloguj akci
+      await db.logUserAction(user.id, 'group_post', selectedGroup.id, `Post do zájmové skupiny: ${selectedGroup.nazev}`);
+
+      // Aktualizuj čas posledního použití skupiny
+      await db.updateGroupLastSeen(selectedGroup.id);
+      await db.updateGroupNextSeen(selectedGroup.id, IvMath.randInterval(120, 480));
+
+      Log.success(`[${user.id}]`, `Úspěšné postování do zájmové skupiny: ${selectedGroup.nazev}`);
+      return true;
+    } else {
+      Log.error(`[${user.id}]`, `Nepodařilo se poslat příspěvek do skupiny ${selectedGroup.nazev}`);
+      return false;
+    }
+
+  } catch (err) {
+    Log.error(`[${user.id}] groupPost`, err);
+    return false;
+  }
 }
 
 async function timelinePost(user, fbBot) {
