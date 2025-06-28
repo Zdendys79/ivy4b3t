@@ -4,10 +4,9 @@
  *
  * Popis: Obsahuje pomocné funkce pro práci s uživateli, skupinami, postování zpráv,
  *         zvyšování denních limitů a získávání dat z UTIO portálu.
- *         Také se stará o simulaci lidské aktivity na Facebooku.
+ *         Aktualizováno pro použití nové UtioBot třídy.
  */
 
-import * as utio from './iv_utio.js';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
 import md5 from 'md5';
@@ -69,9 +68,10 @@ export async function randomReferer() {
  * @param {Object} user - Uživatelské data
  * @param {Object} group - Data skupiny
  * @param {Object} fbBot - FacebookBot instance
+ * @param {Object} utioBot - UtioBot instance (optional pro zpětnou kompatibilitu)
  * @returns {string|false} Text zprávy nebo false při chybě
  */
-export async function pasteMsg(user, group, fbBot) {
+export async function pasteMsg(user, group, fbBot, utioBot = null) {
   let message = false;
   let cnt = 0;
 
@@ -87,13 +87,19 @@ export async function pasteMsg(user, group, fbBot) {
       return false;
     }
 
+    // Zkontroluj dostupnost UTIO
+    if (!utioBot || !utioBot.isReady()) {
+      Log.error('[SUPPORT]', 'pasteMsg: UtioBot není k dispozici nebo není připraven');
+      return false;
+    }
+
     Log.info(`[${user.id}]`, 'Získávám zprávu z UTIO...');
 
     // Zkus získat zprávu z UTIO (max 5 pokusů)
     do {
       Log.info(`[${user.id}]`, `Pokus ${cnt + 1}/5 - získávám zprávu z UTIO...`);
 
-      const m = await utio.getMessage(user.portal_id, group.region_id, group.district_id);
+      const m = await utioBot.getMessage(user.portal_id, group.region_id, group.district_id);
 
       if (!m || !Array.isArray(m) || m.length === 0) {
         Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Žádná zpráva z UTIO`);

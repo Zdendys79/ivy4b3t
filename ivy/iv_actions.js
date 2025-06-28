@@ -3,7 +3,8 @@
  * Umístění: ~/ivy/iv_actions.js
  *
  * Popis: Obsahuje jednotlivé akce včetně nových typů post_utio pro různé typy skupin.
- * Každá akce odpovídá hodnotě `action_code` z tabulky `action_definitions`.
+ *        Každá akce odpovídá hodnotě `action_code` z tabulky `action_definitions`.
+ *        Aktualizováno pro použití nové UtioBot třídy.
  */
 
 import * as db from './iv_sql.js';
@@ -66,10 +67,18 @@ export function getActionRequirements(actionCode) {
   return requirements;
 }
 
-export async function runAction(user, fbBot, action_code) {
+/**
+ * Spustí konkrétní akci
+ * @param {Object} user - Uživatelská data
+ * @param {Object} fbBot - FacebookBot instance
+ * @param {string} action_code - Kód akce
+ * @param {Object} utioBot - UtioBot instance (optional)
+ * @returns {Promise<boolean>} True pokud byla akce úspěšná
+ */
+export async function runAction(user, fbBot, action_code, utioBot = null) {
   switch (action_code) {
     case 'group_post':
-      return await groupPost(user, fbBot);
+      return await groupPost(user, fbBot, utioBot);
 
     case 'timeline_post':
       return await timelinePost(user, fbBot);
@@ -81,16 +90,16 @@ export async function runAction(user, fbBot, action_code) {
       return await react(user, fbBot);
 
     case 'post_utio_g':
-      return await postUtioByType(user, fbBot, 'G');
+      return await postUtioByType(user, fbBot, 'G', utioBot);
 
     case 'post_utio_gv':
-      return await postUtioByType(user, fbBot, 'GV');
+      return await postUtioByType(user, fbBot, 'GV', utioBot);
 
     case 'post_utio_p':
-      return await postUtioByType(user, fbBot, 'P');
+      return await postUtioByType(user, fbBot, 'P', utioBot);
 
     case 'post_utio_z':
-      return await postUtioByType(user, fbBot, 'Z');
+      return await postUtioByType(user, fbBot, 'Z', utioBot);
 
     case 'messenger_check':
       return await messengerCheck(user, fbBot);
@@ -113,14 +122,13 @@ export async function runAction(user, fbBot, action_code) {
   }
 }
 
-// --- Implementované akce ---
+// ==========================================
+// 🎯 IMPLEMENTOVANÉ AKCE
+// ==========================================
 
 async function accountDelay(user) {
   Log.info(`[${user.id}]`, 'Spouštím delay režim.');
-  const isNight = new Date().getHours() < 2 || new Date().getHours() >= 20;
-  const minutes = isNight
-    ? IvMath.parabolicRandReverse(420, 600)
-    : IvMath.randInterval(180, 480);
+  const minutes = IvMath.randInterval(180, 480);
 
   await db.updateUserWorktime(user, minutes);
   await db.systemLog('account_delay', `Čekání uživatele: ${minutes} minut.`, { user_id: user.id });
@@ -138,9 +146,15 @@ async function accountSleep(user) {
   return true;
 }
 
-async function postUtioByType(user, fbBot, groupType) {
+async function postUtioByType(user, fbBot, groupType, utioBot) {
   try {
     Log.info(`[${user.id}]`, `Spouštím postování UTIO zprávy do skupin typu ${groupType}`);
+
+    // Zkontroluj dostupnost UTIO
+    if (!utioBot || !utioBot.isReady()) {
+      Log.error(`[${user.id}]`, 'UtioBot není k dispozici pro postování');
+      return false;
+    }
 
     // Zkontroluj, zda může uživatel přidat příspěvek do tohoto typu skupin
     const canPost = await db.canUserPostToGroupType(user.id, groupType);
@@ -165,7 +179,7 @@ async function postUtioByType(user, fbBot, groupType) {
     await wait.delay(wait.timeout() * 2);
 
     // Získej zprávu z UTIO a publikuj ji
-    const postSuccess = await performUtioPost(user, fbBot, selectedGroup);
+    const postSuccess = await performUtioPost(user, fbBot, selectedGroup, utioBot);
 
     if (postSuccess) {
       // Zaloguj akci
@@ -189,12 +203,12 @@ async function postUtioByType(user, fbBot, groupType) {
   }
 }
 
-async function performUtioPost(user, fbBot, group) {
+async function performUtioPost(user, fbBot, group, utioBot) {
   try {
     Log.info(`[${user.id}]`, 'Získávám zprávu z UTIO...');
 
     // Získej zprávu z UTIO pomocí iv_support.js funkce
-    const message = await support.pasteMsg(user, group, fbBot);
+    const message = await support.pasteMsg(user, group, fbBot, utioBot);
     if (!message) {
       Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
       return false;
@@ -277,9 +291,11 @@ async function quotePost(user, fbBot) {
   }
 }
 
-// --- Šablony neimplementovaných akcí ---
+// ==========================================
+// 🚧 ŠABLONY NEIMPLEMENTOVANÝCH AKCÍ
+// ==========================================
 
-async function groupPost(user, fbBot) {
+async function groupPost(user, fbBot, utioBot) {
   Log.warn(`[${user.id}]`, 'Akce group_post zatím není implementována.');
   return false;
 }

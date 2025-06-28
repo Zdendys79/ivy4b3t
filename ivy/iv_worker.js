@@ -4,6 +4,7 @@
  *
  * Popis: Hlavní smyčka robota s optimalizovaným otevíráním záložek.
  *        Otevírá Facebook/UTIO pouze když je to potřeba pro konkrétní akci.
+ *        Upraveno pro použití nové UtioBot třídy.
  */
 
 import fs from 'fs';
@@ -13,8 +14,8 @@ import puppeteer from 'puppeteer';
 import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
 import { FacebookBot } from './iv_fb.class.js';
+import { UtioBot } from './iv_utio.class.js';
 import * as ui from './iv_ui.js';
-import * as utio from './iv_utio.js';
 import * as support from './iv_support.js';
 import { getRandomAction } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
@@ -88,16 +89,22 @@ async function prepareBrowser(user) {
 
 async function initializeRequiredServices(user, context, requirements) {
   let fbBot = null;
-  let utioInitialized = false;
+  let utioBot = null;
 
   // Inicializuj UTIO pouze pokud je potřeba
   if (requirements.needsUtio) {
     Log.info(`[${user.id}]`, 'Inicializuji UTIO pro akci...');
-    await utio.newUtioTab(context);
-    if (!(await utio.openUtio(user.u_login, user.u_pass))) {
-      throw new Error('Login na UTIO selhal.');
+    utioBot = new UtioBot(context);
+
+    if (!(await utioBot.init())) {
+      throw new Error('Inicializace UTIO selhala');
     }
-    utioInitialized = true;
+
+    if (!(await utioBot.openUtio(user))) {
+      throw new Error('Login na UTIO selhal');
+    }
+
+    Log.success(`[${user.id}]`, 'UTIO úspěšně inicializováno a přihlášeno');
   }
 
   // Inicializuj Facebook pouze pokud je potřeba
@@ -112,16 +119,16 @@ async function initializeRequiredServices(user, context, requirements) {
       await db.lockAccount(user.id);
       throw new Error('Účet je zablokován.');
     }
-    
+
     // Pokud je fbStatus objekt s detailními informacemi (nová detekce)
     if (typeof fbStatus === 'object' && fbStatus.locked) {
       const lockReason = fbStatus.reason || 'Nespecifikovaný problém';
       const lockType = fbStatus.type || 'UNKNOWN';
-      
+
       // Pokud existují nové funkce, použij je, jinak fallback na staré
       if (typeof db.lockAccountWithReason === 'function') {
         await db.lockAccountWithReason(user.id, lockReason, lockType, hostname);
-        
+
         if (typeof db.logAccountIssue === 'function') {
           await db.logAccountIssue(user.id, lockReason, lockType, {
             detection_method: 'enhanced_facebook_detection',
@@ -145,135 +152,36 @@ async function initializeRequiredServices(user, context, requirements) {
       } else {
         await db.lockAccount(user.id);
       }
-      throw new Error('Login na FB selhal.');
+      throw new Error('Login na FB selhal');
     }
 
-    await db.userLogedToFB(user.id);
+    Log.success(`[${user.id}]`, 'Facebook úspěšně inicializován a přihlášen');
   }
 
-  // Zavři prázdné záložky pouze když něco otevíráme
-  if (requirements.needsFacebook || requirements.needsUtio) {
-    await support.closeBlankTabs(context);
-  }
-
-  return { fbBot, utioInitialized };
+  return { fbBot, utioBot };
 }
 
-// Přidej novou funkce pro monitoring zablokovaných účtů
-async function checkAccountHealth(user) {
+async function showAccountLockStats() {
   try {
-    const lockStatus = await db.checkAccountLockStatus(user.id);
-    
-    if (lockStatus && lockStatus.is_locked) {
-      Log.warn(`[${user.id}] Účet je označen jako zablokovaný: ${lockStatus.lock_reason} (${lockStatus.lock_type})`);
-      return false;
-    }
-    
-    return true;
-  } catch (err) {
-    Log.error(`[${user.id}] Chyba při kontrole stavu účtu: ${err}`);
-    return true; // V případě chyby pokračuj
-  }
-}
+    const stats = await db.getAccountLockStats();
+    const recentLocks = await db.getRecentAccountLocks();
 
-// Aktualizace hlavní tick() funkce
-export async function tick() {
-  try {
-    const uiCommand = await db.getUICommand();
-    if (uiCommand) {
-      Log.info('[TICK]', 'Detekován UI příkaz – zpracovávám...');
-      await ui.solveUICommand(uiCommand);
+    if (!stats || stats.length === 0) {
+      Log.info('[STATS]', 'Žádné statistiky zablokování účtů k dispozici');
       return;
     }
 
-    if (Date.now() < nextWorktime) {
-      Log.info('[TICK]', 'Ještě nenastal čas na další cyklus.');
-      return;
-    }
-
-    const user = await db.getUser(); // Už obsahuje AND locked IS NULL
-    if (!user) {
-      Log.info('[TICK]', 'Žádný dostupný uživatel (všichni zablokovaní nebo zaneprázdněni).');
-      
-      // Zkus najít zablokovaného uživatele pro debug info
-      const lockedStats = await db.getLockedAccountsStats();
-      if (lockedStats.length > 0) {
-        Log.info('[TICK]', `Zablokované účty: ${lockedStats.map(s => `${s.lock_type}: ${s.count}`).join(', ')}`);
-      }
-      
-      nextWorktime = Date.now() + (30 * 1000); // Zkus znovu za 30 sekund
-      return;
-    }
-
-    // Dodatečná kontrola stavu účtu
-    if (!(await checkAccountHealth(user))) {
-      Log.warn(`[${user.id}] Přeskakujem uživatele kvůli problémům s účtem`);
-      nextWorktime = Date.now() + (10 * 1000);
-      return;
-    }
-
-    Log.info('[TICK]', `Zpracovávám uživatele ${user.id} ${user.name} ${user.surname}`);
-
-    const { browser, context, browserClosed } = await prepareBrowser(user);
-
-    try {
-      await executeUserAction(user, browser, context, browserClosed);
-      
-      const sleepTime = await db.getReferenceSleepTime(user.id);
-      nextWorktime = Date.now() + sleepTime;
-      
-      Log.info('[TICK]', `Další cyklus za ${Math.round(sleepTime / 1000)}s`);
-
-    } catch (err) {
-      Log.error('[TICK]', `Chyba při zpracování uživatele ${user.id}: ${err}`);
-      
-      // Pokud je chyba související se zablokováním, nezablokuj znovu
-      if (!err.message.includes('zablokován')) {
-        await pauseOnError(browser, browserClosed);
-      }
-      
-      nextWorktime = Date.now() + (60 * 1000); // Zkus znovu za minutu
-    } finally {
-      if (!DEBUG_KEEP_BROWSER_OPEN && browser && !browserClosed) {
-        try {
-          await browser.close();
-          Log.info('[TICK]', 'Prohlížeč uzavřen.');
-        } catch (err) {
-          Log.warn('[TICK]', `Chyba při zavírání prohlížeče: ${err}`);
-        }
-      }
-    }
-
-  } catch (err) {
-    Log.error('[TICK]', err);
-    nextWorktime = Date.now() + (5 * 60 * 1000); // Zkus znovu za 5 minut při systémové chybě
-  }
-}
-
-// Přidej funkci pro reporting statistik zablokovaných účtů
-export async function reportLockStatistics() {
-  try {
-    const stats = await db.getLockedAccountsStats();
-    const recentLocks = await db.getRecentLocksByType(7);
-    
-    Log.info('[STATS]', '=== Statistiky zablokovaných účtů ===');
-    
-    if (stats.length === 0) {
-      Log.info('[STATS]', 'Žádné zablokované účty.');
-      return;
-    }
-    
     stats.forEach(stat => {
       Log.info('[STATS]', `${stat.lock_type}: ${stat.count} celkem (${stat.last_24h} za 24h, ${stat.last_7d} za 7d)`);
     });
-    
+
     if (recentLocks.length > 0) {
       Log.info('[STATS]', '=== Nedávná zablokování ===');
       recentLocks.forEach(lock => {
         Log.info('[STATS]', `${lock.lock_date}: ${lock.lock_type} - ${lock.daily_count}x`);
       });
     }
-    
+
   } catch (err) {
     Log.error('[STATS]', `Chyba při načítání statistik: ${err}`);
   }
@@ -308,10 +216,10 @@ async function executeUserAction(user, browser, context, browserClosed) {
   Log.info(`[${user.id}]`, `Požadavky akce: FB=${requirements.needsFacebook}, UTIO=${requirements.needsUtio}`);
 
   // Inicializuj pouze potřebné služby
-  const { fbBot } = await initializeRequiredServices(user, context, requirements);
+  const { fbBot, utioBot } = await initializeRequiredServices(user, context, requirements);
 
-  // Proveď akci
-  const success = await runAction(user, fbBot, actionCode);
+  // Proveď akci - předej oba bot objekty pro zpětnou kompatibilitu
+  const success = await runAction(user, fbBot, actionCode, utioBot);
   if (!success) {
     Log.warn(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA.`);
     await pauseOnError(browser, browserClosed);
@@ -331,5 +239,39 @@ async function cleanupBrowser(browser, browserClosed) {
   if (!browserClosed) {
     await browser.close();
     Log.info('[WORKER]', 'Prohlížeč uzavřen.');
+  }
+}
+
+export async function tick() {
+  const user = await db.getUserForNextAction();
+  if (!user) {
+    if (Date.now() >= nextWorktime) {
+      Log.info('[WORKER]', 'Žádný uživatel k práci.');
+      await showAccountLockStats();
+      nextWorktime = Date.now() + 5 * 60 * 1000;
+    }
+    return;
+  }
+
+  Log.info(`[${user.id}]`, `Spouštím akci pro ${user.name} ${user.surname}`);
+
+  let browser, context, browserClosed;
+  try {
+    ({ browser, context, browserClosed } = await prepareBrowser(user));
+    await support.closeBlankTabs(context);
+
+    const uiCommand = await ui.checkUI(user.id);
+    if (uiCommand) {
+      await ui.handleUICommand(uiCommand, user.id, browser);
+      return;
+    }
+
+    await executeUserAction(user, browser, context, browserClosed);
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, err);
+    await pauseOnError(browser, browserClosed);
+  } finally {
+    await cleanupBrowser(browser, browserClosed);
   }
 }
