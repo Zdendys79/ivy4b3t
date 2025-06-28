@@ -61,4 +61,26 @@ if [ -z "$GNOME_KEYRING_CONTROL" ] && [ -x /usr/bin/gnome-keyring-daemon ]; then
 fi
 EOF
 
+echo "[XFCE] Vytvářím vlastní zástupce pro xfce4-terminal..."
+
+mkdir -p ~/.local/share/applications
+cat > ~/.local/share/applications/xfce4-terminal-custom.desktop <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Xfce Terminal (custom)
+Comment=Maximized + Always on top
+Exec=xfce4-terminal --maximize
+StartupNotify=false
+Terminal=false
+Icon=utilities-terminal
+EOF
+
+chmod +x ~/.local/share/applications/xfce4-terminal-custom.desktop
+
+# Zástupce na plochu
+mkdir -p ~/Desktop
+cp ~/.local/share/applications/xfce4-terminal-custom.desktop ~/Desktop/
+chmod +x ~/Desktop/xfce4-terminal-custom.desktop
+
 echo "[DONE] Chrome Remote Desktop by měl nyní fungovat čistě s Xfce bez výzev."
