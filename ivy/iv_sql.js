@@ -190,6 +190,11 @@ export class QueryBuilder {
     return await safeQueryAll('actions.getUserActions', [userId, userId]);
   }
 
+  async getUserActionsWithLimits(userId) {
+    // Dotaz používá userId na 4 místech, takže pošleme 4x stejnou hodnotu
+    return await safeQueryAll('actions.getUserActionsWithLimits', [userId, userId, userId, userId]);
+  }
+
   async logAction(accountId, actionCode, referenceId, text) {
     return await safeExecute('actions.logAction', [accountId, actionCode, referenceId, text]);
   }
@@ -201,6 +206,10 @@ export class QueryBuilder {
   // Limits
   async getUserLimit(userId, groupType) {
     return await safeQueryFirst('limits.getUserLimit', [userId, groupType]);
+  }
+
+  async getUserAllLimitsWithUsage(userId) {
+    return await safeQueryAll('limits.getUserAllLimitsWithUsage', [userId, userId]);
   }
 
   async canUserPost(userId, groupType) {
@@ -249,6 +258,7 @@ export const getUsersByHostname = () => safeQueryAll('users.getAllByHostname', [
 
 // Action system
 export const getUserActions = user_id => safeQueryAll('actions.getUserActions', [user_id, user_id]);
+export const getUserActionsWithLimits = user_id => safeQueryAll('actions.getUserActionsWithLimits', [user_id, user_id, user_id, user_id]);
 export const updateUserActionPlan = (user_id, action_code, randMinutes) =>
   safeExecute('actions.updatePlan', [randMinutes, user_id, action_code]);
 export const initUserActionPlan = (user_id) => safeExecute('actions.initPlan', [user_id]);
@@ -258,6 +268,8 @@ export const logUserAction = (account_id, action_code, reference_id, text) =>
 // Group limits
 export const getUserGroupLimit = (user_id, group_type) =>
   safeQueryFirst('limits.getUserLimit', [user_id, group_type]);
+export const getUserAllLimitsWithUsage = (user_id) =>
+  safeQueryAll('limits.getUserAllLimitsWithUsage', [user_id, user_id]);
 export const countUserPostsInTimeframe = (user_id, group_type, hours) =>
   safeQueryFirst('limits.countPostsInTimeframe', [user_id, group_type, hours]);
 export const upsertUserGroupLimit = (user_id, group_type, max_posts, time_window_hours) =>
