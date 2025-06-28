@@ -64,36 +64,119 @@ export async function randomReferer() {
   }
 }
 
+/**
+ * Získá zprávu z UTIO a vloží ji do Facebooku
+ * @param {Object} user - Uživatelské data
+ * @param {Object} group - Data skupiny
+ * @param {Object} fbBot - FacebookBot instance
+ * @returns {string|false} Text zprávy nebo false při chybě
+ */
 export async function pasteMsg(user, group, fbBot) {
   let message = false;
   let cnt = 0;
 
   try {
+    // Kontrola vstupních parametrů
+    if (!user || !group || !fbBot) {
+      Log.error('[SUPPORT]', 'pasteMsg: Chybí povinné parametry');
+      return false;
+    }
+
+    if (!user.portal_id || !group.region_id || !group.district_id) {
+      Log.error('[SUPPORT]', `pasteMsg: Chybí ID parametry - portal: ${user.portal_id}, region: ${group.region_id}, okres: ${group.district_id}`);
+      return false;
+    }
+
+    Log.info(`[${user.id}]`, 'Získávám zprávu z UTIO...');
+
+    // Zkus získat zprávu z UTIO (max 5 pokusů)
     do {
+      Log.info(`[${user.id}]`, `Pokus ${cnt + 1}/5 - získávám zprávu z UTIO...`);
+
       const m = await utio.getMessage(user.portal_id, group.region_id, group.district_id);
-      if (await db.verifyMsg(group.id, md5(m[0]).toString())) {
-        message = m;
+
+      if (!m || !Array.isArray(m) || m.length === 0) {
+        Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Žádná zpráva z UTIO`);
+        cnt++;
+        await wait.delay(2000); // Počkej před dalším pokusem
+        continue;
       }
+
+      // Kontrola, že první řádek zprávy není prázdný
+      if (!m[0] || typeof m[0] !== 'string' || m[0].trim().length === 0) {
+        Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: První řádek zprávy je prázdný`);
+        cnt++;
+        continue;
+      }
+
+      Log.info(`[${user.id}]`, `Pokus ${cnt + 1}: Zpráva získána, ověřuji duplicitu...`);
+
+      // Ověř, že zpráva nebyla už použita (kontrola MD5)
+      try {
+        const messageText = m[0].trim();
+        const messageHash = md5(messageText);
+
+        Log.info(`[${user.id}]`, `Kontroluji duplicitu pro hash: ${messageHash.substring(0, 8)}...`);
+
+        const isDuplicate = await db.verifyMsg(group.id, messageHash);
+        if (!isDuplicate || isDuplicate.c === 0) {
+          message = m;
+          Log.success(`[${user.id}]`, `Zpráva prošla kontrolou duplicity`);
+          break;
+        } else {
+          Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Zpráva už byla použita (duplicita)`);
+        }
+
+      } catch (hashErr) {
+        Log.error(`[${user.id}]`, `Chyba při vytváření MD5 hash: ${hashErr}`);
+        // Pokud se MD5 nepodaří, použij zprávu stejně (lepší než selhání)
+        message = m;
+        break;
+      }
+
       cnt++;
+
+      if (cnt < 5) {
+        await wait.delay(1000); // Krátká pauza před dalším pokusem
+      }
+
     } while (!message && cnt < 5);
+
+    if (!message) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se získat platnou zprávu z UTIO po 5 pokusech');
+      return false;
+    }
+
   } catch (err) {
     Log.error(`[${user.id}] UTIO`, err);
     return false;
   }
 
-  if (message && await fbBot.clickNewThing()) {
-    const paste = await fbBot.pasteStatement(message[0]);
+  // Vložení zprávy do Facebooku
+  try {
+    Log.info(`[${user.id}]`, 'Vkládám zprávu do Facebooku...');
+
+    if (!await fbBot.clickNewThing()) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se kliknout na pole pro psaní');
+      return false;
+    }
+
+    const messageText = message[0].trim();
+    const paste = await fbBot.pasteStatement(messageText);
+
     if (paste) {
       Log.success(`[${user.id}]`, `Zpráva vložena do skupiny ${group.fb_id}`);
-      return message[0];
+      Log.info(`[${user.id}]`, `Text zprávy: "${messageText.substring(0, 100)}..."`);
+      return messageText;
     } else {
-      Log.error(`[${user.id}]`, `Nepodařilo se vložit zprávu.`);
+      Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do pole');
+      return false;
     }
-  } else {
-    Log.warn(`[${user.id}]`, `Nepodařilo se získat zprávu nebo kliknout na vstup.`);
-  }
 
-  return false;
+  } catch (pasteErr) {
+    Log.error(`[${user.id}]`, `Chyba při vkládání zprávy: ${pasteErr}`);
+    return false;
+  }
 }
 
 export async function closeBlankTabs(context) {
