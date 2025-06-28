@@ -2,9 +2,9 @@
  * Název souboru: iv_worker.js
  * Umístění: ~/ivy/iv_worker.js
  *
- * Popis: Hlavní smyčka robota s optimalizovaným otevíráním záložek.
+ * Popis: Hlavní smyčka robota s optimalizovaným otevíráním záložek a UIBot integrací.
+ *        Kontroluje UI příkazy a přepíná do UI režimu podle potřeby.
  *        Otevírá Facebook/UTIO pouze když je to potřeba pro konkrétní akci.
- *        Upraveno pro použití nové UtioBot třídy.
  */
 
 import fs from 'fs';
@@ -15,7 +15,7 @@ import * as wait from './iv_wait.js';
 import * as db from './iv_sql.js';
 import { FacebookBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
-import * as ui from './iv_ui.js';
+import { UIBot } from './iv_ui.class.js';
 import * as support from './iv_support.js';
 import { getRandomAction } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
@@ -242,36 +242,85 @@ async function cleanupBrowser(browser, browserClosed) {
   }
 }
 
+/**
+ * Hlavní tick funkce s UI bypass logikou
+ */
 export async function tick() {
-  const user = await db.getUserForNextAction();
-  if (!user) {
-    if (Date.now() >= nextWorktime) {
-      Log.info('[WORKER]', 'Žádný uživatel k práci.');
-      await showAccountLockStats();
-      nextWorktime = Date.now() + 5 * 60 * 1000;
-    }
-    return;
-  }
-
-  Log.info(`[${user.id}]`, `Spouštím akci pro ${user.name} ${user.surname}`);
-
-  let browser, context, browserClosed;
   try {
-    ({ browser, context, browserClosed } = await prepareBrowser(user));
-    await support.closeBlankTabs(context);
+    // 🎯 PRIORITA 1: Kontrola UI příkazů - přeruší běžný chod
+    const uiBot = new UIBot();
+    const uiCommand = await uiBot.checkForCommand();
 
-    const uiCommand = await ui.checkUI(user.id);
     if (uiCommand) {
-      await ui.handleUICommand(uiCommand, user.id, browser);
+      Log.info('[WORKER]', `🎮 UI REŽIM: Nalezen příkaz ${uiCommand.command}, přepínám do UI režimu`);
+
+      try {
+        const success = await uiBot.processCommand(uiCommand);
+        if (success) {
+          Log.success('[WORKER]', `✅ UI příkaz ${uiCommand.command} úspěšně dokončen`);
+        } else {
+          Log.error('[WORKER]', `❌ UI příkaz ${uiCommand.command} selhal`);
+        }
+      } finally {
+        await uiBot.close();
+      }
+
+      // Po UI příkazu vždy ukončujeme tento tick - zajistí čistý restart
       return;
     }
 
-    await executeUserAction(user, browser, context, browserClosed);
+    // 🎯 PRIORITA 2: Běžný autonomní režim (pouze pokud není UI příkaz)
+    Log.debug('[WORKER]', '🤖 AUTONOMNÍ REŽIM: Žádné UI příkazy, pokračuji v běžném provozu');
+
+    if (Date.now() < nextWorktime) {
+      Log.debug('[WORKER]', 'Ještě nenastal čas na další cyklus');
+      return;
+    }
+
+    const user = await db.getUser();
+    if (!user) {
+      if (Date.now() >= nextWorktime) {
+        Log.info('[WORKER]', 'Žádný dostupný uživatel (všichni zablokovaní nebo zaneprázdněni)');
+        await showAccountLockStats();
+        nextWorktime = Date.now() + (60 * 1000); // Zkus znovu za minutu
+      }
+      return;
+    }
+
+    Log.info(`[${user.id}]`, `🚀 Spouštím akci pro ${user.name} ${user.surname}`);
+
+    let browser, context, browserClosed;
+    try {
+      ({ browser, context, browserClosed } = await prepareBrowser(user));
+      await support.closeBlankTabs(context);
+
+      // 🔍 Další kontrola UI příkazů před spuštěním akce
+      // (může se stát, že během přípravy browseru přišel nový příkaz)
+      const lastMinuteUICommand = await uiBot.checkForCommand();
+      if (lastMinuteUICommand) {
+        Log.warn('[WORKER]', '🎮 Nový UI příkaz během přípravy - přerušuji akci a předávám UI');
+        await cleanupBrowser(browser, browserClosed);
+
+        // Zpracuj UI příkaz
+        try {
+          await uiBot.processCommand(lastMinuteUICommand);
+        } finally {
+          await uiBot.close();
+        }
+        return;
+      }
+
+      await executeUserAction(user, browser, context, browserClosed);
+
+    } catch (err) {
+      Log.error(`[${user.id}]`, err);
+      await pauseOnError(browser, browserClosed);
+    } finally {
+      await cleanupBrowser(browser, browserClosed);
+    }
 
   } catch (err) {
-    Log.error(`[${user.id}]`, err);
-    await pauseOnError(browser, browserClosed);
-  } finally {
-    await cleanupBrowser(browser, browserClosed);
+    Log.error('[WORKER]', `Neočekávaná chyba v hlavním cyklu: ${err}`);
+    await wait.delay(60000); // Čekej minutu před dalším pokusem
   }
 }
