@@ -32,41 +32,60 @@ export class FacebookBot {
 
   // 🧩 Vnitřní helpery pro zjednodušení
 
-  /**
-   * Vyhledá <span> elementy podle obsahu textu.
-   * @param {string} text - hledaný text
-   * @param {object} options - volby (match: startsWith|exact|contains)
-   * @returns {Promise<ElementHandle[]>}
-   */
-  async _findByText(text, options = {}) {
-    try {
-      if (!this.page || typeof this.page.$x !== 'function') {
-        Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje $x.');
-        return [];
-      }
-
-      const { match = 'startsWith' } = options;
-      let xpath;
-
-      if (match === 'startsWith') {
-        xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-      } else if (match === 'exact') {
-        xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-      } else {
-        xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
-      }
-
-      console.log(`XPath dotaz: ${xpath}`);
-      const found = await this.page.$x(xpath);
-      console.log(`Počet nalezených: ${found.length}`);
-      return found;
-
-    } catch (err) {
-      Log.warn('[FB] _findByText selhalo:', err);
+/**
+ * Vyhledá <span> elementy podle obsahu textu.
+ * @param {string} text - hledaný text
+ * @param {object} options - volby (match: startsWith|exact|contains, timeout)
+ * @returns {Promise<ElementHandle[]>}
+ */
+async _findByText(text, options = {}) {
+  try {
+    if (!this.page || !this.page.waitForSelector) {
+      Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje waitForSelector.');
       return [];
     }
-  }
 
+    const { match = 'startsWith', timeout = 2000 } = options;
+
+    // Vytvoř XPath stejně jako v _waitForText()
+    let xpath;
+    if (match === 'startsWith') {
+      xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+    } else if (match === 'exact') {
+      xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+    } else {
+      xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+    }
+
+    // Použij stejný přístup jako _waitForText() s xpath/ prefix
+    const selector = `xpath/${xpath}`;
+
+    // Najdi všechny odpovídající elementy
+    try {
+      // Počkáme na první element s krátkým timeoutem
+      await this.page.waitForSelector(selector, { timeout });
+
+      // Pak získáme všechny pomocí $$
+      const elements = await this.page.$$(selector);
+
+      return elements || [];
+
+    } catch (timeoutErr) {
+      // Pokud timeout, zkus ještě $$ bez čekání
+      try {
+        const elements = await this.page.$$(selector);
+        return elements || [];
+      } catch (err) {
+        // Žádné elementy nenalezeny
+        return [];
+      }
+    }
+
+  } catch (err) {
+    Log.warn(`[FB] _findByText selhalo pro "${text}":`, err);
+    return [];
+  }
+}
 
   /**
    * Čeká na <span> s textem podle dané strategie (např. startsWith)
