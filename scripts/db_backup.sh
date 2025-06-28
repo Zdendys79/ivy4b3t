@@ -8,9 +8,9 @@
 # Zálohy jsou ukládány do: /var/www/metaboost.tech/ivy/restricted/backups
 
 # Cesty
-BACKUP_DIR="/var/www/metaboost.tech/ivy/restricted/backups"
-SQL_TEMPLATE="/var/www/metaboost.tech/ivy/restricted/ivy_create_full.sql"
-DB_CONFIG="/var/www/metaboost.tech/ivy/restricted/db_config.json"
+BACKUP_DIR="/var/www/b3.web/ivy/restricted/backups"
+SQL_TEMPLATE="/var/www/b3.web/ivy/restricted/ivy_create_full.sql"
+DB_CONFIG="/var/www/b3.web/ivy/restricted/sql_config.json"
 
 mkdir -p "$BACKUP_DIR"
 

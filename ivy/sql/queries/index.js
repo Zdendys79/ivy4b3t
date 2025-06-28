@@ -4,6 +4,7 @@
  *
  * Popis: Hlavní exportní bod pro všechny SQL dotazy
  * Načítá a kombinuje všechny moduly dotazů do jednoho objektu
+ * POZOR: Legacy dotazy jsou odstraněny, používáme pouze novou modulární strukturu
  */
 
 import { USERS } from './users.js';
@@ -13,9 +14,6 @@ import { LIMITS } from './limits.js';
 import { SYSTEM } from './system.js';
 import { LOGS } from './logs.js';
 import { QUOTES } from './quotes.js';
-
-// Import legacy dotazů pro zpětnou kompatibilitu
-import legacyQueries from '../legacy/iv_sql_queries.js';
 
 /**
  * Hlavní SQL objekt obsahující všechny dotazy
@@ -32,30 +30,26 @@ export const SQL = {
 };
 
 /**
- * Legacy dotazy pro zpětnou kompatibilitu
- * Používané starými částmi systému, které ještě nebyly refaktorovány
- */
-export const LEGACY_QUERIES = legacyQueries;
-
-/**
- * Kombinovaný export všech dotazů
- * Pro případy, kdy potřebujeme přístup ke všem dotazům najednou
- */
-export const ALL_QUERIES = {
-  ...SQL.users,
-  ...SQL.actions,
-  ...SQL.groups,
-  ...SQL.limits,
-  ...SQL.system,
-  ...SQL.logs,
-  ...SQL.quotes,
-  ...LEGACY_QUERIES
-};
-
-/**
  * Utility funkce pro práci s dotazy
  */
 export const QueryUtils = {
+  /**
+   * Získá dotaz podle cesty (např. "system.heartbeat")
+   */
+  getQuery(path) {
+    const parts = path.split('.');
+    let current = SQL;
+
+    for (const part of parts) {
+      if (current[part] === undefined) {
+        return null;
+      }
+      current = current[part];
+    }
+
+    return typeof current === 'string' ? current : null;
+  },
+
   /**
    * Získá všechny dostupné kategorie dotazů
    */
@@ -83,14 +77,6 @@ export const QueryUtils = {
       }
     }
 
-    // Zkusit v legacy dotazech
-    if (LEGACY_QUERIES[queryName]) {
-      return {
-        category: 'legacy',
-        query: LEGACY_QUERIES[queryName]
-      };
-    }
-
     return null;
   },
 
@@ -101,7 +87,6 @@ export const QueryUtils = {
     const stats = {
       categories: Object.keys(SQL).length,
       totalQueries: 0,
-      legacyQueries: Object.keys(LEGACY_QUERIES).length,
       byCategory: {}
     };
 
@@ -110,8 +95,6 @@ export const QueryUtils = {
       stats.byCategory[category] = count;
       stats.totalQueries += count;
     }
-
-    stats.totalQueries += stats.legacyQueries;
 
     return stats;
   },
@@ -127,12 +110,6 @@ export const QueryUtils = {
         if (typeof query !== 'string') {
           errors.push(`${category}.${queryName}: Expected string, got ${typeof query}`);
         }
-      }
-    }
-
-    for (const [queryName, query] of Object.entries(LEGACY_QUERIES)) {
-      if (typeof query !== 'string') {
-        errors.push(`legacy.${queryName}: Expected string, got ${typeof query}`);
       }
     }
 
