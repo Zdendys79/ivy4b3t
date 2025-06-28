@@ -191,8 +191,8 @@ export class QueryBuilder {
   }
 
   async getUserActionsWithLimits(userId) {
-    // Dotaz používá userId na 4 místech, takže pošleme 4x stejnou hodnotu
-    return await safeQueryAll('actions.getUserActionsWithLimits', [userId, userId, userId, userId]);
+    // Dočasně použijeme zjednodušenou verzi kvůli SQL syntaxi problémům
+    return await safeQueryAll('actions.getUserActionsWithLimitsSimple', [userId, userId]);
   }
 
   async logAction(accountId, actionCode, referenceId, text) {
@@ -258,7 +258,7 @@ export const getUsersByHostname = () => safeQueryAll('users.getAllByHostname', [
 
 // Action system
 export const getUserActions = user_id => safeQueryAll('actions.getUserActions', [user_id, user_id]);
-export const getUserActionsWithLimits = user_id => safeQueryAll('actions.getUserActionsWithLimits', [user_id, user_id, user_id, user_id]);
+export const getUserActionsWithLimits = user_id => safeQueryAll('actions.getUserActionsWithLimitsSimple', [user_id, user_id]);
 export const updateUserActionPlan = (user_id, action_code, randMinutes) =>
   safeExecute('actions.updatePlan', [randMinutes, user_id, action_code]);
 export const initUserActionPlan = (user_id) => safeExecute('actions.initPlan', [user_id]);
