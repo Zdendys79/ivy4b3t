@@ -13,79 +13,140 @@ export class FacebookBot {
     this.context = context;
     this.page = null;
     this.newThingElement = null;
+    this.isInitialized = false;
   }
 
+  /**
+   * Inicializuje FacebookBot - vytvoří novou stránku a nastaví základní konfigurace
+   * @returns {Promise<boolean>} True pokud bylo úspěšné
+   */
   async init() {
-    this.page = await this.context.newPage();
-    this.page.setDefaultNavigationTimeout(15000);
+    try {
+      if (this.isInitialized) {
+        Log.warn('[FB]', 'FacebookBot už je inicializován');
+        return true;
+      }
+
+      if (!this.context) {
+        Log.error('[FB]', 'Context není k dispozici pro inicializaci');
+        return false;
+      }
+
+      Log.info('[FB]', 'Inicializuji Facebook stránku...');
+      this.page = await this.context.newPage();
+
+      if (!this.page) {
+        Log.error('[FB]', 'Nepodařilo se vytvořit novou stránku');
+        return false;
+      }
+
+      // Nastavení timeoutu pro navigaci
+      this.page.setDefaultNavigationTimeout(15000);
+
+      // Nastavení user-agent a viewport
+      await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+
+      this.isInitialized = true;
+      Log.success('[FB]', 'Facebook stránka inicializována');
+      return true;
+
+    } catch (err) {
+      Log.error('[FB] init', err);
+      this.page = null;
+      this.isInitialized = false;
+      return false;
+    }
   }
 
   async bringToFront() {
-    await this.page.bringToFront();
+    if (!this.isReady()) {
+      Log.error('[FB]', 'FacebookBot není připraven pro bringToFront');
+      return false;
+    }
+
+    try {
+      await this.page.bringToFront();
+      return true;
+    } catch (err) {
+      Log.error('[FB] bringToFront', err);
+      return false;
+    }
   }
 
   async screenshot(name) {
-    const filename = `errors/${name}_${Date.now()}.png`;
-    await this.page.screenshot({ path: filename });
-    Log.info(`[FB] Screenshot uložen: ${filename}`);
+    if (!this.isReady()) {
+      Log.error('[FB]', 'FacebookBot není připraven pro screenshot');
+      return false;
+    }
+
+    try {
+      const filename = `errors/${name}_${Date.now()}.png`;
+      await this.page.screenshot({ path: filename });
+      Log.info(`[FB] Screenshot uložen: ${filename}`);
+      return true;
+    } catch (err) {
+      Log.error('[FB] screenshot', err);
+      return false;
+    }
   }
+
 
   // 🧩 Vnitřní helpery pro zjednodušení
 
-/**
- * Vyhledá <span> elementy podle obsahu textu.
- * @param {string} text - hledaný text
- * @param {object} options - volby (match: startsWith|exact|contains, timeout)
- * @returns {Promise<ElementHandle[]>}
- */
-async _findByText(text, options = {}) {
-  try {
-    if (!this.page || !this.page.waitForSelector) {
-      Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje waitForSelector.');
-      return [];
-    }
-
-    const { match = 'startsWith', timeout = 2000 } = options;
-
-    // Vytvoř XPath stejně jako v _waitForText()
-    let xpath;
-    if (match === 'startsWith') {
-      xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-    } else if (match === 'exact') {
-      xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-    } else {
-      xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
-    }
-
-    // Použij stejný přístup jako _waitForText() s xpath/ prefix
-    const selector = `xpath/${xpath}`;
-
-    // Najdi všechny odpovídající elementy
+  /**
+   * Vyhledá <span> elementy podle obsahu textu.
+   * @param {string} text - hledaný text
+   * @param {object} options - volby (match: startsWith|exact|contains, timeout)
+   * @returns {Promise<ElementHandle[]>}
+   */
+  async _findByText(text, options = {}) {
     try {
-      // Počkáme na první element s krátkým timeoutem
-      await this.page.waitForSelector(selector, { timeout });
-
-      // Pak získáme všechny pomocí $$
-      const elements = await this.page.$$(selector);
-
-      return elements || [];
-
-    } catch (timeoutErr) {
-      // Pokud timeout, zkus ještě $$ bez čekání
-      try {
-        const elements = await this.page.$$(selector);
-        return elements || [];
-      } catch (err) {
-        // Žádné elementy nenalezeny
+      if (!this.page || !this.page.waitForSelector) {
+        Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje waitForSelector.');
         return [];
       }
-    }
 
-  } catch (err) {
-    Log.warn(`[FB] _findByText selhalo pro "${text}":`, err);
-    return [];
+      const { match = 'startsWith', timeout = 2000 } = options;
+
+      // Vytvoř XPath stejně jako v _waitForText()
+      let xpath;
+      if (match === 'startsWith') {
+        xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+      } else if (match === 'exact') {
+        xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+      } else {
+        xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+      }
+
+      // Použij stejný přístup jako _waitForText() s xpath/ prefix
+      const selector = `xpath/${xpath}`;
+
+      // Najdi všechny odpovídající elementy
+      try {
+        // Počkáme na první element s krátkým timeoutem
+        await this.page.waitForSelector(selector, { timeout });
+
+        // Pak získáme všechny pomocí $$
+        const elements = await this.page.$$(selector);
+
+        return elements || [];
+
+      } catch (timeoutErr) {
+        // Pokud timeout, zkus ještě $$ bez čekání
+        try {
+          const elements = await this.page.$$(selector);
+          return elements || [];
+        } catch (err) {
+          // Žádné elementy nenalezeny
+          return [];
+        }
+      }
+
+    } catch (err) {
+      Log.warn(`[FB] _findByText selhalo pro "${text}":`, err);
+      return [];
+    }
   }
-}
 
   /**
    * Čeká na <span> s textem podle dané strategie (např. startsWith)
@@ -525,7 +586,7 @@ async _findByText(text, options = {}) {
     return false;
   }
 
-    async newThing() {
+  async newThing() {
     try {
       const promises = CONFIG.new_post_texts.map(text => {
         const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
@@ -1246,6 +1307,42 @@ async _findByText(text, options = {}) {
 
     rl.close();
     Log.info('[DEBUG]', 'Ladění vyhledávání textu ukončeno.');
+  }
+
+  /**
+   * Zavře Facebook stránku a vyčistí zdroje
+   * @returns {Promise<boolean>} True pokud bylo úspěšné
+   */
+  async close() {
+    try {
+      if (!this.isInitialized) {
+        Log.info('[FB]', 'FacebookBot není inicializován, close není potřeba');
+        return true;
+      }
+
+      if (this.page && !this.page.isClosed()) {
+        Log.info('[FB]', 'Zavírám Facebook stránku...');
+        await this.page.close();
+        Log.success('[FB]', 'Facebook stránka zavřena');
+      }
+
+      this.page = null;
+      this.newThingElement = null;
+      this.isInitialized = false;
+      return true;
+
+    } catch (err) {
+      Log.error('[FB] close', err);
+      return false;
+    }
+  }
+
+  /**
+   * Kontroluje, zda je FacebookBot připraven k použití
+   * @returns {boolean} True pokud je připraven
+   */
+  isReady() {
+    return this.isInitialized && this.page && !this.page.isClosed();
   }
 
 }
