@@ -312,53 +312,6 @@ export const getAvailableGroupsByType = (group_type, user_id) => safeQueryAll('g
 export const upsertUserGroupLimit = (user_id, group_type, max_posts, time_window_hours) => safeExecute('upsert_user_group_limit', [user_id, group_type, max_posts, time_window_hours]);
 
 /**
- * Zkontroluje, zda může uživatel přidat příspěvek do skupiny daného typu
- * @param {number} user_id - ID uživatele
- * @param {string} group_type - Typ skupiny (G, GV, P, Z)
- * @returns {Promise<boolean>} - true pokud může přidat příspěvek
- */
-export async function canUserPostToGroupType(user_id, group_type) {
-  const debugMode = isDebugMode();
-
-  try {
-    // Získej limity pro tento typ skupiny
-    const limit = await getUserGroupLimit(user_id, group_type);
-    if (!limit) {
-      if (debugMode) {
-        Log.warn('[SQL][DEBUG]', `Žádné limity nalezeny pro user ${user_id}, group_type ${group_type}`);
-      }
-      return false;
-    }
-
-    // Spočítej aktuální příspěvky v časovém okně
-    const postCount = await countUserPostsInTimeframe(user_id, group_type, limit.time_window_hours);
-    if (!postCount) {
-      if (debugMode) {
-        Log.error('[SQL][DEBUG]', `Nepodařilo se spočítat příspěvky pro user ${user_id}, group_type ${group_type}`);
-      }
-      return false;
-    }
-
-    const currentPosts = postCount.post_count || 0;
-    const canPost = currentPosts < limit.max_posts;
-
-    if (debugMode) {
-      Log.debug('[SQL]', `canUserPostToGroupType: user=${user_id}, type=${group_type}, posts=${currentPosts}/${limit.max_posts}, window=${limit.time_window_hours}h, canPost=${canPost}`);
-    }
-
-    return canPost;
-
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `canUserPostToGroupType error: ${err.message}`);
-    } else {
-      Log.error('[SQL]', `canUserPostToGroupType failed for user ${user_id}, type ${group_type}`);
-    }
-    return false;
-  }
-}
-
-/**
  * Zablokuje účet s důvodem a typem problému
  * @param {number} userId - ID uživatele
  * @param {string} reason - Důvod zablokování
