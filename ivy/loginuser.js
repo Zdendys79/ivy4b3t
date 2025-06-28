@@ -1,6 +1,6 @@
 /**
  * Název souboru: loginuser.js
- * Umístění: ~/loginuser.js
+ * Umístění: ~/ivy/loginuser.js
  *
  * Popis: Pomocný skript pro ruční přihlášení uživatele přímo z konzole na vzdálené ploše VM.
  *        Aktualizováno pro použití nových iv_ modulů a architektury tříd.
@@ -13,7 +13,6 @@ import readline from 'readline';
 import puppeteer from 'puppeteer';
 import * as wait from './ivy/iv_wait.js';
 import * as db from './ivy/iv_sql.js';
-import * as support from './ivy/iv_support.js';
 import { FacebookBot } from './ivy/iv_fb.class.js';
 import { Log } from './ivy/iv_log.class.js';
 
