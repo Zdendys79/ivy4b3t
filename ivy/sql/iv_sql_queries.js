@@ -657,4 +657,169 @@ WHERE id = ?
   ORDER BY al.timestamp DESC
   LIMIT ?
 `,
+
+// Optimalizovaný výběr uživatele - garantuje že má akce
+get_user_optimized: `
+  SELECT u.*
+  FROM fb_users u
+  WHERE u.host LIKE ?
+    AND u.locked IS NULL
+    AND COALESCE(u.next_worktime, NOW()) <= NOW()
+    AND EXISTS (
+      SELECT 1
+      FROM user_action_plan uap
+      JOIN action_definitions ad ON uap.action_code = ad.action_code
+      WHERE uap.user_id = u.id
+        AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+        AND ad.active = 1
+        AND NOT (
+          ad.action_code IN ('account_sleep','account_delay')
+          AND EXISTS (
+            SELECT 1
+            FROM user_action_plan uap2
+            JOIN action_definitions ad2 ON uap2.action_code = ad2.action_code
+            WHERE uap2.user_id = u.id
+              AND uap2.action_code NOT IN ('account_sleep','account_delay')
+              AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
+              AND ad2.active = 1
+          )
+        )
+    )
+  ORDER BY COALESCE(u.next_worktime, NOW() - INTERVAL 2 DAY) ASC
+  LIMIT 1
+`,
+
+// Kombinovaný dotaz - uživatel s akcemi najednou
+get_user_with_actions: `
+  SELECT
+    u.id,
+    u.name,
+    u.surname,
+    u.host,
+    u.fb_login,
+    u.fb_pass,
+    u.next_worktime,
+    u.locked,
+    u.day_limit,
+    u.max_limit,
+    u.last_add_group,
+    ad.action_code,
+    ad.weight,
+    ad.min_minutes,
+    ad.max_minutes,
+    ad.repeatable
+  FROM fb_users u
+  JOIN user_action_plan uap ON u.id = uap.user_id
+  JOIN action_definitions ad ON uap.action_code = ad.action_code
+  WHERE u.host LIKE ?
+    AND u.locked IS NULL
+    AND COALESCE(u.next_worktime, NOW()) <= NOW()
+    AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+    AND ad.active = 1
+    AND NOT (
+      ad.action_code IN ('account_sleep','account_delay')
+      AND EXISTS (
+        SELECT 1
+        FROM user_action_plan uap2
+        JOIN action_definitions ad2 ON uap2.action_code = ad2.action_code
+        WHERE uap2.user_id = u.id
+          AND uap2.action_code NOT IN ('account_sleep','account_delay')
+          AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
+          AND ad2.active = 1
+      )
+    )
+  ORDER BY
+    COALESCE(u.next_worktime, NOW() - INTERVAL 2 DAY) ASC,
+    ad.weight DESC
+`,
+
+// Konzistentní dotaz na akce uživatele - stejná logika jako výběr uživatele
+get_user_actions_consistent: `
+  SELECT
+    ad.action_code,
+    ad.weight,
+    ad.min_minutes,
+    ad.max_minutes,
+    ad.repeatable
+  FROM action_definitions ad
+  JOIN user_action_plan uap ON ad.action_code = uap.action_code
+  WHERE uap.user_id = ?
+    AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+    AND ad.active = 1
+    AND NOT (
+      ad.action_code IN ('account_sleep','account_delay')
+      AND EXISTS (
+        SELECT 1
+        FROM user_action_plan uap2
+        WHERE uap2.user_id = ?
+          AND uap2.action_code NOT IN ('account_sleep','account_delay')
+          AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
+      )
+    )
+  ORDER BY ad.weight DESC
+`,
+
+// Debug dotazy pro diagnostiku
+debug_user_action_plan: `
+  SELECT
+    uap.action_code,
+    uap.next_time,
+    CASE
+      WHEN uap.next_time IS NULL THEN 'NULL'
+      WHEN uap.next_time <= NOW() THEN 'READY'
+      ELSE 'WAITING'
+    END as status,
+    ad.active,
+    ad.weight
+  FROM user_action_plan uap
+  LEFT JOIN action_definitions ad ON uap.action_code = ad.action_code
+  WHERE uap.user_id = ?
+  ORDER BY uap.action_code
+`,
+
+debug_active_definitions: `
+  SELECT action_code, active, weight, min_minutes, max_minutes
+  FROM action_definitions
+  ORDER BY active DESC, weight DESC
+`,
+
+// Rychlý test dotaz pro ověření logiky
+test_user_selection_logic: `
+  SELECT
+    u.id,
+    u.name,
+    u.surname,
+    u.locked,
+    u.next_worktime,
+    COUNT(ready_actions.action_code) as available_actions,
+    GROUP_CONCAT(ready_actions.action_code ORDER BY ready_actions.weight DESC) as action_list
+  FROM fb_users u
+  LEFT JOIN (
+    SELECT
+      uap.user_id,
+      ad.action_code,
+      ad.weight
+    FROM user_action_plan uap
+    JOIN action_definitions ad ON uap.action_code = ad.action_code
+    WHERE (uap.next_time IS NULL OR uap.next_time <= NOW())
+      AND ad.active = 1
+      AND NOT (
+        ad.action_code IN ('account_sleep','account_delay')
+        AND EXISTS (
+          SELECT 1 FROM user_action_plan uap2
+          JOIN action_definitions ad2 ON uap2.action_code = ad2.action_code
+          WHERE uap2.user_id = uap.user_id
+            AND uap2.action_code NOT IN ('account_sleep','account_delay')
+            AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
+            AND ad2.active = 1
+        )
+      )
+  ) ready_actions ON u.id = ready_actions.user_id
+  WHERE u.host LIKE ?
+    AND u.locked IS NULL
+    AND COALESCE(u.next_worktime, NOW()) <= NOW()
+  GROUP BY u.id, u.name, u.surname, u.locked, u.next_worktime
+  ORDER BY available_actions DESC, u.id
+`,
+
 };
