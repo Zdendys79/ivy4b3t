@@ -308,7 +308,6 @@ export async function getProductionVersionCode() {
 export const getUserAllLimits = (user_id) => safeQueryAll('get_user_all_limits', [user_id]);
 export const getUserGroupLimit = (user_id, group_type) => safeQueryFirst('get_user_group_limit', [user_id, group_type]);
 export const countUserPostsInTimeframe = (user_id, group_type, hours) => safeQueryFirst('count_user_posts_in_timeframe', [user_id, group_type, hours]);
-export const getAvailableGroupsByType = (group_type, user_id) => safeQueryAll('get_available_groups_by_type', [group_type, user_id]);
 export const upsertUserGroupLimit = (user_id, group_type, max_posts, time_window_hours) => safeExecute('upsert_user_group_limit', [user_id, group_type, max_posts, time_window_hours]);
 
 /**
