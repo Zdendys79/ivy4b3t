@@ -202,6 +202,18 @@ export const updateUserActionPlan = (user_id, action_code, randMinutes) => safeE
 export const initUserActionPlan = (user_id) => safeExecute('init_user_action_plan', [user_id]);
 export const updateQuoteNextSeen = (quote_id, days) => safeExecute('update_quote_next_seen', [days, quote_id]);
 
+/**
+ * Loguje uživatelskou akci do action_log tabulky
+ * @param {Object|number} user - Uživatelský objekt nebo ID
+ * @param {string} action_code - Kód akce (account_sleep, account_delay, atd.)
+ * @param {string|number} reference_id - Reference ID
+ * @param {string} text - Popis akce
+ */
+export const userLog = async (user, action_code, reference_id, text) => {
+  const user_id = typeof user === 'object' ? user.id : user;
+  return await logUserAction(user_id, action_code, reference_id, text);
+};
+
 export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
   .then(row => row && row.time ? new Date(row.time) : false);
 
@@ -248,8 +260,6 @@ export async function systemLog(title, text, data = {}) {
   return result;
 }
 
-export const userLog = (user, action_code, reference_id, text) => logUserAction(user.id, action_code, reference_id, text);
-
 export async function heartBeat(user_id, group_id, version_code) {
   const debugMode = isDebugMode();
   const data = [hostname, user_id, group_id, version_code, user_id, group_id, version_code];
@@ -261,21 +271,27 @@ export async function heartBeat(user_id, group_id, version_code) {
   return await safeExecute("heartbeat", data);
 }
 
-export async function updateUserWorktime(user, worktime) {
-  const debugMode = isDebugMode();
+/**
+ * Aktualizace worktime s logováním
+ * @param {Object|number} user - Uživatel nebo user ID
+ * @param {number} minutes - Počet minut
+ */
+export async function updateUserWorktime(user, minutes) {
+  const user_id = typeof user === 'object' ? user.id : user;
 
-  if (debugMode) {
-    Log.debug('[SQL]', `Updating worktime for user ${user.id}: +${worktime} minutes`);
+  // Aktualizuj worktime v fb_users
+  const result = await safeExecute('update_user_worktime', [minutes, user_id]);
+
+  // Loguj akci podle délky pauzy
+  if (result) {
+    const hours = Math.round(minutes / 60 * 100) / 100;
+    const action_code = minutes > 1440 ? 'account_sleep' : 'account_delay'; // > 24h = sleep
+    const text = `${action_code === 'account_sleep' ? 'Sleep' : 'Delay'} na ${hours}h`;
+
+    await logUserAction(user_id, action_code, minutes.toString(), text);
   }
 
-  const update1 = await safeExecute("update_user_worktime", [worktime, user.id]);
-  const log = await userLog(user, 4, worktime, `Updated worktime +${worktime} minutes.`);
-
-  if (debugMode) {
-    Log.debug('[SQL]', `Worktime update result: ${update1 && log}`);
-  }
-
-  return update1 && log;
+  return result;
 }
 
 // Debug functions
@@ -365,7 +381,7 @@ export async function canUserPostToGroupType(user_id, group_type) {
 /**
  * Zablokuje účet s důvodem a typem problému
  * @param {number} userId - ID uživatele
- * @param {string} reason - Důvod zablokování 
+ * @param {string} reason - Důvod zablokování
  * @param {string} type - Typ problému (VIDEOSELFIE, ACCOUNT_LOCKED, atd.)
  * @param {string} hostname - Hostname serveru
  */

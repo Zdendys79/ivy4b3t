@@ -226,11 +226,26 @@ insert_to_action_plan: `
 
 get_reference_sleep_time: `
   SELECT COALESCE(
-    (SELECT time FROM log_u WHERE user_id = ? AND type = 'account_sleep' ORDER BY time DESC LIMIT 1),
-    (SELECT MIN(time) FROM log_u WHERE user_id = ?),
-    NOW()
-  ) AS time
-`,
+    (SELECT timestamp FROM action_log WHERE account_id = ? AND action_code = 'account_sleep' ORDER BY timestamp DESC LIMIT 1),
+    (SELECT MIN(timestamp) FROM action_log WHERE account_id = ?),
+    NOW() - INTERVAL 8 HOUR
+  ) AS time`,
+
+get_user_last_sleep: `
+  SELECT timestamp, text
+  FROM action_log
+  WHERE account_id = ?
+    AND action_code IN ('account_sleep', 'account_delay')
+  ORDER BY timestamp DESC
+  LIMIT 1`,
+
+get_user_sleep_history: `
+  SELECT timestamp, action_code, text
+  FROM action_log
+  WHERE account_id = ?
+    AND action_code IN ('account_sleep', 'account_delay')
+  ORDER BY timestamp DESC
+  LIMIT ?`,
 
 get_user_actions: `
   SELECT
@@ -352,42 +367,42 @@ get_user_all_limits: `
 // Rozšíření pro správu zablokovaných účtů
 lock_account_with_reason: `
   UPDATE fb_users
-  SET locked = NOW(), 
+  SET locked = NOW(),
       lock_reason = ?,
       lock_type = ?
   WHERE id = ?`,
 
 log_account_issue: `
   INSERT INTO log_s (time, hostname, title, text, data)
-  VALUES (NOW(), ?, 
-          CONCAT('Account Lock - User ', ?), 
+  VALUES (NOW(), ?,
+          CONCAT('Account Lock - User ', ?),
           CONCAT('Account locked: ', ?, ' (Type: ', ?, ')'),
           ?)`,
 
 get_locked_accounts_stats: `
-  SELECT 
+  SELECT
     lock_type,
     COUNT(*) as count,
     COUNT(CASE WHEN locked > NOW() - INTERVAL 24 HOUR THEN 1 END) as last_24h,
     COUNT(CASE WHEN locked > NOW() - INTERVAL 7 DAY THEN 1 END) as last_7d
-  FROM fb_users 
+  FROM fb_users
   WHERE locked IS NOT NULL AND lock_type IS NOT NULL
   GROUP BY lock_type
   ORDER BY count DESC`,
 
 get_locked_accounts_details: `
-  SELECT 
+  SELECT
     id, name, surname, host, locked, lock_reason, lock_type,
     TIMESTAMPDIFF(HOUR, locked, NOW()) as hours_locked
-  FROM fb_users 
-  WHERE locked IS NOT NULL 
-  ORDER BY locked DESC 
+  FROM fb_users
+  WHERE locked IS NOT NULL
+  ORDER BY locked DESC
   LIMIT ?`,
 
 unlock_account_with_log: `
-  UPDATE fb_users 
-  SET locked = NULL, 
-      lock_reason = NULL, 
+  UPDATE fb_users
+  SET locked = NULL,
+      lock_reason = NULL,
       lock_type = NULL,
       unlocked = CURDATE()
   WHERE id = ?`,
@@ -395,21 +410,21 @@ unlock_account_with_log: `
 check_account_lock_status: `
   SELECT id, locked, lock_reason, lock_type,
          CASE WHEN locked IS NOT NULL THEN TRUE ELSE FALSE END as is_locked
-  FROM fb_users 
+  FROM fb_users
   WHERE id = ?`,
 
 get_recent_locks_by_type: `
-  SELECT 
+  SELECT
     lock_type,
     DATE(locked) as lock_date,
     COUNT(*) as daily_count
-  FROM fb_users 
-  WHERE locked > NOW() - INTERVAL ? DAY 
+  FROM fb_users
+  WHERE locked > NOW() - INTERVAL ? DAY
     AND lock_type IS NOT NULL
   GROUP BY lock_type, DATE(locked)
   ORDER BY lock_date DESC, daily_count DESC`,
 
-// Aktualizace user_for_statement pro vyloučení zablokovaných  
+// Aktualizace user_for_statement pro vyloučení zablokovaných
 user_for_statement: `
   SELECT * FROM fb_users
   WHERE host = ?
