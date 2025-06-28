@@ -2,8 +2,8 @@
  * Název souboru: groups.js
  * Umístění: ~/ivy/sql/queries/groups.js
  *
- * Popis: SQL dotazy pro správu Facebook skupin (fb_groups)
- * Obsahuje výběr skupin, aktualizace stavu, cooldown management
+ * Popis: OPRAVENÉ SQL dotazy pro správu Facebook skupin (fb_groups)
+ * Změny: Nahrazení fg.active = 1 za fg.priority > 0
  */
 
 export const GROUPS = {
@@ -33,8 +33,7 @@ export const GROUPS = {
 
   getActive: `
     SELECT * FROM fb_groups
-    WHERE active = 1
-      AND priority > 0
+    WHERE priority > 0
     ORDER BY typ, priority DESC
   `,
 
@@ -48,7 +47,6 @@ export const GROUPS = {
     FROM fb_groups fg
     WHERE fg.typ = ?
       AND fg.priority > 0
-      AND fg.active = 1
       AND fg.id NOT IN (
         SELECT DISTINCT al.reference_id
         FROM action_log al
@@ -69,7 +67,6 @@ export const GROUPS = {
     SELECT * FROM fb_groups
     WHERE typ = ?
       AND priority > 0
-      AND active = 1
       AND (next_seen IS NULL OR next_seen <= NOW())
     ORDER BY COALESCE(last_seen, NOW() - INTERVAL 6 HOUR) ASC, RAND()
     LIMIT ?
@@ -80,7 +77,6 @@ export const GROUPS = {
     FROM fb_groups fg
     WHERE fg.typ = ?
       AND fg.priority > 0
-      AND fg.active = 1
       AND fg.id NOT IN (
         SELECT DISTINCT al.reference_id
         FROM action_log al
@@ -161,7 +157,7 @@ export const GROUPS = {
     SELECT
       fg.typ,
       COUNT(*) as total_groups,
-      COUNT(CASE WHEN fg.active = 1 THEN 1 END) as active_groups,
+      COUNT(CASE WHEN fg.priority > 0 THEN 1 END) as active_groups,
       COUNT(CASE WHEN fg.priority > 0 THEN 1 END) as priority_groups,
       AVG(fg.priority) as avg_priority,
       COUNT(CASE WHEN fg.sell = 1 THEN 1 END) as sell_groups
@@ -184,7 +180,7 @@ export const GROUPS = {
     LEFT JOIN action_log al ON fg.id = al.reference_id
       AND al.action_code LIKE 'post_utio_%'
       AND al.timestamp >= NOW() - INTERVAL 24 HOUR
-    WHERE fg.active = 1
+    WHERE fg.priority > 0
     GROUP BY fg.id, fg.nazev, fg.typ, fg.priority, fg.last_seen, fg.next_seen
     ORDER BY posts_last_24h DESC, fg.typ, fg.priority DESC
   `,
@@ -223,8 +219,7 @@ export const GROUPS = {
         AND al.timestamp >= NOW() - INTERVAL 7 DAY
       GROUP BY al.reference_id
     ) recent_posts ON fg.id = recent_posts.reference_id
-    WHERE fg.active = 1
-      AND fg.priority > 0
+    WHERE fg.priority > 0
       AND COALESCE(recent_posts.post_count, 0) < ?
     ORDER BY fg.priority DESC, recent_posts.post_count ASC
   `,
@@ -249,8 +244,7 @@ export const GROUPS = {
       fg.typ,
       COUNT(*) as ready_groups
     FROM fb_groups fg
-    WHERE fg.active = 1
-      AND fg.priority > 0
+    WHERE fg.priority > 0
       AND (fg.next_seen IS NULL OR fg.next_seen <= NOW())
     GROUP BY fg.typ
     ORDER BY fg.typ
@@ -260,14 +254,14 @@ export const GROUPS = {
 
   deactivateUnusedGroups: `
     UPDATE fb_groups
-    SET active = 0
+    SET priority = 0
     WHERE id NOT IN (
       SELECT DISTINCT al.reference_id
       FROM action_log al
       WHERE al.reference_id IS NOT NULL
         AND al.timestamp >= NOW() - INTERVAL ? DAY
     )
-    AND active = 1
+    AND priority > 0
   `,
 
   updateGroupPriorities: `
@@ -282,7 +276,7 @@ export const GROUPS = {
       GROUP BY al.reference_id
     ) stats ON fg.id = stats.reference_id
     SET fg.priority = GREATEST(1, LEAST(10, FLOOR(stats.post_count / 5)))
-    WHERE fg.active = 1
+    WHERE fg.priority > 0
   `,
 
   // ===== DIAGNOSTICKÉ DOTAZY =====
@@ -308,14 +302,12 @@ export const GROUPS = {
         WHEN fg.fb_id IS NULL THEN 'Missing FB ID'
         WHEN fg.nazev IS NULL OR fg.nazev = '' THEN 'Missing name'
         WHEN fg.priority = 0 THEN 'Zero priority'
-        WHEN fg.active = 0 THEN 'Inactive'
         ELSE 'Unknown'
       END as issue_description
     FROM fb_groups fg
     WHERE fg.fb_id IS NULL
        OR fg.nazev IS NULL
        OR fg.nazev = ''
-       OR (fg.priority = 0 AND fg.active = 1)
     ORDER BY fg.typ, fg.id
   `,
 

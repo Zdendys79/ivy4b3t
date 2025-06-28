@@ -1,11 +1,10 @@
 <?php
 /**
  * File: queries.php
- * Location: ~/web/storage/sql/queries.php
+ * Location: ~/web/storage/queries.php
  *
- * Purpose: Centralized SQL queries for IVY4B3T web application.
- *          This file is protected from web access via .htaccess rules.
- *          Contains all database queries organized by functionality.
+ * Purpose: OPRAVENÉ centralized SQL queries for IVY4B3T web application.
+ * Změny: Nahrazení WHERE active = 1 za WHERE priority > 0
  */
 
 // Security check - prevent direct access
@@ -99,46 +98,6 @@ return [
             WHERE user_id = ?
             ORDER BY
               CASE group_type
-                WHEN 'G' THEN 1
-                WHEN 'GV' THEN 2
-                WHEN 'P' THEN 3
-                WHEN 'Z' THEN 4
-              END
-        ",
-
-        'upsert_user_limit' => "
-            INSERT INTO user_group_limits (user_id, group_type, max_posts, time_window_hours)
-            VALUES (?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE
-              max_posts = VALUES(max_posts),
-              time_window_hours = VALUES(time_window_hours),
-              updated = CURRENT_TIMESTAMP
-        ",
-
-        'get_user_limit_stats' => "
-            SELECT
-              ugl.group_type,
-              ugl.max_posts,
-              ugl.time_window_hours,
-              COALESCE(post_counts.current_posts, 0) as current_posts,
-              ROUND(COALESCE(post_counts.current_posts, 0) / ugl.max_posts * 100, 1) as usage_percent,
-              (ugl.max_posts - COALESCE(post_counts.current_posts, 0)) as remaining_posts
-            FROM user_group_limits ugl
-            LEFT JOIN (
-              SELECT
-                fg.typ as group_type,
-                COUNT(*) as current_posts
-              FROM action_log al
-              JOIN fb_groups fg ON al.reference_id = fg.id
-              JOIN user_group_limits ugl2 ON fg.typ = ugl2.group_type AND al.account_id = ugl2.user_id
-              WHERE al.account_id = ?
-                AND al.action_code LIKE 'share_post_%'
-                AND al.timestamp >= NOW() - INTERVAL ugl2.time_window_hours HOUR
-              GROUP BY fg.typ
-            ) post_counts ON ugl.group_type = post_counts.group_type
-            WHERE ugl.user_id = ?
-            ORDER BY
-              CASE ugl.group_type
                 WHEN 'G' THEN 1
                 WHEN 'GV' THEN 2
                 WHEN 'P' THEN 3

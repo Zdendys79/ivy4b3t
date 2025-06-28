@@ -3,8 +3,8 @@
  * File: DashboardQueries.php
  * Location: ~/web/app/queries/DashboardQueries.php
  *
- * Purpose: SQL queries for Dashboard controller operations.
- *          Contains all dashboard-related database queries organized by functionality.
+ * Purpose: OPRAVENÉ SQL queries for Dashboard controller operations.
+ * Změny: Nahrazení WHERE active = 1 za WHERE priority > 0
  */
 
 // Security check
@@ -71,81 +71,208 @@ return [
             LIMIT ?
         ",
 
-        'get_user_activity_today' => "
-            SELECT
-                u.id, u.name, u.surname,
-                COUNT(al.id) as actions_today
-            FROM fb_users u
-            LEFT JOIN action_log al ON u.id = al.account_id
-                AND DATE(al.timestamp) = CURDATE()
-            WHERE u.locked IS NULL
-            GROUP BY u.id, u.name, u.surname
-            ORDER BY actions_today DESC
-            LIMIT 10
-        ",
-
-        'get_user_activity_stats' => "
+        'get_user_activity_summary' => "
             SELECT
                 u.id,
                 u.name,
                 u.surname,
                 u.host,
-                COUNT(CASE WHEN DATE(al.timestamp) = CURDATE() THEN 1 END) as today_actions,
-                COUNT(CASE WHEN al.timestamp > NOW() - INTERVAL 7 DAY THEN 1 END) as week_actions,
+                u.locked,
+                COUNT(al.id) as actions_today,
                 MAX(al.timestamp) as last_action
             FROM fb_users u
             LEFT JOIN action_log al ON u.id = al.account_id
-            WHERE u.locked IS NULL
-            GROUP BY u.id, u.name, u.surname, u.host
-            ORDER BY today_actions DESC, last_action DESC
+                AND al.timestamp >= CURDATE()
+            GROUP BY u.id, u.name, u.surname, u.host, u.locked
+            ORDER BY actions_today DESC, last_action DESC
+        ",
+
+        'get_hourly_activity' => "
+            SELECT
+                HOUR(timestamp) as hour,
+                COUNT(*) as action_count,
+                COUNT(DISTINCT account_id) as unique_users
+            FROM action_log
+            WHERE timestamp >= CURDATE()
+            GROUP BY HOUR(timestamp)
+            ORDER BY hour
         "
     ],
 
     // ================================
-    // USER MANAGEMENT
+    // FACEBOOK GROUPS MANAGEMENT
+    // ================================
+    'facebook_groups' => [
+        'get_all_groups' => "
+            SELECT
+                id, fb_id, nazev, typ, priority, user_counter,
+                last_seen, next_seen, sell, region_id, district_id
+            FROM fb_groups
+            ORDER BY typ, priority DESC, nazev
+        ",
+
+        'get_active_groups' => "
+            SELECT
+                id, fb_id, nazev, typ, priority, user_counter,
+                last_seen, next_seen
+            FROM fb_groups
+            WHERE priority > 0
+            ORDER BY typ, priority DESC, nazev
+        ",
+
+        'get_groups_by_type' => "
+            SELECT id, fb_id, nazev, user_counter, last_seen
+            FROM fb_groups
+            WHERE typ = ? AND priority > 0
+            ORDER BY priority DESC, nazev
+        ",
+
+        'get_group_statistics' => "
+            SELECT
+                typ,
+                COUNT(*) as total_groups,
+                COUNT(CASE WHEN priority > 0 THEN 1 END) as active_groups,
+                AVG(priority) as avg_priority,
+                COUNT(CASE WHEN sell = 1 THEN 1 END) as sell_groups
+            FROM fb_groups
+            GROUP BY typ
+            ORDER BY typ
+        ",
+
+        'update_group_priority' => "
+            UPDATE fb_groups
+            SET priority = ?
+            WHERE id = ?
+        ",
+
+        'deactivate_group' => "
+            UPDATE fb_groups
+            SET priority = 0
+            WHERE id = ?
+        ",
+
+        'activate_group' => "
+            UPDATE fb_groups
+            SET priority = ?
+            WHERE id = ?
+        "
+    ],
+
+    // ================================
+    // ACTION LOG & MONITORING
+    // ================================
+    'action_monitoring' => [
+        'get_recent_posts' => "
+            SELECT
+                al.timestamp,
+                al.action_code,
+                u.name,
+                u.surname,
+                fg.nazev as group_name,
+                fg.typ as group_type,
+                al.text
+            FROM action_log al
+            JOIN fb_users u ON al.account_id = u.id
+            LEFT JOIN fb_groups fg ON al.reference_id = fg.id
+            WHERE al.action_code LIKE 'post_%'
+                OR al.action_code LIKE 'share_%'
+            ORDER BY al.timestamp DESC
+            LIMIT ?
+        ",
+
+        'get_action_statistics' => "
+            SELECT
+                action_code,
+                COUNT(*) as count,
+                COUNT(DISTINCT account_id) as unique_users,
+                MAX(timestamp) as last_occurrence
+            FROM action_log
+            WHERE timestamp >= NOW() - INTERVAL ? HOUR
+            GROUP BY action_code
+            ORDER BY count DESC
+        ",
+
+        'get_failed_actions' => "
+            SELECT
+                al.timestamp,
+                al.action_code,
+                u.name,
+                u.surname,
+                al.text
+            FROM action_log al
+            JOIN fb_users u ON al.account_id = u.id
+            WHERE al.text LIKE '%error%'
+                OR al.text LIKE '%failed%'
+                OR al.text LIKE '%chyba%'
+            ORDER BY al.timestamp DESC
+            LIMIT ?
+        "
+    ],
+
+    // ================================
+    // USER MANAGEMENT & LIMITS
     // ================================
     'user_management' => [
-        'lock_user' => "
-            UPDATE fb_users
-            SET locked = NOW()
-            WHERE id = ?
+        'get_all_users_summary' => "
+            SELECT
+                u.id,
+                u.name,
+                u.surname,
+                u.host,
+                u.locked,
+                u.lock_reason,
+                u.day_limit,
+                u.next_worktime,
+                COUNT(al.id) as actions_today
+            FROM fb_users u
+            LEFT JOIN action_log al ON u.id = al.account_id
+                AND al.timestamp >= CURDATE()
+            GROUP BY u.id, u.name, u.surname, u.host, u.locked, u.lock_reason, u.day_limit, u.next_worktime
+            ORDER BY u.id
+        ",
+
+        'get_locked_users' => "
+            SELECT
+                id, name, surname, host, locked, lock_reason, lock_type
+            FROM fb_users
+            WHERE locked IS NOT NULL
+            ORDER BY locked DESC
+        ",
+
+        'get_user_limits_overview' => "
+            SELECT
+                u.id,
+                u.name,
+                u.surname,
+                u.host,
+                u.locked,
+                GROUP_CONCAT(
+                    CONCAT(ugl.group_type, ':', ugl.max_posts, '/', ugl.time_window_hours, 'h')
+                    ORDER BY
+                      CASE ugl.group_type
+                        WHEN 'G' THEN 1
+                        WHEN 'GV' THEN 2
+                        WHEN 'P' THEN 3
+                        WHEN 'Z' THEN 4
+                      END
+                    SEPARATOR ' | '
+                ) as limits_summary
+            FROM fb_users u
+            LEFT JOIN user_group_limits ugl ON u.id = ugl.user_id
+            GROUP BY u.id, u.name, u.surname, u.host, u.locked
+            ORDER BY u.id
         ",
 
         'unlock_user' => "
             UPDATE fb_users
-            SET locked = NULL
+            SET locked = NULL, lock_reason = NULL, lock_type = NULL
             WHERE id = ?
         ",
 
-        'get_user_details' => "
-            SELECT id, name, surname, fb_login, host, locked,
-                   day_limit, max_limit, next_worktime, last_add_group
-            FROM fb_users
+        'lock_user' => "
+            UPDATE fb_users
+            SET locked = NOW(), lock_reason = ?, lock_type = ?
             WHERE id = ?
-        ",
-
-        'reset_user_limits' => "
-            INSERT INTO user_group_limits (user_id, group_type, max_posts, time_window_hours, updated)
-            VALUES (?, ?, ?, ?, NOW())
-            ON DUPLICATE KEY UPDATE
-                max_posts = VALUES(max_posts),
-                time_window_hours = VALUES(time_window_hours),
-                updated = NOW()
-        ",
-
-        'get_user_limit_usage' => "
-            SELECT
-                ugl.group_type,
-                ugl.max_posts,
-                ugl.time_window_hours,
-                COUNT(al.id) as current_usage,
-                GREATEST(0, ugl.max_posts - COUNT(al.id)) as remaining_posts
-            FROM user_group_limits ugl
-            LEFT JOIN action_log al ON al.account_id = ugl.user_id
-                AND al.action_code = ugl.group_type
-                AND al.timestamp > NOW() - INTERVAL ugl.time_window_hours HOUR
-            WHERE ugl.user_id = ?
-            GROUP BY ugl.group_type, ugl.max_posts, ugl.time_window_hours
         "
     ],
 
@@ -153,118 +280,60 @@ return [
     // SYSTEM MAINTENANCE
     // ================================
     'maintenance' => [
-        'clear_old_logs' => "
+        'cleanup_old_logs' => "
             DELETE FROM action_log
-            WHERE timestamp < DATE_SUB(NOW(), INTERVAL ? DAY)
+            WHERE timestamp < NOW() - INTERVAL ? DAY
         ",
 
-        'clear_old_system_logs' => "
-            DELETE FROM log_s
-            WHERE time < DATE_SUB(NOW(), INTERVAL ? DAY)
+        'cleanup_old_heartbeats' => "
+            DELETE FROM heartbeat
+            WHERE up < NOW() - INTERVAL ? DAY
         ",
 
-        'get_database_size' => "
+        'get_database_stats' => "
             SELECT
                 table_name,
+                table_rows,
                 ROUND(((data_length + index_length) / 1024 / 1024), 2) as size_mb
             FROM information_schema.TABLES
             WHERE table_schema = DATABASE()
             ORDER BY (data_length + index_length) DESC
         ",
 
-        'optimize_tables' => "
-            OPTIMIZE TABLE action_log, log_s, log_u, heartbeat
-        ",
-
-        'get_system_variables' => "
-            SELECT name, value, description, updated
-            FROM variables
-            WHERE active = 1
-            ORDER BY name
+        'reset_group_cooldowns' => "
+            UPDATE fb_groups
+            SET last_seen = NOW() - INTERVAL 2 HOUR,
+                next_seen = NOW() - INTERVAL 1 HOUR
+            WHERE next_seen > NOW() OR last_seen > NOW() - INTERVAL 1 HOUR
         "
     ],
 
     // ================================
-    // LOGGING & AUDIT
+    // SCHEME TREE SYSTEM
     // ================================
-    'logging' => [
-        'insert_system_log' => "
-            INSERT INTO log_s (time, hostname, title, text, data)
-            VALUES (NOW(), ?, ?, ?, ?)
+    'scheme' => [
+        'get_all_scheme_items' => "
+            SELECT id, name, type, description, status, visible
+            FROM scheme
+            WHERE visible = 1
+            ORDER BY id
         ",
 
-        'insert_user_log' => "
-            INSERT INTO log_u (time, user_id, title, text, data)
-            VALUES (NOW(), ?, ?, ?, ?)
-        ",
-
-        'get_system_logs' => "
-            SELECT time, hostname, title, text, data
-            FROM log_s
-            ORDER BY time DESC
-            LIMIT ?
-        ",
-
-        'get_user_logs' => "
-            SELECT ls.time, u.name, u.surname, ls.title, ls.text, ls.data
-            FROM log_u ls
-            JOIN fb_users u ON ls.user_id = u.id
-            WHERE ls.user_id = ?
-            ORDER BY ls.time DESC
-            LIMIT ?
-        "
-    ],
-
-    // ================================
-    // EXPORT & REPORTING
-    // ================================
-    'reporting' => [
-        'get_daily_activity_report' => "
+        'get_scheme_statistics' => "
             SELECT
-                DATE(al.timestamp) as activity_date,
-                COUNT(*) as total_actions,
-                COUNT(DISTINCT al.account_id) as active_users,
-                COUNT(CASE WHEN al.action_code = 'G' THEN 1 END) as group_actions,
-                COUNT(CASE WHEN al.action_code = 'P' THEN 1 END) as post_actions
-            FROM action_log al
-            WHERE al.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-            GROUP BY DATE(al.timestamp)
-            ORDER BY activity_date DESC
+                status,
+                type,
+                COUNT(*) as count
+            FROM scheme
+            WHERE visible = 1
+            GROUP BY status, type
+            ORDER BY status, type
         ",
 
-        'get_user_performance_report' => "
-            SELECT
-                u.id,
-                u.name,
-                u.surname,
-                u.host,
-                COUNT(al.id) as total_actions,
-                COUNT(CASE WHEN DATE(al.timestamp) = CURDATE() THEN 1 END) as today_actions,
-                MAX(al.timestamp) as last_activity,
-                DATEDIFF(NOW(), MAX(al.timestamp)) as days_since_last_action
-            FROM fb_users u
-            LEFT JOIN action_log al ON u.id = al.account_id
-                AND al.timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            WHERE u.locked IS NULL
-            GROUP BY u.id, u.name, u.surname, u.host
-            ORDER BY total_actions DESC
-        ",
-
-        'get_system_performance_report' => "
-            SELECT
-                h.host,
-                COUNT(DISTINCT h.user_id) as managed_users,
-                MAX(h.up) as last_heartbeat,
-                h.version,
-                CASE
-                    WHEN MAX(h.up) > NOW() - INTERVAL 5 MINUTE THEN 'online'
-                    WHEN MAX(h.up) > NOW() - INTERVAL 30 MINUTE THEN 'warning'
-                    ELSE 'offline'
-                END as status
-            FROM heartbeat h
-            WHERE h.up >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-            GROUP BY h.host, h.version
-            ORDER BY last_heartbeat DESC
+        'update_scheme_item' => "
+            UPDATE scheme
+            SET name = ?, description = ?, status = ?
+            WHERE id = ?
         "
     ]
 ];

@@ -2,8 +2,8 @@
  * Název souboru: system.js
  * Umístění: ~/ivy/sql/queries/system.js
  *
- * Popis: SQL dotazy pro systémové operace (heartbeat, verze, UI příkazy, URL)
- * Obsahuje monitoring, údržbu, administraci
+ * Popis: KOMPLETNÍ systémové SQL dotazy
+ * Změny: Nahrazení fg.active = 1 za fg.priority > 0 + doplněny všechny chybějící dotazy
  */
 
 export const SYSTEM = {
@@ -67,15 +67,15 @@ export const SYSTEM = {
   `,
 
   getAllVersions: `
-    SELECT code, created
+    SELECT code, hash, source, hostname, created
     FROM versions
     ORDER BY created DESC
     LIMIT ?
   `,
 
   insertVersion: `
-    INSERT INTO versions (code, created)
-    VALUES (?, NOW())
+    INSERT INTO versions (code, hash, source, hostname, created)
+    VALUES (?, ?, ?, ?, NOW())
   `,
 
   // ===== UI COMMANDS =====
@@ -113,7 +113,7 @@ export const SYSTEM = {
   `,
 
   insertUICommand: `
-    INSERT INTO ui_commands (host, command, parameters, created)
+    INSERT INTO ui_commands (host, command, data, created)
     VALUES (?, ?, ?, NOW())
   `,
 
@@ -136,27 +136,30 @@ export const SYSTEM = {
     WHERE url = ?
   `,
 
-  getUrlStats: `
-    SELECT
-      COUNT(*) as total_urls,
-      AVG(used) as avg_usage,
-      MIN(used) as min_usage,
-      MAX(used) as max_usage
-    FROM urls
-  `,
-
-  getMostUsedUrls: `
-    SELECT url, used
-    FROM urls
-    ORDER BY used DESC
-    LIMIT ?
-  `,
-
   getUnusedUrls: `
     SELECT url, used
     FROM urls
     WHERE used = 0
     ORDER BY url
+  `,
+
+  addUrl: `
+    INSERT IGNORE INTO urls (url, used, date)
+    VALUES (?, 0, NOW())
+  `,
+
+  removeUrl: `
+    DELETE FROM urls
+    WHERE url = ?
+  `,
+
+  getUrlStats: `
+    SELECT
+      COUNT(*) as total_urls,
+      COUNT(CASE WHEN used = 0 THEN 1 END) as unused_urls,
+      AVG(used) as avg_usage,
+      MAX(used) as max_usage
+    FROM urls
   `,
 
   // ===== REFERERS =====
@@ -170,6 +173,16 @@ export const SYSTEM = {
   getAllReferers: `
     SELECT * FROM referers
     ORDER BY url
+  `,
+
+  addReferer: `
+    INSERT IGNORE INTO referers (url)
+    VALUES (?)
+  `,
+
+  removeReferer: `
+    DELETE FROM referers
+    WHERE id = ?
   `,
 
   // ===== VARIABLES SYSTEM =====
@@ -191,6 +204,11 @@ export const SYSTEM = {
     ORDER BY name
   `,
 
+  deleteVariable: `
+    DELETE FROM variables
+    WHERE name = ?
+  `,
+
   // ===== SYSTEM MONITORING =====
 
   getDashboardSummary: `
@@ -199,7 +217,7 @@ export const SYSTEM = {
       (SELECT COUNT(*) FROM fb_users WHERE locked IS NOT NULL) as locked_users,
       (SELECT COUNT(*) FROM heartbeat WHERE up > NOW() - INTERVAL 5 MINUTE) as active_hosts,
       (SELECT COUNT(*) FROM action_log WHERE timestamp >= CURDATE()) as actions_today,
-      (SELECT COUNT(*) FROM fb_groups WHERE active = 1) as active_groups,
+      (SELECT COUNT(*) FROM fb_groups WHERE priority > 0) as active_groups,
       (SELECT code FROM versions ORDER BY created DESC LIMIT 1) as current_version
   `,
 
@@ -218,6 +236,16 @@ export const SYSTEM = {
       NOW() as checked_at
     FROM heartbeat
     WHERE up > NOW() - INTERVAL 10 MINUTE
+  `,
+
+  getSystemStats: `
+    SELECT
+      (SELECT COUNT(*) FROM fb_users) as total_users,
+      (SELECT COUNT(*) FROM fb_groups) as total_groups,
+      (SELECT COUNT(*) FROM action_log WHERE timestamp >= CURDATE()) as actions_today,
+      (SELECT COUNT(*) FROM quotes) as total_quotes,
+      (SELECT COUNT(*) FROM referers) as total_referers,
+      (SELECT COUNT(*) FROM urls) as total_urls
   `,
 
   // ===== MAINTENANCE QUERIES =====
@@ -243,6 +271,44 @@ export const SYSTEM = {
     WHERE table_schema = DATABASE()
   `,
 
+  analyzeTable: `
+    ANALYZE TABLE ?
+  `,
+
+  checkTable: `
+    CHECK TABLE ?
+  `,
+
+  repairTable: `
+    REPAIR TABLE ?
+  `,
+
+  // ===== LOG MANAGEMENT =====
+
+  insertSystemLog: `
+    INSERT LOW_PRIORITY INTO log_s (time, hostname, title, text, data)
+    VALUES (NOW(), ?, ?, ?, ?)
+  `,
+
+  getRecentSystemLogs: `
+    SELECT * FROM log_s
+    ORDER BY time DESC
+    LIMIT ?
+  `,
+
+  getSystemLogsByType: `
+    SELECT * FROM log_s
+    WHERE title LIKE ?
+      AND time >= NOW() - INTERVAL ? HOUR
+    ORDER BY time DESC
+    LIMIT ?
+  `,
+
+  cleanOldSystemLogs: `
+    DELETE FROM log_s
+    WHERE time < NOW() - INTERVAL ? DAY
+  `,
+
   // ===== ERROR TRACKING =====
 
   getRecentErrors: `
@@ -264,6 +330,18 @@ export const SYSTEM = {
     ORDER BY error_date DESC
   `,
 
+  getErrorsByHost: `
+    SELECT
+      hostname,
+      COUNT(*) as error_count,
+      MAX(time) as last_error
+    FROM log_s
+    WHERE (title LIKE '%error%' OR title LIKE '%Error%' OR title LIKE '%ERROR%')
+      AND time >= NOW() - INTERVAL ? HOUR
+    GROUP BY hostname
+    ORDER BY error_count DESC
+  `,
+
   // ===== BACKUP SUPPORT =====
 
   getLastBackupInfo: `
@@ -278,20 +356,12 @@ export const SYSTEM = {
     LIMIT 1
   `,
 
-  // ===== PERFORMANCE MONITORING =====
-
-  getSlowQueries: `
-    SELECT
-      query_time,
-      lock_time,
-      rows_sent,
-      rows_examined,
-      sql_text
-    FROM mysql.slow_log
-    WHERE start_time >= NOW() - INTERVAL ? HOUR
-    ORDER BY query_time DESC
-    LIMIT ?
+  logBackupOperation: `
+    INSERT INTO log_s (time, hostname, title, text, data)
+    VALUES (NOW(), ?, 'Backup Operation', ?, ?)
   `,
+
+  // ===== PERFORMANCE MONITORING =====
 
   getActiveConnections: `
     SELECT
@@ -302,18 +372,21 @@ export const SYSTEM = {
       command,
       time,
       state,
-      info
+      LEFT(info, 100) as query_preview
     FROM information_schema.PROCESSLIST
     WHERE command != 'Sleep'
     ORDER BY time DESC
   `,
 
-  // ===== CLEANUP OPERATIONS =====
-
-  cleanupOldLogs: `
-    DELETE FROM log_s
-    WHERE time < NOW() - INTERVAL ? DAY
+  getConnectionStats: `
+    SELECT
+      @@max_connections as max_connections,
+      (SELECT COUNT(*) FROM information_schema.PROCESSLIST) as current_connections,
+      @@threads_connected as threads_connected,
+      @@threads_running as threads_running
   `,
+
+  // ===== CLEANUP OPERATIONS =====
 
   cleanupOldActionLogs: `
     DELETE FROM action_log
@@ -325,23 +398,32 @@ export const SYSTEM = {
     WHERE inserted < NOW() - INTERVAL ? DAY
   `,
 
+  cleanupOldUserLogs: `
+    DELETE FROM log_u
+    WHERE time < NOW() - INTERVAL ? DAY
+  `,
+
+  cleanupOldUserGroups: `
+    DELETE FROM user_groups
+    WHERE time < NOW() - INTERVAL ? DAY
+  `,
+
   // ===== CONFIGURATION =====
 
   getSystemConfig: `
     SELECT
       name,
       value,
-      description,
       changed
     FROM variables
     WHERE name LIKE 'config_%'
     ORDER BY name
   `,
 
-  // ===== REPLICATION STATUS (pokud se používá) =====
-
-  getReplicationStatus: `
-    SHOW REPLICA STATUS
+  updateSystemConfig: `
+    INSERT INTO variables (name, value, changed)
+    VALUES (?, ?, NOW())
+    ON DUPLICATE KEY UPDATE value = VALUES(value), changed = NOW()
   `,
 
   // ===== EMERGENCY OPERATIONS =====
@@ -352,16 +434,86 @@ export const SYSTEM = {
     WHERE locked IS NULL
   `,
 
+  emergencyUnlockAll: `
+    UPDATE fb_users
+    SET locked = NULL, lock_reason = NULL, lock_type = NULL
+    WHERE lock_type = 'EMERGENCY'
+  `,
+
   emergencyResetAllActions: `
     UPDATE user_action_plan
     SET next_time = NOW() + INTERVAL 1 HOUR
   `,
+
+  emergencyResetGroupCooldowns: `
+    UPDATE fb_groups
+    SET last_seen = NOW() - INTERVAL 2 HOUR,
+        next_seen = NOW() - INTERVAL 1 HOUR
+    WHERE next_seen > NOW() OR last_seen > NOW() - INTERVAL 1 HOUR
+  `,
+
+  // ===== STATUS QUERIES =====
 
   getSystemStatus: `
     SELECT
       @@version as mysql_version,
       @@uptime as mysql_uptime,
       @@max_connections as max_connections,
-      (SELECT COUNT(*) FROM information_schema.PROCESSLIST) as current_connections
+      (SELECT COUNT(*) FROM information_schema.PROCESSLIST) as current_connections,
+      @@innodb_buffer_pool_size as buffer_pool_size,
+      @@query_cache_size as query_cache_size
+  `,
+
+  getDiskUsage: `
+    SELECT
+      table_schema as database_name,
+      ROUND(SUM((data_length + index_length) / 1024 / 1024), 2) as size_mb
+    FROM information_schema.TABLES
+    WHERE table_schema = DATABASE()
+    GROUP BY table_schema
+  `,
+
+  // ===== DIAGNOSTICS =====
+
+  getSlowQueries: `
+    SELECT
+      query_time,
+      lock_time,
+      rows_sent,
+      rows_examined,
+      LEFT(sql_text, 200) as sql_preview
+    FROM mysql.slow_log
+    WHERE start_time >= NOW() - INTERVAL ? HOUR
+    ORDER BY query_time DESC
+    LIMIT ?
+  `,
+
+  checkDatabaseIntegrity: `
+    SELECT
+      table_name,
+      table_rows,
+      ROUND(((data_length + index_length) / 1024 / 1024), 2) as size_mb,
+      create_time,
+      update_time
+    FROM information_schema.TABLES
+    WHERE table_schema = DATABASE()
+      AND table_type = 'BASE TABLE'
+    ORDER BY table_name
+  `,
+
+  // ===== REPLICATION (pokud se používá) =====
+
+  getReplicationStatus: `
+    SHOW REPLICA STATUS
+  `,
+
+  getReplicationLag: `
+    SELECT
+      CASE
+        WHEN Seconds_Behind_Master IS NULL THEN 'Not replicating'
+        WHEN Seconds_Behind_Master = 0 THEN 'Up to date'
+        ELSE CONCAT(Seconds_Behind_Master, ' seconds behind')
+      END as replication_status
+    FROM information_schema.REPLICA_HOST_STATUS
   `
 };
