@@ -180,6 +180,7 @@ export const getAvailableActions = user_id => safeQueryAll('get_available_action
 export const insertToActionPlan = (user_id, action_code, next_time) => safeExecute('insert_to_action_plan', [user_id, action_code, next_time]);
 export const getUser = () => safeQueryFirst("user", [hostname]);
 export const getUserById = user_id => safeQueryFirst("user_by_id", [user_id]);
+export const getUsersByHostname = () => safeQueryAll('users_by_hostname', [hostname]);
 export const getUICommand = () => safeQueryFirst("get_ui_command", [hostname]);
 export const uICommandSolved = id => safeExecute("ui_command_solved", [id]);
 export const uICommandAccepted = id => safeExecute("ui_command_accepted", [id]);
