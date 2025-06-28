@@ -108,8 +108,10 @@ export const QUOTES = {
   `,
 
   findByHash: `
-    SELECT * FROM quotes
+    SELECT id, hash, text, next_seen
+    FROM quotes
     WHERE hash = ?
+    LIMIT 1
   `,
 
   findDuplicates: `

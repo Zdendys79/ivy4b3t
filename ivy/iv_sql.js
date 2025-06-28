@@ -436,6 +436,7 @@ export async function verifyMsg(groupId, messageHash) {
       Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
     }
 
+    // Pouze porovnáváme hash z parametru s hashem v databázi
     const result = await safeQueryFirst('quotes.findByHash', [messageHash]);
 
     if (result) {
@@ -455,6 +456,33 @@ export async function verifyMsg(groupId, messageHash) {
   } catch (err) {
     Log.error('[SQL]', `verifyMsg error: ${err.message}`);
     return { c: 0 };
+  }
+}
+
+export async function storeMessage(userId, text, groupId = null) {
+  const debugMode = isDebugMode();
+
+  try {
+    if (debugMode) {
+      Log.debug('[SQL]', `Storing message: user ${userId}, text length: ${text.length}`);
+    }
+
+    // Hash se automaticky vygeneruje triggerem quotes_before_insert
+    const result = await safeExecute('quotes.insertQuote', [
+      userId,
+      text,
+      null // author
+    ]);
+
+    if (debugMode) {
+      Log.debug('[SQL]', `Message stored successfully`);
+    }
+
+    return result;
+
+  } catch (err) {
+    Log.error('[SQL]', `storeMessage error: ${err.message}`);
+    return false;
   }
 }
 
