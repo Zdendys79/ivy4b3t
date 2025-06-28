@@ -342,17 +342,29 @@ export async function tick() {
       return;
     }
 
+    // ✨ VYLEPŠENÉ LOGOVÁNÍ: Před výběrem uživatele
+    Log.debug('[WORKER]', '🔍 Hledám dostupného uživatele s akcemi...');
+
     const user = await db.getUser();
     if (!user) {
       if (Date.now() >= nextWorktime) {
-        Log.info('[WORKER]', 'Žádný dostupný uživatel (všichni zablokovaní nebo zaneprázdněni)');
+        // ✨ VYLEPŠENÉ LOGOVÁNÍ: Jasné rozlišení proč nebyl uživatel nalezen
+        Log.info('[WORKER]', '❌ Nebyl nalezen žádný uživatel s dostupnými akcemi');
+        Log.info('[WORKER]', '   Možné důvody:');
+        Log.info('[WORKER]', '   • Všichni uživatelé jsou zablokovaní');
+        Log.info('[WORKER]', '   • Všichni mají nastavené pozdější next_worktime');
+        Log.info('[WORKER]', '   • Žádný uživatel nemá připravené akce na kole štěstí');
+
         await showAccountLockStats();
         nextWorktime = Date.now() + (60 * 1000); // Zkus znovu za minutu
       }
       return;
     }
 
+    // ✨ VYLEPŠENÉ LOGOVÁNÍ: Úspěšný výběr uživatele
     Log.info(`[${user.id}]`, `🚀 Spouštím akci pro ${user.name} ${user.surname}`);
+    Log.debug(`[${user.id}]`, `   next_worktime: ${user.next_worktime || 'NULL'}`);
+    Log.debug(`[${user.id}]`, `   locked: ${user.locked || 'NULL'}`);
 
     let browser, context, browserClosed;
     try {
