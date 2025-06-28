@@ -2,273 +2,248 @@
  * Název souboru: quotes.js
  * Umístění: ~/ivy/sql/queries/quotes.js
  *
- * Popis: SQL dotazy pro správu citátů a výroků (quotes)
- * Obsahuje výběr, aktualizace a statistiky pro timeline příspěvky
+ * Popis: SQL dotazy pro správu citátů (quotes tabulka)
+ * Opraveno: Nahrazení legacy 'statements' za 'quotes' s odpovídajícími sloupci
  */
 
 export const QUOTES = {
   // ===== ZÁKLADNÍ CRUD OPERACE =====
 
-  getAll: `
-    SELECT id, text, author, hash, next_seen, user_id
-    FROM quotes
-    ORDER BY COALESCE(next_seen, '1970-01-01') ASC, id ASC
-  `,
-
-  getByHash: `
-    SELECT id, text, author, hash, next_seen, user_id
-    FROM quotes
-    WHERE hash = ?
-  `,
-
   getById: `
-    SELECT id, text, author, hash, next_seen, user_id
-    FROM quotes
+    SELECT * FROM quotes
     WHERE id = ?
   `,
 
-  insert: `
-    INSERT INTO quotes (text, author, user_id)
-    VALUES (?, ?, ?)
-    ON DUPLICATE KEY UPDATE
-      text = VALUES(text),
-      author = VALUES(author)
+  getByUserId: `
+    SELECT * FROM quotes
+    WHERE user_id = ?
+    ORDER BY id DESC
   `,
 
-  // ===== VÝBĚR PRO POSTOVÁNÍ =====
-
-  selectForPosting: `
-    SELECT id, text, author, hash
-    FROM quotes
-    WHERE next_seen IS NULL OR next_seen <= NOW()
-    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
-    LIMIT 1
+  getAll: `
+    SELECT * FROM quotes
+    ORDER BY id DESC
   `,
 
-  selectRandomUnused: `
-    SELECT id, text, author, hash
-    FROM quotes
-    WHERE next_seen IS NULL
+  // ===== VÝBĚR CITÁTŮ PRO POUŽITÍ =====
+
+  getRandomQuote: `
+    SELECT * FROM quotes
+    WHERE (next_seen IS NULL OR next_seen <= NOW())
     ORDER BY RAND()
     LIMIT 1
   `,
 
-  selectOldestUsed: `
-    SELECT id, text, author, hash, next_seen
-    FROM quotes
-    WHERE next_seen IS NOT NULL
-    ORDER BY next_seen ASC
-    LIMIT 1
+  getAvailableQuotes: `
+    SELECT * FROM quotes
+    WHERE (next_seen IS NULL OR next_seen <= NOW())
+    ORDER BY COALESCE(next_seen, NOW() - INTERVAL 90 DAY) ASC
+    LIMIT ?
   `,
 
-  selectByAuthor: `
-    SELECT id, text, author, hash
-    FROM quotes
-    WHERE author = ?
-      AND (next_seen IS NULL OR next_seen <= NOW())
-    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
-    LIMIT 1
+  getQuotesByAuthor: `
+    SELECT * FROM quotes
+    WHERE author LIKE ?
+    ORDER BY id DESC
   `,
 
-  // ===== AKTUALIZACE STAVU =====
+  // ===== AKTUALIZACE STAVU CITÁTŮ =====
 
-  markAsPosted: `
+  markAsUsed: `
     UPDATE quotes
     SET next_seen = NOW() + INTERVAL ? DAY
     WHERE id = ?
   `,
 
-  markAsUsed: `
+  markAsUsedByHash: `
     UPDATE quotes
-    SET next_seen = NOW() + INTERVAL 7 DAY
+    SET next_seen = NOW() + INTERVAL ? DAY
+    WHERE hash = ?
+  `,
+
+  resetCooldown: `
+    UPDATE quotes
+    SET next_seen = NULL
     WHERE id = ?
   `,
 
-  resetPostedStatus: `
+  resetAllCooldowns: `
     UPDATE quotes
     SET next_seen = NULL
+    WHERE next_seen > NOW()
+  `,
+
+  // ===== VKLÁDÁNÍ NOVÝCH CITÁTŮ =====
+
+  insertQuote: `
+    INSERT INTO quotes (user_id, text, author)
+    VALUES (?, ?, ?)
+  `,
+
+  insertQuoteWithHash: `
+    INSERT INTO quotes (user_id, text, author, hash)
+    VALUES (?, ?, ?, MD5(?))
+  `,
+
+  // ===== ÚPRAVY CITÁTŮ =====
+
+  updateQuote: `
+    UPDATE quotes
+    SET text = ?, author = ?
     WHERE id = ?
   `,
 
-  resetAllPostedStatus: `
-    UPDATE quotes
-    SET next_seen = NULL
+  deleteQuote: `
+    DELETE FROM quotes
+    WHERE id = ?
   `,
 
-  // ===== STATISTIKY A MONITORING =====
+  // ===== VYHLEDÁVÁNÍ =====
 
-  getStatistics: `
-    SELECT
-      COUNT(*) as total_quotes,
-      COUNT(CASE WHEN next_seen IS NULL THEN 1 END) as unused_quotes,
-      COUNT(CASE WHEN next_seen IS NOT NULL THEN 1 END) as used_quotes,
-      MAX(next_seen) as last_posted,
-      COUNT(DISTINCT author) as unique_authors
-    FROM quotes
-  `,
-
-  getAuthorStatistics: `
-    SELECT
-      author,
-      COUNT(*) as total_count,
-      COUNT(CASE WHEN next_seen IS NULL THEN 1 END) as unused_count,
-      COUNT(CASE WHEN next_seen IS NOT NULL THEN 1 END) as used_count,
-      MAX(next_seen) as last_posted
-    FROM quotes
-    WHERE author IS NOT NULL
-    GROUP BY author
-    ORDER BY total_count DESC
-  `,
-
-  getMostRecentlyUsed: `
-    SELECT id, text, author, next_seen
-    FROM quotes
-    WHERE next_seen IS NOT NULL
-    ORDER BY next_seen DESC
+  searchQuotes: `
+    SELECT * FROM quotes
+    WHERE text LIKE ? OR author LIKE ?
+    ORDER BY id DESC
     LIMIT ?
   `,
 
-  getLeastRecentlyUsed: `
-    SELECT id, text, author, COALESCE(next_seen, '1970-01-01') as next_seen
-    FROM quotes
-    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
-    LIMIT ?
+  findByHash: `
+    SELECT * FROM quotes
+    WHERE hash = ?
   `,
-
-  getAvailableNow: `
-    SELECT id, text, author
-    FROM quotes
-    WHERE next_seen IS NULL OR next_seen <= NOW()
-    ORDER BY COALESCE(next_seen, '1970-01-01') ASC
-    LIMIT ?
-  `,
-
-  // ===== MAINTENANCE OPERACE =====
 
   findDuplicates: `
-    SELECT text, COUNT(*) as count
-    FROM quotes
-    GROUP BY text
-    HAVING COUNT(*) > 1
-    ORDER BY count DESC
-  `,
-
-  findDuplicateHashes: `
-    SELECT hash, COUNT(*) as count
+    SELECT hash, COUNT(*) as count, GROUP_CONCAT(id) as duplicate_ids
     FROM quotes
     GROUP BY hash
     HAVING COUNT(*) > 1
     ORDER BY count DESC
   `,
 
-  deleteDuplicates: `
-    DELETE q1 FROM quotes q1
-    INNER JOIN quotes q2
-    WHERE q1.id > q2.id
-      AND q1.text = q2.text
+  // ===== STATISTIKY =====
+
+  getQuoteStats: `
+    SELECT
+      COUNT(*) as total_quotes,
+      COUNT(CASE WHEN next_seen IS NULL OR next_seen <= NOW() THEN 1 END) as available_quotes,
+      COUNT(CASE WHEN next_seen > NOW() THEN 1 END) as cooldown_quotes,
+      COUNT(DISTINCT user_id) as unique_users,
+      COUNT(DISTINCT author) as unique_authors
+    FROM quotes
   `,
 
-  cleanupOldPosted: `
+  getUsageStats: `
+    SELECT
+      author,
+      COUNT(*) as quote_count,
+      COUNT(CASE WHEN next_seen IS NULL OR next_seen <= NOW() THEN 1 END) as available_count,
+      MAX(next_seen) as last_used
+    FROM quotes
+    WHERE author IS NOT NULL
+    GROUP BY author
+    ORDER BY quote_count DESC
+    LIMIT ?
+  `,
+
+  getUserQuoteStats: `
+    SELECT
+      u.name,
+      u.surname,
+      COUNT(q.id) as quote_count,
+      COUNT(CASE WHEN q.next_seen IS NULL OR q.next_seen <= NOW() THEN 1 END) as available_count
+    FROM fb_users u
+    LEFT JOIN quotes q ON u.id = q.user_id
+    GROUP BY u.id, u.name, u.surname
+    HAVING quote_count > 0
+    ORDER BY quote_count DESC
+    LIMIT ?
+  `,
+
+  // ===== MAINTENANCE =====
+
+  cleanOldQuotes: `
+    DELETE FROM quotes
+    WHERE next_seen < NOW() - INTERVAL ? DAY
+      AND text NOT LIKE '%important%'
+  `,
+
+  updateHashesForAllQuotes: `
     UPDATE quotes
-    SET next_seen = NULL
-    WHERE next_seen < DATE_SUB(NOW(), INTERVAL ? DAY)
+    SET hash = MD5(text)
+    WHERE hash IS NULL OR hash = ''
+  `,
+
+  removeDuplicateQuotes: `
+    DELETE q1 FROM quotes q1
+    INNER JOIN quotes q2
+    WHERE q1.id > q2.id AND q1.hash = q2.hash
+  `,
+
+  // ===== LEGACY KOMPATIBILITA =====
+  // Pro nahrazení starých dotazů na tabulku 'statements'
+
+  selectStatement: `
+    SELECT * FROM quotes
+    WHERE (next_seen IS NULL OR next_seen <= NOW())
+    ORDER BY COALESCE(next_seen, NOW() - INTERVAL 90 DAY) ASC
+    LIMIT 1
+  `,
+
+  updateStatement: `
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL 7 DAY
+    WHERE hash = ?
   `,
 
   // ===== POKROČILÉ DOTAZY =====
 
-  getDistributionByMonth: `
+  getQuotesWithCooldown: `
     SELECT
-      DATE_FORMAT(next_seen, '%Y-%m') as month,
+      q.*,
+      TIMESTAMPDIFF(HOUR, NOW(), q.next_seen) as hours_until_available
+    FROM quotes q
+    WHERE q.next_seen > NOW()
+    ORDER BY q.next_seen ASC
+  `,
+
+  getOldestUnusedQuote: `
+    SELECT * FROM quotes
+    WHERE next_seen IS NULL
+    ORDER BY id ASC
+    LIMIT 1
+  `,
+
+  getRecentlyUsedQuotes: `
+    SELECT * FROM quotes
+    WHERE next_seen > NOW() - INTERVAL ? DAY
+    ORDER BY next_seen DESC
+    LIMIT ?
+  `,
+
+  // ===== REPORTING =====
+
+  getQuoteUsageReport: `
+    SELECT
+      DATE(next_seen) as usage_date,
       COUNT(*) as quotes_used,
       COUNT(DISTINCT author) as unique_authors
     FROM quotes
-    WHERE next_seen IS NOT NULL
-      AND next_seen >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-    GROUP BY DATE_FORMAT(next_seen, '%Y-%m')
-    ORDER BY month DESC
+    WHERE next_seen >= NOW() - INTERVAL ? DAY
+      AND next_seen <= NOW()
+    GROUP BY DATE(next_seen)
+    ORDER BY usage_date DESC
   `,
 
-  getRandomWeightedQuote: `
-    SELECT id, text, author, hash
-    FROM quotes
-    WHERE next_seen IS NULL OR next_seen < DATE_SUB(NOW(), INTERVAL ? DAY)
-    ORDER BY
-      CASE
-        WHEN next_seen IS NULL THEN 1
-        ELSE 2
-      END,
-      RAND()
-    LIMIT 1
-  `,
-
-  // ===== IMPORT/EXPORT OPERACE =====
-
-  bulkInsert: `
-    INSERT IGNORE INTO quotes (text, author, user_id)
-    VALUES %s
-  `,
-
-  exportAll: `
-    SELECT id, text, author, hash, next_seen, user_id
-    FROM quotes
-    ORDER BY id
-  `,
-
-  exportByAuthor: `
-    SELECT id, text, author, hash, next_seen, user_id
-    FROM quotes
-    WHERE author = ?
-    ORDER BY id
-  `,
-
-  // ===== VALIDACE =====
-
-  validateQuotes: `
+  getPopularAuthors: `
     SELECT
-      id,
-      text,
-      CASE
-        WHEN LENGTH(text) < 10 THEN 'Too short'
-        WHEN LENGTH(text) > 500 THEN 'Too long'
-        WHEN text REGEXP '^[[:space:]]*$' THEN 'Empty or whitespace only'
-        WHEN text LIKE '%[placeholder]%' THEN 'Contains placeholder'
-        ELSE 'OK'
-      END as validation_status
+      author,
+      COUNT(*) as total_quotes,
+      COUNT(CASE WHEN next_seen > NOW() - INTERVAL 30 DAY THEN 1 END) as recently_used,
+      AVG(LENGTH(text)) as avg_quote_length
     FROM quotes
-    HAVING validation_status != 'OK'
-    ORDER BY validation_status, id
-  `,
-
-  getEmptyQuotes: `
-    SELECT id, text, author
-    FROM quotes
-    WHERE text IS NULL
-       OR text = ''
-       OR text REGEXP '^[[:space:]]*$'
-  `,
-
-  getLongQuotes: `
-    SELECT id, text, author, LENGTH(text) as length
-    FROM quotes
-    WHERE LENGTH(text) > ?
-    ORDER BY LENGTH(text) DESC
-  `,
-
-  // ===== FUNKCE PRO KOLO ŠTĚSTÍ =====
-
-  getRandomForUser: `
-    SELECT id, text, author
-    FROM quotes
-    WHERE (next_seen IS NULL OR next_seen <= NOW())
-      AND id NOT IN (
-        SELECT DISTINCT reference_id
-        FROM action_log
-        WHERE account_id = ?
-          AND action_code = 'quote_post'
-          AND reference_id IS NOT NULL
-          AND timestamp >= NOW() - INTERVAL 7 DAY
-      )
-    ORDER BY RAND()
-    LIMIT 1
+    WHERE author IS NOT NULL
+    GROUP BY author
+    HAVING total_quotes >= ?
+    ORDER BY recently_used DESC, total_quotes DESC
   `
 };

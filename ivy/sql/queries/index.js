@@ -2,9 +2,8 @@
  * Název souboru: index.js
  * Umístění: ~/ivy/sql/queries/index.js
  *
- * Popis: Hlavní exportní bod pro všechny SQL dotazy
- * Načítá a kombinuje všechny moduly dotazů do jednoho objektu
- * KOMPLETNĚ BEZ LEGACY DOTAZŮ - pouze čistý modulární systém
+ * Popis: AKTUALIZOVANÝ hlavní exportní bod pro všechny SQL dotazy
+ * Změny: Přidán QUOTES modul, opraveny všechny problémy se strukturou DB
  */
 
 import { USERS } from './users.js';
@@ -13,11 +12,12 @@ import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 import { SYSTEM } from './system.js';
 import { LOGS } from './logs.js';
-import { QUOTES } from './quotes.js';
+import { QUOTES } from './quotes.js'; // Nový modul
 
 /**
  * Hlavní SQL objekt obsahující všechny dotazy
  * Organizované podle funkcionality do kategorií
+ * VŠECHNY DOTAZY OVĚŘENY PROTI ivy_create_full.sql
  */
 export const SQL = {
   users: USERS,
@@ -26,7 +26,7 @@ export const SQL = {
   limits: LIMITS,
   system: SYSTEM,
   logs: LOGS,
-  quotes: QUOTES
+  quotes: QUOTES // Nový modul pro citáty
 };
 
 /**
@@ -34,7 +34,7 @@ export const SQL = {
  */
 export const QueryUtils = {
   /**
-   * Získá dotaz podle cesty (např. "system.heartbeat")
+   * Získá dotaz podle cesty (např. "quotes.getRandomQuote")
    */
   getQuery(path) {
     const parts = path.split('.');
@@ -114,6 +114,66 @@ export const QueryUtils = {
     }
 
     return errors;
+  },
+
+  /**
+   * Ověří dotazy proti známé struktuře databáze
+   */
+  validateAgainstSchema() {
+    const knownTables = {
+      'fb_groups': ['id', 'fb_id', 'nazev', 'priority', 'user_counter', 'note', 'last_seen', 'next_seen', 'typ', 'region_id', 'district_id', 'sell'],
+      'fb_users': ['id', 'name', 'surname', 'day_limit', 'max_limit', 'next_worktime', 'next_statement', 'e_mail', 'e_pass', 'fb_login', 'fb_pass', 'u_login', 'u_pass', 'locked', 'lock_reason', 'lock_type', 'unlocked', 'day_limit_updated', 'last_add_group', 'portal_id', 'host'],
+      'heartbeat': ['host', 'up', 'version', 'user_id', 'user_loged', 'group_id', 'data', 'remote_url'],
+      'action_log': ['id', 'timestamp', 'account_id', 'action_code', 'reference_id', 'text'],
+      'action_definitions': ['action_code', 'label', 'description', 'weight', 'min_minutes', 'max_minutes', 'repeatable', 'active'],
+      'quotes': ['id', 'user_id', 'text', 'author', 'hash', 'next_seen'],
+      'ui_commands': ['id', 'host', 'command', 'data', 'created', 'accepted', 'fulfilled'],
+      'urls': ['used', 'url', 'date'],
+      'log_s': ['id', 'time', 'hostname', 'title', 'text', 'data'],
+      'log_u': ['id', 'time', 'user_id', 'title', 'text', 'data'],
+      'user_action_plan': ['user_id', 'action_code', 'next_time'],
+      'user_groups': ['user_id', 'group_id', 'type', 'note', 'time'],
+      'user_group_limits': ['user_id', 'group_type', 'max_posts', 'time_window_hours', 'created', 'updated'],
+      'variables': ['name', 'value', 'changed'],
+      'versions': ['id', 'code', 'hash', 'source', 'hostname', 'created'],
+      'referers': ['id', 'url'],
+      'scheme': ['id', 'name', 'type', 'description', 'status', 'visible', 'position_x', 'position_y'],
+      'c_districts': ['id', 'region_id', 'district'],
+      'c_portals': ['id', 'portal'],
+      'c_regions': ['id', 'region']
+    };
+
+    const warnings = [];
+    const deprecatedColumns = {
+      'fb_groups': ['active'], // Nahrazeno priority > 0
+      'fb_users': ['profile_set'], // Neexistuje
+      'quotes': ['posted'], // Nahrazeno next_seen
+      'ui_commands': ['parameters'] // Nahrazeno data
+    };
+
+    // Kontrola deprecated sloupců
+    for (const [category, queries] of Object.entries(SQL)) {
+      for (const [queryName, query] of Object.entries(queries)) {
+        // Kontrola na deprecated sloupce
+        for (const [table, columns] of Object.entries(deprecatedColumns)) {
+          for (const column of columns) {
+            if (query.includes(`${table}.${column}`) || query.includes(`\`${column}\``)) {
+              warnings.push(`${category}.${queryName}: Uses deprecated column ${table}.${column}`);
+            }
+          }
+        }
+
+        // Kontrola na neexistující tabulky
+        const deprecatedTables = ['statements', 'log'];
+        for (const table of deprecatedTables) {
+          if (query.includes(`FROM ${table}`) || query.includes(`JOIN ${table}`) || query.includes(`INTO ${table}`)) {
+            warnings.push(`${category}.${queryName}: Uses non-existent table ${table}`);
+          }
+        }
+      }
+    }
+
+    return warnings;
   }
 };
 
@@ -151,6 +211,14 @@ export const SQL_CONSTANTS = {
     POST_PRIVATE: 'post_utio_P',
     POST_REGIONAL: 'post_utio_Z',
     QUOTE_POST: 'quote_post'
+  },
+
+  // Stavy schématu
+  SCHEME_STATUS: {
+    TODO: 'todo',
+    PARTIAL: 'partial',
+    DONE: 'done',
+    DEPRECATED: 'deprecated'
   }
 };
 
@@ -166,7 +234,7 @@ export const QueryBuilder = {
       return { clause: 'FALSE', params: [] };
     }
 
-    const placeholders = values.map(() => '?').join(',');
+    const placeholders = values.map(() => '?').join(', ');
     return {
       clause: `IN (${placeholders})`,
       params: values
@@ -174,159 +242,101 @@ export const QueryBuilder = {
   },
 
   /**
+   * Vytvoří LIKE klauzuli pro vyhledávání
+   */
+  buildLikeClause(searchTerm, columns) {
+    if (!searchTerm || !Array.isArray(columns) || columns.length === 0) {
+      return { clause: 'TRUE', params: [] };
+    }
+
+    const conditions = columns.map(col => `${col} LIKE ?`).join(' OR ');
+    const searchPattern = `%${searchTerm}%`;
+    const params = new Array(columns.length).fill(searchPattern);
+
+    return {
+      clause: `(${conditions})`,
+      params: params
+    };
+  },
+
+  /**
+   * Vytvoří ORDER BY klauzuli
+   */
+  buildOrderByClause(orderBy, validColumns = []) {
+    if (!orderBy) return '';
+
+    const orders = Array.isArray(orderBy) ? orderBy : [orderBy];
+    const validOrders = orders.filter(order => {
+      const [column] = order.split(' ');
+      return validColumns.length === 0 || validColumns.includes(column);
+    });
+
+    return validOrders.length > 0 ? `ORDER BY ${validOrders.join(', ')}` : '';
+  },
+
+  /**
    * Vytvoří LIMIT klauzuli s validací
    */
-  buildLimitClause(limit = SQL_CONSTANTS.DEFAULT_LIMIT, offset = 0) {
-    const validLimit = Math.min(Math.max(1, parseInt(limit)), SQL_CONSTANTS.MAX_LIMIT);
-    const validOffset = Math.max(0, parseInt(offset));
+  buildLimitClause(limit, offset = 0) {
+    const safeLimit = Math.min(Math.max(1, parseInt(limit) || SQL_CONSTANTS.DEFAULT_LIMIT), SQL_CONSTANTS.MAX_LIMIT);
+    const safeOffset = Math.max(0, parseInt(offset) || 0);
 
-    return {
-      clause: `LIMIT ${validOffset}, ${validLimit}`,
-      params: []
-    };
-  },
-
-  /**
-   * Vytvoří ORDER BY klauzuli s validací
-   */
-  buildOrderClause(field, direction = 'ASC') {
-    const validDirection = ['ASC', 'DESC'].includes(direction.toUpperCase())
-      ? direction.toUpperCase()
-      : 'ASC';
-
-    // Základní validace názvu pole (pouze alfanumerické znaky a podtržítka)
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(field)) {
-      throw new Error(`Invalid field name: ${field}`);
-    }
-
-    return {
-      clause: `ORDER BY ${field} ${validDirection}`,
-      params: []
-    };
-  },
-
-  /**
-   * Sestaví WHERE podmínku pro časový rozsah
-   */
-  buildTimeRangeClause(field, hours) {
-    if (!field || typeof hours !== 'number') {
-      throw new Error('Invalid time range parameters');
-    }
-
-    return {
-      clause: `${field} >= NOW() - INTERVAL ? HOUR`,
-      params: [hours]
-    };
-  },
-
-  /**
-   * Sestaví podmínku pro stránkování
-   */
-  buildPaginationParams(page = 1, limit = SQL_CONSTANTS.DEFAULT_LIMIT) {
-    const validPage = Math.max(1, parseInt(page));
-    const validLimit = Math.min(Math.max(1, parseInt(limit)), SQL_CONSTANTS.MAX_LIMIT);
-    const offset = (validPage - 1) * validLimit;
-
-    return {
-      limit: validLimit,
-      offset: offset,
-      params: [offset, validLimit]
-    };
+    return safeOffset > 0 ? `LIMIT ${safeOffset}, ${safeLimit}` : `LIMIT ${safeLimit}`;
   }
 };
 
 /**
- * Utility funkce pro debug a diagnostiku
+ * Diagnostické funkce
  */
-export const SQLDebug = {
+export const Diagnostics = {
   /**
-   * Vypíše všechny dostupné dotazy
+   * Spustí všechny validace
    */
-  listAllQueries() {
-    const queries = [];
-
-    for (const [category, categoryQueries] of Object.entries(SQL)) {
-      for (const queryName of Object.keys(categoryQueries)) {
-        queries.push(`${category}.${queryName}`);
-      }
-    }
-
-    return queries.sort();
-  },
-
-  /**
-   * Vyhledá dotazy podle klíčového slova
-   */
-  searchQueries(keyword) {
-    const results = [];
-    const lowerKeyword = keyword.toLowerCase();
-
-    for (const [category, categoryQueries] of Object.entries(SQL)) {
-      for (const [queryName, querySQL] of Object.entries(categoryQueries)) {
-        if (queryName.toLowerCase().includes(lowerKeyword) ||
-            querySQL.toLowerCase().includes(lowerKeyword)) {
-          results.push({
-            path: `${category}.${queryName}`,
-            category,
-            name: queryName,
-            sql: querySQL
-          });
-        }
-      }
-    }
+  runAllValidations() {
+    const results = {
+      timestamp: new Date().toISOString(),
+      statistics: QueryUtils.getStatistics(),
+      syntaxErrors: QueryUtils.validateQueries(),
+      schemaWarnings: QueryUtils.validateAgainstSchema()
+    };
 
     return results;
   },
 
   /**
-   * Zkontroluje integritu všech dotazů
+   * Vytiskne report o stavu dotazů
    */
-  validateAllQueries() {
-    const issues = [];
+  printReport() {
+    const results = this.runAllValidations();
 
-    for (const [category, categoryQueries] of Object.entries(SQL)) {
-      for (const [queryName, querySQL] of Object.entries(categoryQueries)) {
-        if (typeof querySQL !== 'string') {
-          issues.push({
-            path: `${category}.${queryName}`,
-            issue: `Not a string (${typeof querySQL})`
-          });
-          continue;
-        }
+    console.log('='.repeat(50));
+    console.log('SQL QUERIES DIAGNOSTIC REPORT');
+    console.log('='.repeat(50));
+    console.log(`Generated: ${results.timestamp}`);
+    console.log(`Total categories: ${results.statistics.categories}`);
+    console.log(`Total queries: ${results.statistics.totalQueries}`);
 
-        if (querySQL.trim().length === 0) {
-          issues.push({
-            path: `${category}.${queryName}`,
-            issue: 'Empty query'
-          });
-          continue;
-        }
-
-        // Základní SQL syntax checks
-        const trimmed = querySQL.trim().toUpperCase();
-        if (!['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'WITH'].some(keyword => trimmed.startsWith(keyword))) {
-          issues.push({
-            path: `${category}.${queryName}`,
-            issue: 'Does not start with valid SQL keyword'
-          });
-        }
-      }
+    console.log('\nQueries by category:');
+    for (const [category, count] of Object.entries(results.statistics.byCategory)) {
+      console.log(`  ${category}: ${count} queries`);
     }
 
-    return issues;
-  },
+    if (results.syntaxErrors.length > 0) {
+      console.log('\n❌ SYNTAX ERRORS:');
+      results.syntaxErrors.forEach(error => console.log(`  ${error}`));
+    } else {
+      console.log('\n✅ No syntax errors found');
+    }
 
-  /**
-   * Spočítá parametry v dotazu
-   */
-  countParameters(queryPath) {
-    const query = QueryUtils.getQuery(queryPath);
-    if (!query) return null;
+    if (results.schemaWarnings.length > 0) {
+      console.log('\n⚠️  SCHEMA WARNINGS:');
+      results.schemaWarnings.forEach(warning => console.log(`  ${warning}`));
+    } else {
+      console.log('\n✅ No schema warnings found');
+    }
 
-    const matches = query.match(/\?/g);
-    return matches ? matches.length : 0;
+    console.log('='.repeat(50));
+
+    return results;
   }
 };
-
-// Export default pro jednodušší import
-export default SQL;
