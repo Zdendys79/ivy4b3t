@@ -11,10 +11,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'readline';
 import puppeteer from 'puppeteer';
-import * as wait from './ivy/iv_wait.js';
-import * as db from './ivy/iv_sql.js';
-import { FacebookBot } from './ivy/iv_fb.class.js';
-import { Log } from './ivy/iv_log.class.js';
+import * as wait from './iv_wait.js';
+import * as db from './iv_sql.js';
+import { FacebookBot } from './iv_fb.class.js';
+import { Log } from './iv_log.class.js';
 
 const isLinux = process.platform === 'linux';
 const hostname = os.hostname();

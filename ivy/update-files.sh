@@ -155,7 +155,7 @@ main() {
             log_success "🎉 AKTUALIZACE DOKONČENA!"
             show_status
             echo ""
-            log_info "Pro spuštění aplikace použijte: cd $TARGET_DIR && ./start.sh"
+            log_info "Pro spuštění aplikace použijte: cd $TARGET_DIR && chmod +x start.sh && ./start.sh"
             ;;
         "help"|"h"|*)
             cat << 'EOF'
