@@ -34,56 +34,35 @@ const pool = mysql.createPool({
 
 async function query(query_id, data = []) {
   const debugMode = isDebugMode();
-  let success = false;
-  let count = 0;
-  let results = false;
 
   if (debugMode) {
     Log.debug('[SQL]', `Executing query: ${query_id} with params: ${JSON.stringify(data)}`);
   }
 
-  do {
-    try {
-      const [rows] = await pool.execute(queries[query_id], data);
-      results = rows;
-      success = true;
+  try {
+    const [rows] = await pool.execute(queries[query_id], data);
 
-      if (debugMode) {
-        Log.debug('[SQL]', `Query ${query_id} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
-      }
-    } catch (err) {
-      count++;
-
-      if (debugMode) {
-        // Debug režim - podrobné informace
-        Log.error('[SQL][DEBUG]', `Attempt ${count}/3 failed for query: ${query_id}`);
-        Log.error('[SQL][DEBUG]', `SQL: ${queries[query_id]}`);
-        Log.error('[SQL][DEBUG]', `Params: ${JSON.stringify(data)}`);
-        Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
-        if (err.code) Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
-        if (err.sqlState) Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);
-      } else {
-        // Ostrý režim - jen základní info
-        Log.error('[SQL]', `Query ${query_id} failed (attempt ${count}/3): ${err.code || err.message}`);
-      }
-
-      if (count < 3) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * count)); // 1s, 2s, 3s
-      }
-    }
-  } while (!success && count < 3);
-
-  if (!success) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `Query ${query_id} completely failed after 3 attempts`);
-    } else {
-      Log.error('[SQL]', `Query ${query_id} failed permanently`);
+      Log.debug('[SQL]', `Query ${query_id} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
     }
+
+    return rows;
+
+  } catch (err) {
+    if (debugMode) {
+      Log.error('[SQL][DEBUG]', `Query failed: ${query_id}`);
+      Log.error('[SQL][DEBUG]', `SQL: ${queries[query_id]}`);
+      Log.error('[SQL][DEBUG]', `Params: ${JSON.stringify(data)}`);
+      Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
+      if (err.code) Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
+      if (err.sqlState) Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);
+    } else {
+      Log.error('[SQL]', `Query ${query_id} failed: ${err.code || err.message}`);
+    }
+
+    return false;
   }
-
-  return success ? results : false;
 }
-
 async function safeQueryFirst(query_id, params = []) {
   const debugMode = isDebugMode();
 
@@ -384,10 +363,8 @@ export async function canUserPostToGroupType(user_id, group_type) {
  * @param {number} userId - ID uživatele
  * @param {string} reason - Důvod zablokování
  * @param {string} type - Typ problému (VIDEOSELFIE, ACCOUNT_LOCKED, atd.)
- * @param {string} hostname - Hostname serveru
  */
-export const lockAccountWithReason = (userId, reason, type, hostname) =>
-  safeExecute('lock_account_with_reason', [userId, reason, type, hostname]);
+export const lockAccountWithReason = (userId, reason, type) => safeExecute('lock_account_with_reason', [reason, type, userId]);
 
 /**
  * Přidá záznam o detekci problému do log_s
