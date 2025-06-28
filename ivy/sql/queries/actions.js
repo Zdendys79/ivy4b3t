@@ -146,7 +146,33 @@ export const ACTIONS = {
 
   // ===== POKROČILÉ DOTAZY PRO KOLO ŠTĚSTÍ =====
 
-  getUserActionsWithLimits: `
+  getUserActionsWithLimitsSimple: `
+    SELECT
+      ad.action_code,
+      ad.weight,
+      ad.min_minutes,
+      ad.max_minutes,
+      ad.repeatable,
+      ad.weight as effective_weight
+    FROM action_definitions ad
+    JOIN user_action_plan uap ON ad.action_code = uap.action_code
+    WHERE uap.user_id = ?
+      AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+      AND ad.active = 1
+      AND NOT (
+        ad.action_code IN ('account_sleep','account_delay')
+        AND EXISTS (
+          SELECT 1
+          FROM user_action_plan uap2
+          WHERE uap2.user_id = ?
+            AND uap2.action_code NOT IN ('account_sleep','account_delay')
+            AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
+        )
+      )
+    ORDER BY ad.weight DESC
+  `,
+
+    getUserActionsWithLimits: `
     SELECT
       ad.action_code,
       ad.weight,
@@ -167,7 +193,7 @@ export const ACTIONS = {
       SELECT
         CONCAT('post_utio_', ugl.group_type) as action_code,
         CASE
-          WHEN COALESCE(usage.current_posts, 0) < ugl.max_posts THEN 1
+          WHEN COALESCE(usage_stats.current_posts, 0) < ugl.max_posts THEN 1
           ELSE 0
         END as can_post
       FROM user_group_limits ugl
@@ -181,7 +207,7 @@ export const ACTIONS = {
           AND al.action_code LIKE 'post_utio_%'
           AND al.timestamp >= NOW() - INTERVAL ugl.time_window_hours HOUR
         GROUP BY fg.typ
-      ) usage ON ugl.group_type = usage.typ
+      ) usage_stats ON ugl.group_type = usage_stats.typ
       WHERE ugl.user_id = ?
     ) limit_check ON ad.action_code = limit_check.action_code
     WHERE uap.user_id = ?
