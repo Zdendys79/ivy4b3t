@@ -1,25 +1,26 @@
 /**
- * Název souboru: iv_sql.js
+ * Název souboru: iv_sql.js (modernizovaná verze)
  * Umístění: ~/ivy/iv_sql.js
  *
- * Popis: Poskytuje funkce pro komunikaci s databází MariaDB pomocí předdefinovaných SQL dotazů.
- * Používá connection pool. Obsahuje obalové metody s podmíněným logováním podle debug režimu.
+ * Popis: Modernizovaná databázová vrstva s modulárními SQL dotazy
+ * Podporuje jak novou modulární strukturu, tak zpětnou kompatibilitu
  */
 
 import os from 'node:os';
 import fs from 'node:fs';
 import mysql from 'mysql2/promise';
-import rawQueries from './sql/iv_sql_queries.js';
+import { SQL, LEGACY_QUERIES } from './sql/queries/index.js';
 import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';
 
 const hostname = os.hostname();
 const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
 
+// Kombinuj nové modulární dotazy s legacy soubory
 const queries = {
-  ...rawQueries,
-  group: fs.readFileSync('./sql/iv_group.sql').toString(),
-  user: fs.readFileSync('./sql/iv_user.sql').toString(),
+  ...LEGACY_QUERIES,                                           // Legacy dotazy pro zpětnou kompatibilitu
+  group: fs.readFileSync('./sql/iv_group.sql').toString(),     // Zachovat soubory .sql
+  user: fs.readFileSync('./sql/iv_user.sql').toString(),       // Zachovat soubory .sql
 };
 
 const pool = mysql.createPool({
@@ -31,6 +32,10 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0
 });
+
+// =========================================================
+// CORE DATABASE FUNCTIONS
+// =========================================================
 
 async function query(query_id, data = []) {
   const debugMode = isDebugMode();
@@ -63,6 +68,7 @@ async function query(query_id, data = []) {
     return false;
   }
 }
+
 async function safeQueryFirst(query_id, params = []) {
   const debugMode = isDebugMode();
 
@@ -153,537 +159,258 @@ async function safeExecute(query_id, params = []) {
   }
 }
 
-// Exportované funkce
-export const getActionDefinitions = () => safeQueryAll('get_action_definitions');
-export const getAvailableActions = user_id => safeQueryAll('get_available_actions', [user_id]);
-export const insertToActionPlan = (user_id, action_code, next_time) => safeExecute('insert_to_action_plan', [user_id, action_code, next_time]);
-export const getUser = () => safeQueryFirst("user", [hostname]);
-export const getUserById = user_id => safeQueryFirst("user_by_id", [user_id]);
-export const getUsersByHostname = () => safeQueryAll('users_by_hostname', [hostname]);
-export const getUICommand = () => safeQueryFirst("get_ui_command", [hostname]);
-export const uICommandSolved = id => safeExecute("ui_command_solved", [id]);
-export const uICommandAccepted = id => safeExecute("ui_command_accepted", [id]);
-export const getRandomReferer = () => safeQueryFirst("get_random_referer");
-export const getRecentlyLogedUserFromMyNeighborhood = () => safeQueryFirst("get_recently_loged_user_from_neighborhood", [hostname, 30]);
-export const lockAccount = (user_id) => safeExecute("lock_account", [user_id]);
-export const userLogedToFB = (user_id) => safeExecute("update_user_loged_to_fb", [hostname, user_id, user_id]);
-export const getVersionCode = () => safeQueryFirst("get_version_code");
-export const updateUserNextStatement = (user, hours) => safeExecute('update_user_next_statement', [hours, user.id]);
-export const updateUserAddGroup = (user, group_id) => safeExecute('update_user_add_group', [user.id]);
-export const setUserLimit = (user, new_limit, old_limit) => safeExecute('set_user_limit', [new_limit, user.id]);
-export const loadUrl = () => safeQueryFirst('load_url');
-export const useUrl = (url) => safeExecute('use_url', [url]);
-export const getStatement = () => safeQueryFirst('select_statement');
-export const verifyMsg = (group_id, md5) => safeQueryFirst('verify_posted_data', [group_id, md5]);
-export const getGroupById = (group_id) => safeQueryFirst('group_by_id', [group_id]);
-export const getRandomQuote = (user_id) => safeQueryFirst('get_random_quote', [user_id]);
-export const getUserActions = user_id => safeQueryAll('get_user_actions', [user_id, user_id]);
-export const updateUserActionPlan = (user_id, action_code, randMinutes) => safeExecute('update_user_action_plan', [randMinutes, user_id, action_code]);
-export const initUserActionPlan = (user_id) => safeExecute('init_user_action_plan', [user_id]);
-export const updateQuoteNextSeen = (quote_id, days) => safeExecute('update_quote_next_seen', [days, quote_id]);
+// =========================================================
+// MODERN QUERY BUILDER (volitelné)
+// =========================================================
 
 /**
- * Loguje uživatelskou akci do action_log tabulky
- * @param {Object|number} user - Uživatelský objekt nebo ID
- * @param {string} action_code - Kód akce (account_sleep, account_delay, atd.)
- * @param {string|number} reference_id - Reference ID
- * @param {string} text - Popis akce
+ * Moderní query builder pro přímý přístup k modulárním dotazům
  */
+export class QueryBuilder {
+  constructor() {
+    this.SQL = SQL;
+  }
+
+  // Users
+  async getUser(hostname = hostname) {
+    return await safeQueryFirst(SQL.users.getByHostname, [hostname]);
+  }
+
+  async getUserById(id) {
+    return await safeQueryFirst(SQL.users.getById, [id]);
+  }
+
+  async lockUser(id) {
+    return await safeExecute(SQL.users.lock, [id]);
+  }
+
+  async unlockUser(id) {
+    return await safeExecute(SQL.users.unlock, [id]);
+  }
+
+  // Actions
+  async getUserActions(userId) {
+    return await safeQueryAll(SQL.actions.getUserActions, [userId, userId]);
+  }
+
+  async logAction(accountId, actionCode, referenceId, text) {
+    return await safeExecute(SQL.actions.logAction, [accountId, actionCode, referenceId, text]);
+  }
+
+  async updateActionPlan(userId, actionCode, minutes) {
+    return await safeExecute(SQL.actions.updatePlan, [minutes, userId, actionCode]);
+  }
+
+  // Limits
+  async getUserLimit(userId, groupType) {
+    return await safeQueryFirst(SQL.limits.getUserLimit, [userId, groupType]);
+  }
+
+  async canUserPost(userId, groupType) {
+    const limit = await this.getUserLimit(userId, groupType);
+    if (!limit) return false;
+
+    const result = await safeQueryFirst(SQL.limits.canUserPost, [
+      userId, groupType, limit.time_window_hours, userId, groupType
+    ]);
+
+    return result?.can_post === 1;
+  }
+
+  // Groups
+  async getGroupById(id) {
+    return await safeQueryFirst(SQL.groups.getById, [id]);
+  }
+
+  async getAvailableGroups(groupType, userId) {
+    return await safeQueryAll(SQL.groups.getAvailableByType, [groupType, userId]);
+  }
+
+  // System
+  async heartbeat(userId = 0, groupId = 0, version = 'unknown') {
+    return await safeExecute(SQL.system.heartbeat, [
+      hostname, userId, groupId, version, userId, groupId, version
+    ]);
+  }
+
+  async getVersionCode() {
+    return await safeQueryFirst(SQL.system.getVersionCode);
+  }
+}
+
+// Instance query builderu pro přímé použití
+export const db = new QueryBuilder();
+
+// =========================================================
+// LEGACY EXPORTS (zachovat pro zpětnou kompatibilitu)
+// =========================================================
+
+// Základní systémové funkce
+export const getUser = () => safeQueryFirst("user", [hostname]);
+export const getUserById = user_id => safeQueryFirst(SQL.users.getById, [user_id]);
+export const getUsersByHostname = () => safeQueryAll(SQL.users.getByHostname, [hostname]);
+
+// Action system
+export const getUserActions = user_id => safeQueryAll(SQL.actions.getUserActions, [user_id, user_id]);
+export const updateUserActionPlan = (user_id, action_code, randMinutes) =>
+  safeExecute(SQL.actions.updatePlan, [randMinutes, user_id, action_code]);
+export const initUserActionPlan = (user_id) => safeExecute(SQL.actions.initPlan, [user_id]);
+export const logUserAction = (account_id, action_code, reference_id, text) =>
+  safeExecute(SQL.actions.logAction, [account_id, action_code, reference_id, text]);
+
+// Group limits
+export const getUserGroupLimit = (user_id, group_type) =>
+  safeQueryFirst(SQL.limits.getUserLimit, [user_id, group_type]);
+export const countUserPostsInTimeframe = (user_id, group_type, hours) =>
+  safeQueryFirst(SQL.limits.countPostsInTimeframe, [user_id, group_type, hours]);
+export const upsertUserGroupLimit = (user_id, group_type, max_posts, time_window_hours) =>
+  safeExecute(SQL.limits.upsertLimit, [user_id, group_type, max_posts, time_window_hours]);
+
+// User management
+export const lockAccount = (user_id) => safeExecute(SQL.users.lock, [user_id]);
+export const updateUserWorktime = async (user, minutes) => {
+  const user_id = typeof user === 'object' ? user.id : user;
+  const result = await safeExecute(SQL.users.updateWorktime, [minutes, user_id]);
+
+  if (result) {
+    const hours = Math.round(minutes / 60 * 100) / 100;
+    const action_code = minutes > 1440 ? 'account_sleep' : 'account_delay';
+    const text = `${action_code === 'account_sleep' ? 'Sleep' : 'Delay'} na ${hours}h`;
+    await logUserAction(user_id, action_code, minutes.toString(), text);
+  }
+
+  return result;
+};
+
+// Groups
+export const getGroupById = (group_id) => safeQueryFirst(SQL.groups.getById, [group_id]);
+export const getAvailableGroupsByType = (group_type, user_id) =>
+  safeQueryAll(SQL.groups.getAvailableByType, [group_type, user_id]);
+export const updateGroupLastSeen = (group_id) => safeExecute(SQL.groups.updateLastSeen, [group_id]);
+export const updateGroupNextSeen = (group_id, minutes) =>
+  safeExecute(SQL.groups.updateNextSeen, [group_id, minutes]);
+
+// System functions
+export const heartBeat = async (user_id = 0, group_id = 0, version_code = 'unknown') => {
+  return await safeExecute(SQL.system.heartbeat, [
+    hostname, user_id, group_id, version_code, user_id, group_id, version_code
+  ]);
+};
+
+export const getVersionCode = () => safeQueryFirst(SQL.system.getVersionCode);
+export const getUICommand = () => safeQueryFirst(SQL.system.getUICommand, [hostname]);
+export const uICommandSolved = id => safeExecute(SQL.system.uiCommandSolved, [id]);
+export const uICommandAccepted = id => safeExecute(SQL.system.uiCommandAccepted, [id]);
+
+// Quotes
+export const getRandomQuote = (user_id) => safeQueryFirst(SQL.quotes.getRandom, [user_id]);
+export const updateQuoteNextSeen = (quote_id, days) =>
+  safeExecute(SQL.quotes.updateNextSeen, [days, quote_id]);
+
+// Logging
+export const systemLog = async (title, text, data = {}) => {
+  return await safeExecute(SQL.logs.insertSystemLog, [
+    hostname, title, text, JSON.stringify(data)
+  ]);
+};
+
 export const userLog = async (user, action_code, reference_id, text) => {
   const user_id = typeof user === 'object' ? user.id : user;
   return await logUserAction(user_id, action_code, reference_id, text);
 };
 
-export const getReferenceSleepTime = user_id => safeQueryFirst('get_reference_sleep_time', [user_id, user_id])
-  .then(row => row && row.time ? new Date(row.time) : false);
+// URLs and utilities
+export const loadUrl = () => safeQueryFirst(SQL.system.loadUrl);
+export const useUrl = (url) => safeExecute(SQL.system.useUrl, [url]);
+export const getRandomReferer = () => safeQueryFirst(SQL.system.getRandomReferer);
 
-// Speciální funkce s vlastním logováním
-export async function logUserAction(account_id, action_code, reference_id, text) {
-  const debugMode = isDebugMode();
+// =========================================================
+// ENHANCED FUNCTIONS (nové funkce s modernější logikou)
+// =========================================================
 
-  if (debugMode) {
-    Log.debug('[SQL]', `logUserAction: user=${account_id}, action=${action_code}, ref=${reference_id}`);
-  }
-
-  const result = await safeExecute('insert_to_action_log', [account_id, action_code, reference_id, text]);
-
-  if (result) {
-    if (debugMode) {
-      Log.success('[SQL]', `Action logged: ${action_code} for user ${account_id}`);
-    } else {
-      Log.info('[SQL]', `Action logged: ${action_code}`);
-    }
-  } else {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `Failed to log action: ${action_code} for user ${account_id}`);
-    } else {
-      Log.error('[SQL]', `Failed to log action: ${action_code}`);
-    }
-  }
-
-  return result;
-}
-
-export async function systemLog(title, text, data = {}) {
-  const debugMode = isDebugMode();
-
-  if (debugMode) {
-    Log.debug('[SQL]', `systemLog: ${title}`);
-  }
-
-  const result = await safeExecute('insert_to_system_log', [os.hostname(), title, text, JSON.stringify(data)]);
-
-  if (!result && debugMode) {
-    Log.error('[SQL][DEBUG]', `Failed to write system log: ${title}`);
-  }
-
-  return result;
-}
-
-export async function heartBeat(user_id, group_id, version_code) {
-  const debugMode = isDebugMode();
-  const data = [hostname, user_id, group_id, version_code, user_id, group_id, version_code];
-
-  if (debugMode) {
-    Log.debug('[SQL]', `Heartbeat: user=${user_id}, group=${group_id}, version=${version_code}`);
-  }
-
-  return await safeExecute("heartbeat", data);
+/**
+ * Moderní verze canUserPostToGroupType s lepší logikou
+ */
+export async function canUserPostToGroupType(userId, groupType) {
+  return await db.canUserPost(userId, groupType);
 }
 
 /**
- * Aktualizace worktime s logováním
- * @param {Object|number} user - Uživatel nebo user ID
- * @param {number} minutes - Počet minut
+ * Kombinovaná funkce pro získání uživatele s akcemi
  */
-export async function updateUserWorktime(user, minutes) {
-  const user_id = typeof user === 'object' ? user.id : user;
-
-  // Aktualizuj worktime v fb_users
-  const result = await safeExecute('update_user_worktime', [minutes, user_id]);
-
-  // Loguj akci podle délky pauzy
-  if (result) {
-    const hours = Math.round(minutes / 60 * 100) / 100;
-    const action_code = minutes > 1440 ? 'account_sleep' : 'account_delay'; // > 24h = sleep
-    const text = `${action_code === 'account_sleep' ? 'Sleep' : 'Delay'} na ${hours}h`;
-
-    await logUserAction(user_id, action_code, minutes.toString(), text);
-  }
-
-  return result;
-}
-
-// Debug functions
-export const resetQuotePostDebug = () => {
-  const debugMode = isDebugMode();
-  if (debugMode) {
-    Log.debug('[SQL]', 'Resetting quote_post debug');
-  }
-  return safeExecute('reset_quote_post_debug');
-};
-
-// Enhanced function for getting production version with better logging
-export async function getProductionVersionCode() {
-  const debugMode = isDebugMode();
-
-  if (debugMode) {
-    Log.debug('[SQL]', 'Getting production version code');
-  }
-
-  const result = await safeQueryFirst("get_version_code");
-
-  if (debugMode) {
-    if (result) {
-      Log.debug('[SQL]', `Production version: ${result.code}`);
-    } else {
-      Log.error('[SQL][DEBUG]', 'Failed to get production version code');
-    }
-  }
-
-  return result || { code: 'unknown' };
-}
-
-// Group limits funkce
-export const getUserAllLimits = (user_id) => safeQueryAll('get_user_all_limits', [user_id]);
-export const getUserGroupLimit = (user_id, group_type) => safeQueryFirst('get_user_group_limit', [user_id, group_type]);
-export const countUserPostsInTimeframe = (user_id, group_type, hours) => safeQueryFirst('count_user_posts_in_timeframe', [user_id, group_type, hours]);
-export const upsertUserGroupLimit = (user_id, group_type, max_posts, time_window_hours) => safeExecute('upsert_user_group_limit', [user_id, group_type, max_posts, time_window_hours]);
-
-/**
- * Zablokuje účet s důvodem a typem problému
- * @param {number} userId - ID uživatele
- * @param {string} reason - Důvod zablokování
- * @param {string} type - Typ problému (VIDEOSELFIE, ACCOUNT_LOCKED, atd.)
- */
-export const lockAccountWithReason = (userId, reason, type) => safeExecute('lock_account_with_reason', [reason, type, userId]);
-
-/**
- * Přidá záznam o detekci problému do log_s
- * @param {number} userId - ID uživatele
- * @param {string} reason - Důvod problému
- * @param {string} type - Typ problému
- * @param {Object} details - Dodatečné detaily (JSON)
- * @param {string} hostname - Hostname serveru
- */
-export const logAccountIssue = (userId, reason, type, details, hostname) =>
-  safeExecute('log_account_issue', [userId, reason, type, JSON.stringify(details), hostname]);
-
-/**
- * Získá statistiky zablokovaných účtů podle typu problému
- */
-export const getLockedAccountsStats = () =>
-  safeQueryAll('get_locked_accounts_stats');
-
-/**
- * Získá seznam zablokovaných účtů s detaily
- * @param {number} limit - Limit počtu záznamů
- */
-export const getLockedAccountsDetails = (limit = 50) =>
-  safeQueryAll('get_locked_accounts_details', [limit]);
-
-/**
- * Odemkne účet a přidá záznam do logu
- * @param {number} userId - ID uživatele
- * @param {string} hostname - Hostname serveru
- * @param {string} note - Poznámka k odemčení
- */
-export const unlockAccountWithLog = (userId, hostname, note = 'Manual unlock') =>
-  safeExecute('unlock_account_with_log', [userId, hostname, note]);
-
-/**
- * Zkontroluje, zda je účet zablokován a vrátí detaily
- * @param {number} userId - ID uživatele
- */
-export const checkAccountLockStatus = (userId) =>
-  safeQueryFirst('check_account_lock_status', [userId]);
-
-/**
- * Získá počet zablokovaných účtů podle typu za posledních X dní
- * @param {number} days - Počet dní zpět
- */
-export const getRecentLocksByType = (days = 7) =>
-  safeQueryAll('get_recent_locks_by_type', [days]);
-
-// Nové funkce pro správu limitů
-
-/**
- * Získá detailní informace o využití limitů pro konkrétní typ skupiny
- * @param {number} userId - ID uživatele
- * @param {string} groupType - Typ skupiny (G, GV, P, Z)
- * @returns {Promise<Object|null>} - Detailní informace o limitech
- */
-export async function getUserLimitUsageDetailed(userId, groupType) {
+export async function getUserWithAvailableActions() {
   const debugMode = isDebugMode();
 
   try {
-    const result = await safeQueryFirst('get_user_limit_usage_detailed', [
-      userId, groupType,
-      // Pro získání time_window_hours potřebujeme nejdříve získat limit
-      24, // fallback na 24 hodin pokud limit neexistuje
-      userId, groupType
-    ]);
+    // Najdi uživatele s akcemi
+    const user = await db.getUser();
+    if (!user) return null;
 
-    if (debugMode && result) {
-      Log.debug('[SQL]', `Limit usage for user ${userId}, type ${groupType}: ${result.current_posts}/${result.max_posts}, cycle: ${result.posts_available_this_cycle}`);
+    // Získej jeho akce
+    const actions = await db.getUserActions(user.id);
+    if (!actions.length) {
+      if (debugMode) {
+        Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
+      }
+      return null;
     }
 
-    return result;
+    if (debugMode) {
+      Log.debug('[SQL]', `User ${user.id} has ${actions.length} actions: ${actions.map(a => a.action_code).join(', ')}`);
+    }
+
+    return { user, actions };
+
   } catch (err) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getUserLimitUsageDetailed error: ${err.message}`);
+      Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
     }
     return null;
   }
 }
 
 /**
- * Získá všechny limity uživatele včetně aktuálního využití
- * @param {number} userId - ID uživatele
- * @returns {Promise<Array>} - Seznam všech limitů s využitím
+ * Debug funkce pro diagnostiku problémů s uživateli
  */
-export async function getUserAllLimitsWithUsage(userId) {
+export async function debugUserSelectionIssue(hostname) {
   const debugMode = isDebugMode();
 
   try {
-    const results = await safeQueryAll('get_user_all_limits_with_usage', [userId, userId]);
+    const allUsers = await safeQueryAll(SQL.users.getByHostname, [hostname]);
+    const activeUsers = allUsers.filter(u => !u.locked);
+    const readyUsers = activeUsers.filter(u => !u.next_worktime || new Date(u.next_worktime) <= new Date());
 
-    if (debugMode) {
-      Log.debug('[SQL]', `All limits for user ${userId}:`, results);
+    const results = {
+      total_users: allUsers.length,
+      active_users: activeUsers.length,
+      ready_users: readyUsers.length,
+      user_details: []
+    };
+
+    for (const user of readyUsers.slice(0, 5)) { // Check first 5 ready users
+      const actions = await db.getUserActions(user.id);
+      results.user_details.push({
+        id: user.id,
+        name: `${user.name} ${user.surname}`,
+        next_worktime: user.next_worktime,
+        available_actions: actions.length,
+        action_codes: actions.map(a => a.action_code)
+      });
     }
 
-    return results || [];
+    if (debugMode) {
+      Log.debug('[SQL]', 'User selection debug:', results);
+    }
+
+    return results;
+
   } catch (err) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getUserAllLimitsWithUsage error: ${err.message}`);
+      Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
     }
-    return [];
+    return null;
   }
 }
 
-/**
- * Optimalizovaná verze kontroly možnosti postování
- * @param {number} userId - ID uživatele
- * @param {string} groupType - Typ skupiny
- * @returns {Promise<boolean>} - True pokud může postovat
- */
-export async function canUserPostToGroupTypeOptimized(userId, groupType) {
-  const debugMode = isDebugMode();
-
-  try {
-    const result = await safeQueryFirst('can_user_post_to_group_type_optimized', [
-      userId, groupType, userId, groupType, userId, groupType
-    ]);
-
-    if (!result) {
-      if (debugMode) {
-        Log.warn('[SQL][DEBUG]', `No limit found for user ${userId}, type ${groupType}`);
-      }
-      return false;
-    }
-
-    const canPost = result.can_post === 1;
-
-    if (debugMode) {
-      Log.debug('[SQL]', `canUserPost: user=${userId}, type=${groupType}, current=${result.current_posts}/${result.max_posts}, canPost=${canPost}`);
-    }
-
-    return canPost;
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `canUserPostToGroupTypeOptimized error: ${err.message}`);
-    }
-    return false;
-  }
-}
-
-/**
- * Získá dostupné skupiny s respektováním cooldownů
- * @param {string} groupType - Typ skupiny
- * @param {number} userId - ID uživatele
- * @returns {Promise<Array>} - Seznam dostupných skupin
- */
-export async function getAvailableGroupsByTypeWithCooldown(groupType, userId) {
-  const debugMode = isDebugMode();
-
-  try {
-    const results = await safeQueryAll('get_available_groups_by_type_with_cooldown', [groupType, userId]);
-
-    if (debugMode) {
-      Log.debug('[SQL]', `Available groups for type ${groupType}, user ${userId}: ${results.length} groups`);
-    }
-
-    return results || [];
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getAvailableGroupsByTypeWithCooldown error: ${err.message}`);
-    }
-    return [];
-  }
-}
-
-/**
- * Získá akce uživatele s respektováním limitů pro kolo štěstí
- * @param {number} userId - ID uživatele
- * @returns {Promise<Array>} - Seznam dostupných akcí s upravenými váhami
- */
-export async function getUserActionsWithLimits(userId) {
-  const debugMode = isDebugMode();
-
-  try {
-    const results = await safeQueryAll('get_user_actions_with_limits', [
-      userId, userId, userId, userId
-    ]);
-
-    // Filtruj akce s nulovou váhou (blokované limity)
-    const availableActions = results.filter(action => action.effective_weight > 0);
-
-    if (debugMode) {
-      const blockedActions = results.filter(action => action.effective_weight === 0);
-      Log.debug('[SQL]', `Actions for user ${userId}: ${availableActions.length} available, ${blockedActions.length} blocked by limits`);
-
-      if (blockedActions.length > 0) {
-        Log.debug('[SQL]', `Blocked actions: ${blockedActions.map(a => a.action_code).join(', ')}`);
-      }
-    }
-
-    return availableActions;
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getUserActionsWithLimits error: ${err.message}`);
-    }
-    return [];
-  }
-}
-
-/**
- * Vypočítá kolik postů může uživatel udělat v aktuálním cyklu
- * @param {number} userId - ID uživatele
- * @param {string} groupType - Typ skupiny
- * @returns {Promise<number>} - Počet dostupných postů pro cyklus
- */
-export async function getPostsAvailableForCycle(userId, groupType) {
-  const debugMode = isDebugMode();
-
-  try {
-    const limitInfo = await getUserLimitUsageDetailed(userId, groupType);
-    if (!limitInfo) {
-      if (debugMode) {
-        Log.warn('[SQL][DEBUG]', `No limit info for user ${userId}, type ${groupType}`);
-      }
-      return 0;
-    }
-
-    const postsForCycle = limitInfo.posts_available_this_cycle || 0;
-
-    if (debugMode) {
-      Log.debug('[SQL]', `Posts available for cycle: user=${userId}, type=${groupType}, available=${postsForCycle}`);
-    }
-
-    return postsForCycle;
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getPostsAvailableForCycle error: ${err.message}`);
-    }
-    return 0;
-  }
-}
-
-/**
- * Inicializuje výchozí limity pro nového uživatele
- * @param {number} userId - ID uživatele
- * @returns {Promise<boolean>} - True pokud bylo úspěšné
- */
-export async function initializeDefaultLimitsForUser(userId) {
-  const debugMode = isDebugMode();
-
-  try {
-    const defaultLimits = [
-      { type: 'G', max_posts: 15, time_window: 24 },
-      { type: 'GV', max_posts: 1, time_window: 8 },
-      { type: 'P', max_posts: 2, time_window: 8 },
-      { type: 'Z', max_posts: 1, time_window: 48 }
-    ];
-
-    for (const limit of defaultLimits) {
-      await upsertUserGroupLimit(userId, limit.type, limit.max_posts, limit.time_window);
-    }
-
-    if (debugMode) {
-      Log.debug('[SQL]', `Default limits initialized for user ${userId}`);
-    }
-
-    return true;
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `initializeDefaultLimitsForUser error: ${err.message}`);
-    }
-    return false;
-  }
-}
-
-/**
- * Získá statistiky systému pro administrativní účely
- * @returns {Promise<Array>} - Statistiky limitů
- */
-export async function getSystemLimitStats() {
-  const debugMode = isDebugMode();
-
-  try {
-    const results = await safeQueryAll('get_system_limit_stats');
-
-    if (debugMode) {
-      Log.debug('[SQL]', 'System limit stats:', results);
-    }
-
-    return results || [];
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getSystemLimitStats error: ${err.message}`);
-    }
-    return [];
-  }
-}
-
-/**
- * Získá nedávné posty s informacemi o limitech
- * @param {number} limit - Počet záznamů
- * @returns {Promise<Array>} - Seznam nedávných postů
- */
-export async function getRecentPostsWithLimits(limit = 50) {
-  const debugMode = isDebugMode();
-
-  try {
-    const results = await safeQueryAll('get_recent_posts_with_limits', [limit]);
-
-    if (debugMode) {
-      Log.debug('[SQL]', `Recent posts with limits: ${results.length} records`);
-    }
-
-    return results || [];
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getRecentPostsWithLimits error: ${err.message}`);
-    }
-    return [];
-  }
-}
-
-/**
- * Zkontroluje a případně vytvoří chybějící limity pro uživatele
- * @param {number} userId - ID uživatele
- * @returns {Promise<boolean>} - True pokud byly limity zkontrolovány/vytvořeny
- */
-export async function ensureUserLimitsExist(userId) {
-  const debugMode = isDebugMode();
-
-  try {
-    const existingLimits = await getUserAllLimits(userId);
-    const requiredTypes = ['G', 'GV', 'P', 'Z'];
-    const existingTypes = existingLimits.map(limit => limit.group_type);
-    const missingTypes = requiredTypes.filter(type => !existingTypes.includes(type));
-
-    if (missingTypes.length > 0) {
-      if (debugMode) {
-        Log.debug('[SQL]', `Creating missing limits for user ${userId}: ${missingTypes.join(', ')}`);
-      }
-
-      const defaultValues = {
-        'G': { max_posts: 15, time_window: 24 },
-        'GV': { max_posts: 1, time_window: 8 },
-        'P': { max_posts: 2, time_window: 8 },
-        'Z': { max_posts: 1, time_window: 48 }
-      };
-
-      for (const type of missingTypes) {
-        const defaults = defaultValues[type];
-        await upsertUserGroupLimit(userId, type, defaults.max_posts, defaults.time_window);
-      }
-    }
-
-    return true;
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `ensureUserLimitsExist error: ${err.message}`);
-    }
-    return false;
-  }
-}
-
-/**
- * Aktualizuje původní canUserPostToGroupType funkci pro používání optimalizované verze
- */
-export async function canUserPostToGroupType(userId, groupType) {
-  // Ujisti se, že uživatel má nastavené limity
-  await ensureUserLimitsExist(userId);
-
-  // Použij optimalizovanou verzi
-  return await canUserPostToGroupTypeOptimized(userId, groupType);
-}
-
-/**
- * Aktualizuje původní getAvailableGroupsByType pro používání verze s cooldownem
- */
-export async function getAvailableGroupsByType(groupType, userId) {
-  return await getAvailableGroupsByTypeWithCooldown(groupType, userId);
-}
+// Export the SQL modules for direct access
+export { SQL } from './sql/queries/index.js';
