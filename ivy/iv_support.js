@@ -163,6 +163,14 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
 
   // Vložení zprávy do Facebooku ze schránky
   try {
+    // Po získání zprávy z UTIO přidej:
+    Log.info(`[${user.id}]`, 'Přepínám zpět na Facebook záložku...');
+    if (!await fbBot.bringToFront()) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se přepnout na Facebook záložku');
+      return false;
+    }
+    await wait.delay(1500 + Math.random() * 1500); // Stabilizace
+
     Log.info(`[${user.id}]`, 'Vkládám zprávu do Facebooku...');
 
     // Lidské chování - krátká pauza před začátkem

@@ -606,7 +606,7 @@ export class FacebookBot {
       throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
       Log.error('[FB] newThing()', err);
-      await this.debugFindText();
+      //await this.debugFindText();
       return false;
     }
   }
