@@ -266,18 +266,6 @@ export const ACTIONS = {
 
   // ===== QUOTE SYSTEM =====
 
-  getRandomQuote: `
-    SELECT q.id, q.text, q.author
-    FROM quotes q
-    LEFT JOIN action_log l ON l.reference_id = q.id
-      AND l.action_code = 'quote_post'
-      AND l.account_id = ?
-    WHERE (q.next_seen IS NULL OR q.next_seen <= NOW())
-      AND l.id IS NULL
-    ORDER BY RAND()
-    LIMIT 1
-  `,
-
   updateQuoteNextSeen: `
     UPDATE quotes
     SET next_seen = NOW() + INTERVAL ? DAY

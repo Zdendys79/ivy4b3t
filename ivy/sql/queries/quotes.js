@@ -47,6 +47,21 @@ export const QUOTES = {
     ORDER BY id DESC
   `,
 
+  getRandomForUser: `
+  SELECT q.id, q.text, q.author, q.hash
+  FROM quotes q
+  LEFT JOIN action_log al ON al.reference_id = q.id
+    AND al.action_code = 'quote_post'
+    AND al.account_id = ?
+  WHERE al.id IS NULL
+    AND (
+      q.next_seen IS NULL
+      OR q.next_seen <= NOW()
+    )
+  ORDER BY RAND()
+  LIMIT 1
+`,
+
   // ===== AKTUALIZACE STAVU CITÁTŮ =====
 
   markAsUsed: `
