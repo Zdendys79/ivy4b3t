@@ -316,7 +316,7 @@ export const uICommandAccepted = id => safeExecute('system.uiCommandAccepted', [
 // Quotes (používá tabulku quotes místo statements)
 export const getRandomQuote = (user_id) => safeQueryFirst('quotes.getRandomForUser', [user_id]);
 export const updateQuoteNextSeen = (quote_id, days = 7) =>
-  safeExecute('quotes.markAsUsed', [quote_id]);
+  safeExecute('quotes.markAsUsed', [days, quote_id]);
 
 // Logging
 export const systemLog = async (title, text, data = {}) => {
