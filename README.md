@@ -116,20 +116,11 @@ e:\B3projekty\ivy4b3t\.git\hooks\post-commit e:\B3.puppeteer\scripts\post-commit
 Pro instalaci a přípravu systému na Ubuntu jsou připraveny dva skripty:
 
 1️⃣ Příprava systému a Node.js
-Spusť skript install-latest-node.sh:
-
-cd ~/Sync/scripts
-bash install-latest-node.sh
-Tento skript:
-Aktualizuje systém (apt-get update && apt-get upgrade),
-Instaluje správce verzí nvm,
-Nainstaluje nejnovější verzi node a npm.
+sys-update.sh - aktualizuje systém (apt-get update && apt-get upgrade),
+Instaluje správce verzí nvm, nainstaluje nejnovější verzi node a npm.
 
 2️⃣ Instalace klienta Ivy z GitHubu
-Pro klonování a instalaci projektu Ivy použij skript install_ivy_git.sh:
-
-cd ~/Sync/scripts
-bash install_ivy_git.sh
+Pro klonování a instalaci projektu Ivy použij skript setup-ivy.sh:
 Tento skript:
 Stáhne repozitář ivy4b3t do složky ~/git/ivy4b3t,
 Zkopíruje složku ivy do cílové složky ~/ivy,
@@ -139,20 +130,7 @@ Provede npm install v cílové složce a připraví prostředí pro běh klienta
 ## ▶️ Spuštění klienta
 Po dokončení instalace spusť klienta pomocí skriptu start.sh:
 
-cd ~/ivy
-bash start.sh
-
-případně:
-chmod +x start.sh && ./start.sh
----
-
-## Zapnutí debug módu - nezavře prohlížeč při chybě na FB
-export DEBUG_KEEP_BROWSER_OPEN=true
-./start.sh
-
-## Vypnutí debug módu
-unset DEBUG_KEEP_BROWSER_OPEN
-./start.sh
+cd ~/ivy && chmod +x start.sh && ./start.sh
 
 ## 🔁 Správa verzí systému
 Při git commit se spouští post-commit hook, který volá skript git_commit_version.js. Tento skript:

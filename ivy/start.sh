@@ -6,6 +6,9 @@
 # Popis: Spuštění Ivy klienta s limitem maximálně 3 restartů během 60 sekund.
 #        Aktualizováno pro použití společného modulu git-common.sh.
 
+# spuštění na Ubuntu pomocí:
+# cd ~/ivy && chmod +x start.sh && ./start.sh
+
 # ===========================================
 # 📂 KONFIGURACE A INICIALIZACE
 # ===========================================
