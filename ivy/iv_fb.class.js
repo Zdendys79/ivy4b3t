@@ -14,6 +14,7 @@ export class FacebookBot {
     this.page = null;
     this.newThingElement = null;
     this.isInitialized = false;
+    this.pageAnalyzer = null;
   }
 
   /**
@@ -58,6 +59,14 @@ export class FacebookBot {
     }
   }
 
+  initializeAnalyzer() {
+    if (this.page && !this.page.isClosed()) {
+      this.pageAnalyzer = new PageAnalyzer(this.page);
+      Log.info('[FB]', 'PageAnalyzer inicializován');
+      return true;
+    }
+    return false;
+  }
   async bringToFront() {
     if (!this.isReady()) {
       Log.error('[FB]', 'FacebookBot není připraven pro bringToFront');
@@ -221,29 +230,139 @@ export class FacebookBot {
     // Log.info(`[FB] Text napsán: ${text}`);
   }
 
+  async _verifyTargetGroup(targetGroup) {
+    try {
+      const currentUrl = this.page.url();
+
+      // Kontrola, zda jsme ve správné skupině
+      if (!currentUrl.includes(targetGroup.fb_id)) {
+        return {
+          valid: false,
+          reason: `Nejsme ve správné skupině. Očekáváno: ${targetGroup.fb_id}, aktuální URL: ${currentUrl}`
+        };
+      }
+
+      // Analýza skupiny
+      if (this.pageAnalyzer) {
+        const groupAnalysis = await this.pageAnalyzer.analyzeFullPage({
+          includeGroupAnalysis: true
+        });
+
+        if (groupAnalysis.group && !groupAnalysis.group.canPost) {
+          return {
+            valid: false,
+            reason: 'Ve skupině není možné postovat'
+          };
+        }
+
+        if (groupAnalysis.group && !groupAnalysis.group.isMember) {
+          return {
+            valid: false,
+            reason: 'Nejste členem skupiny'
+          };
+        }
+      }
+
+      return {
+        valid: true,
+        reason: 'Skupina je validní pro postování'
+      };
+
+    } catch (err) {
+      return {
+        valid: false,
+        reason: `Chyba při ověřování skupiny: ${err.message}`
+      };
+    }
+  }
+
+  async _legacyAccountLockCheck() {
+    try {
+      return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován") ? 'account_locked' : false;
+    } catch (err) {
+      Log.error('[FB]', `Legacy account lock check failed: ${err}`);
+      return false;
+    }
+  }
+
+  async _legacyComplexityAnalysis() {
+    // Původní implementace pro zpětnou kompatibilitu
+    try {
+      const metrics = await this.page.evaluate(() => {
+        return {
+          elements: document.querySelectorAll('*').length,
+          images: document.querySelectorAll('img').length,
+          scripts: document.querySelectorAll('script').length,
+          links: document.querySelectorAll('a').length,
+          bodyText: document.body ? document.body.innerText.length : 0
+        };
+      });
+
+      const isNormal = metrics.elements > 500 &&
+        metrics.images > 10 &&
+        metrics.scripts > 20 &&
+        metrics.links > 50;
+
+      return {
+        isNormal,
+        metrics,
+        suspiciouslySimple: metrics.elements < 100 && metrics.images < 5
+      };
+
+    } catch (err) {
+      Log.error('[FB]', `Chyba při legacy analýze komplexnosti: ${err}`);
+      return { isNormal: true, metrics: null, suspiciouslySimple: false };
+    }
+  }
 
   async openFB(user) {
     try {
       await this.bringToFront();
       await this.page.goto('https://facebook.com', { waitUntil: 'domcontentloaded' });
       await wait.delay(10000, false);
-      Log.info(`[FB] Stránka Facebook načtena.`);
+
+      // Inicializuj analyzer po načtení stránky
+      this.initializeAnalyzer();
+
+      Log.info('[FB]', 'Stránka Facebook načtena, spouštím analýzu...');
+
+      // Proveď kompletní analýzu při otevření
+      if (this.pageAnalyzer) {
+        const analysis = await this.pageAnalyzer.analyzeFullPage({
+          includePostingCapability: true
+        });
+
+        Log.info('[FB]', `Analýza dokončena - stav: ${analysis.status}`);
+
+        // Zkontroluj výsledky analýzy
+        if (analysis.status === 'blocked') {
+          Log.error('[FB]', `Účet je zablokován: ${analysis.errors.patterns.reason}`);
+          return 'account_locked';
+        }
+
+        if (analysis.status === 'warning') {
+          Log.warn('[FB]', `Detekován problém: ${analysis.errors.patterns.reason}`);
+          // Pokračuj, ale s varováním
+        }
+      }
+
     } catch (err) {
-      Log.error(`[FB] Chyba při načítání stránky: ${err}`);
+      Log.error('[FB]', `Chyba při načítání stránky: ${err}`);
       return false;
     }
 
+    // Stávající logika kontroly a přihlášení
     if (await this.isAccountLocked()) {
-      Log.error(`[FB] Účet je zablokovaný.`);
+      Log.error('[FB]', 'Účet je zablokovaný.');
       return 'account_locked';
     }
 
     if (await this.isProfileLoaded(user)) {
-      Log.info(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
+      Log.info('[FB]', `Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
       return 'still_loged';
     }
 
-    Log.info(`[FB] Přihlašuji uživatele...`);
+    Log.info('[FB]', 'Přihlašuji uživatele...');
     return await this.login(user);
   }
 
@@ -303,53 +422,112 @@ export class FacebookBot {
    */
   async isAccountLocked() {
     try {
-      // 1. Nejprve zkus původní textovou detekci pro zpětnou kompatibilitu
-      const originalCheck = await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován");
-      if (originalCheck) {
-        Log.warn(`[FB] Detekován zablokovaný účet (původní detekce)`);
-        return 'account_locked'; // Zpětná kompatibilita
+      // Pokud nemáme analyzer, použij fallback
+      if (!this.pageAnalyzer) {
+        Log.warn('[FB]', 'PageAnalyzer není k dispozici, používám fallback detekci');
+        return await this._legacyAccountLockCheck();
       }
 
-      // 2. Analýza komplexnosti stránky
-      const pageComplexity = await this.analyzePageComplexity();
+      // Rychlá kontrola pomocí nového analyzeru
+      const quickCheck = await this.pageAnalyzer.quickStatusCheck();
 
-      // 3. Detekce specifických chybových textů
-      const errorDetection = await this.detectErrorPatterns();
+      if (quickCheck.hasErrors) {
+        // Detailní analýza při problémech
+        const fullAnalysis = await this.pageAnalyzer.analyzeFullPage({
+          includePostingCapability: false
+        });
 
-      // 4. Kontrola přítomnosti FB navigace
-      const hasNavigation = await this.hasStandardNavigation();
+        if (fullAnalysis.errors.hasErrors) {
+          Log.warn('[FB]', `Detekován problém s účtem: ${fullAnalysis.errors.patterns.reason || 'Neznámý problém'}`);
 
-      // Vyhodnocení výsledků
-      if (errorDetection.detected) {
-        Log.warn(`[FB] Detekován chybový stav: ${errorDetection.reason}`);
-        return {
-          locked: true,
-          reason: errorDetection.reason,
-          type: errorDetection.type
-        };
+          // Zpětná kompatibilita - vrať string pro kritické chyby
+          if (fullAnalysis.errors.severity === 'critical') {
+            return 'account_locked';
+          }
+
+          // Vrať objekt s detaily
+          return {
+            locked: true,
+            reason: fullAnalysis.errors.patterns.reason || 'Detekován problém s účtem',
+            type: fullAnalysis.errors.patterns.type || 'UNKNOWN',
+            severity: fullAnalysis.errors.severity
+          };
+        }
       }
 
-      // Pokud stránka je podezřele jednoduchá a nemá FB navigaci
-      if (!pageComplexity.isNormal && !hasNavigation) {
-        Log.warn(`[FB] Stránka je podezřele jednoduchá - možný checkpoint`);
-        return {
-          locked: true,
-          reason: 'Podezřelá jednoduchá stránka - možný checkpoint',
-          type: 'SIMPLE_PAGE'
-        };
-      }
-
-      return false; // Zpětná kompatibilita - žádný problém
+      return false; // Žádný problém
 
     } catch (err) {
-      Log.error(`[FB] Chyba při detekci zablokovaného účtu: ${err}`);
-      // Fallback na původní metodu při chybě
-      try {
-        return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován") ? 'account_locked' : false;
-      } catch (fallbackErr) {
-        Log.error(`[FB] Fallback detekce také selhala: ${fallbackErr}`);
-        return false;
+      Log.error('[FB]', `Chyba při detekci zablokovaného účtu: ${err.message}`);
+      // Fallback při chybě
+      return await this._legacyAccountLockCheck();
+    }
+  }
+
+  async verifyPostingReadiness(targetGroup = null) {
+    try {
+      if (!this.pageAnalyzer) {
+        Log.warn('[FB]', 'PageAnalyzer není k dispozici pro ověření postování');
+        return {
+          ready: false,
+          reason: 'Analyzer není dostupný'
+        };
       }
+
+      Log.info('[FB]', 'Ověřuji připravenost pro postování...');
+
+      // Základní kontrola stavu stránky
+      const quickCheck = await this.pageAnalyzer.quickStatusCheck();
+
+      if (!quickCheck.isReady) {
+        return {
+          ready: false,
+          reason: `Stránka není připravena: přihlášen=${quickCheck.isLoggedIn}, chyby=${quickCheck.hasErrors}, responsive=${quickCheck.isResponsive}`,
+          details: quickCheck
+        };
+      }
+
+      // Kontrola schopnosti postování
+      const postingCheck = await this.pageAnalyzer.verifyPostingCapability();
+
+      if (!postingCheck.canPost) {
+        return {
+          ready: false,
+          reason: postingCheck.reason,
+          pageType: postingCheck.pageType,
+          details: postingCheck
+        };
+      }
+
+      // Pokud je specifikována cílová skupina, ověř ji
+      if (targetGroup) {
+        const groupVerification = await this._verifyTargetGroup(targetGroup);
+        if (!groupVerification.valid) {
+          return {
+            ready: false,
+            reason: groupVerification.reason,
+            details: groupVerification
+          };
+        }
+      }
+
+      Log.success('[FB]', 'Stránka je připravena pro postování');
+      return {
+        ready: true,
+        reason: 'Všechny kontroly prošly úspěšně',
+        pageType: postingCheck.pageType,
+        details: {
+          quickCheck: quickCheck,
+          postingCheck: postingCheck
+        }
+      };
+
+    } catch (err) {
+      Log.error('[FB]', `Chyba při ověřování připravenosti: ${err.message}`);
+      return {
+        ready: false,
+        reason: `Chyba při ověřování: ${err.message}`
+      };
     }
   }
 
@@ -358,46 +536,17 @@ export class FacebookBot {
    * @returns {Object} Informace o komplexnosti stránky
    */
   async analyzePageComplexity() {
-    try {
-      const metrics = await this.page.evaluate(() => {
-        const elementCount = document.querySelectorAll('*').length;
-        const imageCount = document.querySelectorAll('img').length;
-        const scriptCount = document.querySelectorAll('script').length;
-        const linkCount = document.querySelectorAll('a').length;
-        const buttonCount = document.querySelectorAll('button, input[type="button"], input[type="submit"]').length;
-
-        return {
-          elements: elementCount,
-          images: imageCount,
-          scripts: scriptCount,
-          links: linkCount,
-          buttons: buttonCount,
-          bodyText: document.body ? document.body.innerText.length : 0
-        };
+    // Backwards compatibility - pokud někdo volá přímo tuto metodu
+    if (this.pageAnalyzer) {
+      const analysis = await this.pageAnalyzer.analyzeFullPage({
+        includePostingCapability: false
       });
-
-      // Normální FB stránka má obvykle:
-      // - více než 500 elementů
-      // - více než 10 obrázků
-      // - více než 20 scriptů
-      // - více než 50 odkazů
-      const isNormal = metrics.elements > 500 &&
-        metrics.images > 10 &&
-        metrics.scripts > 20 &&
-        metrics.links > 50;
-
-      Log.info(`[FB] Analýza stránky: ${metrics.elements} elementů, ${metrics.images} obrázků, komplexní: ${isNormal}`);
-
-      return {
-        isNormal,
-        metrics,
-        suspiciouslySimple: metrics.elements < 100 && metrics.images < 5
-      };
-
-    } catch (err) {
-      Log.error(`[FB] Chyba při analýze komplexnosti: ${err}`);
-      return { isNormal: true, metrics: null, suspiciouslySimple: false };
+      return analysis.complexity;
     }
+
+    // Fallback na původní implementaci
+    Log.warn('[FB]', 'Používám původní analyzePageComplexity - doporučuje se přejít na PageAnalyzer');
+    return await this._legacyComplexityAnalysis();
   }
 
   /**
@@ -1105,21 +1254,55 @@ export class FacebookBot {
   }
 
   async openGroup(group) {
-    await this.bringToFront();
-    let fbGroupUrl = "https://facebook.com/";
-    fbGroupUrl += group.typ === "P" ? "" : "groups/";
-    fbGroupUrl += group.fb_id;
-    fbGroupUrl += group.sell ? "/buy_sell_discussion" : "";
-
     try {
-      const acceptBeforeUnload = dialog => dialog.type() === "beforeunload" && dialog.accept();
-      await this.page.goto(fbGroupUrl, { waitUntil: 'networkidle2' });
-      this.page.on("dialog", acceptBeforeUnload);
-      await wait.delay(2 * wait.timeout());
-      Log.info(`[FB] Skupina otevřena: ${fbGroupUrl}`);
+      // NOVÉ - Ověření před otevřením skupiny
+      if (this.pageAnalyzer) {
+        const readinessCheck = await this.verifyPostingReadiness();
+        if (!readinessCheck.ready) {
+          Log.warn('[FB]', `Stránka není připravena pro otevření skupiny: ${readinessCheck.reason}`);
+          // Neblokuj, ale zaloguj varování
+        }
+      }
+
+      await this.bringToFront();
+
+      let fbGroupUrl = "https://facebook.com/";
+      fbGroupUrl += group.typ === "P" ? "" : "groups/";
+      fbGroupUrl += group.fb_id;
+      fbGroupUrl += group.sell ? "/selling" : "";
+
+      Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);
+
+      await this.page.goto(fbGroupUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
+      });
+
+      await wait.delay(5000 + Math.random() * 3000);
+
+      // NOVÉ - Analýza skupiny po načtení
+      if (this.pageAnalyzer) {
+        const groupAnalysis = await this.pageAnalyzer.analyzeFullPage({
+          includeGroupAnalysis: true,
+          includePostingCapability: true
+        });
+
+        Log.info('[FB]', `Analýza skupiny dokončena - stav: ${groupAnalysis.status}`);
+
+        if (groupAnalysis.group && !groupAnalysis.group.isGroup) {
+          Log.warn('[FB]', `URL neodpovídá skupině: ${groupAnalysis.group.reason}`);
+        }
+
+        if (groupAnalysis.posting && !groupAnalysis.posting.canInteract) {
+          Log.warn('[FB]', 'Ve skupině není možné interagovat');
+        }
+      }
+
+      Log.success('[FB]', `Skupina ${group.fb_id} úspěšně otevřena`);
       return true;
+
     } catch (err) {
-      Log.error(`[FB] Chyba při otevírání skupiny ${group.fb_id}: ${err}`);
+      Log.error('[FB]', `Chyba při otevírání skupiny ${group.fb_id}: ${err.message}`);
       return false;
     }
   }
@@ -1369,5 +1552,32 @@ export class FacebookBot {
   isReady() {
     return this.isInitialized && this.page && !this.page.isClosed();
   }
+
+  async getCurrentPageAnalysis(forceRefresh = false) {
+    if (!this.pageAnalyzer) {
+      Log.warn('[FB]', 'PageAnalyzer není k dispozici');
+      return null;
+    }
+
+    try {
+      return await this.pageAnalyzer.analyzeFullPage({
+        includePostingCapability: true,
+        includeGroupAnalysis: true,
+        forceRefresh: forceRefresh
+      });
+    } catch (err) {
+      Log.error('[FB]', `Chyba při získávání analýzy: ${err.message}`);
+      return null;
+    }
+  }
+
+  // NOVÁ METODA - Vyčištění cache analyzeru
+  clearAnalysisCache() {
+    if (this.pageAnalyzer) {
+      this.pageAnalyzer.clearCache();
+      Log.info('[FB]', 'Cache PageAnalyzer vyčištěna');
+    }
+  }
+
 
 }

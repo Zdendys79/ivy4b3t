@@ -65,18 +65,45 @@ export async function randomReferer() {
 
 /**
  * Získá zprávu z UTIO a vloží ji do Facebooku pomocí schránky (Ctrl+V)
- * @param {Object} user - Uživatelské data
- * @param {Object} group - Data skupiny
- * @param {Object} fbBot - FacebookBot instance
- * @param {Object} utioBot - UtioBot instance
- * @returns {string|false} Text zprávy nebo false při chybě
+ * NOVĚ: S předběžným ověřením připravenosti Facebook stránky
  */
 export async function pasteMsg(user, group, fbBot, utioBot = null) {
   let message = false;
   let cnt = 0;
 
   try {
-    // Kontrola vstupních parametrů
+    // NOVÉ - Ověření připravenosti před začátkem
+    Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost před získáním zprávy z UTIO...');
+
+    const readinessCheck = await verifyFacebookReadinessForUtio(user, group, fbBot);
+
+    if (!readinessCheck.ready) {
+      Log.error(`[${user.id}]`, `❌ Facebook není připraven: ${readinessCheck.reason}`);
+
+      if (readinessCheck.critical) {
+        return false; // Kritická chyba - ukončit
+      }
+
+      if (readinessCheck.shouldNavigate) {
+        Log.info(`[${user.id}]`, 'Pokusím se přejít do správné skupiny...');
+        const navigated = await fbBot.openGroup(group);
+        if (!navigated) {
+          Log.error(`[${user.id}]`, 'Nepodařilo se přejít do skupiny');
+          return false;
+        }
+
+        // Znovu ověř po navigaci
+        const recheckResult = await verifyFacebookReadinessForUtio(user, group, fbBot);
+        if (!recheckResult.ready) {
+          Log.error(`[${user.id}]`, `Ani po navigaci není připraveno: ${recheckResult.reason}`);
+          return false;
+        }
+      } else {
+        Log.warn(`[${user.id}]`, '⚠️ Pokračuji přes varování...');
+      }
+    }
+
+    // Kontrola vstupních parametrů (původní kód)
     if (!user || !group || !fbBot) {
       Log.error('[SUPPORT]', 'pasteMsg: Chybí povinné parametry');
       return false;
@@ -93,9 +120,15 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       return false;
     }
 
-    Log.info(`[${user.id}]`, 'Získávám zprávu z UTIO...');
+    Log.success(`[${user.id}]`, '✅ Všechny předpoklady splněny, získávám zprávu z UTIO...');
 
-    // Zkus získat zprávu z UTIO (max 5 pokusů)
+    // NOVÉ - Zapamatuj si aktuální stav před přepnutím na UTIO
+    const facebookState = {
+      url: fbBot.page.url(),
+      title: await fbBot.page.title().catch(() => 'Unknown')
+    };
+
+    // Zkus získat zprávu z UTIO (max 5 pokusů) - PŮVODNÍ KÓDNÍ LOGIKA
     do {
       Log.info(`[${user.id}]`, `Pokus ${cnt + 1}/5 - získávám zprávu z UTIO...`);
 
@@ -110,7 +143,6 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
         continue;
       }
 
-      // UTIO zkopíruje celou zprávu do schránky - použijeme celý obsah
       const fullMessage = m.join('\n').trim();
 
       if (!fullMessage || fullMessage.length === 0) {
@@ -161,15 +193,33 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     return false;
   }
 
-  // Vložení zprávy do Facebooku ze schránky
+  // NOVÉ - Ověření Facebook stavu po návratu z UTIO
   try {
-    // Po získání zprávy z UTIO přidej:
-    Log.info(`[${user.id}]`, 'Přepínám zpět na Facebook záložku...');
+    Log.info(`[${user.id}]`, '🔄 Přepínám zpět na Facebook záložku...');
+
     if (!await fbBot.bringToFront()) {
       Log.error(`[${user.id}]`, 'Nepodařilo se přepnout na Facebook záložku');
       return false;
     }
+
     await wait.delay(1500 + Math.random() * 1500); // Stabilizace
+
+    // NOVÉ - Ověř že jsme stále ve správném stavu
+    const postReturnCheck = await verifyStateAfterUtioReturn(user, group, fbBot, facebookState);
+    if (!postReturnCheck.valid) {
+      Log.error(`[${user.id}]`, `Problém po návratu z UTIO: ${postReturnCheck.reason}`);
+
+      if (postReturnCheck.shouldReload) {
+        Log.info(`[${user.id}]`, 'Pokusím se znovu načíst skupinu...');
+        const reloaded = await fbBot.openGroup(group);
+        if (!reloaded) {
+          return false;
+        }
+        await wait.delay(2000);
+      } else {
+        return false;
+      }
+    }
 
     Log.info(`[${user.id}]`, 'Vkládám zprávu do Facebooku...');
 
@@ -516,5 +566,497 @@ export async function isFacebookReady(fbBot) {
   } catch (err) {
     Log.warn('[SUPPORT]', `Chyba při kontrole Facebook stránky: ${err.message}`);
     return false;
+  }
+}
+
+/**
+ * Ověří připravenost Facebook stránky před získáním zprávy z UTIO
+ * @param {Object} user - Uživatelské data
+ * @param {Object} group - Data skupiny
+ * @param {Object} fbBot - FacebookBot instance
+ * @returns {Promise<Object>} Výsledek ověření
+ */
+export async function verifyFacebookReadinessForUtio(user, group, fbBot) {
+  try {
+    Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost Facebook stránky před UTIO operací...');
+
+    // 1. Základní kontrola FacebookBot
+    if (!fbBot || !fbBot.page || fbBot.page.isClosed()) {
+      return {
+        ready: false,
+        reason: 'FacebookBot není dostupný nebo stránka je zavřená',
+        critical: true
+      };
+    }
+
+    // 2. Kontrola URL - jsme ve správné skupině?
+    const currentUrl = fbBot.page.url();
+    if (!currentUrl.includes(group.fb_id)) {
+      return {
+        ready: false,
+        reason: `Nejsme ve správné skupině. Očekáváno: ${group.fb_id}, aktuální: ${currentUrl}`,
+        critical: true,
+        shouldNavigate: true
+      };
+    }
+
+    // 3. Použij PageAnalyzer pokud je k dispozici
+    if (fbBot.pageAnalyzer) {
+      Log.info(`[${user.id}]`, 'Používám PageAnalyzer pro detailní ověření...');
+
+      const readinessCheck = await fbBot.verifyPostingReadiness(group);
+      if (!readinessCheck.ready) {
+        return {
+          ready: false,
+          reason: readinessCheck.reason,
+          critical: readinessCheck.reason.includes('zablokován') || readinessCheck.reason.includes('restricted'),
+          details: readinessCheck.details
+        };
+      }
+
+      Log.success(`[${user.id}]`, '✅ PageAnalyzer potvrdil připravenost stránky');
+    } else {
+      // 4. Fallback ověření bez PageAnalyzer
+      Log.warn(`[${user.id}]`, 'PageAnalyzer není k dispozici, používám základní ověření...');
+
+      const basicCheck = await performBasicReadinessCheck(user, group, fbBot);
+      if (!basicCheck.ready) {
+        return basicCheck;
+      }
+    }
+
+    // 5. Ověření schopnosti postovat do konkrétní skupiny
+    const postingCheck = await verifyGroupPostingCapability(user, group, fbBot);
+    if (!postingCheck.ready) {
+      return postingCheck;
+    }
+
+    // 6. Kontrola pole pro psaní příspěvku
+    const fieldCheck = await verifyPostingField(user, fbBot);
+    if (!fieldCheck.ready) {
+      return fieldCheck;
+    }
+
+    Log.success(`[${user.id}]`, '🎯 Facebook stránka je připravena pro UTIO operaci');
+    return {
+      ready: true,
+      reason: 'Všechny kontroly prošly úspěšně',
+      group: group,
+      url: currentUrl
+    };
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při ověřování připravenosti: ${err.message}`);
+    return {
+      ready: false,
+      reason: `Chyba při ověřování: ${err.message}`,
+      critical: true
+    };
+  }
+}
+
+// NOVÁ FUNKCE - Základní ověření bez PageAnalyzer
+async function performBasicReadinessCheck(user, group, fbBot) {
+  try {
+    // Kontrola přihlášení
+    const isLoggedIn = await fbBot.isProfileLoaded(user);
+    if (!isLoggedIn) {
+      return {
+        ready: false,
+        reason: 'Uživatel není přihlášen na Facebook',
+        critical: true
+      };
+    }
+
+    // Kontrola zablokovaného účtu
+    const accountLocked = await fbBot.isAccountLocked();
+    if (accountLocked) {
+      return {
+        ready: false,
+        reason: typeof accountLocked === 'string' ? 'Účet je zablokován' : accountLocked.reason,
+        critical: true
+      };
+    }
+
+    // Kontrola základní responsiveness
+    const isResponsive = await checkPageResponsiveness(fbBot);
+    if (!isResponsive) {
+      return {
+        ready: false,
+        reason: 'Stránka neodpovídá nebo je zamrzlá',
+        critical: false
+      };
+    }
+
+    return {
+      ready: true,
+      reason: 'Základní kontroly prošly úspěšně'
+    };
+
+  } catch (err) {
+    return {
+      ready: false,
+      reason: `Chyba při základní kontrole: ${err.message}`,
+      critical: true
+    };
+  }
+}
+
+// NOVÁ FUNKCE - Ověření schopnosti postovat do skupiny
+async function verifyGroupPostingCapability(user, group, fbBot) {
+  try {
+    Log.info(`[${user.id}]`, 'Ověřuji schopnost postovat do skupiny...');
+
+    const groupStatus = await fbBot.page.evaluate(() => {
+      const bodyText = document.body.textContent.toLowerCase();
+
+      return {
+        // Kontrola členství
+        isMember: bodyText.includes('člen') || bodyText.includes('member'),
+
+        // Kontrola zda není skupina pouze pro čtení
+        isReadOnly: bodyText.includes('pouze pro čtení') ||
+                   bodyText.includes('read only') ||
+                   bodyText.includes('posting disabled'),
+
+        // Kontrola zda není čekající schválení
+        pendingApproval: bodyText.includes('čeká na schválení') ||
+                        bodyText.includes('pending approval'),
+
+        // Kontrola zda není skupina archivovaná
+        isArchived: bodyText.includes('archivovaná') ||
+                   bodyText.includes('archived'),
+
+        // Kontrola blokování ve skupině
+        isBlocked: bodyText.includes('nemůžete přispívat') ||
+                  bodyText.includes('cannot post')
+      };
+    });
+
+    if (!groupStatus.isMember) {
+      return {
+        ready: false,
+        reason: 'Nejste členem této skupiny',
+        critical: true
+      };
+    }
+
+    if (groupStatus.isReadOnly) {
+      return {
+        ready: false,
+        reason: 'Skupina je pouze pro čtení',
+        critical: true
+      };
+    }
+
+    if (groupStatus.pendingApproval) {
+      return {
+        ready: false,
+        reason: 'Členství ve skupině čeká na schválení',
+        critical: true
+      };
+    }
+
+    if (groupStatus.isArchived) {
+      return {
+        ready: false,
+        reason: 'Skupina je archivovaná',
+        critical: true
+      };
+    }
+
+    if (groupStatus.isBlocked) {
+      return {
+        ready: false,
+        reason: 'Jste blokován/a pro přispívání do této skupiny',
+        critical: true
+      };
+    }
+
+    Log.success(`[${user.id}]`, '✅ Skupina umožňuje postování');
+    return {
+      ready: true,
+      reason: 'Skupina je připravena pro postování'
+    };
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při ověřování skupiny: ${err.message}`);
+    return {
+      ready: false,
+      reason: `Chyba při ověřování skupiny: ${err.message}`,
+      critical: false
+    };
+  }
+}
+
+// NOVÁ FUNKCE - Ověření dostupnosti pole pro psaní
+async function verifyPostingField(user, fbBot) {
+  try {
+    Log.info(`[${user.id}]`, 'Ověřuji dostupnost pole pro psaní příspěvku...');
+
+    // Zkus najít pole pro psaní příspěvku
+    const postingField = await fbBot.page.evaluate(() => {
+      const selectors = [
+        '[placeholder*="Co máte na mysli"]',
+        '[placeholder*="What\'s on your mind"]',
+        '[aria-label*="příspěvek"]',
+        '[data-testid="status-attachment-mentions-input"]',
+        'div[contenteditable="true"]'
+      ];
+
+      for (const selector of selectors) {
+        const element = document.querySelector(selector);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          return {
+            found: true,
+            selector: selector,
+            visible: rect.width > 0 && rect.height > 0,
+            enabled: !element.disabled && !element.readOnly
+          };
+        }
+      }
+
+      return {
+        found: false,
+        reason: 'Pole pro psaní nenalezeno'
+      };
+    });
+
+    if (!postingField.found) {
+      return {
+        ready: false,
+        reason: 'Pole pro psaní příspěvku nenalezeno na stránce',
+        critical: true
+      };
+    }
+
+    if (!postingField.visible) {
+      return {
+        ready: false,
+        reason: 'Pole pro psaní příspěvku není viditelné',
+        critical: false
+      };
+    }
+
+    if (!postingField.enabled) {
+      return {
+        ready: false,
+        reason: 'Pole pro psaní příspěvku je zakázané',
+        critical: true
+      };
+    }
+
+    Log.success(`[${user.id}]`, `✅ Pole pro psaní je dostupné (${postingField.selector})`);
+    return {
+      ready: true,
+      reason: 'Pole pro psaní je připraveno',
+      fieldInfo: postingField
+    };
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při ověřování pole: ${err.message}`);
+    return {
+      ready: false,
+      reason: `Chyba při ověřování pole: ${err.message}`,
+      critical: false
+    };
+  }
+}
+
+// NOVÁ FUNKCE - Kontrola responsiveness stránky
+async function checkPageResponsiveness(fbBot) {
+  try {
+    // Test zda stránka odpovídá
+    await fbBot.page.evaluate(() => {
+      // Malý test interakce
+      window.scrollBy(0, 1);
+      window.scrollBy(0, -1);
+      return true;
+    });
+
+    // Zkontroluj zda není stránka zamrzlá
+    const timestamp = await fbBot.page.evaluate(() => Date.now());
+    await wait.delay(100);
+    const newTimestamp = await fbBot.page.evaluate(() => Date.now());
+
+    return newTimestamp > timestamp;
+
+  } catch (err) {
+    Log.warn('[SUPPORT]', `Kontrola responsiveness selhala: ${err.message}`);
+    return false;
+  }
+}
+
+async function verifyStateAfterUtioReturn(user, group, fbBot, originalState) {
+  try {
+    Log.info(`[${user.id}]`, 'Ověřuji stav Facebook stránky po návratu z UTIO...');
+
+    const currentUrl = fbBot.page.url();
+    const currentTitle = await fbBot.page.title().catch(() => 'Unknown');
+
+    // Kontrola zda jsme stále na správné stránce
+    if (!currentUrl.includes(group.fb_id)) {
+      return {
+        valid: false,
+        reason: `URL se změnila. Původní obsahovala: ${group.fb_id}, aktuální: ${currentUrl}`,
+        shouldReload: true
+      };
+    }
+
+    // Kontrola zda se stránka dramaticky nezměnila
+    if (Math.abs(currentTitle.length - originalState.title.length) > 50) {
+      Log.warn(`[${user.id}]`, 'Titul stránky se významně změnil');
+    }
+
+    // Rychlá kontrola dostupnosti Facebook funkcí
+    const functionsCheck = await fbBot.page.evaluate(() => {
+      try {
+        // Základní test - máme přístup k DOM?
+        const elementCount = document.querySelectorAll('*').length;
+
+        // Test - nejsou tam error zprávy?
+        const bodyText = document.body.textContent.toLowerCase();
+        const hasErrors = bodyText.includes('something went wrong') ||
+                         bodyText.includes('něco se pokazilo') ||
+                         bodyText.includes('error occurred');
+
+        return {
+          accessible: elementCount > 100,
+          hasErrors: hasErrors,
+          elementCount: elementCount
+        };
+      } catch (err) {
+        return {
+          accessible: false,
+          hasErrors: true,
+          error: err.message
+        };
+      }
+    });
+
+    if (!functionsCheck.accessible) {
+      return {
+        valid: false,
+        reason: 'Stránka není přístupná nebo má málo elementů',
+        shouldReload: true
+      };
+    }
+
+    if (functionsCheck.hasErrors) {
+      return {
+        valid: false,
+        reason: 'Na stránce jsou chybové zprávy',
+        shouldReload: true
+      };
+    }
+
+    // Kontrola zda není účet zablokován (může se stát během UTIO operace)
+    if (fbBot.pageAnalyzer) {
+      const quickCheck = await fbBot.pageAnalyzer.quickStatusCheck();
+      if (quickCheck.hasErrors) {
+        return {
+          valid: false,
+          reason: 'Detekován problém s účtem po návratu z UTIO',
+          shouldReload: false
+        };
+      }
+    }
+
+    Log.success(`[${user.id}]`, '✅ Stav Facebook stránky je v pořádku po návratu z UTIO');
+    return {
+      valid: true,
+      reason: 'Stav je konzistentní'
+    };
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při ověřování stavu: ${err.message}`);
+    return {
+      valid: false,
+      reason: `Chyba při ověřování: ${err.message}`,
+      shouldReload: true
+    };
+  }
+}
+
+/**
+ * Univerzální ověření připravenosti Facebook stránky
+ * @param {Object} user - Uživatelské data
+ * @param {Object} fbBot - FacebookBot instance
+ * @param {Object} options - Možnosti ověření
+ * @returns {Promise<Object>} Výsledek ověření
+ */
+export async function verifyFacebookReadiness(user, fbBot, options = {}) {
+  const {
+    requireSpecificGroup = null,
+    requirePostingCapability = true,
+    allowWarnings = false,
+    includeDetailedAnalysis = false
+  } = options;
+
+  try {
+    Log.info(`[${user.id}]`, '🔍 Provádím ověření připravenosti Facebook...');
+
+    // Základní kontroly
+    if (!fbBot || !fbBot.page || fbBot.page.isClosed()) {
+      return {
+        ready: false,
+        reason: 'FacebookBot není dostupný',
+        critical: true
+      };
+    }
+
+    // Použij PageAnalyzer pokud je dostupný
+    if (fbBot.pageAnalyzer && includeDetailedAnalysis) {
+      const fullAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({
+        includePostingCapability: requirePostingCapability,
+        includeGroupAnalysis: !!requireSpecificGroup
+      });
+
+      if (fullAnalysis.status === 'blocked') {
+        return {
+          ready: false,
+          reason: fullAnalysis.errors.patterns.reason || 'Účet je zablokován',
+          critical: true,
+          analysis: fullAnalysis
+        };
+      }
+
+      if (fullAnalysis.status === 'warning' && !allowWarnings) {
+        return {
+          ready: false,
+          reason: fullAnalysis.errors.patterns.reason || 'Detekováno varování',
+          critical: false,
+          analysis: fullAnalysis
+        };
+      }
+
+      if (requirePostingCapability && fullAnalysis.posting && !fullAnalysis.posting.canInteract) {
+        return {
+          ready: false,
+          reason: 'Stránka neumožňuje interakci',
+          critical: true,
+          analysis: fullAnalysis
+        };
+      }
+
+      return {
+        ready: true,
+        reason: 'Detailní analýza prošla úspěšně',
+        analysis: fullAnalysis
+      };
+    }
+
+    // Základní ověření bez detailní analýzy
+    const basicCheck = await performBasicReadinessCheck(user, requireSpecificGroup, fbBot);
+    return basicCheck;
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při ověřování připravenosti: ${err.message}`);
+    return {
+      ready: false,
+      reason: `Chyba při ověřování: ${err.message}`,
+      critical: true
+    };
   }
 }
