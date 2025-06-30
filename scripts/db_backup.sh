@@ -4,8 +4,8 @@
 # Vytvoří export struktury a dat databáze `ivy`, označí soubory verzí z tabulky `ivy.versions` (sloupec code),
 # zachová poslední 3 zálohy (starší smaže) a porovná aktuální strukturu s referenčním souborem `ivy_create_full.sql`.
 # Rozdíly zapíše do log souboru `backup_diff_{versionCode}.log`.
-# Přihlašovací údaje k DB jsou načítány z JSON souboru: /var/www/metaboost.tech/ivy/restricted/db_config.json
-# Zálohy jsou ukládány do: /var/www/metaboost.tech/ivy/restricted/backups
+# Přihlašovací údaje k DB jsou načítány z JSON souboru: /var/www/b3.web/ivy/restricted/db_config.json
+# Zálohy jsou ukládány do: /var/www/b3.web/ivy/restricted/backups
 
 # Cesty
 BACKUP_DIR="/var/www/b3.web/ivy/restricted/backups"

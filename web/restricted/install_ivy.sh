@@ -1,6 +1,6 @@
 #!/bin/bash
 # install_ivy.sh – Instalační skript pro inicializaci databáze Ivy
-# Umístění: /var/www/metaboost.tech/ivy/restricted/
+# Umístění: /var/www/b3.web/ivy/restricted/
 # Spuštění: sudo ./install_ivy.sh
 
 # Načtení přihlašovacích údajů z db_config.json

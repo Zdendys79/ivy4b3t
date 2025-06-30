@@ -391,7 +391,7 @@ VALUES
         '518000',
         'start.sh',
         'soubor',
-        'Bash skript pro opakované spouštění pupp.js',
+        'Bash skript pro opakované spouštění ivy.js',
         'done',
         1,
         NULL,
