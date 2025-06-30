@@ -341,7 +341,6 @@ async function performUtioPost(user, fbBot, group, utioBot) {
   }
 }
 
-// Pro citáty - používáme writeMsg (psaní)
 async function quotePost(user, fbBot) {
   try {
     const quote = await db.getRandomQuote(user.id);
@@ -351,6 +350,13 @@ async function quotePost(user, fbBot) {
     }
 
     Log.info(`[${user.id}]`, 'Začínám psát citát...');
+
+    // NEJDŘÍV se vrátíme na hlavní stránku Facebooku 
+    // (pokud jsme například v některé skupině)
+    if (!await navigateToHomepage(user, fbBot)) {
+      Log.error(`[${user.id}]`, 'Nepodařilo se přejít na homepage před psaním citátu.');
+      return false;
+    }
 
     const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
 
@@ -370,6 +376,57 @@ async function quotePost(user, fbBot) {
 
   } catch (err) {
     Log.error(`[${user.id}] quotePost`, err);
+    return false;
+  }
+}
+
+/**
+ * Naviguje na hlavní stránku Facebooku
+ * @param {Object} user - Uživatelská data
+ * @param {Object} fbBot - FacebookBot instance
+ * @returns {Promise<boolean>} True pokud bylo úspěšné
+ */
+async function navigateToHomepage(user, fbBot) {
+  try {
+    if (!fbBot || !fbBot.isReady()) {
+      Log.error(`[${user.id}]`, 'FacebookBot není připraven pro navigaci na homepage');
+      return false;
+    }
+
+    const currentUrl = fbBot.page.url();
+    
+    // Pokud už jsme na homepage, nemusíme navigovat
+    if (currentUrl === 'https://www.facebook.com/' || 
+        currentUrl === 'https://www.facebook.com' ||
+        currentUrl.startsWith('https://www.facebook.com/?')) {
+      Log.info(`[${user.id}]`, 'Už jsme na Facebook homepage');
+      return true;
+    }
+
+    Log.info(`[${user.id}]`, `Přecházím z ${currentUrl} na Facebook homepage...`);
+
+    // Naviguj na hlavní stránku
+    await fbBot.page.goto('https://www.facebook.com/', {
+      waitUntil: 'networkidle2',
+      timeout: 15000
+    });
+
+    // Krátká pauza pro načtení stránky
+    await wait.delay(2000 + Math.random() * 2000);
+
+    // Ověř, že jsme skutečně na homepage
+    const newUrl = fbBot.page.url();
+    if (!(newUrl === 'https://www.facebook.com/' || 
+          newUrl === 'https://www.facebook.com' ||
+          newUrl.startsWith('https://www.facebook.com/?'))) {
+      throw new Error(`Navigace neúspěšná, stále nejsme na homepage. Aktuální URL: ${newUrl}`);
+    }
+
+    Log.success(`[${user.id}]`, 'Úspěšně přešel na Facebook homepage');
+    return true;
+
+  } catch (err) {
+    Log.error(`[${user.id}] navigateToHomepage`, err);
     return false;
   }
 }
