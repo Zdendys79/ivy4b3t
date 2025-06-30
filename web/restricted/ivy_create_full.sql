@@ -322,7 +322,6 @@ CREATE TABLE `variables` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
 CREATE TABLE `versions` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(7) NOT NULL,
@@ -335,6 +334,37 @@ CREATE TABLE `versions` (
   KEY `idx_created` (`created` DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_czech_ci;
 
+CREATE TABLE IF NOT EXISTS `action_quality` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `action_code` varchar(50) NOT NULL,
+  `success` tinyint(1) NOT NULL,
+  `details` text,
+  `verification_used` tinyint(1) DEFAULT 0,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_action` (`user_id`, `action_code`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `system_metrics` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `data` json NOT NULL,
+  `timestamp` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `timestamp` (`timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `message_hashes` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `group_id` int(11) NOT NULL,
+  `hash` varchar(32) NOT NULL,
+  `preview` varchar(100),
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `group_hash` (`group_id`, `hash`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `v_locked_accounts` (`id` smallint(5) unsigned, `name` tinytext, `surname` tinytext, `host` varchar(15), `locked` datetime, `lock_reason` varchar(255), `lock_type` varchar(50), `hours_locked` bigint(21), `days_locked` bigint(21), `detection_details` longtext, `priority_level` varchar(16));
 

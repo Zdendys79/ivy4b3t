@@ -486,5 +486,85 @@ export async function storeMessage(userId, text, groupId = null) {
   }
 }
 
+/**
+ * Získá maximální počet postů pro typ skupiny
+ */
+export async function getMaxPostsForGroupType(userId, groupType) {
+  try {
+    const result = await safeQueryFirst('user_limits.getGroupTypeLimit', [userId, groupType]);
+    return result ? result.max_posts : 0;
+  } catch (err) {
+    Log.error('[SQL]', `getMaxPostsForGroupType error: ${err.message}`);
+    return 0;
+  }
+}
+
+/**
+ * Kontrola zda může uživatel postovat do typu skupiny
+ */
+export async function canUserPostToGroupType(userId, groupType) {
+  try {
+    const result = await safeQueryFirst('user_limits.checkCanPost', [userId, groupType]);
+    return result ? result.can_post > 0 : false;
+  } catch (err) {
+    Log.error('[SQL]', `canUserPostToGroupType error: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Logování kvality akcí
+ */
+export async function logActionQuality(qualityData) {
+  try {
+    const result = await safeExecute('action_quality.insert', [
+      qualityData.user_id,
+      qualityData.action_code,
+      qualityData.success ? 1 : 0,
+      qualityData.details,
+      qualityData.verification_used ? 1 : 0
+    ]);
+    return result;
+  } catch (err) {
+    Log.error('[SQL]', `logActionQuality error: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Uložení systémových metrik
+ */
+export async function saveSystemMetrics(metrics) {
+  try {
+    const result = await safeExecute('system_metrics.insert', [
+      JSON.stringify(metrics),
+      metrics.timestamp
+    ]);
+    return result;
+  } catch (err) {
+    Log.error('[SQL]', `saveSystemMetrics error: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Uložení hash zprávy
+ */
+export async function saveMessageHash(groupId, messageHash, preview) {
+  try {
+    const result = await safeExecute('message_hashes.insert', [
+      groupId,
+      messageHash,
+      preview,
+      new Date().toISOString()
+    ]);
+    return result;
+  } catch (err) {
+    Log.error('[SQL]', `saveMessageHash error: ${err.message}`);
+    return false;
+  }
+}
+
+
 // Export the SQL modules for direct access
 export { SQL } from './sql/queries/index.js';

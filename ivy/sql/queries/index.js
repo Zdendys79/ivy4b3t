@@ -12,7 +12,11 @@ import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 import { SYSTEM } from './system.js';
 import { LOGS } from './logs.js';
-import { QUOTES } from './quotes.js'; // Nový modul
+import { QUOTES } from './quotes.js';
+import userLimits from './user_limits.js';
+import actionQuality from './action_quality.js';
+import systemMetrics from './system_metrics.js';
+import messageHashes from './message_hashes.js';
 
 /**
  * Hlavní SQL objekt obsahující všechny dotazy
@@ -26,7 +30,11 @@ export const SQL = {
   limits: LIMITS,
   system: SYSTEM,
   logs: LOGS,
-  quotes: QUOTES // Nový modul pro citáty
+  quotes: QUOTES,
+  user_limits: userLimits,
+  action_quality: actionQuality,
+  system_metrics: systemMetrics,
+  message_hashes: messageHashes
 };
 
 /**

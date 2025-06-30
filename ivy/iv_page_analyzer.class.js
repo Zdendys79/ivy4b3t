@@ -9,6 +9,9 @@ import * as wait from './iv_wait.js';
 
 export class PageAnalyzer {
   constructor(page) {
+    if (!page) {
+      throw new Error('Page instance is required for PageAnalyzer');
+    }
     this.page = page;
     this.lastAnalysis = null;
     this.analysisCache = new Map();
@@ -199,7 +202,7 @@ export class PageAnalyzer {
   async _performBasicAnalysis() {
     try {
       const url = this.page.url();
-      const title = await this.page.title();
+      const title = await this._safeGetPageTitle();
       const isLoggedIn = await this._checkLoginStatus();
       const pageType = this._determinePageType(url);
 
@@ -220,6 +223,18 @@ export class PageAnalyzer {
         isLoggedIn: false,
         loadTime: Date.now()
       };
+    }
+  }
+
+  async _safeGetPageTitle() {
+    try {
+      if (!this.page || this.page.isClosed()) {
+        return 'Page not available';
+      }
+      return await this.page.title();
+    } catch (err) {
+      Log.warn('[ANALYZER]', `Cannot get page title: ${err.message}`);
+      return 'Title unavailable';
     }
   }
 
@@ -660,15 +675,15 @@ export class PageAnalyzer {
       const groupStatus = await this.page.evaluate(() => {
         // Kontrola členství
         const isMember = document.body.textContent.includes('člen') ||
-                         document.body.textContent.includes('member');
+          document.body.textContent.includes('member');
 
         // Kontrola možnosti psát příspěvek
         const canPost = document.querySelector('[placeholder*="Co máte na mysli"]') !== null ||
-                        document.querySelector('[aria-label*="příspěvek"]') !== null;
+          document.querySelector('[aria-label*="příspěvek"]') !== null;
 
         // Kontrola zda není skupina pouze pro čtení
         const isReadOnly = document.body.textContent.includes('pouze pro čtení') ||
-                          document.body.textContent.includes('read only');
+          document.body.textContent.includes('read only');
 
         return {
           isMember: isMember,
@@ -716,7 +731,7 @@ export class PageAnalyzer {
       const profileStatus = await this.page.evaluate(() => {
         const hasPostField = document.querySelector('[placeholder*="Co máte na mysli"]') !== null;
         const isOwnProfile = document.body.textContent.includes('Váš profil') ||
-                            document.querySelector('[aria-label="Váš profil"]') !== null;
+          document.querySelector('[aria-label="Váš profil"]') !== null;
 
         return {
           hasPostField: hasPostField,
@@ -749,7 +764,7 @@ export class PageAnalyzer {
       const pageStatus = await this.page.evaluate(() => {
         const hasPostField = document.querySelector('[placeholder*="Co máte na mysli"]') !== null;
         const isAdmin = document.body.textContent.includes('spravovat') ||
-                       document.body.textContent.includes('admin');
+          document.body.textContent.includes('admin');
 
         return {
           hasPostField: hasPostField,

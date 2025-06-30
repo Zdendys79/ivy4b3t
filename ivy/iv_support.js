@@ -1060,3 +1060,13 @@ export async function verifyFacebookReadiness(user, fbBot, options = {}) {
     };
   }
 }
+
+export {
+  verifyFacebookReadinessForUtio,
+  verifyStateAfterUtioReturn,
+  performBasicReadinessCheck,
+  verifyGroupPostingCapability,
+  verifyPostingField,
+  checkPageResponsiveness,
+  verifyFacebookReadiness
+};
