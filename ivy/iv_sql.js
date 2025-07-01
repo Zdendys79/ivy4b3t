@@ -276,42 +276,6 @@ export async function initializeDatabase() {
 }
 
 // =========================================================
-// LEGACY COMPATIBILITY (postupně odstraníme)
-// =========================================================
-
-/**
- * @deprecated Použij db.canUserPost() místo toho
- */
-export async function canUserPostToGroupType(userId, groupType) {
-  Log.warn('[SQL]', 'canUserPostToGroupType is deprecated, use db.canUserPost() instead');
-  return await db.canUserPost(userId, groupType);
-}
-
-/**
- * @deprecated Použij db.getUserWithAvailableActions() místo toho  
- */
-export async function getUserWithAvailableActions() {
-  Log.warn('[SQL]', 'getUserWithAvailableActions is deprecated, use db.getUserWithAvailableActions() instead');
-  return await db.getUserWithAvailableActions();
-}
-
-/**
- * @deprecated Použij db.verifyMessageAdvanced() místo toho
- */
-export async function verifyMsg(groupId, messageHash) {
-  Log.warn('[SQL]', 'verifyMsg is deprecated, use db.verifyMessageAdvanced() instead');
-  return await db.verifyMessageAdvanced(groupId, messageHash);
-}
-
-/**
- * @deprecated Použij db.storeMessageAdvanced() místo toho
- */
-export async function storeMessage(userId, text, groupId = null) {
-  Log.warn('[SQL]', 'storeMessage is deprecated, use db.storeMessageAdvanced() instead');
-  return await db.storeMessageAdvanced(userId, text, groupId);
-}
-
-// =========================================================
 // EXPORTS
 // =========================================================
 
