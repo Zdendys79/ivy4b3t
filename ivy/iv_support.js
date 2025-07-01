@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Název souboru: iv_support.js
  * Umístění: ~/ivy/iv_support.js
  *
@@ -41,7 +41,7 @@ export async function addMeToGroup(user, group, fbBot) {
 /**
  * Zvýšení denního limitu uživatele
  */
-export async function increase_user_limit(user) {
+export async function increaseUserLimit(user) {
   let nowDate = new Date();
   const tzoffset = nowDate.getTimezoneOffset();
   nowDate = new Date(nowDate.getTime() + (tzoffset * 60 * 1000));
@@ -60,7 +60,7 @@ export async function increase_user_limit(user) {
 /**
  * Snížení denního limitu uživatele
  */
-export async function decrease_user_limit(user) {
+export async function dedecreaseUserLimitser) {
   let new_limit = Math.floor(2 * user.day_limit / 3);
   if (new_limit < 3) new_limit = 3;
 

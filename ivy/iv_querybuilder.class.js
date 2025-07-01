@@ -50,6 +50,15 @@ export class QueryBuilder {
     return await this.safeExecute('users.updateWorktime', [minutes, userId]);
   }
 
+  async setUserLimit(userId, dayLimit) {
+    return await this.safeExecute('users.setLimit', [dayLimit, userId]);
+  }
+
+  async updateUserAddGroup(user, groupId) {
+    const userId = typeof user === 'object' ? user.id : user;
+    return await this.safeExecute('users.updateLastAddGroup', [userId]);
+  }
+
   // =========================================================
   // ACTIONS - Správa akcí a plánování
   // =========================================================
@@ -412,12 +421,12 @@ export class QueryBuilder {
   validateSQLModules() {
     const requiredModules = ['users', 'actions', 'groups', 'limits', 'system', 'quotes', 'logs'];
     const missing = requiredModules.filter(module => !this.SQL[module]);
-    
+
     if (missing.length > 0) {
       Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
       return false;
     }
-    
+
     return true;
   }
 }
