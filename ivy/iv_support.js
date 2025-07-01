@@ -1067,6 +1067,5 @@ export {
   performBasicReadinessCheck,
   verifyGroupPostingCapability,
   verifyPostingField,
-  checkPageResponsiveness,
-  verifyFacebookReadiness
+  checkPageResponsiveness  
 };
