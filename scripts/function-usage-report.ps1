@@ -133,9 +133,9 @@ foreach ($file in $jsFiles) {
     
     foreach ($patternName in $definitionPatterns.Keys) {
         $pattern = $definitionPatterns[$patternName]
-        $matches = [regex]::Matches($content, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        $foundMatches = [regex]::Matches($content, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
         
-        foreach ($match in $matches) {
+        foreach ($match in $foundMatches) {
             $functionName = $match.Groups[1].Value
             
             # Skip common patterns that aren't real functions
@@ -179,9 +179,9 @@ foreach ($file in $jsFiles) {
     
     foreach ($patternName in $usagePatterns.Keys) {
         $pattern = $usagePatterns[$patternName]
-        $matches = [regex]::Matches($content, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
+        $foundMatches = [regex]::Matches($content, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline)
         
-        foreach ($match in $matches) {
+        foreach ($match in $foundMatches) {
             $usedName = $match.Groups[1].Value
             
             # Skip common words and keywords
