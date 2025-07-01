@@ -5,7 +5,6 @@
  */
 
 import { Log } from './iv_log.class.js';
-import * as wait from './iv_wait.js';
 
 export class PageAnalyzer {
   constructor(page) {

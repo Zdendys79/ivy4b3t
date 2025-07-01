@@ -11,10 +11,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'readline';
 import puppeteer from 'puppeteer';
-import * as wait from './iv_wait.js';
+
 import { db } from './iv_sql.js'
 import { FacebookBot } from './iv_fb.class.js';
 import { Log } from './iv_log.class.js';
+
+import * as wait from './iv_wait.js';
 
 const isLinux = process.platform === 'linux';
 const hostname = os.hostname();

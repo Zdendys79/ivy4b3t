@@ -7,7 +7,6 @@
  */
 
 import { db } from './iv_sql.js'
-import * as wait from './iv_wait.js';
 
 export async function getAvailableActions(user) {
   const rows = await db.getAvailableActions(user.id);

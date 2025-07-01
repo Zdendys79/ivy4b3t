@@ -8,6 +8,7 @@
 
 import fs from 'fs';
 import path from 'path';
+
 import { Log } from './iv_log.class.js';
 
 const CONFIG_PATH = path.resolve('./config.json');

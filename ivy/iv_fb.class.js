@@ -1,9 +1,11 @@
 // iv_fb.class.js – Refaktorovaná verze
 
-import * as wait from './iv_wait.js';
-import { Log } from './iv_log.class.js';
 import path from 'path';
 import fs from 'fs';
+
+import { Log } from './iv_log.class.js';
+
+import * as wait from './iv_wait.js';
 
 const CONFIG_PATH = path.resolve('./config.json');
 const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));

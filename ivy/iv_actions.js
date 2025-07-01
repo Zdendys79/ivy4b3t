@@ -7,13 +7,11 @@
  *        Přepracováno pro opakování akcí s respektováním user_group_limits.
  */
 
-import { db } from './iv_sql.js'
 import * as wait from './iv_wait.js';
 import * as support from './iv_support.js';
 import * as fbSupport from './iv_facebook_support.js';
-import { IvMath } from './iv_math.class.js';
+import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
-import { isDebugMode } from './iv_debug.js';
 
 /**
  * Určuje požadavky konkrétní akce na služby (Facebook, UTIO)

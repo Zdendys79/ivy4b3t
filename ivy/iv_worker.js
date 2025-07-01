@@ -17,7 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'node:os';
 import puppeteer from 'puppeteer';
-import * as wait from './iv_wait.js';
+
 import { db } from './iv_sql.js'
 import { FacebookBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
@@ -26,6 +26,8 @@ import { getRandomAction } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
 import { IvMath } from './iv_math.class.js';
+
+import * as wait from './iv_wait.js';
 
 const isLinux = process.platform === 'linux';
 const hostname = os.hostname();
