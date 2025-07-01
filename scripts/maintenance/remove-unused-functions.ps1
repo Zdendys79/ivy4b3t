@@ -6,7 +6,7 @@
 #              Performs double-check search and asks user confirmation for each function
 
 param(
-    [string]$ReportPath = "function-usage-report.xml",
+    [string]$ReportPath = "../function-usage-report.xml",
     [string]$ProjectPath = "../../ivy",
     [switch]$DryRun = $false,
     [switch]$AutoConfirm = $false
