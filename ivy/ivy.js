@@ -9,15 +9,18 @@
  * - volá pracovní smyčku (iv_worker.tick)
  */
 
+// Node.js API - default imports
 import os from 'node:os';
-import * as wait from './iv_wait.js';
+
+// Local modules - named imports (UPDATED)
+import { delay } from './iv_wait.js';
 import { db } from './iv_sql.js'
-import * as version from './iv_version.js';
-import * as worker from './iv_worker.js';
+import { get as getVersion } from './iv_version.js';
+import { tick as workerTick } from './iv_worker.js';
 import { Log } from './iv_log.class.js';
 
 const hostname = os.hostname();
-const versionCode = version.get();
+const versionCode = getVersion();
 
 Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode}`);
@@ -31,11 +34,11 @@ Log.info('[IVY]', `Verze klienta: ${versionCode}`);
         Log.info(`[IVY] Rozdílná verze: DB=${dbVersion.code}, Lokálně=${versionCode}. Ukončuji.`);
         process.exit(1);
       }
-      await worker.tick();
-      await wait.delay(60000);
+      await workerTick();
+      await delay(60000);
     } catch (err) {
       Log.error('[IVY]', err);
-      await wait.delay(60000);
+      await delay(60000);
     }
   }
 })();
