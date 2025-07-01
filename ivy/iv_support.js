@@ -8,7 +8,7 @@
  */
 
 import * as wait from './iv_wait.js';
-import * as db from './iv_sql.js';
+import { db } from './iv_sql.js'
 import md5 from 'md5';
 import { Log } from './iv_log.class.js';
 

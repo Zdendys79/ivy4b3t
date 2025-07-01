@@ -11,7 +11,7 @@
 
 import os from 'node:os';
 import * as wait from './iv_wait.js';
-import * as db from './iv_sql.js';
+import { db } from './iv_sql.js'
 import * as version from './iv_version.js';
 import * as worker from './iv_worker.js';
 import { Log } from './iv_log.class.js';

@@ -6,7 +6,7 @@
  * Spravuje plánování aktivit na základě tabulek `action_definitions` a `user_action_plan`.
  */
 
-import * as db from './iv_sql.js';
+import { db } from './iv_sql.js'
 import * as wait from './iv_wait.js';
 
 export async function getAvailableActions(user) {

@@ -10,7 +10,7 @@
  * - Podpora pro opakované akce
  */
 
-import * as db from './iv_sql.js';
+import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';
 

@@ -1,19 +1,22 @@
 /**
- * Název souboru: iv_sql.js (kompletně přepracovaná verze)
+ * Název souboru: iv_sql.js (vyčištěná verze)
  * Umístění: ~/ivy/iv_sql.js
  *
- * Popis: Modernizovaná databázová vrstva s modulárními SQL dotazy
- * Používá pouze novou modulární strukturu, žádné legacy dotazy
+ * Popis: Databázové připojení a core funkce
+ * QueryBuilder je nyní v samostatném souboru iv_querybuilder.class.js
  */
 
-import os from 'node:os';
 import fs from 'node:fs';
 import mysql from 'mysql2/promise';
-import { SQL, QueryUtils } from './sql/queries/index.js';
+import { QueryUtils } from './sql/queries/index.js';
+import { QueryBuilder } from './iv_querybuilder.class.js';
 import { Log } from './iv_log.class.js';
 import { isDebugMode } from './iv_debug.js';
 
-const hostname = os.hostname();
+// =========================================================
+// DATABASE CONNECTION SETUP
+// =========================================================
+
 const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
 
 const pool = mysql.createPool({
@@ -23,13 +26,18 @@ const pool = mysql.createPool({
   database: sql_setup.database,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  acquireTimeout: 60000,
+  timeout: 60000
 });
 
 // =========================================================
 // CORE DATABASE FUNCTIONS
 // =========================================================
 
+/**
+ * Hlavní funkce pro vykonání SQL dotazu
+ */
 async function executeQuery(queryPath, params = []) {
   const debugMode = isDebugMode();
   const query = QueryUtils.getQuery(queryPath);
@@ -69,6 +77,9 @@ async function executeQuery(queryPath, params = []) {
   }
 }
 
+/**
+ * Bezpečné vykonání dotazu s očekáváním prvního řádku
+ */
 async function safeQueryFirst(queryPath, params = []) {
   const debugMode = isDebugMode();
 
@@ -100,6 +111,9 @@ async function safeQueryFirst(queryPath, params = []) {
   }
 }
 
+/**
+ * Bezpečné vykonání dotazu s očekáváním více řádků
+ */
 async function safeQueryAll(queryPath, params = []) {
   const debugMode = isDebugMode();
 
@@ -126,6 +140,9 @@ async function safeQueryAll(queryPath, params = []) {
   }
 }
 
+/**
+ * Bezpečné vykonání dotazu bez očekávání výsledku (INSERT, UPDATE, DELETE)
+ */
 async function safeExecute(queryPath, params = []) {
   const debugMode = isDebugMode();
 
@@ -160,411 +177,146 @@ async function safeExecute(queryPath, params = []) {
 }
 
 // =========================================================
-// MODERN QUERY BUILDER
-// =========================================================
-
-export class QueryBuilder {
-  constructor() {
-    this.SQL = SQL;
-  }
-
-  // Users
-  async getUser(hostname = hostname) {
-    return await safeQueryFirst('users.getByHostname', [hostname]);
-  }
-
-  async getUserById(id) {
-    return await safeQueryFirst('users.getById', [id]);
-  }
-
-  async lockUser(id) {
-    return await safeExecute('users.lock', [id]);
-  }
-
-  async unlockUser(id) {
-    return await safeExecute('users.unlock', [id]);
-  }
-
-  // Actions
-  async getUserActions(userId) {
-    return await safeQueryAll('actions.getUserActions', [userId, userId]);
-  }
-
-  async getUserActionsWithLimits(userId) {
-    // Dočasně použijeme zjednodušenou verzi kvůli SQL syntaxi problémům
-    return await safeQueryAll('actions.getUserActionsWithLimitsSimple', [userId, userId]);
-  }
-
-  async logAction(accountId, actionCode, referenceId, text) {
-    return await safeExecute('actions.logAction', [accountId, actionCode, referenceId, text]);
-  }
-
-  async updateActionPlan(userId, actionCode, minutes) {
-    return await safeExecute('actions.updatePlan', [minutes, userId, actionCode]);
-  }
-
-  // Limits
-  async getUserLimit(userId, groupType) {
-    return await safeQueryFirst('limits.getUserLimit', [userId, groupType]);
-  }
-
-  async getUserAllLimitsWithUsage(userId) {
-    return await safeQueryAll('limits.getUserAllLimitsWithUsage', [userId, userId]);
-  }
-
-  async canUserPost(userId, groupType) {
-    const limit = await this.getUserLimit(userId, groupType);
-    if (!limit) return false;
-
-    // Použijeme existující dotaz countPostsInTimeframe
-    const postCount = await safeQueryFirst('limits.countPostsInTimeframe', [
-      userId, groupType, limit.time_window_hours
-    ]);
-
-    const currentPosts = postCount ? postCount.post_count : 0;
-    return currentPosts < limit.max_posts;
-  }
-
-  // Groups
-  async getGroupById(id) {
-    return await safeQueryFirst('groups.getById', [id]);
-  }
-
-  async getAvailableGroups(groupType, userId) {
-    return await safeQueryAll('groups.getAvailableByType', [groupType, userId]);
-  }
-
-  // System
-  async heartbeat(userId = 0, groupId = 0, version = 'unknown') {
-    return await safeExecute('system.heartbeat', [
-      hostname, userId, groupId, version, userId, groupId, version
-    ]);
-  }
-
-  async getVersionCode() {
-    return await safeQueryFirst('system.getVersionCode');
-  }
-}
-
-// Instance query builderu pro přímé použití
-export const db = new QueryBuilder();
-
-// =========================================================
-// MODERNIZED EXPORTS (bez legacy závislostí)
-// =========================================================
-
-// Základní systémové funkce
-export const getUser = () => safeQueryFirst('users.getByHostname', [hostname]);
-export const getUserById = user_id => safeQueryFirst('users.getById', [user_id]);
-export const getUsersByHostname = () => safeQueryAll('users.getAllByHostname', [hostname]);
-
-// Action system
-export const getUserActions = user_id => safeQueryAll('actions.getUserActions', [user_id, user_id]);
-export const getUserActionsWithLimits = user_id => safeQueryAll('actions.getUserActionsWithLimitsSimple', [user_id, user_id]);
-export const updateUserActionPlan = (user_id, action_code, randMinutes) =>
-  safeExecute('actions.updatePlan', [randMinutes, user_id, action_code]);
-export const initUserActionPlan = (user_id) => safeExecute('actions.initPlan', [user_id]);
-export const logUserAction = (account_id, action_code, reference_id, text) =>
-  safeExecute('actions.logAction', [account_id, action_code, reference_id, text]);
-
-// Group limits
-export const getUserGroupLimit = (user_id, group_type) =>
-  safeQueryFirst('limits.getUserLimit', [user_id, group_type]);
-export const getUserAllLimitsWithUsage = (user_id) =>
-  safeQueryAll('limits.getUserAllLimitsWithUsage', [user_id, user_id]);
-export const countUserPostsInTimeframe = (user_id, group_type, hours) =>
-  safeQueryFirst('limits.countPostsInTimeframe', [user_id, group_type, hours]);
-export const upsertUserGroupLimit = (user_id, group_type, max_posts, time_window_hours) =>
-  safeExecute('limits.upsertLimit', [user_id, group_type, max_posts, time_window_hours]);
-
-// User management
-export const lockAccount = (user_id) => safeExecute('users.lock', [user_id]);
-export const updateUserWorktime = async (user, minutes) => {
-  const user_id = typeof user === 'object' ? user.id : user;
-  const result = await safeExecute('users.updateWorktime', [minutes, user_id]);
-
-  if (result) {
-    const hours = Math.round(minutes / 60 * 100) / 100;
-    const action_code = minutes > 1440 ? 'account_sleep' : 'account_delay';
-    const text = `${action_code === 'account_sleep' ? 'Sleep' : 'Delay'} na ${hours}h`;
-    await logUserAction(user_id, action_code, minutes.toString(), text);
-  }
-
-  return result;
-};
-
-// Groups
-export const getGroupById = (group_id) => safeQueryFirst('groups.getById', [group_id]);
-export const getAvailableGroupsByType = (group_type, user_id) =>
-  safeQueryAll('groups.getAvailableByType', [group_type, user_id]);
-export const updateGroupLastSeen = (group_id) => safeExecute('groups.updateLastSeen', [group_id]);
-export const updateGroupNextSeen = (group_id, minutes) =>
-  safeExecute('groups.updateNextSeen', [group_id, minutes]);
-
-// System functions
-export const heartBeat = async (user_id = 0, group_id = 0, version_code = 'unknown') => {
-  return await safeExecute('system.heartbeat', [
-    hostname, user_id, group_id, version_code, user_id, group_id, version_code
-  ]);
-};
-
-export const getVersionCode = () => safeQueryFirst('system.getVersionCode');
-export const getUICommand = () => safeQueryFirst('system.getUICommand', [hostname]);
-export const uICommandSolved = id => safeExecute('system.uiCommandSolved', [id]);
-export const uICommandAccepted = id => safeExecute('system.uiCommandAccepted', [id]);
-
-// Quotes (používá tabulku quotes místo statements)
-export const getRandomQuote = (user_id) => safeQueryFirst('quotes.getRandomForUser', [user_id]);
-export const updateQuoteNextSeen = (quote_id, days = 7) =>
-  safeExecute('quotes.markAsUsed', [days, quote_id]);
-
-// Logging
-export const systemLog = async (title, text, data = {}) => {
-  return await safeExecute('logs.insertSystemLog', [
-    hostname, title, text, JSON.stringify(data)
-  ]);
-};
-
-export const userLog = async (user, action_code, reference_id, text) => {
-  const user_id = typeof user === 'object' ? user.id : user;
-  return await logUserAction(user_id, action_code, reference_id, text);
-};
-
-// URLs and utilities
-export const loadUrl = () => safeQueryFirst('system.loadUrl');
-export const useUrl = (url) => safeExecute('system.useUrl', [url]);
-export const getRandomReferer = () => safeQueryFirst('system.getRandomReferer');
-
-// =========================================================
-// ENHANCED FUNCTIONS (nové funkce s modernější logikou)
+// CONNECTION UTILITIES
 // =========================================================
 
 /**
- * Moderní verze canUserPostToGroupType s lepší logikou
+ * Test databázového připojení
+ */
+export async function testConnection() {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    Log.info('[SQL]', 'Database connection test successful');
+    return true;
+  } catch (err) {
+    Log.error('[SQL]', `Database connection test failed: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Uzavření databázového poolu
+ */
+export async function closeConnection() {
+  try {
+    await pool.end();
+    Log.info('[SQL]', 'Database connection pool closed');
+    return true;
+  } catch (err) {
+    Log.error('[SQL]', `Error closing database connection: ${err.message}`);
+    return false;
+  }
+}
+
+/**
+ * Získání statistik připojení
+ */
+export function getConnectionStats() {
+  return {
+    config: {
+      host: sql_setup.host,
+      database: sql_setup.database,
+      connectionLimit: 10
+    },
+    pool: {
+      activeConnections: pool._allConnections ? pool._allConnections.length : 0,
+      freeConnections: pool._freeConnections ? pool._freeConnections.length : 0,
+      queuedRequests: pool._connectionQueue ? pool._connectionQueue.length : 0
+    }
+  };
+}
+
+// =========================================================
+// QUERY BUILDER INSTANCE
+// =========================================================
+
+/**
+ * Hlavní instance QueryBuilder s předanými safe funkcemi
+ */
+export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute);
+
+// =========================================================
+// VALIDATION AND STARTUP
+// =========================================================
+
+/**
+ * Inicializace a validace databázového připojení
+ */
+export async function initializeDatabase() {
+  const debugMode = isDebugMode();
+  
+  try {
+    // Test připojení
+    const connectionOk = await testConnection();
+    if (!connectionOk) {
+      throw new Error('Database connection failed');
+    }
+
+    // Validace SQL modulů
+    const modulesOk = db.validateSQLModules();
+    if (!modulesOk) {
+      throw new Error('SQL modules validation failed');
+    }
+
+    if (debugMode) {
+      const stats = getConnectionStats();
+      Log.debug('[SQL]', 'Database initialized:', stats);
+      Log.debug('[SQL]', 'QueryBuilder stats:', db.getStats());
+    }
+
+    Log.info('[SQL]', 'Database initialization successful');
+    return true;
+
+  } catch (err) {
+    Log.error('[SQL]', `Database initialization failed: ${err.message}`);
+    return false;
+  }
+}
+
+// =========================================================
+// LEGACY COMPATIBILITY (postupně odstraníme)
+// =========================================================
+
+/**
+ * @deprecated Použij db.canUserPost() místo toho
  */
 export async function canUserPostToGroupType(userId, groupType) {
+  Log.warn('[SQL]', 'canUserPostToGroupType is deprecated, use db.canUserPost() instead');
   return await db.canUserPost(userId, groupType);
 }
 
 /**
- * Kombinovaná funkce pro získání uživatele s akcemi
+ * @deprecated Použij db.getUserWithAvailableActions() místo toho  
  */
 export async function getUserWithAvailableActions() {
-  const debugMode = isDebugMode();
-
-  try {
-    // Najdi uživatele s akcemi
-    const user = await db.getUser();
-    if (!user) return null;
-
-    // Získej jeho akce
-    const actions = await db.getUserActions(user.id);
-    if (!actions.length) {
-      if (debugMode) {
-        Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
-      }
-      return null;
-    }
-
-    if (debugMode) {
-      Log.debug('[SQL]', `User ${user.id} has ${actions.length} actions: ${actions.map(a => a.action_code).join(', ')}`);
-    }
-
-    return { user, actions };
-
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
-    }
-    return null;
-  }
+  Log.warn('[SQL]', 'getUserWithAvailableActions is deprecated, use db.getUserWithAvailableActions() instead');
+  return await db.getUserWithAvailableActions();
 }
 
 /**
- * Debug funkce pro diagnostiku problémů s uživateli
- */
-export async function debugUserSelectionIssue(hostname) {
-  const debugMode = isDebugMode();
-
-  try {
-    const allUsers = await safeQueryAll('users.getAllByHostname', [hostname]);
-    const activeUsers = allUsers.filter(u => !u.locked);
-    const readyUsers = activeUsers.filter(u => !u.next_worktime || new Date(u.next_worktime) <= new Date());
-
-    const results = {
-      total_users: allUsers.length,
-      active_users: activeUsers.length,
-      ready_users: readyUsers.length,
-      user_details: []
-    };
-
-    for (const user of readyUsers.slice(0, 5)) { // Check first 5 ready users
-      const actions = await db.getUserActions(user.id);
-      results.user_details.push({
-        id: user.id,
-        name: `${user.name} ${user.surname}`,
-        next_worktime: user.next_worktime,
-        available_actions: actions.length,
-        action_codes: actions.map(a => a.action_code)
-      });
-    }
-
-    if (debugMode) {
-      Log.debug('[SQL]', 'User selection debug:', results);
-    }
-
-    return results;
-
-  } catch (err) {
-    if (debugMode) {
-      Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
-    }
-    return null;
-  }
-}
-
-// Přidat na konec souboru iv_sql.js, před export { SQL }
-
-/**
- * Kontrola duplicity zprávy podle MD5 hash
+ * @deprecated Použij db.verifyMessageAdvanced() místo toho
  */
 export async function verifyMsg(groupId, messageHash) {
-  const debugMode = isDebugMode();
-
-  try {
-    if (debugMode) {
-      Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
-    }
-
-    // Pouze porovnáváme hash z parametru s hashem v databázi
-    const result = await safeQueryFirst('quotes.findByHash', [messageHash]);
-
-    if (result) {
-      if (debugMode) {
-        Log.debug('[SQL]', `Found duplicate message with hash ${messageHash.substring(0, 8)} (ID: ${result.id})`);
-      }
-
-      return { c: 1, id: result.id };
-    }
-
-    if (debugMode) {
-      Log.debug('[SQL]', `No duplicate found for hash ${messageHash.substring(0, 8)}`);
-    }
-
-    return { c: 0 };
-
-  } catch (err) {
-    Log.error('[SQL]', `verifyMsg error: ${err.message}`);
-    return { c: 0 };
-  }
+  Log.warn('[SQL]', 'verifyMsg is deprecated, use db.verifyMessageAdvanced() instead');
+  return await db.verifyMessageAdvanced(groupId, messageHash);
 }
 
+/**
+ * @deprecated Použij db.storeMessageAdvanced() místo toho
+ */
 export async function storeMessage(userId, text, groupId = null) {
-  const debugMode = isDebugMode();
-
-  try {
-    if (debugMode) {
-      Log.debug('[SQL]', `Storing message: user ${userId}, text length: ${text.length}`);
-    }
-
-    // Hash se automaticky vygeneruje triggerem quotes_before_insert
-    const result = await safeExecute('quotes.insertQuote', [
-      userId,
-      text,
-      null // author
-    ]);
-
-    if (debugMode) {
-      Log.debug('[SQL]', `Message stored successfully`);
-    }
-
-    return result;
-
-  } catch (err) {
-    Log.error('[SQL]', `storeMessage error: ${err.message}`);
-    return false;
-  }
+  Log.warn('[SQL]', 'storeMessage is deprecated, use db.storeMessageAdvanced() instead');
+  return await db.storeMessageAdvanced(userId, text, groupId);
 }
 
-/**
- * Získá maximální počet postů pro typ skupiny
- */
-export async function getMaxPostsForGroupType(userId, groupType) {
-  try {
-    const result = await safeQueryFirst('user_limits.getGroupTypeLimit', [userId, groupType]);
-    return result ? result.max_posts : 0;
-  } catch (err) {
-    Log.error('[SQL]', `getMaxPostsForGroupType error: ${err.message}`);
-    return 0;
-  }
-}
-
-/**
- * Kontrola zda může uživatel postovat do typu skupiny
- */
-export async function canUserPostToGroupType(userId, groupType) {
-  try {
-    const result = await safeQueryFirst('user_limits.checkCanPost', [userId, groupType]);
-    return result ? result.can_post > 0 : false;
-  } catch (err) {
-    Log.error('[SQL]', `canUserPostToGroupType error: ${err.message}`);
-    return false;
-  }
-}
-
-/**
- * Logování kvality akcí
- */
-export async function logActionQuality(qualityData) {
-  try {
-    const result = await safeExecute('action_quality.insert', [
-      qualityData.user_id,
-      qualityData.action_code,
-      qualityData.success ? 1 : 0,
-      qualityData.details,
-      qualityData.verification_used ? 1 : 0
-    ]);
-    return result;
-  } catch (err) {
-    Log.error('[SQL]', `logActionQuality error: ${err.message}`);
-    return false;
-  }
-}
-
-/**
- * Uložení systémových metrik
- */
-export async function saveSystemMetrics(metrics) {
-  try {
-    const result = await safeExecute('system_metrics.insert', [
-      JSON.stringify(metrics),
-      metrics.timestamp
-    ]);
-    return result;
-  } catch (err) {
-    Log.error('[SQL]', `saveSystemMetrics error: ${err.message}`);
-    return false;
-  }
-}
-
-/**
- * Uložení hash zprávy
- */
-export async function saveMessageHash(groupId, messageHash, preview) {
-  try {
-    const result = await safeExecute('message_hashes.insert', [
-      groupId,
-      messageHash,
-      preview,
-      new Date().toISOString()
-    ]);
-    return result;
-  } catch (err) {
-    Log.error('[SQL]', `saveMessageHash error: ${err.message}`);
-    return false;
-  }
-}
-
+// =========================================================
+// EXPORTS
+// =========================================================
 
 // Export the SQL modules for direct access
 export { SQL } from './sql/queries/index.js';
+
+// Export pro debug a testing
+export { executeQuery, safeQueryFirst, safeQueryAll, safeExecute };

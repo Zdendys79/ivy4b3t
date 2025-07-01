@@ -12,7 +12,7 @@ import path from 'node:path';
 import readline from 'readline';
 import puppeteer from 'puppeteer';
 import * as wait from './iv_wait.js';
-import * as db from './iv_sql.js';
+import { db } from './iv_sql.js'
 import { FacebookBot } from './iv_fb.class.js';
 import { Log } from './iv_log.class.js';
 
