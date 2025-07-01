@@ -22,7 +22,6 @@ import { db } from './iv_sql.js'
 import { FacebookBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
 import { UIBot } from './iv_ui.class.js';
-import * as support from './iv_support.js';
 import { getRandomAction } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
