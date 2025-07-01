@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 import { Log } from './iv_log.class.js';
+import { PageAnalyzer } from './iv_page_analyzer.class.js';
 
 import * as wait from './iv_wait.js';
 

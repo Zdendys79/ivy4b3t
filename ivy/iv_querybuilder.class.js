@@ -46,6 +46,14 @@ export class QueryBuilder {
     return await this.safeExecute('users.unlock', [id]);
   }
 
+  async lockAccount(id) {
+    return await this.lockUser(id);
+  }
+
+  async lockAccountWithReason(id, reason, lockType, hostname) {
+    return await this.safeExecute('users.lockWithReason', [reason, lockType, id]);
+  }
+
   async updateUserWorktime(userId, minutes) {
     return await this.safeExecute('users.updateWorktime', [minutes, userId]);
   }
