@@ -6,7 +6,7 @@
 #              in JavaScript files of IVY4B3T project
 
 param(
-    [string]$Path = "../ivy",
+    [string]$Path = "../../ivy",
     [switch]$DryRun = $false
 )
 

@@ -6,7 +6,7 @@
 #              Generates XML report showing used/unused functions
 
 param(
-    [string]$Path = "../ivy",
+    [string]$Path = "../../ivy",
     [string]$OutputFile = "function-usage-report.xml",
     [switch]$IncludePrivate = $false,
     [switch]$Verbose = $false
