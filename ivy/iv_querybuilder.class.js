@@ -155,7 +155,7 @@ export class QueryBuilder {
   }
 
   async getUICommand() {
-    return await this.safeQueryFirst('system.getUICommand', [host]);
+    return await this.safeQueryFirst('system.getUICommand', [hostname]);
   }
 
   async uiCommandSolved(id) {
