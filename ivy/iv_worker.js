@@ -313,6 +313,49 @@ async function executeUICommand(user, uiCommand) {
     }
 
     const fbStatus = await fbBot.openFB(user);
+
+    // NOVÁ LOGIKA - Error detection po otevření FB
+    if (!fbStatus || fbStatus === 'account_locked') {
+      const { waitForUserIntervention } = await import('./iv_wait.js');
+      const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
+
+      Log.warn(`[${user.id}]`, `🚨 Problem with FB: ${fbStatus}`);
+
+      // 60s countdown s možností stisknout 'a'
+      const userWantsAnalysis = await waitForUserIntervention(
+        `FB Error: ${fbStatus}`,
+        60
+      );
+
+      if (userWantsAnalysis) {
+        // Hlubší analýza - uložit do tabulky
+        const reportBuilder = new ErrorReportBuilder();
+        reportBuilder.initializeReport(
+          user,
+          null,
+          'ACCOUNT_LOCKED',
+          `FB status: ${fbStatus}`,
+          fbBot.page?.url() || 'unknown'
+        );
+
+        // Pokud má PageAnalyzer, přidej analýzu
+        if (fbBot.pageAnalyzer) {
+          try {
+            const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+            reportBuilder.addPageAnalysis(analysis);
+          } catch (err) {
+            reportBuilder.addNotes(`Analýza selhala: ${err.message}`);
+          }
+        }
+
+        const reportId = await reportBuilder.saveReport();
+        Log.info(`[${user.id}]`, `📊 Error report uložen s ID: ${reportId}`);
+      }
+
+      // Program pokračuje dál (s chybou nebo bez)
+      throw new Error('FB login failed for UI command');
+    }
+
     if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
       throw new Error('FB login failed for UI command');
     }
@@ -349,7 +392,7 @@ async function executeUICommand(user, uiCommand) {
 
     // A2: Pokud byl prohlížeč uzavřen nebo chyba, cleanup a restart
     if (fbBot) {
-      try { await fbBot.close(); } catch (e) {}
+      try { await fbBot.close(); } catch (e) { }
     }
 
     await cleanupBrowser(browser, browserClosed);
@@ -515,6 +558,49 @@ async function initializeRequiredServices(user, context, requirements, existingF
       }
 
       const fbStatus = await fbBot.openFB(user);
+
+      // NOVÁ LOGIKA - Error detection po otevření FB
+      if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
+        const { waitForUserIntervention } = await import('./iv_wait.js');
+        const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
+
+        Log.warn(`[${user.id}]`, `🚨 FB initialization problem: ${fbStatus}`);
+
+        // 60s countdown s možností stisknout 'a'
+        const userWantsAnalysis = await waitForUserIntervention(
+          `FB Init Error: ${fbStatus}`,
+          60
+        );
+
+        if (userWantsAnalysis) {
+          // Hlubší analýza - uložit do tabulky
+          const reportBuilder = new ErrorReportBuilder();
+          reportBuilder.initializeReport(
+            user,
+            null,
+            'FB_INIT_ERROR',
+            `FB initialization failed: ${fbStatus}`,
+            fbBot.page?.url() || 'unknown'
+          );
+
+          // Pokud má PageAnalyzer, přidej analýzu
+          if (fbBot.pageAnalyzer) {
+            try {
+              const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+              reportBuilder.addPageAnalysis(analysis);
+            } catch (err) {
+              reportBuilder.addNotes(`Analýza selhala: ${err.message}`);
+            }
+          }
+
+          const reportId = await reportBuilder.saveReport();
+          Log.info(`[${user.id}]`, `📊 Error report uložen s ID: ${reportId}`);
+        }
+
+        // Program pokračuje (nebo failne podle původní logiky)
+        throw new Error('FB initialization failed');
+      }
+
       if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
         if (typeof db.lockAccountWithReason === 'function') {
           await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
@@ -532,10 +618,10 @@ async function initializeRequiredServices(user, context, requirements, existingF
   } catch (err) {
     // Cleanup při chybě
     if (fbBot && fbBot !== existingFbBot) {
-      try { await fbBot.close(); } catch (e) {}
+      try { await fbBot.close(); } catch (e) { }
     }
     if (utioBot && utioBot !== existingUtioBot) {
-      try { await utioBot.close(); } catch (e) {}
+      try { await utioBot.close(); } catch (e) { }
     }
     throw err;
   }

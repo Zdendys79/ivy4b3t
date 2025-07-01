@@ -7,81 +7,175 @@
  */
 
 import { Log } from './iv_log.class.js';
+import { handleFBError, quickErrorReport, analyzeErrorPatterns } from './iv_fb-error-workflow.js';
+
 
 /**
- * Ověří připravenost FB stránky před získáním zprávy z UTIO
+ * Univerzální ověření připravenosti FB stránky s error reporting
  */
-export async function verifyFBReadinessForUtio(user, group, fbBot) {
-  try {
-    Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost FB stránky před UTIO operací...');
+export async function verifyFBReadiness(user, fbBot, options = {}) {
+  const {
+    requireSpecificGroup = null,
+    requirePostingCapability = true,
+    allowWarnings = false,
+    includeDetailedAnalysis = false,
+    enableErrorReporting = false  // NOVÝ PARAMETR
+  } = options;
 
-    // 1. Základní kontrola FBBot
+  try {
+    Log.info(`[${user.id}]`, '🔍 Provádím ověření připravenosti FB...');
+
+    // Základní kontroly
     if (!fbBot || !fbBot.page || fbBot.page.isClosed()) {
+      const errorType = 'PAGE_ERROR';
+      const reason = 'FBBot není dostupný';
+
+      if (enableErrorReporting) {
+        await quickErrorReport(user, errorType, reason, 'unknown');
+      }
+
       return {
         ready: false,
-        reason: 'FBBot není dostupný nebo stránka je zavřená',
+        reason: reason,
         critical: true
       };
     }
 
-    // 2. Kontrola URL - jsme ve správné skupině?
     const currentUrl = fbBot.page.url();
-    if (!currentUrl.includes(group.fb_id)) {
+
+    // Kontrola na základní FB doménu
+    if (!currentUrl.includes('facebook.com')) {
+      const errorType = 'PAGE_ERROR';
+      const reason = 'Stránka není na FB doméně';
+
+      if (enableErrorReporting) {
+        await quickErrorReport(user, errorType, reason, currentUrl);
+      }
+
       return {
         ready: false,
-        reason: `Nejsme ve správné skupině. Očekáváno: ${group.fb_id}, aktuální: ${currentUrl}`,
-        critical: true,
-        shouldNavigate: true
+        reason: reason,
+        critical: true
       };
     }
 
-    // 3. Použij PageAnalyzer pokud je k dispozici
-    if (fbBot.pageAnalyzer) {
-      Log.info(`[${user.id}]`, 'Používám PageAnalyzer pro detailní ověření...');
+    // Použij PageAnalyzer pokud je dostupný
+    if (fbBot.pageAnalyzer && includeDetailedAnalysis) {
+      Log.info(`[${user.id}]`, '🔍 Spouštím detailní analýzu s PageAnalyzer...');
 
-      const readinessCheck = await fbBot.verifyPostingReadiness(group);
-      if (!readinessCheck.ready) {
+      try {
+        const fullAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({
+          includePostingCapability: requirePostingCapability,
+          includeGroupAnalysis: Boolean(requireSpecificGroup)
+        });
+
+        // KRITICKÉ CHYBY - spustit plný error workflow
+        if (fullAnalysis.status === 'blocked') {
+          const errorDetails = {
+            type: fullAnalysis.errors.patterns.type || 'ACCOUNT_BLOCKED',
+            reason: fullAnalysis.errors.patterns.reason || 'Účet je zablokován'
+          };
+
+          if (enableErrorReporting) {
+            Log.warn(`[${user.id}]`, `Kritická chyba detekována: ${errorDetails.type}`);
+
+            const workflowResult = await handleFBError(user, fbBot, requireSpecificGroup, errorDetails);
+
+            return {
+              ready: false,
+              reason: errorDetails.reason,
+              critical: true,
+              analysis: fullAnalysis,
+              errorWorkflow: workflowResult
+            };
+          }
+
+          return {
+            ready: false,
+            reason: errorDetails.reason,
+            critical: true,
+            analysis: fullAnalysis
+          };
+        }
+
+        // VAROVÁNÍ - rychlý report ale pokračujeme
+        if (fullAnalysis.status === 'warning') {
+          const errorDetails = {
+            type: fullAnalysis.errors.patterns.type || 'WARNING',
+            reason: fullAnalysis.errors.patterns.reason || 'Detekováno varování'
+          };
+
+          if (enableErrorReporting) {
+            await quickErrorReport(user, errorDetails.type, errorDetails.reason, currentUrl);
+          }
+
+          if (!allowWarnings) {
+            return {
+              ready: false,
+              reason: errorDetails.reason,
+              critical: false,
+              analysis: fullAnalysis
+            };
+          }
+        }
+
+        // Kontrola posting capability
+        if (requirePostingCapability && fullAnalysis.posting && !fullAnalysis.posting.canInteract) {
+          const errorType = 'POSTING_ERROR';
+          const reason = 'Stránka neumožňuje interakci';
+
+          if (enableErrorReporting) {
+            await quickErrorReport(user, errorType, reason, currentUrl);
+          }
+
+          return {
+            ready: false,
+            reason: reason,
+            critical: true,
+            analysis: fullAnalysis
+          };
+        }
+
+        Log.success(`[${user.id}]`, '✅ Detailní analýza prošla úspěšně');
+        return {
+          ready: true,
+          reason: 'Detailní analýza prošla úspěšně',
+          analysis: fullAnalysis
+        };
+
+      } catch (analysisErr) {
+        Log.error(`[${user.id}]`, `Chyba při detailní analýze: ${analysisErr.message}`);
+
+        if (enableErrorReporting) {
+          await quickErrorReport(user, 'ANALYSIS_ERROR', `Chyba analýzy: ${analysisErr.message}`, currentUrl);
+        }
+
         return {
           ready: false,
-          reason: readinessCheck.reason,
-          critical: readinessCheck.reason.includes('zablokován') || readinessCheck.reason.includes('restricted'),
-          details: readinessCheck.details
+          reason: `Chyba při analýze: ${analysisErr.message}`,
+          critical: true
         };
       }
-
-      Log.success(`[${user.id}]`, '✅ PageAnalyzer potvrdil připravenost stránky');
-    } else {
-      // Fallback ověření bez PageAnalyzer
-      Log.warn(`[${user.id}]`, 'PageAnalyzer není k dispozici, používám základní ověření...');
-
-      const basicCheck = await performBasicReadinessCheck(user, group, fbBot);
-      if (!basicCheck.ready) {
-        return basicCheck;
-      }
     }
 
-    // 5. Ověření schopnosti postovat do konkrétní skupiny
-    const postingCheck = await verifyGroupPostingCapability(user, group, fbBot);
-    if (!postingCheck.ready) {
-      return postingCheck;
+    // Základní ověření bez detailní analýzy
+    const basicCheck = await performBasicReadinessCheck(user, requireSpecificGroup, fbBot);
+
+    // I základní check může vyvolat error reporting
+    if (!basicCheck.ready && basicCheck.critical && enableErrorReporting) {
+      const errorType = basicCheck.reason.includes('zablokován') ? 'ACCOUNT_LOCKED' : 'BASIC_CHECK_FAILED';
+      await quickErrorReport(user, errorType, basicCheck.reason, currentUrl);
     }
 
-    // 6. Kontrola pole pro psaní příspěvku
-    const fieldCheck = await verifyPostingField(user, fbBot);
-    if (!fieldCheck.ready) {
-      return fieldCheck;
-    }
-
-    Log.success(`[${user.id}]`, '🎯 FB stránka je připravena pro UTIO operaci');
-    return {
-      ready: true,
-      reason: 'Všechny kontroly prošly úspěšně',
-      group: group,
-      url: currentUrl
-    };
+    return basicCheck;
 
   } catch (err) {
     Log.error(`[${user.id}]`, `Chyba při ověřování připravenosti: ${err.message}`);
+
+    if (enableErrorReporting) {
+      await quickErrorReport(user, 'VERIFICATION_ERROR', `Chyba ověření: ${err.message}`, 'unknown');
+    }
+
     return {
       ready: false,
       reason: `Chyba při ověřování: ${err.message}`,
@@ -458,5 +552,104 @@ export async function isFBReady(fbBot) {
   } catch (err) {
     Log.warn('[FB_SUPPORT]', `Chyba při kontrole FB stránky: ${err.message}`);
     return false;
+  }
+}
+
+/**
+ * NOVÁ FUNKCE - Verze s povoleným error reportingem
+ * Použij místo verifyFBReadiness() když chceš plný error workflow
+ */
+export async function verifyFBWithErrorReporting(user, fbBot, options = {}) {
+  return await verifyFBReadiness(user, fbBot, {
+    ...options,
+    enableErrorReporting: true,
+    includeDetailedAnalysis: true
+  });
+}
+
+/**
+ * NOVÁ FUNKCE - Rozhodnutí kdy použít error reporting
+ */
+export function shouldUseErrorReporting(actionCode, user) {
+  // Error reporting pro kritické akce
+  const criticalActions = ['post_utio_G', 'post_utio_GV', 'login', 'account_check'];
+
+  // Error reporting pro problematické účty
+  const hasRecentLocks = user.locked !== null;
+
+  // Error reporting pro nové účty (méně než 7 dní)
+  const accountAge = user.created_at ? Date.now() - new Date(user.created_at).getTime() : 0;
+  const isNewAccount = accountAge < 7 * 24 * 60 * 60 * 1000;
+
+  // Error reporting v debug módu
+  const isDebug = process.env.NODE_ENV === 'development';
+
+  return criticalActions.includes(actionCode) || hasRecentLocks || isNewAccount || isDebug;
+}
+
+/**
+ * NOVÁ FUNKCE - Pattern analysis pro účet
+ */
+export async function analyzeUserErrorHistory(user, days = 7) {
+  try {
+    Log.debug(`[${user.id}]`, `Analyzuji historii chyb za posledních ${days} dní...`);
+
+    // Získej chyby pro konkrétního uživatele
+    const { db } = await import('./iv_sql.js');
+    const userErrors = await db.safeQueryAll('error_reports.getErrorReportsByUser', [user.id, 50]);
+
+    if (!userErrors || userErrors.length === 0) {
+      return {
+        hasHistory: false,
+        errorCount: 0,
+        recommendation: 'Žádná historie chyb'
+      };
+    }
+
+    // Základní statistiky
+    const recentErrors = userErrors.filter(error => {
+      const errorDate = new Date(error.created);
+      const daysDiff = (Date.now() - errorDate.getTime()) / (1000 * 60 * 60 * 24);
+      return daysDiff <= days;
+    });
+
+    const errorTypes = new Set(recentErrors.map(e => e.error_type));
+    const resolvedCount = recentErrors.filter(e => e.resolved).length;
+    const resolutionRate = recentErrors.length > 0 ? (resolvedCount / recentErrors.length * 100) : 0;
+
+    const analysis = {
+      hasHistory: recentErrors.length > 0,
+      errorCount: recentErrors.length,
+      uniqueErrorTypes: errorTypes.size,
+      resolutionRate: resolutionRate.toFixed(1),
+      mostRecentError: recentErrors[0]?.created,
+      recommendation: ''
+    };
+
+    // Doporučení podle analýzy
+    if (analysis.errorCount === 0) {
+      analysis.recommendation = 'Účet bez problémů';
+    } else if (analysis.errorCount >= 5 && resolutionRate < 50) {
+      analysis.recommendation = 'Problematický účet - zvýšená pozornost';
+    } else if (analysis.uniqueErrorTypes >= 3) {
+      analysis.recommendation = 'Různorodé problémy - možná systémová chyba';
+    } else if (resolutionRate >= 80) {
+      analysis.recommendation = 'Problémy většinou vyřešeny - v pořádku';
+    } else {
+      analysis.recommendation = 'Běžná historie chyb';
+    }
+
+    Log.debug(`[${user.id}]`, `Analýza historie: ${analysis.errorCount} chyb, ${analysis.resolutionRate}% vyřešeno`);
+
+    return analysis;
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při analýze historie: ${err.message}`);
+    return {
+      hasHistory: false,
+      errorCount: 0,
+      error: err.message,
+      recommendation: 'Analýza selhala'
+    };
   }
 }

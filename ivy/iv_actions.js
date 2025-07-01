@@ -216,9 +216,74 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
         }
 
         // Otevři skupinu
-        await fbBot.openGroup(selectedGroup);
-        await wait.delay(wait.timeout() * 2);
+        try {
+          await fbBot.openGroup(selectedGroup);
+          await wait.delay(wait.timeout() * 2);
 
+          // NOVÁ LOGIKA - Kontrola po otevření skupiny
+          if (fbBot.pageAnalyzer) {
+            const quickCheck = await fbBot.pageAnalyzer.quickStatusCheck();
+
+            if (quickCheck.hasErrors) {
+              const { waitForUserIntervention } = await import('./iv_wait.js');
+              const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
+
+              Log.warn(`[${user.id}]`, `🚨 Group error detected: ${selectedGroup.fb_id}`);
+
+              // 60s countdown s možností stisknout 'a'
+              const userWantsAnalysis = await waitForUserIntervention(
+                `Group Error: ${selectedGroup.nazev}`,
+                60
+              );
+
+              if (userWantsAnalysis) {
+                // Hlubší analýza - uložit do tabulky
+                const reportBuilder = new ErrorReportBuilder();
+                reportBuilder.initializeReport(
+                  user,
+                  selectedGroup,
+                  'GROUP_ERROR',
+                  `Error after opening group: ${selectedGroup.nazev}`,
+                  fbBot.page?.url() || 'unknown'
+                );
+
+                try {
+                  const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
+                    includeGroupAnalysis: true,
+                    forceRefresh: true
+                  });
+                  reportBuilder.addPageAnalysis(analysis);
+                } catch (err) {
+                  reportBuilder.addNotes(`Group analýza selhala: ${err.message}`);
+                }
+
+                const reportId = await reportBuilder.saveReport();
+                Log.info(`[${user.id}]`, `📊 Group error report uložen s ID: ${reportId}`);
+              }
+
+              // Program pokračuje i s chybou (podle původní logiky)
+              Log.warn(`[${user.id}]`, 'Pokračuji přes group error...');
+            }
+          }
+
+        } catch (groupErr) {
+          Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
+
+          // Error i při pokusu o otevření skupiny
+          const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
+
+          const reportBuilder = new ErrorReportBuilder();
+          const reportId = await reportBuilder.saveBasicReport(
+            user,
+            'GROUP_OPEN_ERROR',
+            `Failed to open group: ${groupErr.message}`,
+            `group_${selectedGroup.fb_id}`
+          );
+
+          Log.info(`[${user.id}]`, `📊 Basic error report uložen s ID: ${reportId}`);
+
+          continue; // Pokračuj s další skupinou (původní logika)
+        }
         // NOVÉ - Ověření po otevření skupiny
         const postGroupCheck = await verifyActionReadiness(user, fbBot, `post_utio_${groupType}`, {
           targetGroup: selectedGroup
@@ -256,7 +321,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
       // Pauza mezi posty
       if (attempt < maxPosts) {
         const pauseTime = 30000 + Math.random() * 60000; // 30-90s
-        Log.info(`[${user.id}]`, `⏱️ Pauza ${Math.round(pauseTime/1000)}s před dalším postem...`);
+        Log.info(`[${user.id}]`, `⏱️ Pauza ${Math.round(pauseTime / 1000)}s před dalším postem...`);
         await wait.delay(pauseTime);
       }
     }
@@ -346,7 +411,7 @@ export async function runAction(user, actionCode, context) {
       case 'account_sleep':
         const sleepMinutes = 1440 + Math.random() * 2880; // 1-3 dny
         await db.updateUserWorktime(user.id, sleepMinutes);
-        Log.info(`[${user.id}]`, `😴 Account sleep: ${Math.round(sleepMinutes/60)}h`);
+        Log.info(`[${user.id}]`, `😴 Account sleep: ${Math.round(sleepMinutes / 60)}h`);
         result = true;
         break;
 
@@ -422,8 +487,8 @@ async function navigateToHomepage(user, fbBot) {
 
     const newUrl = fbBot.page.url();
     if (!(newUrl === 'https://www.FB.com/' ||
-          newUrl === 'https://www.FB.com' ||
-          newUrl.startsWith('https://www.FB.com/?'))) {
+      newUrl === 'https://www.FB.com' ||
+      newUrl.startsWith('https://www.FB.com/?'))) {
       throw new Error(`Navigace neúspěšná, stále nejsme na homepage. Aktuální URL: ${newUrl}`);
     }
 
