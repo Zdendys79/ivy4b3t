@@ -60,7 +60,7 @@ export async function increaseUserLimit(user) {
 /**
  * Snížení denního limitu uživatele
  */
-export async function dedecreaseUserLimitser) {
+export async function decreaseUserLimit(user) {
   let new_limit = Math.floor(2 * user.day_limit / 3);
   if (new_limit < 3) new_limit = 3;
 
