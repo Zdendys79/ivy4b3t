@@ -1,6 +1,6 @@
 /**
- * Název souboru: ErrorReportBuilder.class.js
- * Umístění: ~/ivy/ErrorReportBuilder.class.js
+ * Název souboru: iv_ErrorReportBuilder.class.js
+ * Umístění: ~/ivy/iv_ErrorReportBuilder.class.js
  *
  * Popis: Třída pro sestavování a ukládání detailních error reportů z FB analýzy
  * Používá se po detekci chyby a uživatelské intervenci pro vytvoření kompletního reportu
