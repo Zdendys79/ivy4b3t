@@ -26,16 +26,16 @@ export class QueryBuilder {
   // USERS - Správa uživatelů
   // =========================================================
 
-  async getUser(hostname = hostname) {
-    return await this.safeQueryFirst('users.getByHostname', [hostname]);
+  async getUser(host = hostname) {
+    return await this.safeQueryFirst('users.getByHostname', [host]);
   }
 
   async getUserById(id) {
     return await this.safeQueryFirst('users.getById', [id]);
   }
 
-  async getUsersByHostname(hostname = hostname) {
-    return await this.safeQueryAll('users.getAllByHostname', [hostname]);
+  async getUsersByHostname(host = hostname) {
+    return await this.safeQueryAll('users.getAllByHostname', [host]);
   }
 
   async lockUser(id) {
@@ -154,8 +154,8 @@ export class QueryBuilder {
     return await this.safeQueryFirst('system.getVersionCode');
   }
 
-  async getUICommand(hostname = hostname) {
-    return await this.safeQueryFirst('system.getUICommand', [hostname]);
+  async getUICommand() {
+    return await this.safeQueryFirst('system.getUICommand', [host]);
   }
 
   async uiCommandSolved(id) {
@@ -302,11 +302,11 @@ export class QueryBuilder {
   /**
    * Debug funkce pro diagnostiku problémů s uživateli
    */
-  async debugUserSelectionIssue(hostname = hostname) {
+  async debugUserSelectionIssue(host = hostname) {
     const debugMode = isDebugMode();
 
     try {
-      const allUsers = await this.getUsersByHostname(hostname);
+      const allUsers = await this.getUsersByHostname(host);
       const activeUsers = allUsers.filter(u => !u.locked);
       const readyUsers = activeUsers.filter(u => !u.next_worktime || new Date(u.next_worktime) <= new Date());
 
