@@ -3,7 +3,6 @@
  * Umístění: ~/ivy/sql/queries/groups.js
  *
  * Popis: OPRAVENÉ SQL dotazy pro správu Facebook skupin (fb_groups)
- * Změny: Nahrazení fg.active = 1 za fg.priority > 0
  */
 
 export const GROUPS = {

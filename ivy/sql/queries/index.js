@@ -3,7 +3,7 @@
  * Umístění: ~/ivy/sql/queries/index.js
  *
  * Popis: AKTUALIZOVANÝ hlavní exportní bod pro všechny SQL dotazy
- * Změny: Přidán QUOTES modul, opraveny všechny problémy se strukturou DB
+ * Změny: Přidán ERROR_REPORTS modul pro Facebook error reporting systém
  */
 
 import { USERS } from './users.js';
@@ -13,6 +13,7 @@ import { LIMITS } from './limits.js';
 import { SYSTEM } from './system.js';
 import { LOGS } from './logs.js';
 import { QUOTES } from './quotes.js';
+import { ERROR_REPORTS } from './error-reports.js';
 import userLimits from './user_limits.js';
 import actionQuality from './action_quality.js';
 import systemMetrics from './system_metrics.js';
@@ -31,6 +32,7 @@ export const SQL = {
   system: SYSTEM,
   logs: LOGS,
   quotes: QUOTES,
+  error_reports: ERROR_REPORTS,
   user_limits: userLimits,
   action_quality: actionQuality,
   system_metrics: systemMetrics,
@@ -42,7 +44,7 @@ export const SQL = {
  */
 export const QueryUtils = {
   /**
-   * Získá dotaz podle cesty (např. "quotes.getRandomQuote")
+   * Získá dotaz podle cesty (např. "error_reports.insertErrorReport")
    */
   getQuery(path) {
     const parts = path.split('.');
@@ -131,35 +133,24 @@ export const QueryUtils = {
     const knownTables = {
       'fb_groups': ['id', 'fb_id', 'nazev', 'priority', 'user_counter', 'note', 'last_seen', 'next_seen', 'typ', 'region_id', 'district_id', 'sell'],
       'fb_users': ['id', 'name', 'surname', 'day_limit', 'max_limit', 'next_worktime', 'next_statement', 'e_mail', 'e_pass', 'fb_login', 'fb_pass', 'u_login', 'u_pass', 'locked', 'lock_reason', 'lock_type', 'unlocked', 'day_limit_updated', 'last_add_group', 'portal_id', 'host'],
-      'heartbeat': ['host', 'up', 'version', 'user_id', 'user_loged', 'group_id', 'data', 'remote_url'],
-      'action_log': ['id', 'timestamp', 'account_id', 'action_code', 'reference_id', 'text'],
+      'fb_error_reports': ['id', 'created', 'user_id', 'user_name', 'user_surname', 'group_id', 'group_fb_id', 'error_type', 'error_reason', 'page_url', 'page_title', 'page_elements_summary', 'detected_buttons', 'detected_texts', 'full_analysis_data', 'hostname', 'user_agent', 'reviewed', 'resolved', 'resolution_notes'],
+      'quotes': ['id', 'user_id', 'posted', 'text', 'hash'],
       'action_definitions': ['action_code', 'label', 'description', 'weight', 'min_minutes', 'max_minutes', 'repeatable', 'active'],
-      'quotes': ['id', 'user_id', 'text', 'author', 'hash', 'next_seen'],
-      'ui_commands': ['id', 'host', 'command', 'data', 'created', 'accepted', 'fulfilled'],
-      'urls': ['used', 'url', 'date'],
-      'log_s': ['id', 'time', 'hostname', 'title', 'text', 'data'],
-      'log_u': ['id', 'time', 'user_id', 'title', 'text', 'data'],
+      'action_log': ['id', 'timestamp', 'account_id', 'action_code', 'reference_id', 'text'],
       'user_action_plan': ['user_id', 'action_code', 'next_time'],
-      'user_groups': ['user_id', 'group_id', 'type', 'note', 'time'],
-      'user_group_limits': ['user_id', 'group_type', 'max_posts', 'time_window_hours', 'created', 'updated'],
       'variables': ['name', 'value', 'changed'],
       'versions': ['id', 'code', 'hash', 'source', 'hostname', 'created'],
-      'referers': ['id', 'url'],
-      'scheme': ['id', 'name', 'type', 'description', 'status', 'visible', 'position_x', 'position_y'],
-      'c_districts': ['id', 'region_id', 'district'],
-      'c_portals': ['id', 'portal'],
-      'c_regions': ['id', 'region']
+      'log_s': ['time', 'hostname', 'title', 'text', 'data'],
+      'log_u': ['time', 'user_id', 'type', 'data', 'text']
+    };
+
+    const deprecatedColumns = {
+      'fb_users': ['password'], // Např. deprecated sloupce
+      'quotes': ['category'] // Např. pokud byl odstraněn
     };
 
     const warnings = [];
-    const deprecatedColumns = {
-      'fb_groups': ['active'], // Nahrazeno priority > 0
-      'fb_users': ['profile_set'], // Neexistuje
-      'quotes': ['posted'], // Nahrazeno next_seen
-      'ui_commands': ['parameters'] // Nahrazeno data
-    };
 
-    // Kontrola deprecated sloupců
     for (const [category, queries] of Object.entries(SQL)) {
       for (const [queryName, query] of Object.entries(queries)) {
         // Kontrola na deprecated sloupce
@@ -208,6 +199,20 @@ export const SQL_CONSTANTS = {
     SALE: 'GV',
     PRIVATE: 'P',
     REGIONAL: 'Z'
+  },
+
+  // Error types pro fb_error_reports
+  ERROR_TYPES: {
+    VIDEOSELFIE: 'VIDEOSELFIE',
+    ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
+    IDENTITY_VERIFICATION: 'IDENTITY_VERIFICATION',
+    SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
+    PHONE_VERIFICATION: 'PHONE_VERIFICATION',
+    SECURITY_CHECKPOINT: 'SECURITY_CHECKPOINT',
+    LOGIN_ERROR: 'LOGIN_ERROR',
+    PAGE_ERROR: 'PAGE_ERROR',
+    NETWORK_ERROR: 'NETWORK_ERROR',
+    UNKNOWN: 'UNKNOWN'
   },
 
   // Akční kódy
