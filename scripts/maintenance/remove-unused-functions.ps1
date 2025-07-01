@@ -1,6 +1,6 @@
 # remove-unused-functions.ps1
 # File: remove-unused-functions.ps1
-# Location: ~/scripts/remove-unused-functions.ps1
+# Location: ~/scripts/maintenance/remove-unused-functions.ps1
 #
 # Description: Interactive tool for removing unused functions identified by function-usage-report.xml
 #              Performs double-check search and asks user confirmation for each function
@@ -154,23 +154,16 @@ function Find-FunctionEnd {
             $inFunction = $true
         }
         
-        # Function ends when brace count returns to 0
+        # If we've closed all braces and we're in a function, we found the end
         if ($inFunction -and $braceCount -eq 0) {
-            return $i
-        }
-        
-        # Safety check - don't go too far
-        if ($i - $StartLine -gt 200) {
-            Write-Warning "Function seems too long, stopping search at line $($i + 1)"
             return $i
         }
     }
     
-    # If we reach here, function goes to end of file
-    return $Content.Count - 1
+    return -1
 }
 
-# Function to find end of arrow function
+# Function to find the end of an arrow function
 function Find-ArrowFunctionEnd {
     param(
         [string[]]$Content,
@@ -179,72 +172,60 @@ function Find-ArrowFunctionEnd {
     
     $line = $Content[$StartLine]
     
-    # Simple arrow function on one line
+    # Check if it's a simple one-liner arrow function
     if ($line -match "=>\s*[^{]") {
         return $StartLine
     }
     
-    # Multi-line arrow function with braces
+    # Otherwise use the same logic as regular functions
     return Find-FunctionEnd $Content $StartLine "arrow function"
 }
 
-# Function to get user confirmation
+# Function to get user confirmation for function removal
 function Get-UserConfirmation {
     param(
         [string]$FunctionName,
         [string]$FilePath,
-        [int]$LineNumber,
+        [string]$LineNumber,
         [string]$FunctionType,
         [string[]]$FoundInFiles
     )
     
-    Write-Host ""
-    Write-Host "🔧 FUNCTION TO REMOVE:" -ForegroundColor Yellow -BackgroundColor DarkBlue
-    Write-Host "   Name: $FunctionName" -ForegroundColor White
-    Write-Host "   File: $FilePath" -ForegroundColor White
-    Write-Host "   Line: $LineNumber" -ForegroundColor White
-    Write-Host "   Type: $FunctionType" -ForegroundColor White
+    if ($AutoConfirm -and $FoundInFiles.Count -eq 0) {
+        Write-Host "    🤖 Auto-confirming removal (no usage found)" -ForegroundColor Magenta
+        return $true
+    }
+    
+    Write-Host "    📄 File: $FilePath" -ForegroundColor White
+    Write-Host "    📍 Line: $LineNumber" -ForegroundColor White
+    Write-Host "    🔧 Type: $FunctionType" -ForegroundColor White
     
     if ($FoundInFiles.Count -gt 0) {
-        Write-Host "   ⚠️  FOUND IN FILES:" -ForegroundColor Red
+        Write-Host "    ⚠️  Found potential usage in:" -ForegroundColor Red
         foreach ($file in $FoundInFiles) {
-            Write-Host "      - $file" -ForegroundColor Red
+            Write-Host "        - $file" -ForegroundColor Red
         }
-        Write-Host "   This function might still be used!" -ForegroundColor Red
+        Write-Host "    💡 Please verify these are not false positives before removing" -ForegroundColor Yellow
     } else {
-        Write-Host "   ✅ No usage found in project" -ForegroundColor Green
+        Write-Host "    ✅ No usage found in project" -ForegroundColor Green
     }
     
-    if ($AutoConfirm) {
-        if ($FoundInFiles.Count -eq 0) {
-            Write-Host "   [AUTO] Removing function..." -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "   [AUTO] Skipping - found usage" -ForegroundColor Yellow
-            return $false
-        }
-    }
-    
-    Write-Host ""
-    Write-Host "Remove this function? " -ForegroundColor Cyan -NoNewline
-    Write-Host "[y]es/[n]o/[q]uit: " -ForegroundColor White -NoNewline
-    
+    # Get user input
     do {
-        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        $response = $key.Character.ToString().ToLower()
+        Write-Host "    Remove function '$FunctionName'? " -ForegroundColor White -NoNewline
+        Write-Host "[y]es/[n]o/[q]uit: " -ForegroundColor White -NoNewline
+        $key = [System.Console]::ReadKey($true)
+        Write-Host $key.KeyChar
         
-        switch ($response) {
-            'y' { 
-                Write-Host "y" -ForegroundColor Green
-                return $true 
+        switch ($key.KeyChar.ToString().ToLower()) {
+            'y' {
+                return $true
             }
-            'n' { 
-                Write-Host "n" -ForegroundColor Yellow
-                return $false 
+            'n' {
+                return $false
             }
-            'q' { 
-                Write-Host "q" -ForegroundColor Red
-                Write-Host "`n🛑 User requested quit. Exiting..." -ForegroundColor Red
+            'q' {
+                Write-Host "    🛑 User requested to quit. Exiting..." -ForegroundColor Red
                 exit 0
             }
             default {
