@@ -28,6 +28,7 @@ import { Log } from './iv_log.class.js';
 import { IvMath } from './iv_math.class.js';
 
 import * as wait from './iv_wait.js';
+import * as support from './iv_support.js';
 
 const isLinux = process.platform === 'linux';
 const hostname = os.hostname();
