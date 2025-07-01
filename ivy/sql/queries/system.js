@@ -9,7 +9,7 @@
 export const SYSTEM = {
   // ===== HEARTBEAT SYSTEM =====
 
-  heartbeat: `
+  heartBeat: `
     INSERT LOW_PRIORITY INTO heartbeat (host, up, user_id, group_id, version)
     VALUES (?, NOW(), ?, ?, ?)
     ON DUPLICATE KEY UPDATE up = NOW(), user_id = ?, group_id = ?, version = ?
