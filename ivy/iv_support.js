@@ -4,7 +4,7 @@
  *
  * Popis: Obecné pomocné funkce pro práci s uživateli, skupinami a UTIO
  * Moderní ESM modul s inline exporty
- * Facebook funkce přesunuty do iv_facebook_support.js
+ * FB funkce přesunuty do iv_fb_support.js
  */
 
 // NPM packages - default imports
@@ -15,10 +15,10 @@ import { timeout } from './iv_wait.js';
 import { db } from './iv_sql.js';
 import { Log } from './iv_log.class.js';
 
-// Facebook support module - namespace import (specific case)
-// Keeping namespace import as iv_facebook_support.js contains many specialized functions
+// FB support module - namespace import (specific case)
+// Keeping namespace import as iv_fb_support.js contains many specialized functions
 // that are used conditionally and don't justify individual named imports
-import * as fbSupport from './iv_facebook_support.js';
+import * as fbSupport from './iv_fb_support.js';
 
 /**
  * Přidání uživatele do skupiny
@@ -84,21 +84,21 @@ export async function randomReferer() {
 }
 
 /**
- * Získá zprávu z UTIO a vloží ji do Facebooku pomocí schránky (Ctrl+V)
- * S předběžným ověřením připravenosti Facebook stránky
+ * Získá zprávu z UTIO a vloží ji do FBu pomocí schránky (Ctrl+V)
+ * S předběžným ověřením připravenosti FB stránky
  */
 export async function pasteMsg(user, group, fbBot, utioBot = null) {
   let message = false;
   let cnt = 0;
 
   try {
-    // Ověření připravenosti před začátkem pomocí Facebook modulu
+    // Ověření připravenosti před začátkem pomocí FB modulu
     Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost před získáním zprávy z UTIO...');
 
-    const readinessCheck = await fbSupport.verifyFacebookReadinessForUtio(user, group, fbBot);
+    const readinessCheck = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
 
     if (!readinessCheck.ready) {
-      Log.error(`[${user.id}]`, `❌ Facebook není připraven: ${readinessCheck.reason}`);
+      Log.error(`[${user.id}]`, `❌ FB není připraven: ${readinessCheck.reason}`);
 
       if (readinessCheck.critical) {
         return false; // Kritická chyba - ukončit
@@ -113,7 +113,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
         }
 
         // Znovu ověř po navigaci
-        const recheckResult = await fbSupport.verifyFacebookReadinessForUtio(user, group, fbBot);
+        const recheckResult = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
         if (!recheckResult.ready) {
           Log.error(`[${user.id}]`, `Ani po navigaci není připraveno: ${recheckResult.reason}`);
           return false;
@@ -143,7 +143,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     Log.success(`[${user.id}]`, '✅ Všechny předpoklady splněny, získávám zprávu z UTIO...');
 
     // Zapamatuj si aktuální stav před přepnutím na UTIO
-    const facebookState = {
+    const FBState = {
       url: fbBot.page.url(),
       title: await fbBot.page.title().catch(() => 'Unknown')
     };
@@ -208,28 +208,28 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       return false;
     }
 
-    // Ověření Facebook stavu po návratu z UTIO
+    // Ověření FB stavu po návratu z UTIO
     try {
-      Log.info(`[${user.id}]`, '🔄 Přepínám zpět na Facebook záložku...');
+      Log.info(`[${user.id}]`, '🔄 Přepínám zpět na FB záložku...');
 
       if (!await fbBot.bringToFront()) {
-        Log.error(`[${user.id}]`, 'Nepodařilo se přepnout na Facebook záložku');
+        Log.error(`[${user.id}]`, 'Nepodařilo se přepnout na FB záložku');
         return false;
       }
 
       await wait.delay(1500 + Math.random() * 1500); // Stabilizace
 
       // Ověř že jsme stále ve správném stavu
-      const postReturnCheck = await fbSupport.verifyStateAfterUtioReturn(user, group, fbBot, facebookState);
+      const postReturnCheck = await fbSupport.verifyStateAfterUtioReturn(user, group, fbBot, FBState);
       if (!postReturnCheck.valid) {
         Log.error(`[${user.id}]`, `Problém po návratu z UTIO: ${postReturnCheck.reason}`);
-        
+
         if (postReturnCheck.shouldReload) {
           Log.info(`[${user.id}]`, 'Pokusím se obnovit stránku...');
           await fbBot.page.reload();
           await wait.delay(3000);
         }
-        
+
         return false;
       }
 
@@ -238,11 +238,11 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       return false;
     }
 
-    // Vložení zprávy do Facebooku
-    Log.info(`[${user.id}]`, '📝 Vkládám zprávu do Facebook...');
+    // Vložení zprávy do FBu
+    Log.info(`[${user.id}]`, '📝 Vkládám zprávu do FB...');
 
     if (!await fbBot.pasteMessage(message[0])) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do Facebook');
+      Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do FB');
       return false;
     }
 
@@ -260,14 +260,14 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
  */
 export async function writeMsg(user, messageText, fbBot) {
   try {
-    Log.info(`[${user.id}]`, '✍️ Píšu zprávu do Facebook...');
+    Log.info(`[${user.id}]`, '✍️ Píšu zprávu do FB...');
 
     if (!messageText || messageText.trim().length === 0) {
       Log.error(`[${user.id}]`, 'writeMsg: Prázdná zpráva');
       return false;
     }
 
-    // Použij FacebookBot funkci pro psaní
+    // Použij FBBot funkci pro psaní
     if (!await fbBot.writeMessage(messageText)) {
       Log.error(`[${user.id}]`, 'Nepodařilo se napsat zprávu');
       return false;
@@ -305,10 +305,10 @@ export async function updatePostStats(group, user, actionCode) {
 
     // Zaloguj akci
     const referenceId = group ? group.id : '0';
-    const actionText = group ? 
-      `Post do skupiny: ${group.nazev || group.name || group.fb_id}` : 
+    const actionText = group ?
+      `Post do skupiny: ${group.nazev || group.name || group.fb_id}` :
       `Akce: ${actionCode}`;
-    
+
     await db.logUserAction(user.id, actionCode, referenceId, actionText);
 
     const groupInfo = group ? group.fb_id : 'timeline';

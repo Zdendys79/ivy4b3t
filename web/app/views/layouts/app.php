@@ -18,7 +18,7 @@ if (!defined('IVY_FRAMEWORK')) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="IVY4B3T - Facebook Automation System Dashboard">
+    <meta name="description" content="IVY4B3T - FB Automation System Dashboard">
     <meta name="author" content="IVY4B3T Framework">
 
     <title><?php echo htmlspecialchars($page_title ?? 'IVY4B3T Dashboard'); ?></title>

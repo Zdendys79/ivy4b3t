@@ -1,6 +1,6 @@
 /**
  * Název souboru: iv_page_analyzer.class.js
- * Účel: Unified systém pro analýzu Facebook stránek - detekce chybových stavů,
+ * Účel: Unified systém pro analýzu FB stránek - detekce chybových stavů,
  *       ověření funkčnosti a schopnosti postování
  */
 
@@ -322,7 +322,7 @@ export class PageAnalyzer {
       const navigationElements = await this.page.evaluate(() => {
         const selectors = [
           '[aria-label="Váš profil"]',
-          '[aria-label="Facebook"]',
+          '[aria-label="FB"]',
           '[data-pagelet="LeftRail"]',
           '[role="banner"]',
           'nav[aria-label]',
@@ -561,9 +561,9 @@ export class PageAnalyzer {
 
   _determinePageType(url) {
     if (url.includes('/groups/')) return 'group';
-    if (url.includes('/profile.php') || url.match(/facebook\.com\/[^\/]+$/)) return 'profile';
+    if (url.includes('/profile.php') || url.match(/FB\.com\/[^\/]+$/)) return 'profile';
     if (url.includes('/pages/')) return 'page';
-    if (url === 'https://www.facebook.com/' || url === 'https://facebook.com/') return 'homepage';
+    if (url === 'https://www.FB.com/' || url === 'https://FB.com/') return 'homepage';
     return 'unknown';
   }
 
@@ -847,12 +847,12 @@ export class PageAnalyzer {
     const recommendations = [];
 
     if (!basic.isLoggedIn) {
-      recommendations.push('Přihlaste se na Facebook');
+      recommendations.push('Přihlaste se na FB');
     }
 
     if (errors.hasErrors) {
       if (errors.accountLocked) {
-        recommendations.push('Účet je zablokován - kontaktujte podporu Facebook');
+        recommendations.push('Účet je zablokován - kontaktujte podporu FB');
       }
       if (errors.checkpoint.detected) {
         recommendations.push('Dokončete bezpečnostní ověření');

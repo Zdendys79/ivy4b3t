@@ -19,7 +19,7 @@ if (!defined('IVY_FRAMEWORK')) {
     <div class="login-logo">
         <span class="emoji">🤖</span>
         <h1>IVY4B3T</h1>
-        <p>Facebook Automation System</p>
+        <p>FB Automation System</p>
     </div>
 
     <!-- Login Form -->

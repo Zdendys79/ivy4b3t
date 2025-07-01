@@ -11,7 +11,7 @@ import * as wait from './iv_wait.js';
 const CONFIG_PATH = path.resolve('./config.json');
 const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
 
-export class FacebookBot {
+export class FBBot {
   constructor(context) {
     this.context = context;
     this.page = null;
@@ -21,13 +21,13 @@ export class FacebookBot {
   }
 
   /**
-   * Inicializuje FacebookBot - vytvoří novou stránku a nastaví základní konfigurace
+   * Inicializuje FBBot - vytvoří novou stránku a nastaví základní konfigurace
    * @returns {Promise<boolean>} True pokud bylo úspěšné
    */
   async init() {
     try {
       if (this.isInitialized) {
-        Log.warn('[FB]', 'FacebookBot už je inicializován');
+        Log.warn('[FB]', 'FBBot už je inicializován');
         return true;
       }
 
@@ -36,7 +36,7 @@ export class FacebookBot {
         return false;
       }
 
-      Log.info('[FB]', 'Inicializuji Facebook stránku...');
+      Log.info('[FB]', 'Inicializuji FB stránku...');
       this.page = await this.context.newPage();
 
       if (!this.page) {
@@ -51,7 +51,7 @@ export class FacebookBot {
       await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
       this.isInitialized = true;
-      Log.success('[FB]', 'Facebook stránka inicializována');
+      Log.success('[FB]', 'FB stránka inicializována');
       return true;
 
     } catch (err) {
@@ -72,7 +72,7 @@ export class FacebookBot {
   }
   async bringToFront() {
     if (!this.isReady()) {
-      Log.error('[FB]', 'FacebookBot není připraven pro bringToFront');
+      Log.error('[FB]', 'FBBot není připraven pro bringToFront');
       return false;
     }
 
@@ -87,7 +87,7 @@ export class FacebookBot {
 
   async screenshot(name) {
     if (!this.isReady()) {
-      Log.error('[FB]', 'FacebookBot není připraven pro screenshot');
+      Log.error('[FB]', 'FBBot není připraven pro screenshot');
       return false;
     }
 
@@ -321,13 +321,13 @@ export class FacebookBot {
   async openFB(user) {
     try {
       await this.bringToFront();
-      await this.page.goto('https://facebook.com', { waitUntil: 'domcontentloaded' });
+      await this.page.goto('https://FB.com', { waitUntil: 'domcontentloaded' });
       await wait.delay(10000, false);
 
       // Inicializuj analyzer po načtení stránky
       this.initializeAnalyzer();
 
-      Log.info('[FB]', 'Stránka Facebook načtena, spouštím analýzu...');
+      Log.info('[FB]', 'Stránka FB načtena, spouštím analýzu...');
 
       // Proveď kompletní analýzu při otevření
       if (this.pageAnalyzer) {
@@ -671,7 +671,7 @@ export class FacebookBot {
 
       const navigationSelectors = [
         '[aria-label="Váš profil"]',
-        '[aria-label="Facebook"]',
+        '[aria-label="FB"]',
         '[data-pagelet="LeftRail"]',
         '[role="banner"]',
         'nav[aria-label]'
@@ -830,7 +830,7 @@ export class FacebookBot {
       Log.info('[FB] Kontrolujem napsaný text...');
       await wait.delay(wait.timeout() * 2); // 1-2.4 sekundy
 
-      // Čekáme až Facebook aktivuje tlačítko
+      // Čekáme až FB aktivuje tlačítko
       Log.info('[FB] Čekám než se tlačítko aktivuje...');
       await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
 
@@ -1269,7 +1269,7 @@ export class FacebookBot {
 
       await this.bringToFront();
 
-      let fbGroupUrl = "https://facebook.com/";
+      let fbGroupUrl = "https://FB.com/";
       fbGroupUrl += group.typ === "P" ? "" : "groups/";
       fbGroupUrl += group.fb_id;
       fbGroupUrl += group.sell ? "/selling" : "";
@@ -1371,7 +1371,7 @@ export class FacebookBot {
     }
   }
 
-  // Pokračování třídy FacebookBot
+  // Pokračování třídy FBBot
 
   async contentNotAvailable() {
     return await this._checkTexts("Obsah teď není dostupný", "Přejít do kanálu");
@@ -1444,7 +1444,7 @@ export class FacebookBot {
     }
   }
 
-  // Pokračování třídy FacebookBot
+  // Pokračování třídy FBBot
 
   async isSellGroup() {
     const found = await this._findByText("Prodat", { timeout: 3500 });
@@ -1521,20 +1521,20 @@ export class FacebookBot {
   }
 
   /**
-   * Zavře Facebook stránku a vyčistí zdroje
+   * Zavře FB stránku a vyčistí zdroje
    * @returns {Promise<boolean>} True pokud bylo úspěšné
    */
   async close() {
     try {
       if (!this.isInitialized) {
-        Log.info('[FB]', 'FacebookBot není inicializován, close není potřeba');
+        Log.info('[FB]', 'FBBot není inicializován, close není potřeba');
         return true;
       }
 
       if (this.page && !this.page.isClosed()) {
-        Log.info('[FB]', 'Zavírám Facebook stránku...');
+        Log.info('[FB]', 'Zavírám FB stránku...');
         await this.page.close();
-        Log.success('[FB]', 'Facebook stránka zavřena');
+        Log.success('[FB]', 'FB stránka zavřena');
       }
 
       this.page = null;
@@ -1549,7 +1549,7 @@ export class FacebookBot {
   }
 
   /**
-   * Kontroluje, zda je FacebookBot připraven k použití
+   * Kontroluje, zda je FBBot připraven k použití
    * @returns {boolean} True pokud je připraven
    */
   isReady() {

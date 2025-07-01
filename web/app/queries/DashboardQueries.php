@@ -100,9 +100,9 @@ return [
     ],
 
     // ================================
-    // FACEBOOK GROUPS MANAGEMENT
+    // FB GROUPS MANAGEMENT
     // ================================
-    'facebook_groups' => [
+    'FB_groups' => [
         'get_all_groups' => "
             SELECT
                 id, fb_id, nazev, typ, priority, user_counter,

@@ -9,23 +9,23 @@
 
 import * as wait from './iv_wait.js';
 import * as support from './iv_support.js';
-import * as fbSupport from './iv_facebook_support.js';
+import * as fbSupport from './iv_fb_support.js';
 import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
 
 /**
- * Určuje požadavky konkrétní akce na služby (Facebook, UTIO)
+ * Určuje požadavky konkrétní akce na služby (FB, UTIO)
  * @param {string} actionCode - kód akce
- * @returns {object} - {needsFacebook: boolean, needsUtio: boolean}
+ * @returns {object} - {needsFB: boolean, needsUtio: boolean}
  */
 export function getActionRequirements(actionCode) {
   const requirements = {
-    needsFacebook: false,
+    needsFB: false,
     needsUtio: false
   };
 
   switch (actionCode) {
-    // Akce vyžadující POUZE Facebook (bez UTIO)
+    // Akce vyžadující POUZE FB (bez UTIO)
     case 'group_post':        // Příspěvky do zájmových skupin (bez UTIO)
     case 'timeline_post':
     case 'comment':
@@ -33,18 +33,18 @@ export function getActionRequirements(actionCode) {
     case 'messenger_check':
     case 'messenger_reply':
     case 'quote_post':
-      requirements.needsFacebook = true;
+      requirements.needsFB = true;
       break;
 
-    // Akce vyžadující FACEBOOK + UTIO
+    // Akce vyžadující FB + UTIO
     case 'post_utio_g':       // UTIO post do běžných skupin
     case 'post_utio_gv':      // UTIO post do vlastních skupin
     case 'post_utio_p':       // UTIO post do prodejních skupin
-      requirements.needsFacebook = true;
+      requirements.needsFB = true;
       requirements.needsUtio = true;
       break;
 
-    // Akce nevyžadující ani Facebook ani UTIO
+    // Akce nevyžadující ani FB ani UTIO
     case 'account_delay':
     case 'account_sleep':
       // Tyto akce nepotřebují žádné služby
@@ -61,7 +61,7 @@ export function getActionRequirements(actionCode) {
 /**
  * Ověří připravenost před spuštěním jakékoliv akce
  * @param {Object} user - Uživatelské data
- * @param {Object} fbBot - FacebookBot instance
+ * @param {Object} fbBot - FBBot instance
  * @param {string} actionCode - Kód akce
  * @param {Object} options - Další možnosti
  * @returns {Promise<Object>} Výsledek ověření
@@ -72,15 +72,15 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
 
     const actionRequirements = getActionRequirements(actionCode);
 
-    // Pokud akce nevyžaduje Facebook, není co ověřovat
-    if (!actionRequirements.needsFacebook) {
+    // Pokud akce nevyžaduje FB, není co ověřovat
+    if (!actionRequirements.needsFB) {
       return {
         ready: true,
-        reason: 'Akce nevyžaduje Facebook'
+        reason: 'Akce nevyžaduje FB'
       };
     }
 
-    // Základní ověření Facebook pomocí nového modulu
+    // Základní ověření FB pomocí nového modulu
     const verificationOptions = {
       requireSpecificGroup: options.targetGroup || null,
       requirePostingCapability: actionCode.includes('post') || actionCode.includes('comment'),
@@ -88,7 +88,7 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
       includeDetailedAnalysis: actionCode.includes('utio') // Detailní analýza pro UTIO operace
     };
 
-    const readinessResult = await fbSupport.verifyFacebookReadiness(user, fbBot, verificationOptions);
+    const readinessResult = await fbSupport.verifyFBReadiness(user, fbBot, verificationOptions);
 
     if (!readinessResult.ready) {
       Log.warn(`[${user.id}]`, `⚠️ Akce ${actionCode} není připravena: ${readinessResult.reason}`);
@@ -111,7 +111,7 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
 /**
  * Provede skutečné postování UTIO zprávy s předběžným ověřením
  * @param {Object} user - Uživatelská data
- * @param {Object} fbBot - FacebookBot instance
+ * @param {Object} fbBot - FBBot instance
  * @param {Object} group - Skupina kam postovat
  * @param {Object} utioBot - UtioBot instance
  * @returns {Promise<boolean>} - True pokud byl post úspěšný
@@ -120,8 +120,8 @@ async function performUtioPost(user, fbBot, group, utioBot) {
   try {
     Log.info(`[${user.id}]`, '📋 Zahajuji UTIO post proces...');
 
-    // NOVÉ - Předběžné ověření před začátkem operace pomocí Facebook modulu
-    const readinessCheck = await fbSupport.verifyFacebookReadinessForUtio(user, group, fbBot);
+    // NOVÉ - Předběžné ověření před začátkem operace pomocí FB modulu
+    const readinessCheck = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
 
     if (!readinessCheck.ready) {
       Log.error(`[${user.id}]`, `❌ Předběžné ověření selhalo: ${readinessCheck.reason}`);
@@ -139,7 +139,7 @@ async function performUtioPost(user, fbBot, group, utioBot) {
         }
 
         // Znovu ověř po opravě
-        const recheckResult = await fbSupport.verifyFacebookReadinessForUtio(user, group, fbBot);
+        const recheckResult = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
         if (!recheckResult.ready) {
           Log.error(`[${user.id}]`, `I po opravě není připraveno: ${recheckResult.reason}`);
           return false;
@@ -168,7 +168,7 @@ async function performUtioPost(user, fbBot, group, utioBot) {
 /**
  * Provede opakované UTIO postování do skupin určitého typu
  * @param {Object} user - Uživatelská data
- * @param {Object} fbBot - FacebookBot instance
+ * @param {Object} fbBot - FBBot instance
  * @param {Object} utioBot - UtioBot instance
  * @param {string} groupType - Typ skupiny ('g', 'gv', 'p')
  * @returns {Promise<number>} Počet úspěšných postů
@@ -203,7 +203,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
 
       try {
         // NOVÉ - Předběžné ověření před otevřením skupiny
-        const preGroupCheck = await fbSupport.verifyFacebookReadiness(user, fbBot, {
+        const preGroupCheck = await fbSupport.verifyFBReadiness(user, fbBot, {
           requireSpecificGroup: null,
           requirePostingCapability: false,
           allowWarnings: true,
@@ -239,10 +239,10 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
 
         if (postSuccess) {
           successfulPosts++;
-          
+
           // Aktualizuj statistiky
           await support.updatePostStats(selectedGroup, user, `post_utio_${groupType}`);
-          
+
           Log.success(`[${user.id}]`, `✅ Post ${attempt} úspěšný! Celkem: ${successfulPosts}/${attempt}`);
         } else {
           Log.warn(`[${user.id}]`, `❌ Post ${attempt} neúspěšný`);
@@ -407,13 +407,13 @@ export async function runAction(user, actionCode, context) {
 }
 
 /**
- * Navigace na Facebook homepage
+ * Navigace na FB homepage
  */
 async function navigateToHomepage(user, fbBot) {
   try {
-    Log.info(`[${user.id}]`, 'Naviguji na Facebook homepage...');
+    Log.info(`[${user.id}]`, 'Naviguji na FB homepage...');
 
-    await fbBot.page.goto('https://www.facebook.com/', {
+    await fbBot.page.goto('https://www.FB.com/', {
       waitUntil: 'domcontentloaded',
       timeout: 30000
     });
@@ -421,13 +421,13 @@ async function navigateToHomepage(user, fbBot) {
     await wait.delay(2000 + Math.random() * 3000);
 
     const newUrl = fbBot.page.url();
-    if (!(newUrl === 'https://www.facebook.com/' ||
-          newUrl === 'https://www.facebook.com' ||
-          newUrl.startsWith('https://www.facebook.com/?'))) {
+    if (!(newUrl === 'https://www.FB.com/' ||
+          newUrl === 'https://www.FB.com' ||
+          newUrl.startsWith('https://www.FB.com/?'))) {
       throw new Error(`Navigace neúspěšná, stále nejsme na homepage. Aktuální URL: ${newUrl}`);
     }
 
-    Log.success(`[${user.id}]`, 'Úspěšně přešel na Facebook homepage');
+    Log.success(`[${user.id}]`, 'Úspěšně přešel na FB homepage');
     return true;
 
   } catch (err) {

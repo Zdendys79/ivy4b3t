@@ -19,7 +19,7 @@ import os from 'node:os';
 import puppeteer from 'puppeteer';
 
 import { db } from './iv_sql.js'
-import { FacebookBot } from './iv_fb.class.js';
+import { FBBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
 import { UIBot } from './iv_ui.class.js';
 import { getRandomAction } from './iv_wheel.js';
@@ -306,18 +306,18 @@ async function executeUICommand(user, uiCommand) {
     ({ browser, context, browserClosed } = await prepareBrowser(user));
     await support.closeBlankTabs(context);
 
-    // Inicializuj pouze Facebook (UI příkazy obvykle potřebují jen FB)
-    fbBot = new FacebookBot(context);
+    // Inicializuj pouze FB (UI příkazy obvykle potřebují jen FB)
+    fbBot = new FBBot(context);
     if (!await fbBot.init()) {
-      throw new Error('Facebook initialization failed for UI command');
+      throw new Error('FB initialization failed for UI command');
     }
 
     const fbStatus = await fbBot.openFB(user);
     if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
-      throw new Error('Facebook login failed for UI command');
+      throw new Error('FB login failed for UI command');
     }
 
-    Log.success(`[${user.id}]`, 'Facebook úspěšně otevřen pro UI příkaz');
+    Log.success(`[${user.id}]`, 'FB úspěšně otevřen pro UI příkaz');
 
     // Proveď UI příkaz s timeoutem 5 minut
     const uiBot = new UIBot();
@@ -367,7 +367,7 @@ async function executeUICommandForCurrentUser(user, browser, context, fbBot, uti
   try {
     Log.info(`[${user.id}]`, `Provádím UI příkaz pro aktuálního uživatele: ${uiCommand.command}`);
 
-    // Použij stávající Facebook connection
+    // Použij stávající FB connection
     const uiBot = new UIBot();
     let uiSuccess = false;
 
@@ -503,15 +503,15 @@ async function initializeRequiredServices(user, context, requirements, existingF
       Log.success(`[${user.id}]`, 'UTIO úspěšně inicializováno');
     }
 
-    // Inicializuj Facebook pouze pokud je potřeba a ještě není
-    if (requirements.needsFacebook && (!fbBot || !fbBot.isReady())) {
-      Log.info(`[${user.id}]`, 'Inicializuji Facebook...');
+    // Inicializuj FB pouze pokud je potřeba a ještě není
+    if (requirements.needsFB && (!fbBot || !fbBot.isReady())) {
+      Log.info(`[${user.id}]`, 'Inicializuji FB...');
 
       if (fbBot) await fbBot.close();
 
-      fbBot = new FacebookBot(context);
+      fbBot = new FBBot(context);
       if (!await fbBot.init()) {
-        throw new Error('Facebook initialization failed');
+        throw new Error('FB initialization failed');
       }
 
       const fbStatus = await fbBot.openFB(user);
@@ -521,10 +521,10 @@ async function initializeRequiredServices(user, context, requirements, existingF
         } else {
           await db.lockAccount(user.id);
         }
-        throw new Error('Facebook login failed');
+        throw new Error('FB login failed');
       }
 
-      Log.success(`[${user.id}]`, 'Facebook úspěšně inicializován');
+      Log.success(`[${user.id}]`, 'FB úspěšně inicializován');
     }
 
     return { fbBot, utioBot };
@@ -551,9 +551,9 @@ async function cleanupUserSession(user, browser, fbBot, utioBot, browserClosed) 
   if (fbBot) {
     try {
       await fbBot.close();
-      Log.debug(`[${user.id}]`, 'FacebookBot uzavřen');
+      Log.debug(`[${user.id}]`, 'FBBot uzavřen');
     } catch (err) {
-      Log.warn('[WORKER]', `Chyba při cleanup FacebookBot: ${err.message}`);
+      Log.warn('[WORKER]', `Chyba při cleanup FBBot: ${err.message}`);
     }
   }
 
@@ -624,8 +624,8 @@ async function prepareBrowser(user) {
 
   const context = browser.defaultBrowserContext();
   for (const origin of [
-    'https://www.facebook.com',
-    'https://m.facebook.com',
+    'https://www.FB.com',
+    'https://m.FB.com',
     'https://utio.b3group.cz'
   ]) {
     await context.overridePermissions(origin, []);

@@ -5,7 +5,7 @@
 - Při komunikaci používáš výhradně český jazyk, pro psaní programového kódu jazyk anglický.
 
 # Hlavní cíl projektu IVY:
-- Vyvíjíme a spravujeme sadu Puppeteer botů, kteří ovládají nekolik desítek účtů virtuálních uživatelů Facebooku.
+- Vyvíjíme a spravujeme sadu Puppeteer botů, kteří ovládají nekolik desítek účtů virtuálních uživatelů iv_fb_support.jsu.
 - Chování botů se musí co nejvíce přibližovat reálným uživatelům. Vykonávají akce jako: přidávání přátel, lajkování příspěvků, odesílání zpráv, komentování atd.
 - Hlavním cílem je přirozené lidské chování při interakcích se skupinami a uživateli.
 - Projekt se nachází na GIThub repozitáři https://github.com/Zdendys79/ivy4b3t.

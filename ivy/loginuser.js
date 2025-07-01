@@ -13,7 +13,7 @@ import readline from 'readline';
 import puppeteer from 'puppeteer';
 
 import { db } from './iv_sql.js'
-import { FacebookBot } from './iv_fb.class.js';
+import { FBBot } from './iv_fb.class.js';
 import { Log } from './iv_log.class.js';
 
 import * as wait from './iv_wait.js';
@@ -85,23 +85,23 @@ process.on('SIGINT', async () => {
     // Spusť browser s profilem uživatele
     browser = await launchBrowserForUser(selectedUser);
 
-    // Inicializuj FacebookBot
+    // Inicializuj FBBot
     const context = browser.defaultBrowserContext();
-    const fbBot = new FacebookBot(context);
+    const fbBot = new FBBot(context);
 
     if (!await fbBot.init()) {
-      throw new Error('Inicializace FacebookBot selhala');
+      throw new Error('Inicializace FBBot selhala');
     }
 
-    // Přihlas se na Facebook
-    Log.info('[LOGINUSER]', 'Přihlašuji se na Facebook...');
+    // Přihlas se na FB
+    Log.info('[LOGINUSER]', 'Přihlašuji se na FB...');
     const loginSuccess = await fbBot.openFB(selectedUser);
 
     if (loginSuccess) {
-      Log.success('[LOGINUSER]', `Uživatel ${selectedUser.name} ${selectedUser.surname} úspěšně přihlášen na Facebook!`);
+      Log.success('[LOGINUSER]', `Uživatel ${selectedUser.name} ${selectedUser.surname} úspěšně přihlášen na FB!`);
       await db.userLogedToFB(selectedUser.id);
     } else {
-      Log.error('[LOGINUSER]', 'Přihlášení na Facebook selhalo');
+      Log.error('[LOGINUSER]', 'Přihlášení na FB selhalo');
     }
 
     // Počkej hodinu (nebo dokud uživatel browser nezavře)
@@ -176,11 +176,11 @@ async function launchBrowserForUser(user) {
 
   const launchedBrowser = await puppeteer.launch(browserConfig);
 
-  // Nastav oprávnění pro Facebook a UTIO
+  // Nastav oprávnění pro FB a UTIO
   const context = launchedBrowser.defaultBrowserContext();
   for (const origin of [
-    'https://www.facebook.com',
-    'https://m.facebook.com',
+    'https://www.FB.com',
+    'https://m.FB.com',
     'https://utio.b3group.cz'
   ]) {
     await context.overridePermissions(origin, []);

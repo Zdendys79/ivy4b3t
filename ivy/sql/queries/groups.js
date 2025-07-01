@@ -2,7 +2,7 @@
  * Název souboru: groups.js
  * Umístění: ~/ivy/sql/queries/groups.js
  *
- * Popis: OPRAVENÉ SQL dotazy pro správu Facebook skupin (fb_groups)
+ * Popis: OPRAVENÉ SQL dotazy pro správu FB skupin (fb_groups)
  */
 
 export const GROUPS = {

@@ -4,7 +4,7 @@
  *
  * Popis: Třída UtioBot pro automatickou interakci s UTIO systémem pomocí Puppeteer.
  *        Ovládá přihlášení, získávání zpráv a správu UTIO záložky.
- *        Navržena podle vzoru FacebookBot pro konzistentní architekturu.
+ *        Navržena podle vzoru FBBot pro konzistentní architekturu.
  */
 
 import { Log } from './iv_log.class.js';

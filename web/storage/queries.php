@@ -183,10 +183,10 @@ return [
     ],
 
     // ================================
-    // FACEBOOK GROUPS & ACTIONS
+    // FB GROUPS & ACTIONS
     // ================================
 
-    'facebook' => [
+    'FB' => [
         'get_group_by_id' => "
             SELECT id, fb_id, nazev, typ, priority, user_counter, sell, last_seen, next_seen
             FROM fb_groups

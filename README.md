@@ -1,6 +1,6 @@
-# Ivy4B3T – Autonomní systém pro správu účtů na Facebooku
+# Ivy4B3T – Autonomní systém pro správu účtů na FBu
 
-**IV. Verze systému Ivy4B3T** je plně přepracovaná a modernizovaná verze původního systému pro autonomní správu Facebook účtů, který zajišťuje distribuci realitních inzerátů a správu profilů ve skupinách.
+**IV. Verze systému Ivy4B3T** je plně přepracovaná a modernizovaná verze původního systému pro autonomní správu FB účtů, který zajišťuje distribuci realitních inzerátů a správu profilů ve skupinách.
 
 ## 🎯 Hlavní cíle verze IV
 
@@ -8,7 +8,7 @@
 * Stabilní a bezpečná architektura klient-server
 * Efektivní verzování a správa aktualizací přes Git a databázi
 * Kontrola běžící verze na klientovi a automatické ukončení při nesouladu
-* Automatické přihlašování na UTIO a Facebook
+* Automatické přihlašování na UTIO a FB
 * Distribuce příspěvku do skupin podle lokality a priority
 * Snadná rozšiřitelnost a přehledná struktura kódu
 
@@ -22,7 +22,7 @@
 │   ├── ivy.js                ← Hlavní smyčka klienta (verifikační + volání tick())
 │   ├── iv_worker.js          ← Pracovní cyklus: výběr uživatele, login, akce
 │   ├── iv_ui.js              ← Zpracování UI příkazů z webového rozhraní
-│   ├── iv_fb.js              ← Práce s Facebookem (login, postování, analýza)
+│   ├── iv_fb.js              ← Práce s FBem (login, postování, analýza)
 │   ├── iv_utio.js            ← Login a práce s UTIO portálem
 │   ├── iv_wait.js            ← Pauzy a zpoždění pro simulaci lidského chování
 │   ├── iv_sql.js             ← Komunikace s databází přes ESM SQL modul
@@ -99,7 +99,7 @@
 | `ivy.js`                | Spouštěcí smyčka klienta – volá `tick()`, hlídá verzi, zapisuje heartBeat |
 | `iv_worker.js`          | Hlavní pracovní logika robota – login, akce, volání FB a UTIO             |
 | `iv_ui.js`              | Zpracování UI příkazů z tabulky `ui_commands`                             |
-| `iv_fb.js`              | Interakce s Facebookem: login, vkládání, skupiny, kontrola stavů          |
+| `iv_fb.js`              | Interakce s FBem: login, vkládání, skupiny, kontrola stavů          |
 | `iv_utio.js`            | Práce s portálem UTIO: přihlášení, výběr oblasti, získání zprávy          |
 | `iv_wait.js`            | Generování zpoždění pro simulaci lidského chování                         |
 | `iv_sql.js`             | Abstrakce databázové vrstvy pomocí dotazů ze `sql/queries/index.js`       |

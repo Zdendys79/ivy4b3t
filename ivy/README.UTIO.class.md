@@ -8,7 +8,7 @@
 
 Třída `UtioBot` zajišťuje **automatickou interakci s UTIO systémem** pomocí Puppeteer.
 Ovládá přihlášení, získávání zpráv a správu UTIO záložky.
-Je navržena podle vzoru FacebookBot pro **konzistentní architekturu**:
+Je navržena podle vzoru FBBot pro **konzistentní architekturu**:
 ➡️ `UtioBot` = interakce s UTIO systémem
 ➡️ Čistá separace logiky bez přímých volání DB/API
 
@@ -80,16 +80,16 @@ export { getRandomRegion, getRandomDistrict };
 export { newUtioTab, openUtio, getMessage, isUtioReady, closeUtio, bringToFront };
 ```
 
-## 📊 Příklad integrace s FacebookBot
+## 📊 Příklad integrace s FBBot
 
 ```javascript
 import { UtioBot } from './iv_utio.class.js';
-import { FacebookBot } from './iv_fb.class.js';
+import { FBBot } from './iv_fb.class.js';
 
 async function postUtioMessage(user, group, context) {
   // Inicializace obou botů
   const utioBot = new UtioBot(context);
-  const fbBot = new FacebookBot(context);
+  const fbBot = new FBBot(context);
 
   await utioBot.init();
   await fbBot.init();
@@ -106,7 +106,7 @@ async function postUtioMessage(user, group, context) {
   );
 
   if (message) {
-    // Publikování na Facebook
+    // Publikování na FB
     await fbBot.openGroup(group);
     await fbBot.newThing();
     await fbBot.clickNewThing();
@@ -162,7 +162,7 @@ try {
 
 ## 🎯 Výhody nové architektury
 
-✅ **Konzistentní API** - Stejný vzor jako FacebookBot
+✅ **Konzistentní API** - Stejný vzor jako FBBot
 ✅ **Lepší error handling** - Robustní kontroly stavu
 ✅ **Enkapsulace** - Všechna logika v jedné třídě
 ✅ **Testovatelnost** - Snadné unit testy

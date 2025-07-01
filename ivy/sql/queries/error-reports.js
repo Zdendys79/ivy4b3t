@@ -2,8 +2,8 @@
  * Název souboru: error-reports.js
  * Umístění: ~/ivy/sql/queries/error-reports.js
  *
- * Popis: SQL dotazy pro správu Facebook error reportů
- * Obsahuje funkce pro ukládání, čtení a správu error reportů z Facebook analýzy
+ * Popis: SQL dotazy pro správu FB error reportů
+ * Obsahuje funkce pro ukládání, čtení a správu error reportů z FB analýzy
  */
 
 export const ERROR_REPORTS = {

@@ -446,7 +446,7 @@ CREATE TABLE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 
--- Popis: Tabulka pro ukládání detailních error reportů z Facebook analýzy
+-- Popis: Tabulka pro ukládání detailních error reportů z FB analýzy
 -- Používá se při detekci problémů se stránkami a účty
 CREATE TABLE
   IF NOT EXISTS fb_error_reports (
@@ -483,7 +483,7 @@ CREATE TABLE
     KEY idx_user_id (user_id),
     KEY idx_error_type (error_type),
     KEY idx_reviewed (reviewed)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'Error reporty z Facebook analýzy pro autonomní učení systému';
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'Error reporty z FB analýzy pro autonomní učení systému';
 
 CREATE TABLE
   `v_locked_accounts` (

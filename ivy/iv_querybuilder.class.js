@@ -129,7 +129,7 @@ export class QueryBuilder {
   }
 
   // =========================================================
-  // GROUPS - Správa Facebook skupin
+  // GROUPS - Správa FB skupin
   // =========================================================
 
   async getGroupById(id) {

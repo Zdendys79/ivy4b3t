@@ -1,25 +1,25 @@
 /**
- * Název souboru: iv_facebook_support.js
- * Umístění: ~/ivy/iv_facebook_support.js
+ * Název souboru: iv_fb_support.js
+ * Umístění: ~/ivy/iv_fb_support.js
  *
- * Popis: Specializované Facebook podporné funkce
+ * Popis: Specializované FB podporné funkce
  * Moderní ESM modul s inline exporty
  */
 
 import { Log } from './iv_log.class.js';
 
 /**
- * Ověří připravenost Facebook stránky před získáním zprávy z UTIO
+ * Ověří připravenost FB stránky před získáním zprávy z UTIO
  */
-export async function verifyFacebookReadinessForUtio(user, group, fbBot) {
+export async function verifyFBReadinessForUtio(user, group, fbBot) {
   try {
-    Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost Facebook stránky před UTIO operací...');
+    Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost FB stránky před UTIO operací...');
 
-    // 1. Základní kontrola FacebookBot
+    // 1. Základní kontrola FBBot
     if (!fbBot || !fbBot.page || fbBot.page.isClosed()) {
       return {
         ready: false,
-        reason: 'FacebookBot není dostupný nebo stránka je zavřená',
+        reason: 'FBBot není dostupný nebo stránka je zavřená',
         critical: true
       };
     }
@@ -72,7 +72,7 @@ export async function verifyFacebookReadinessForUtio(user, group, fbBot) {
       return fieldCheck;
     }
 
-    Log.success(`[${user.id}]`, '🎯 Facebook stránka je připravena pro UTIO operaci');
+    Log.success(`[${user.id}]`, '🎯 FB stránka je připravena pro UTIO operaci');
     return {
       ready: true,
       reason: 'Všechny kontroly prošly úspěšně',
@@ -100,7 +100,7 @@ export async function performBasicReadinessCheck(user, group, fbBot) {
     if (!isLoggedIn) {
       return {
         ready: false,
-        reason: 'Uživatel není přihlášen na Facebook',
+        reason: 'Uživatel není přihlášen na FB',
         critical: true
       };
     }
@@ -110,7 +110,7 @@ export async function performBasicReadinessCheck(user, group, fbBot) {
     if (accountLocked) {
       return {
         ready: false,
-        reason: typeof accountLocked === 'string' ? 
+        reason: typeof accountLocked === 'string' ?
           accountLocked : 'Účet je zablokován nebo omezen',
         critical: true
       };
@@ -127,7 +127,7 @@ export async function performBasicReadinessCheck(user, group, fbBot) {
       };
     }
 
-    Log.success(`[${user.id}]`, '✅ Základní kontroly Facebook prošly');
+    Log.success(`[${user.id}]`, '✅ Základní kontroly FB prošly');
     return {
       ready: true,
       reason: 'Základní kontroly prošly úspěšně'
@@ -227,13 +227,13 @@ export async function verifyPostingField(user, fbBot) {
 export async function checkPageResponsiveness(user, fbBot) {
   try {
     const startTime = Date.now();
-    
+
     await fbBot.page.evaluate(() => {
       return document.readyState === 'complete';
     });
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     if (responseTime > 5000) {
       return {
         responsive: false,
@@ -259,11 +259,11 @@ export async function checkPageResponsiveness(user, fbBot) {
 }
 
 /**
- * Ověří stav Facebook stránky po návratu z UTIO
+ * Ověří stav FB stránky po návratu z UTIO
  */
 export async function verifyStateAfterUtioReturn(user, group, fbBot, originalState) {
   try {
-    Log.info(`[${user.id}]`, '🔄 Ověřuji stav Facebook po návratu z UTIO...');
+    Log.info(`[${user.id}]`, '🔄 Ověřuji stav FB po návratu z UTIO...');
 
     // Kontrola URL
     const currentUrl = fbBot.page.url();
@@ -283,7 +283,7 @@ export async function verifyStateAfterUtioReturn(user, group, fbBot, originalSta
       Log.warn(`[${user.id}]`, 'Titul stránky se významně změnil');
     }
 
-    // Rychlá kontrola dostupnosti Facebook funkcí
+    // Rychlá kontrola dostupnosti FB funkcí
     const functionsCheck = await fbBot.page.evaluate(() => {
       try {
         const elementCount = document.querySelectorAll('*').length;
@@ -334,7 +334,7 @@ export async function verifyStateAfterUtioReturn(user, group, fbBot, originalSta
       }
     }
 
-    Log.success(`[${user.id}]`, '✅ Stav Facebook stránky je v pořádku po návratu z UTIO');
+    Log.success(`[${user.id}]`, '✅ Stav FB stránky je v pořádku po návratu z UTIO');
     return {
       valid: true,
       reason: 'Stav je konzistentní'
@@ -351,9 +351,9 @@ export async function verifyStateAfterUtioReturn(user, group, fbBot, originalSta
 }
 
 /**
- * Univerzální ověření připravenosti Facebook stránky
+ * Univerzální ověření připravenosti FB stránky
  */
-export async function verifyFacebookReadiness(user, fbBot, options = {}) {
+export async function verifyFBReadiness(user, fbBot, options = {}) {
   const {
     requireSpecificGroup = null,
     requirePostingCapability = true,
@@ -362,13 +362,13 @@ export async function verifyFacebookReadiness(user, fbBot, options = {}) {
   } = options;
 
   try {
-    Log.info(`[${user.id}]`, '🔍 Provádím ověření připravenosti Facebook...');
+    Log.info(`[${user.id}]`, '🔍 Provádím ověření připravenosti FB...');
 
     // Základní kontroly
     if (!fbBot || !fbBot.page || fbBot.page.isClosed()) {
       return {
         ready: false,
-        reason: 'FacebookBot není dostupný',
+        reason: 'FBBot není dostupný',
         critical: true
       };
     }
@@ -429,9 +429,9 @@ export async function verifyFacebookReadiness(user, fbBot, options = {}) {
 }
 
 /**
- * Ověří, zda je Facebook stránka připravená k použití
+ * Ověří, zda je FB stránka připravená k použití
  */
-export async function isFacebookReady(fbBot) {
+export async function isFBReady(fbBot) {
   try {
     if (!fbBot || !fbBot.page) {
       return false;
@@ -442,7 +442,7 @@ export async function isFacebookReady(fbBot) {
     }
 
     const url = fbBot.page.url();
-    if (!url.includes('facebook.com')) {
+    if (!url.includes('FB.com')) {
       return false;
     }
 
@@ -456,7 +456,7 @@ export async function isFacebookReady(fbBot) {
     return true;
 
   } catch (err) {
-    Log.warn('[FACEBOOK_SUPPORT]', `Chyba při kontrole Facebook stránky: ${err.message}`);
+    Log.warn('[FB_SUPPORT]', `Chyba při kontrole FB stránky: ${err.message}`);
     return false;
   }
 }

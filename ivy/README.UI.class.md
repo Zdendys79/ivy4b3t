@@ -10,7 +10,7 @@ Třída `UIBot` zajišťuje **zpracování UI příkazů z webového rozhraní**
 
 ➡️ **Bypass logika**: UI příkazy mají vždy prioritu před autonomním režimem
 ➡️ **Přepínání režimů**: Přeruší běžnou činnost a přepne do UI režimu
-➡️ **Konzistentní architektura**: Navržena podle vzoru FacebookBot
+➡️ **Konzistentní architektura**: Navržena podle vzoru FBBot
 
 ## 🎮 Podporované UI příkazy
 
@@ -94,7 +94,7 @@ CREATE TABLE `ui_commands` (
 | `_handlePause(data)`           | Zpracuje pause příkaz                    |
 | `_handleCallUser(data)`        | Zpracuje call_user příkaz                |
 | `_handleUserGroup(data)`       | Zpracuje user_group příkaz               |
-| `_initializeBrowser(userId)`   | Inicializuje browser a FacebookBot      |
+| `_initializeBrowser(userId)`   | Inicializuje browser a FBBot      |
 | `_waitForNextCommand(timeout)` | Čeká na další UI příkaz                  |
 | `_cleanup()`                   | Vyčistí všechny zdroje                   |
 

@@ -4,14 +4,14 @@
  *
  * Popis: Třída UIBot pro zpracování UI příkazů z webového rozhraní.
  *        Umožňuje přerušit běžný cyklus a přepnout do UI režimu podle příkazů z databáze.
- *        Navržena podle vzoru FacebookBot pro konzistentní architekturu.
+ *        Navržena podle vzoru FBBot pro konzistentní architekturu.
  */
 
 import os from 'node:os';
 import puppeteer from 'puppeteer';
 
 import { db } from './iv_sql.js'
-import { FacebookBot } from './iv_fb.class.js';
+import { FBBot } from './iv_fb.class.js';
 import { Log } from './iv_log.class.js';
 
 import * as wait from './iv_wait.js';
@@ -291,7 +291,7 @@ export class UIBot {
   // ==========================================
 
   /**
-   * Inicializuje browser a FacebookBot
+   * Inicializuje browser a FBBot
    * @param {number} userId - ID uživatele pro profil
    * @returns {Promise<void>}
    * @private
@@ -323,10 +323,10 @@ export class UIBot {
       });
 
       const context = this.browser.defaultBrowserContext();
-      await context.overridePermissions("https://www.facebook.com", []);
-      await context.overridePermissions("https://m.facebook.com", []);
+      await context.overridePermissions("https://www.FB.com", []);
+      await context.overridePermissions("https://m.FB.com", []);
 
-      this.fbBot = new FacebookBot(context);
+      this.fbBot = new FBBot(context);
       await this.fbBot.init();
     }
   }

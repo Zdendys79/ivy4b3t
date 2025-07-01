@@ -1,4 +1,4 @@
-# FacebookBot README
+# FBBot README
 
 ## 📂 Umístění
 
@@ -6,22 +6,22 @@
 
 ## 🌟 Účel
 
-Třída `FacebookBot` zajišťuje **automatickou interakci s Facebookem** pomocí Puppeteer.
+Třída `FBBot` zajišťuje **automatickou interakci s FBem** pomocí Puppeteer.
 Ovládá přihlášení, psaní příspěvků, interakce se skupinami, detekci obsahu a další činnosti.
 Je navržena pro **čistou separaci logiky**:
-➡️ `FacebookBot` = interakce s Facebookem
+➡️ `FBBot` = interakce s FBem
 ➡️ Žádné přímé volání DB, API, logiky projektu.
 
 ## 🏗️ Základní použití
 
 ```javascript
-import { FacebookBot } from './iv_fb.class.js';
+import { FBBot } from './iv_fb.class.js';
 import puppeteer from 'puppeteer';
 
 (async () => {
   const browser = await puppeteer.launch({ headless: false });
   const context = await browser.createIncognitoBrowserContext();
-  const fbBot = new FacebookBot(context);
+  const fbBot = new FBBot(context);
 
   await fbBot.init();
   const user = { id: 85, name: 'Pavla', surname: 'Skřivánková', fb_login: 'pavla@example.com', fb_pass: '123456' };
@@ -41,7 +41,7 @@ import puppeteer from 'puppeteer';
 | Metoda                       | Popis                                         |
 | ---------------------------- | --------------------------------------------- |
 | `init()`                     | Inicializuje Puppeteer stránku                |
-| `openFB(user)`               | Přihlásí uživatele na Facebook                |
+| `openFB(user)`               | Přihlásí uživatele na FB                |
 | `newThing(index)`            | Najde pole pro psaní příspěvku                |
 | `clickNewThing()`            | Klikne do pole pro psaní příspěvku            |
 | `pasteStatement(text)`       | Vloží text příspěvku                          |
@@ -75,6 +75,6 @@ import puppeteer from 'puppeteer';
 
 ## 🛡️ Poznámky
 
-✅ Třída je optimalizovaná pro Puppeteer + Facebook UI (stav k roku 2025).
+✅ Třída je optimalizovaná pro Puppeteer + FB UI (stav k roku 2025).
 ✅ Čekací doby (`wait.timeout()`) lze upravit v `iv_wait.js` podle rychlosti serveru a připojení.
-✅ Přesnost závisí na stabilitě DOM struktury Facebooku (možné budoucí změny).
+✅ Přesnost závisí na stabilitě DOM struktury FBu (možné budoucí změny).

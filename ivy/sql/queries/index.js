@@ -3,7 +3,7 @@
  * Umístění: ~/ivy/sql/queries/index.js
  *
  * Popis: AKTUALIZOVANÝ hlavní exportní bod pro všechny SQL dotazy
- * Změny: Přidán ERROR_REPORTS modul pro Facebook error reporting systém
+ * Změny: Přidán ERROR_REPORTS modul pro FB error reporting systém
  */
 
 import { USERS } from './users.js';
