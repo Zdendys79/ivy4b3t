@@ -322,6 +322,44 @@ export async function updatePostStats(group, user, actionCode) {
 }
 
 /**
+ * Zavře prázdné záložky v browseru
+ * @param {Object} context - Browser context
+ * @returns {Promise<void>}
+ */
+export async function closeBlankTabs(context) {
+  try {
+    const pages = await context.pages();
+    if (!pages || pages.length === 0) {
+      Log.info('[BROWSER]', 'Žádné záložky k zavření');
+      return;
+    }
+    let closedCount = 0;
+    for (const page of pages) {
+      try {
+        const title = await page.title();
+        const url = page.url();
+        if ((title === '' || title === 'about:blank') && url === 'about:blank') {
+          if (pages.length > 1) {
+            Log.info('[BROWSER]', 'Zavírám prázdnou výchozí záložku.');
+            await page.close();
+            closedCount++;
+          } else {
+            Log.warn('[BROWSER]', 'Nelze zavřít jedinou záložku.');
+          }
+        }
+      } catch (err) {
+        Log.warn('[BROWSER]', `Chyba při kontrole záložky: ${err.message}`);
+      }
+    }
+    if (closedCount > 0) {
+      Log.info('[BROWSER]', `Zavřeno ${closedCount} prázdných záložek`);
+    }
+  } catch (err) {
+    Log.error('[BROWSER]', `Chyba při zavírání prázdných záložek: ${err.message}`);
+  }
+}
+
+/**
  * Generuje náhodnou pauzu před akcí na základě typu akce
  */
 export async function humanPause(actionType = 'default') {
