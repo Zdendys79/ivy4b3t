@@ -144,8 +144,8 @@ export class QueryBuilder {
   // SYSTEM - Systémové funkce
   // =========================================================
 
-  async heartbeat(userId = 0, groupId = 0, version = 'unknown') {
-    return await this.safeExecute('system.heartbeat', [
+  async heartBeat(userId = 0, groupId = 0, version = 'unknown') {
+    return await this.safeExecute('system.heartBeat', [
       hostname, userId, groupId, version, userId, groupId, version
     ]);
   }

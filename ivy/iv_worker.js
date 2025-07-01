@@ -10,7 +10,7 @@
  * 5. Dokončení akce → návrat na krok 2 (opakované losování)
  * 6. Po vyprázdnění kola → account_delay/account_sleep
  * 7. Zavření prohlížeče
- * 8. Čekání 1-5 minut s heartbeat každých 30s
+ * 8. Čekání 1-5 minut s heartBeat každých 30s
  */
 
 import fs from 'fs';
@@ -40,7 +40,7 @@ const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
 export async function tick() {
   try {
     // 🎯 KROK 1: HEARTBEAT + UI PŘÍKAZY (před výběrem uživatele)
-    Log.debug('[WORKER]', '🔍 Krok 1: Kontrola heartbeat a UI příkazů...');
+    Log.debug('[WORKER]', '🔍 Krok 1: Kontrola heartBeat a UI příkazů...');
 
     const uiResult = await checkUICommandsAndHeartbeat(null);
     if (uiResult.hasUICommand) {
@@ -255,7 +255,7 @@ async function checkUICommandsAndHeartbeat(currentUser) {
   };
 
   try {
-    // Odeslání heartbeat
+    // Odeslání heartBeat
     await db.heartBeat(currentUser?.id || 0, 0, 'IVY4B3T');
 
     // Kontrola UI příkazů
@@ -446,27 +446,27 @@ async function extractRequestedUserFromUICommand(uiCommand) {
 }
 
 /**
- * KROK 9: Čekání s pravidelným heartbeat
+ * KROK 9: Čekání s pravidelným heartBeat
  */
 async function waitWithHeartbeat(waitMinutes = null) {
   const waitTime = waitMinutes || IvMath.randInterval(1, 5); // 1-5 minut náhodně
   const waitMs = waitTime * 60 * 1000;
-  const heartbeatInterval = 30 * 1000; // 30 sekund
+  const heartBeatInterval = 30 * 1000; // 30 sekund
 
-  Log.info('[WORKER]', `Krok 9: Čekám ${waitTime} minut s heartbeat každých 30s...`);
+  Log.info('[WORKER]', `Krok 9: Čekám ${waitTime} minut s heartBeat každých 30s...`);
 
   let elapsed = 0;
   while (elapsed < waitMs) {
-    // Odeslání heartbeat
+    // Odeslání heartBeat
     try {
       await db.heartBeat(0, 0, 'IVY4B3T');
       Log.debug('[WORKER]', 'Heartbeat odeslán během čekání');
     } catch (err) {
-      Log.warn('[WORKER]', `Chyba při heartbeat: ${err.message}`);
+      Log.warn('[WORKER]', `Chyba při heartBeat: ${err.message}`);
     }
 
     // Čekání 30 sekund nebo do konce
-    const sleepTime = Math.min(heartbeatInterval, waitMs - elapsed);
+    const sleepTime = Math.min(heartBeatInterval, waitMs - elapsed);
     await wait.delay(sleepTime);
     elapsed += sleepTime;
 

@@ -119,18 +119,18 @@ if (!defined('IVY_FRAMEWORK')) {
                     </div>
                 </div>
                 <div class="card-body">
-                    <div id="heartbeat-list" class="heartbeat-list">
-                        <?php if (!empty($system_status['heartbeats'])): ?>
-                            <?php foreach ($system_status['heartbeats'] as $heartbeat): ?>
-                                <div class="heartbeat-item">
-                                    <div class="heartbeat-host">
-                                        <strong><?php echo htmlspecialchars($heartbeat['host']); ?></strong>
-                                        <span class="heartbeat-status online">●</span>
+                    <div id="heartBeat-list" class="heartBeat-list">
+                        <?php if (!empty($system_status['heartBeats'])): ?>
+                            <?php foreach ($system_status['heartBeats'] as $heartBeat): ?>
+                                <div class="heartBeat-item">
+                                    <div class="heartBeat-host">
+                                        <strong><?php echo htmlspecialchars($heartBeat['host']); ?></strong>
+                                        <span class="heartBeat-status online">●</span>
                                     </div>
-                                    <div class="heartbeat-details">
-                                        <span class="heartbeat-user">User: <?php echo htmlspecialchars($heartbeat['user_id']); ?></span>
-                                        <span class="heartbeat-time"><?php echo date('H:i:s', strtotime($heartbeat['up'])); ?></span>
-                                        <span class="heartbeat-version"><?php echo htmlspecialchars($heartbeat['version'] ?? 'N/A'); ?></span>
+                                    <div class="heartBeat-details">
+                                        <span class="heartBeat-user">User: <?php echo htmlspecialchars($heartBeat['user_id']); ?></span>
+                                        <span class="heartBeat-time"><?php echo date('H:i:s', strtotime($heartBeat['up'])); ?></span>
+                                        <span class="heartBeat-version"><?php echo htmlspecialchars($heartBeat['version'] ?? 'N/A'); ?></span>
                                     </div>
                                 </div>
                             <?php endforeach; ?>

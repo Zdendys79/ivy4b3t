@@ -51,9 +51,9 @@ return [
     // ================================
 
     'system' => [
-        'get_active_heartbeats' => "
+        'get_active_heartBeats' => "
             SELECT host, up, user_id, group_id, version
-            FROM heartbeat
+            FROM heartBeat
             WHERE up > NOW() - INTERVAL 5 MINUTE
             ORDER BY up DESC
         ",
@@ -255,7 +255,7 @@ return [
             SELECT
                 (SELECT COUNT(*) FROM fb_users WHERE locked IS NULL) as active_users,
                 (SELECT COUNT(*) FROM fb_groups WHERE priority > 0) as active_groups,
-                (SELECT COUNT(*) FROM heartbeat WHERE up > NOW() - INTERVAL 5 MINUTE) as online_hosts,
+                (SELECT COUNT(*) FROM heartBeat WHERE up > NOW() - INTERVAL 5 MINUTE) as online_hosts,
                 (SELECT COUNT(*) FROM action_log WHERE timestamp > NOW() - INTERVAL 1 HOUR) as recent_actions
         ",
 
@@ -279,13 +279,13 @@ return [
                 NOW() as last_check
             UNION ALL
             SELECT
-                'heartbeat' as component,
+                'heartBeat' as component,
                 CASE
                     WHEN COUNT(*) > 0 THEN 'healthy'
                     ELSE 'warning'
                 END as status,
                 MAX(up) as last_check
-            FROM heartbeat
+            FROM heartBeat
             WHERE up > NOW() - INTERVAL 10 MINUTE
         "
     ]

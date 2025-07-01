@@ -199,7 +199,7 @@ END;;
 
 DELIMITER ;
 
-CREATE TABLE `heartbeat` (
+CREATE TABLE `heartBeat` (
   `host` varchar(15) NOT NULL,
   `up` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `version` varchar(7) DEFAULT NULL,

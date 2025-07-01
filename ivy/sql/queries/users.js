@@ -58,7 +58,7 @@ export const USERS = {
 
   getFromNeighborhood: `
     SELECT user_loged
-    FROM heartbeat
+    FROM heartBeat
     WHERE SUBSTRING(host, 8, 1) = SUBSTRING(?, 8, 1)
       AND user_loged > NOW() - INTERVAL ? MINUTE
   `,

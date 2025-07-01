@@ -172,11 +172,11 @@ class AuthController extends BaseController
     private function get_system_info()
     {
         try {
-            $heartbeats = $this->db->get_active_heartbeats();
+            $heartBeats = $this->db->get_active_heartBeats();
             $user_stats = $this->db->get_user_statistics();
 
             return [
-                'active_hosts' => count($heartbeats),
+                'active_hosts' => count($heartBeats),
                 'total_users' => $user_stats['total_users'] ?? 0,
                 'active_users' => $user_stats['active_users'] ?? 0,
                 'version' => 'IVY4B3T v2.0'

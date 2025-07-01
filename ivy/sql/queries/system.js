@@ -9,15 +9,15 @@
 export const SYSTEM = {
   // ===== HEARTBEAT SYSTEM =====
 
-  heartbeat: `
-    INSERT LOW_PRIORITY INTO heartbeat (host, up, user_id, group_id, version)
+  heartBeat: `
+    INSERT LOW_PRIORITY INTO heartBeat (host, up, user_id, group_id, version)
     VALUES (?, NOW(), ?, ?, ?)
     ON DUPLICATE KEY UPDATE up = NOW(), user_id = ?, group_id = ?, version = ?
   `,
 
   getActiveHeartbeats: `
     SELECT host, up, user_id, group_id, version
-    FROM heartbeat
+    FROM heartBeat
     WHERE up > NOW() - INTERVAL 5 MINUTE
     ORDER BY up DESC
   `,
@@ -32,13 +32,13 @@ export const SYSTEM = {
       u.name,
       u.surname,
       TIMESTAMPDIFF(MINUTE, h.up, NOW()) as minutes_ago
-    FROM heartbeat h
+    FROM heartBeat h
     LEFT JOIN fb_users u ON h.user_id = u.id
     ORDER BY h.up DESC
   `,
 
   cleanOldHeartbeats: `
-    DELETE FROM heartbeat
+    DELETE FROM heartBeat
     WHERE up < NOW() - INTERVAL ? HOUR
   `,
 
@@ -47,9 +47,9 @@ export const SYSTEM = {
       COUNT(*) as total_hosts,
       COUNT(CASE WHEN up > NOW() - INTERVAL 5 MINUTE THEN 1 END) as active_hosts,
       COUNT(CASE WHEN up > NOW() - INTERVAL 1 HOUR THEN 1 END) as recent_hosts,
-      MIN(up) as oldest_heartbeat,
-      MAX(up) as newest_heartbeat
-    FROM heartbeat
+      MIN(up) as oldest_heartBeat,
+      MAX(up) as newest_heartBeat
+    FROM heartBeat
   `,
 
   // ===== VERSION MANAGEMENT =====
@@ -215,7 +215,7 @@ export const SYSTEM = {
     SELECT
       (SELECT COUNT(*) FROM fb_users WHERE locked IS NULL) as active_users,
       (SELECT COUNT(*) FROM fb_users WHERE locked IS NOT NULL) as locked_users,
-      (SELECT COUNT(*) FROM heartbeat WHERE up > NOW() - INTERVAL 5 MINUTE) as active_hosts,
+      (SELECT COUNT(*) FROM heartBeat WHERE up > NOW() - INTERVAL 5 MINUTE) as active_hosts,
       (SELECT COUNT(*) FROM action_log WHERE timestamp >= CURDATE()) as actions_today,
       (SELECT COUNT(*) FROM fb_groups WHERE priority > 0) as active_groups,
       (SELECT code FROM versions ORDER BY created DESC LIMIT 1) as current_version
@@ -228,13 +228,13 @@ export const SYSTEM = {
       NOW() as checked_at
     UNION ALL
     SELECT
-      'heartbeat' as component,
+      'heartBeat' as component,
       CASE
         WHEN COUNT(*) > 0 THEN 'OK'
         ELSE 'WARNING'
       END as status,
       NOW() as checked_at
-    FROM heartbeat
+    FROM heartBeat
     WHERE up > NOW() - INTERVAL 10 MINUTE
   `,
 
@@ -251,7 +251,7 @@ export const SYSTEM = {
   // ===== MAINTENANCE QUERIES =====
 
   optimizeTables: `
-    OPTIMIZE TABLE action_log, heartbeat, log_s, user_action_plan
+    OPTIMIZE TABLE action_log, heartBeat, log_s, user_action_plan
   `,
 
   getTableSizes: `

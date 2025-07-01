@@ -4,7 +4,7 @@
  *
  * Úcel:
  * - periodické hlídání stavu klienta
- * - zapisuje heartbeat do DB
+ * - zapisuje heartBeat do DB
  * - kontroluje produkční verzi v databázi a ukončí se při nesouladu
  * - volá pracovní smyčku (iv_worker.tick)
  */

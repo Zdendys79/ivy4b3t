@@ -131,7 +131,7 @@ export const QueryUtils = {
     const knownTables = {
       'fb_groups': ['id', 'fb_id', 'nazev', 'priority', 'user_counter', 'note', 'last_seen', 'next_seen', 'typ', 'region_id', 'district_id', 'sell'],
       'fb_users': ['id', 'name', 'surname', 'day_limit', 'max_limit', 'next_worktime', 'next_statement', 'e_mail', 'e_pass', 'fb_login', 'fb_pass', 'u_login', 'u_pass', 'locked', 'lock_reason', 'lock_type', 'unlocked', 'day_limit_updated', 'last_add_group', 'portal_id', 'host'],
-      'heartbeat': ['host', 'up', 'version', 'user_id', 'user_loged', 'group_id', 'data', 'remote_url'],
+      'heartBeat': ['host', 'up', 'version', 'user_id', 'user_loged', 'group_id', 'data', 'remote_url'],
       'action_log': ['id', 'timestamp', 'account_id', 'action_code', 'reference_id', 'text'],
       'action_definitions': ['action_code', 'label', 'description', 'weight', 'min_minutes', 'max_minutes', 'repeatable', 'active'],
       'quotes': ['id', 'user_id', 'text', 'author', 'hash', 'next_seen'],

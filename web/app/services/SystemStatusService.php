@@ -32,7 +32,7 @@ class SystemStatusService
         try {
             return [
                 'summary' => $this->db->query_first('system_status', 'get_dashboard_summary'),
-                'heartbeats' => $this->db->query_all('system_status', 'get_active_heartbeats'),
+                'heartBeats' => $this->db->query_all('system_status', 'get_active_heartBeats'),
                 'user_stats' => $this->db->query_first('system_status', 'get_user_statistics'),
                 'last_updated' => date('Y-m-d H:i:s')
             ];
@@ -187,14 +187,14 @@ class SystemStatusService
     private function get_system_uptime()
     {
         try {
-            // Get oldest active heartbeat as proxy for system uptime
-            $oldest_heartbeat = $this->db->query_first(
+            // Get oldest active heartBeat as proxy for system uptime
+            $oldest_heartBeat = $this->db->query_first(
                 'system_status',
-                'get_oldest_active_heartbeat'
+                'get_oldest_active_heartBeat'
             );
 
-            if ($oldest_heartbeat) {
-                $start_time = new DateTime($oldest_heartbeat['up']);
+            if ($oldest_heartBeat) {
+                $start_time = new DateTime($oldest_heartBeat['up']);
                 $now = new DateTime();
                 return $now->diff($start_time)->format('%a days, %h hours, %i minutes');
             }

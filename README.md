@@ -96,7 +96,7 @@
 
 | Soubor                  | Účel                                                                      |
 | ----------------------- | ------------------------------------------------------------------------- |
-| `ivy.js`                | Spouštěcí smyčka klienta – volá `tick()`, hlídá verzi, zapisuje heartbeat |
+| `ivy.js`                | Spouštěcí smyčka klienta – volá `tick()`, hlídá verzi, zapisuje heartBeat |
 | `iv_worker.js`          | Hlavní pracovní logika robota – login, akce, volání FB a UTIO             |
 | `iv_ui.js`              | Zpracování UI příkazů z tabulky `ui_commands`                             |
 | `iv_fb.js`              | Interakce s Facebookem: login, vkládání, skupiny, kontrola stavů          |
@@ -300,7 +300,7 @@ Verze IV používá plně modulární ESM strukturu pro SQL dotazy:
 - **`quotes.js`** - Dotazy pro práci s citáty (výběr, hash kontrola)
 - **`actions.js`** - Dotazy pro plánování a správu akcí
 - **`limits.js`** - Dotazy pro správu denních a maximálních limitů
-- **`system.js`** - Systémové dotazy (verze, heartbeat, konfigurace)
+- **`system.js`** - Systémové dotazy (verze, heartBeat, konfigurace)
 - **`logs.js`** - Dotazy pro logování a audit trail
 
 ### Použití v kódu:

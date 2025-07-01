@@ -286,8 +286,8 @@ class Database
     }
 
     // System status
-    public function get_active_heartbeats() {
-        return $this->query_all('system', 'get_active_heartbeats');
+    public function get_active_heartBeats() {
+        return $this->query_all('system', 'get_active_heartBeats');
     }
 
     public function get_user_statistics() {
