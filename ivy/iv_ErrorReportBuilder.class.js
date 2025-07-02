@@ -147,23 +147,25 @@ export class ErrorReportBuilder {
 
       Log.info('[ERROR_REPORT]', 'Ukládám error report do databáze...');
 
-      const result = await db.safeExecute('error_reports.insertErrorReport', [
-        this.reportData.user_id,
-        this.reportData.user_name,
-        this.reportData.user_surname,
-        this.reportData.group_id,
-        this.reportData.group_fb_id,
-        this.reportData.error_type,
-        this.reportData.error_reason,
-        this.reportData.page_url,
-        this.reportData.page_title,
-        this.reportData.page_elements_summary,
-        this.reportData.detected_buttons,
-        this.reportData.detected_texts,
-        this.reportData.full_analysis_data,
-        this.reportData.hostname,
-        this.reportData.user_agent
-      ]);
+      const params = [
+        this.reportData.user_id || null,
+        this.reportData.user_name || null,
+        this.reportData.user_surname || null,
+        this.reportData.group_id || null,
+        this.reportData.group_fb_id || null,
+        this.reportData.error_type || null,
+        this.reportData.error_reason || null,
+        this.reportData.page_url || null,
+        this.reportData.page_title || null,
+        this.reportData.page_elements_summary || null,
+        this.reportData.detected_buttons || null,
+        this.reportData.detected_texts || null,
+        this.reportData.full_analysis_data || null,
+        this.reportData.hostname || null,
+        this.reportData.user_agent || null
+      ];
+
+      const result = await db.safeExecute('error_reports.insertErrorReport', params);
 
       if (result && result.insertId) {
         Log.success('[ERROR_REPORT]', `Error report uložen s ID: ${result.insertId}`);

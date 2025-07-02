@@ -1115,18 +1115,7 @@ export class FBBot {
       context.visibility !== 'hidden'
     );
   }
-  isValidCandidate(context) {
-    return (
-      context.visible &&
-      context.enabled &&
-      !context.buttonDisabled &&
-      context.hasButton &&
-      !context.hasActionText &&
-      context.opacity > 0.5 &&
-      context.display !== 'none' &&
-      context.visibility !== 'hidden'
-    );
-  }
+  
 
   selectBestCandidate(candidates) {
     // Prioritizujeme kandidáty podle preferencí

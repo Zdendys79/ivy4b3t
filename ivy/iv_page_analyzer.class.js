@@ -382,15 +382,8 @@ export class PageAnalyzer {
         );
 
         // Tlačítka pro sdílení
-        const shareSelectors = [
-          'span:contains("Sdílet")',
-          'span:contains("Share")',
-          '[aria-label*="Sdílet"]'
-        ];
-
-        indicators.shareButton = shareSelectors.some(selector =>
-          document.querySelector(selector) !== null
-        );
+        const shareButton = Array.from(document.querySelectorAll('span')).find(span => span.textContent.includes('Sdílet') || span.textContent.includes('Share'));
+        indicators.shareButton = !!shareButton || !!document.querySelector('[aria-label*="Sdílet"]');
 
         // Pole pro komentáře
         const commentSelectors = [
