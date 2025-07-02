@@ -83,6 +83,71 @@ mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS -e "SELECT 'Spojení úspěšné!' as
 mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS -e "YOUR_SQL_COMMAND;"
 ```
 
+### Git Commit Process
+When user says "proveď commit", use the automated commit script:
+
+```bash
+# Execute the automated commit script
+./commit.sh
+```
+
+**The script automatically performs these steps:**
+1. **Check for changes** - detects uncommitted changes
+2. **Stash changes** - if needed before pull
+3. **Pull latest** - updates from remote repository  
+4. **Restore stash** - if changes were stashed
+5. **Get commit message** - opens editor for message input
+6. **Add all changes** - stages all modifications
+7. **Create commit** - with hooks running automatically
+8. **Push to remote** - uploads commit to repository
+9. **Cleanup** - removes temporary files
+
+**Git Hooks Setup:**
+- `pre-commit` hook: Updates package.json version before commit
+- `post-commit` hook: Updates database ivy.versions table after commit
+- Hooks are symlinked from `scripts/` to `.git/hooks/`
+
+**Manual Process (fallback):**
+If script fails, use manual steps:
+
+```bash
+# 1. Create temporary commit message file
+# Write commit message to temp_commit_message.txt
+
+# 2. Check git status and changes (run in parallel)
+git status
+git diff
+git log --oneline -5
+
+# 3. Add relevant files to staging
+git add [list of modified files]
+
+# 4. Commit with message from file (hooks will run automatically)
+git commit -F temp_commit_message.txt
+
+# 5. Verify commit was successful
+git status
+
+# 6. Push to remote (may fail due to auth - this is expected)
+git push
+
+# 7. Clean up temporary file
+rm temp_commit_message.txt
+```
+
+**Commit Message Format:**
+```
+type: Brief description of changes
+
+- Bullet point describing specific change
+- Another change description
+- Third change if applicable
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
 ### Development Tools
 ```bash
 # Version management (automatically runs on git commit)
