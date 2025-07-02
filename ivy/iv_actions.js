@@ -486,9 +486,9 @@ async function navigateToHomepage(user, fbBot) {
     await wait.delay(2000 + Math.random() * 3000);
 
     const newUrl = fbBot.page.url();
-    if (!(newUrl === 'https://www.FB.com/' ||
-      newUrl === 'https://www.FB.com' ||
-      newUrl.startsWith('https://www.FB.com/?'))) {
+    if (!(newUrl === 'https://www.facebook.com/' ||
+      newUrl === 'https://www.facebook.com' ||
+      newUrl.startsWith('https://www.facebook.com/?'))) {
       throw new Error(`Navigace neúspěšná, stále nejsme na homepage. Aktuální URL: ${newUrl}`);
     }
 

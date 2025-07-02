@@ -128,6 +128,10 @@ export class QueryBuilder {
     return currentPosts < limit.max_posts;
   }
 
+  async canUserPostToGroupType(userId, groupType) {
+    return await this.canUserPost(userId, groupType.toUpperCase());
+  }
+
   // =========================================================
   // GROUPS - Správa FB skupin
   // =========================================================
