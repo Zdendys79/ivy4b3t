@@ -264,6 +264,20 @@ The project uses modern ESM modules (`"type": "module"`) throughout. All imports
 - Database version validation prevents client/server version mismatches
 - Automatic version updates via git hooks
 
+## Memory System
+
+**CLAUDE.memory** - Technical notes file (git-ignored) for:
+- Implementation details and troubleshooting notes
+- Recent fixes and known issues  
+- Commands to execute after restart
+- Temporary procedures and debugging info
+
+**CLAUDE.md** - Official project documentation (committed) for:
+- Project overview and architecture
+- Development commands and procedures
+- Code guidelines and conventions
+- Permanent reference information
+
 ## Security Notes
 
 This is a defensive automation tool for legitimate social media account management. The system includes safeguards for human-like behavior to avoid platform detection while remaining compliant with terms of service for legitimate business use cases.
