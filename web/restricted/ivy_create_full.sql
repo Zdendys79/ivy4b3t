@@ -90,6 +90,8 @@ DELIMITER;
 SET
   NAMES utf8mb4;
 
+-- Account lock history tracking table
+-- Stores historical data of account locks and unlocks with detailed information
 CREATE TABLE
   `account_lock_history` (
     `id` int (10) unsigned NOT NULL AUTO_INCREMENT,
@@ -114,6 +116,8 @@ CREATE TABLE
       CONSTRAINT `account_lock_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `fb_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'Historie zablokování a odemčení účtů';
 
+-- Action definitions table
+-- Defines available actions with their parameters and constraints
 CREATE TABLE
   `action_definitions` (
     `action_code` varchar(30) NOT NULL,
@@ -127,6 +131,8 @@ CREATE TABLE
     PRIMARY KEY (`action_code`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Action execution log table
+-- Records all executed actions with timestamps and details
 CREATE TABLE
   `action_log` (
     `id` int (10) unsigned NOT NULL AUTO_INCREMENT,
@@ -140,6 +146,8 @@ CREATE TABLE
     CONSTRAINT `action_log_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `fb_users` (`id`) ON UPDATE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Czech districts reference table
+-- Contains district codes and names for geographical organization
 CREATE TABLE
   `c_districts` (
     `id` tinyint (3) unsigned NOT NULL,
@@ -150,6 +158,8 @@ CREATE TABLE
     CONSTRAINT `c_districts_FK` FOREIGN KEY (`region_id`) REFERENCES `c_regions` (`id`) ON UPDATE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Portal reference table
+-- Defines different portal types used in the system
 CREATE TABLE
   `c_portals` (
     `id` tinyint (3) unsigned NOT NULL,
@@ -157,6 +167,8 @@ CREATE TABLE
     PRIMARY KEY (`id`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Czech regions reference table
+-- Contains region codes and names for geographical organization
 CREATE TABLE
   `c_regions` (
     `id` tinyint (3) unsigned NOT NULL,
@@ -164,6 +176,8 @@ CREATE TABLE
     PRIMARY KEY (`id`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Facebook groups table
+-- Stores information about Facebook groups for automation targeting
 CREATE TABLE
   `fb_groups` (
     `id` smallint (5) unsigned NOT NULL AUTO_INCREMENT,
@@ -181,6 +195,8 @@ CREATE TABLE
     PRIMARY KEY (`id`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Facebook users/accounts table
+-- Main table storing Facebook account credentials and status information
 CREATE TABLE
   `fb_users` (
     `id` smallint (5) unsigned NOT NULL,
@@ -260,6 +276,8 @@ END;
 
 DELIMITER;
 
+-- System heartbeat monitoring table
+-- Tracks system status and active processes across different hosts
 CREATE TABLE
   `heartBeat` (
     `host` varchar(15) NOT NULL,
@@ -273,6 +291,8 @@ CREATE TABLE
     UNIQUE KEY `host` (`host`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Quotes/messages table
+-- Stores text content for automated posting with hash-based deduplication
 CREATE TABLE
   `quotes` (
     `id` int (10) unsigned NOT NULL AUTO_INCREMENT,
@@ -311,6 +331,8 @@ END;
 
 DELIMITER;
 
+-- HTTP referers tracking table
+-- Stores unique referer URLs for analytics and tracking
 CREATE TABLE
   `referers` (
     `id` smallint (5) unsigned NOT NULL AUTO_INCREMENT,
@@ -319,6 +341,8 @@ CREATE TABLE
     UNIQUE KEY `url` (`url`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Development scheme/features tracking table
+-- Tracks development tasks and feature implementation status
 CREATE TABLE
   `scheme` (
     `id` varchar(6) NOT NULL,
@@ -332,6 +356,8 @@ CREATE TABLE
     PRIMARY KEY (`id`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_czech_ci;
 
+-- UI commands queue table
+-- Stores remote UI commands for distributed system control
 CREATE TABLE
   `ui_commands` (
     `id` bigint (20) unsigned NOT NULL AUTO_INCREMENT,
@@ -346,6 +372,8 @@ CREATE TABLE
       PRIMARY KEY (`id`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- URLs tracking table
+-- Tracks visited URLs with usage statistics
 CREATE TABLE
   `urls` (
     `used` smallint (5) unsigned NOT NULL DEFAULT 0,
@@ -354,6 +382,8 @@ CREATE TABLE
     PRIMARY KEY (`url`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- User action scheduling table
+-- Manages scheduled actions for each user with timing constraints
 CREATE TABLE
   `user_action_plan` (
     `user_id` smallint (5) unsigned NOT NULL,
@@ -363,6 +393,8 @@ CREATE TABLE
     CONSTRAINT `user_action_plan_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `fb_users` (`id`) ON DELETE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- User-group relationships table
+-- Links users to Facebook groups with relationship metadata
 CREATE TABLE
   `user_groups` (
     `user_id` smallint (5) unsigned NOT NULL,
@@ -376,6 +408,8 @@ CREATE TABLE
     CONSTRAINT `user_groups_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `fb_groups` (`id`) ON UPDATE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- User group posting limits table
+-- Defines posting limits per user for different group types
 CREATE TABLE
   `user_group_limits` (
     `user_id` smallint (5) unsigned NOT NULL,
@@ -389,6 +423,8 @@ CREATE TABLE
     CONSTRAINT `user_group_limits_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `fb_users` (`id`) ON DELETE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- System variables configuration table
+-- Stores dynamic system configuration values
 CREATE TABLE
   `variables` (
     `name` varchar(24) NOT NULL,
@@ -397,6 +433,8 @@ CREATE TABLE
     PRIMARY KEY (`name`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+-- Version tracking table
+-- Tracks application versions and git commits for deployment management
 CREATE TABLE
   `versions` (
     `id` int (10) unsigned NOT NULL AUTO_INCREMENT,
@@ -410,6 +448,8 @@ CREATE TABLE
     KEY `idx_created` (`created` DESC)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_czech_ci;
 
+-- Action quality monitoring table
+-- Tracks success rates and quality metrics for automated actions
 CREATE TABLE
   IF NOT EXISTS `action_quality` (
     `id` bigint (20) NOT NULL AUTO_INCREMENT,
@@ -424,6 +464,8 @@ CREATE TABLE
     KEY `created_at` (`created_at`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+-- System performance metrics table
+-- Stores JSON-formatted system performance and monitoring data
 CREATE TABLE
   IF NOT EXISTS `system_metrics` (
     `id` bigint (20) NOT NULL AUTO_INCREMENT,
@@ -433,6 +475,8 @@ CREATE TABLE
     KEY `timestamp` (`timestamp`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
+-- Message deduplication hashes table
+-- Prevents duplicate message posting using content hashes
 CREATE TABLE
   IF NOT EXISTS `message_hashes` (
     `id` bigint (20) NOT NULL AUTO_INCREMENT,
@@ -485,6 +529,8 @@ CREATE TABLE
     KEY idx_reviewed (reviewed)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'Error reporty z FB analýzy pro autonomní učení systému';
 
+-- Locked accounts view definition table
+-- Temporary table structure for the v_locked_accounts view
 CREATE TABLE
   `v_locked_accounts` (
     `id` smallint (5) unsigned,

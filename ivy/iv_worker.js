@@ -165,7 +165,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // 🎯 KROK 6: PROVEDENÍ AKCE
       Log.info(`[${user.id}]`, `Krok 6: Provádím akci ${actionCode}...`);
 
-      const success = await runAction(user, fbBot, actionCode, utioBot);
+      const success = await runAction(user, actionCode, { fbBot, utioBot });
       if (!success) {
         Log.warn(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
       } else {
@@ -174,7 +174,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
       // Nastavení času pro další spuštění této akce
       const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;
-      await db.updateUserActionPlan(user.id, actionCode, randMin);
+      await db.updateActionPlan(user.id, actionCode, randMin);
       Log.info(`[${user.id}]`, `Akce ${actionCode} nastavena na opakování za ${randMin} minut`);
 
       actionCount++;
@@ -230,11 +230,11 @@ async function executeEndingAction(user, picked) {
     Log.info(`[${user.id}]`, `Provádím ukončující akci: ${picked.code}`);
 
     // Ukončující akce nepotřebují prohlížeč
-    const success = await runAction(user, null, picked.code, null);
+    const success = await runAction(user, picked.code, { fbBot: null, utioBot: null });
 
     if (success) {
       const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;
-      await db.updateUserActionPlan(user.id, picked.code, randMin);
+      await db.updateActionPlan(user.id, picked.code, randMin);
       Log.success(`[${user.id}]`, `Ukončující akce ${picked.code} dokončena, další za ${randMin} minut`);
     }
   } catch (err) {

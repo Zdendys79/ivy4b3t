@@ -339,12 +339,14 @@ export class FBBot {
 
         // Zkontroluj výsledky analýzy
         if (analysis.status === 'blocked') {
-          Log.error('[FB]', `Účet je zablokován: ${analysis.errors.patterns.reason}`);
+          const errorReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
+          Log.error('[FB]', `Účet je zablokován: ${errorReason}`);
           return 'account_locked';
         }
 
         if (analysis.status === 'warning') {
-          Log.warn('[FB]', `Detekován problém: ${analysis.errors.patterns.reason}`);
+          const warningReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
+          Log.warn('[FB]', `Detekován problém: ${warningReason}`);
           // Pokračuj, ale s varováním
         }
       }
