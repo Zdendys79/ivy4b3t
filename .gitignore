@@ -1,4 +1,5 @@
 .vscode/
+.gemini/
 node_modules/
 /web/restricted/backups/
 /web/restricted/sql_config.json
