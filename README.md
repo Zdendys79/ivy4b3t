@@ -63,7 +63,7 @@
 │   ├── install-latest-node.sh ← Instalace nejnovější verze Node.js
 │   ├── bootstrap-ivy.sh      ← Bootstrap prostředí pro Ivy
 │   ├── manage-git.sh         ← Správa git repozitáře a základní operace
-│   ├── update_node_env.sh    ← Update prostředí Node.js pro Ivy
+│   ├── update-node-env.sh    ← Aktualizace NVM, Node.js a NPM
 │   ├── commit.ps1            ← PowerShell commit s verzováním a Notepad editorem
 │   ├── create_links.bat      ← Vytváření symbolických linků ve Windows
 │   ├── pre-commit            ← Git hook – automatizace před commitem
@@ -161,7 +161,7 @@
 | `install-latest-node.sh`  | Aktualizace Node.js na nejnovější verzi                        |
 | `bootstrap-ivy.sh`        | Bootstrap prostředí pro Ivy                                    |
 | `manage-git.sh`           | Správa git repozitáře a základní operace                       |
-| `update_node_env.sh`      | Update prostředí Node.js pro Ivy                               |
+| `update-node-env.sh`      | Samostatný skript pro aktualizaci NVM, Node.js a NPM.          |
 | `commit.ps1`              | PowerShell commit s verzováním a Notepad editorem              |
 | `create_links.bat`        | Vytváření symbolických linků na vývojových PC                  |
 | `pre-commit`              | Git hook – automatizace před commitem                          |
