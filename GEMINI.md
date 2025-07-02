@@ -27,3 +27,10 @@ Files: kebab-case
 Constants: UPPER_SNAKE_CASE
 
 At the end of each task (solution), create a draft commit message in English.
+
+*Git Commits*
+- For multi-line commit messages, to avoid shell formatting issues, always use the file-based commit method:
+1.  Create a temporary file named `commit_message.txt`.
+2.  Write the full commit message into this file.
+3.  Use `git commit -F commit_message.txt` to perform the commit.
+4.  After a successful commit, delete the temporary file `commit_message.txt`.
