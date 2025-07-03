@@ -52,5 +52,35 @@ export class Log {
     const message = err?.message || String(err);
     const stack = err?.stack ? '\n' + err.stack : '';
     console.error(`${now()} ${prefix} ${icons.error} [${type}]: ${message}${stack}`);
+    
+    // Trigger interactive debugger for errors
+    this.triggerDebugger('ERROR', `${prefix}: ${message}`, { type, stack, prefix });
+  }
+
+  // Interactive debugging methods
+  static async triggerDebugger(level, message, context = {}) {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { pauseOnError } = await import('./iv_interactive_debugger.js');
+      const shouldStop = await pauseOnError(level, message, context);
+      
+      if (shouldStop) {
+        console.log('\n🛑 Execution paused by user request');
+        console.log('🔍 Debug report created in ./debug_reports/');
+        process.exit(1); // Stop execution
+      }
+    } catch (err) {
+      // Fail silently if debugger is not available
+      console.warn(`[DEBUG] Debugger unavailable: ${err.message}`);
+    }
+  }
+
+  static async errorInteractive(prefix, err) {
+    this.error(prefix, err);
+  }
+
+  static async warnInteractive(prefix, ...msg) {
+    this.warn(prefix, ...msg);
+    await this.triggerDebugger('WARNING', `${prefix}: ${msg.join(' ')}`, { prefix, args: msg });
   }
 }

@@ -29,6 +29,7 @@ import { IvMath } from './iv_math.class.js';
 
 import * as wait from './iv_wait.js';
 import * as support from './iv_support.js';
+import { enableDebugger, setDebugContext } from './iv_interactive_debugger.js';
 
 const isLinux = process.platform === 'linux';
 const hostname = os.hostname();
@@ -39,7 +40,15 @@ const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
  * HLAVNÍ TICK FUNKCE - implementuje celý cyklus podle specifikace
  */
 export async function tick() {
+  // 🐛 Initialize interactive debugger if enabled
+  const debugMode = process.env.INTERACTIVE_DEBUG === 'true';
+  if (debugMode) {
+    enableDebugger(true);
+    Log.info('[WORKER]', '🐛 Interactive debugging ENABLED - errors will pause for analysis');
+  }
+
   try {
+
     // 🎯 KROK 1: HEARTBEAT + UI PŘÍKAZY (před výběrem uživatele)
     Log.debug('[WORKER]', '🔍 Krok 1: Kontrola heartBeat a UI příkazů...');
 
@@ -87,7 +96,7 @@ export async function tick() {
     await executeUserActionCycle(user);
 
   } catch (err) {
-    Log.error('[WORKER]', `Neočekávaná chyba v hlavním cyklu: ${err.message}`);
+    await Log.errorInteractive('[WORKER]', err);
 
     // 🎯 KROK 9: ČEKÁNÍ PO CHYBĚ
     await waitWithHeartbeat(2); // 2 minuty po chybě
@@ -167,7 +176,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
       const success = await runAction(user, actionCode, { fbBot, utioBot });
       if (!success) {
-        Log.warn(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
+        await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
       } else {
         Log.success(`[${user.id}]`, `Akce ${actionCode} úspěšně dokončena`);
       }
@@ -318,6 +327,11 @@ async function executeUICommand(user, uiCommand) {
     fbBot = new FBBot(context, user.id);
     if (!await fbBot.init()) {
       throw new Error('FB initialization failed for UI command');
+    }
+
+    // Set debug context for interactive debugger
+    if (debugMode && fbBot.page) {
+      setDebugContext(user, fbBot.page);
     }
 
     const fbStatus = await fbBot.openFB(user);
@@ -565,6 +579,11 @@ async function initializeRequiredServices(user, context, requirements, existingF
         throw new Error('FB initialization failed');
       }
 
+      // Set debug context for interactive debugger
+      if (debugMode && fbBot.page) {
+        setDebugContext(user, fbBot.page);
+      }
+
       const fbStatus = await fbBot.openFB(user);
 
       // NOVÁ LOGIKA - Error detection po otevření FB
@@ -572,7 +591,7 @@ async function initializeRequiredServices(user, context, requirements, existingF
         const { waitForUserIntervention } = await import('./iv_wait.js');
         const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
 
-        Log.warn(`[${user.id}]`, `🚨 FB initialization problem: ${fbStatus}`);
+        await Log.warnInteractive(`[${user.id}]`, `🚨 FB initialization problem: ${fbStatus}`);
 
         // 60s countdown s možností stisknout 'a'
         const userWantsAnalysis = await waitForUserIntervention(
