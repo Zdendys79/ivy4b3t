@@ -58,17 +58,17 @@ export class InteractiveDebugger {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const userId = this.currentUser?.id || 'unknown';
     
-    Log.warn('[DEBUGGER]', '🛑 PAUSED ON ERROR/WARNING');
-    Log.warn('[DEBUGGER]', `Error Level: ${errorLevel}`);
-    Log.warn('[DEBUGGER]', `Message: ${message}`);
-    Log.warn('[DEBUGGER]', '');
-    Log.warn('[DEBUGGER]', '💡 Options:');
-    Log.warn('[DEBUGGER]', '  [s] - STOP and create debug report');
-    Log.warn('[DEBUGGER]', '  [c] - CONTINUE without report');
-    Log.warn('[DEBUGGER]', '  [d] - DISABLE interactive debugging');
-    Log.warn('[DEBUGGER]', '  [q] - QUIT program completely');
-    Log.warn('[DEBUGGER]', '');
-    Log.warn('[DEBUGGER]', '⏱️  Auto-continue in 30 seconds...');
+    Log.info('[DEBUGGER]', '🛑 PAUSED ON ERROR/WARNING');
+    Log.info('[DEBUGGER]', `Error Level: ${errorLevel}`);
+    Log.info('[DEBUGGER]', `Message: ${message}`);
+    Log.info('[DEBUGGER]', '');
+    Log.info('[DEBUGGER]', '💡 Options:');
+    Log.info('[DEBUGGER]', '  [s] - STOP and create debug report');
+    Log.info('[DEBUGGER]', '  [c] - CONTINUE without report');
+    Log.info('[DEBUGGER]', '  [d] - DISABLE interactive debugging');
+    Log.info('[DEBUGGER]', '  [q] - QUIT program completely');
+    Log.info('[DEBUGGER]', '');
+    Log.info('[DEBUGGER]', '⏱️  Auto-continue in 30 seconds...');
 
     const response = await this.waitForUserInput(30);
 
