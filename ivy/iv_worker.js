@@ -40,12 +40,9 @@ const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
  * HLAVNÍ TICK FUNKCE - implementuje celý cyklus podle specifikace
  */
 export async function tick() {
-  // 🐛 Initialize interactive debugger if enabled
-  const debugMode = process.env.INTERACTIVE_DEBUG === 'true';
-  if (debugMode) {
-    enableDebugger(true);
-    Log.info('[WORKER]', '🐛 Interactive debugging ENABLED - errors will pause for analysis');
-  }
+  // 🐛 Interactive debugger is always enabled
+  enableDebugger(true);
+  Log.info('[WORKER]', '🐛 Interactive debugging ENABLED - errors will pause for analysis');
 
   try {
 
@@ -329,8 +326,8 @@ async function executeUICommand(user, uiCommand) {
       throw new Error('FB initialization failed for UI command');
     }
 
-    // Set debug context for interactive debugger
-    if (debugMode && fbBot.page) {
+    // Set debug context for interactive debugger (always enabled)
+    if (fbBot.page) {
       setDebugContext(user, fbBot.page);
     }
 
@@ -579,8 +576,8 @@ async function initializeRequiredServices(user, context, requirements, existingF
         throw new Error('FB initialization failed');
       }
 
-      // Set debug context for interactive debugger
-      if (debugMode && fbBot.page) {
+      // Set debug context for interactive debugger (always enabled)
+      if (fbBot.page) {
         setDebugContext(user, fbBot.page);
       }
 

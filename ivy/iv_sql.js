@@ -27,9 +27,8 @@ const pool = mysql.createPool({
   database: sql_setup.database,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000
+  queueLimit: 0
+  // Removed deprecated options: acquireTimeout, timeout
 });
 
 // =========================================================
