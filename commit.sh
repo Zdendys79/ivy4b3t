@@ -1,6 +1,7 @@
 #!/bin/bash
 # commit.sh - Automatic commit script for ivy4b3t project
 # Linux bash equivalent of commit.ps1
+# Usage: ./commit.sh [commit_msg_file]
 
 set -e  # Exit on error
 
@@ -28,20 +29,33 @@ fi
 
 echo "✅ Repository synchronized with remote"
 
-# 2️⃣ Get commit message from temporary file
-tempFile="/tmp/commit_message.txt"
-if [ -f "$tempFile" ]; then
-    rm "$tempFile"
+# 2️⃣ Get commit message from file parameter or temporary file
+if [ -n "$1" ]; then
+    # Use provided commit message file
+    tempFile="$1"
+    if [ ! -f "$tempFile" ]; then
+        echo "❌ Commit message file '$tempFile' not found."
+        exit 1
+    fi
+    echo "📝 Using commit message from: $tempFile"
+else
+    # Interactive mode - open editor
+    tempFile="/tmp/commit_message.txt"
+    if [ -f "$tempFile" ]; then
+        rm "$tempFile"
+    fi
+    touch "$tempFile"
+    
+    # Open editor (nano as fallback if EDITOR not set)
+    ${EDITOR:-nano} "$tempFile"
 fi
-touch "$tempFile"
-
-# Open editor (nano as fallback if EDITOR not set)
-${EDITOR:-nano} "$tempFile"
 
 # Check if commit message is not empty
 if [ ! -s "$tempFile" ]; then
     echo "❌ Commit message is empty. Commit cancelled."
-    rm "$tempFile"
+    if [ -z "$1" ]; then
+        rm "$tempFile"
+    fi
     exit 1
 fi
 
@@ -56,7 +70,9 @@ git commit -F "$tempFile"
 echo "[GIT] Pushing commit to remote repository..."
 git push
 
-# Cleanup
-rm "$tempFile"
+# Cleanup (only if temporary file was created)
+if [ -z "$1" ]; then
+    rm "$tempFile"
+fi
 
 echo "✅ Commit was successfully created and pushed."
