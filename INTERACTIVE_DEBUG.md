@@ -51,20 +51,17 @@ Enter your choice:
 - **[c]** - Pokračuje bez reportu
 - **[d]** - Vypne interaktivní debugging pro zbytek běhu
 
-## 📁 Debug Reports
+## 💾 Database Storage
 
-Reports se ukládají do `./debug_reports/` ve formátu:
-```
-debug_reports/
-├── 2025-07-03T15-30-45-123Z_USER_456_ERROR/
-│   ├── README.md              # Popis reportu
-│   ├── error_info.json        # Detailní informace o chybě
-│   ├── screenshot.png         # Screenshot stránky
-│   ├── dom.html              # Kompletní DOM HTML
-│   ├── console_logs.json     # Browser console logy
-│   ├── user_comment.txt      # Tvůj komentář k chybě
-│   └── system_info.json      # Systémové informace
-```
+Debug incidents se ukládají přímo do sdílené databáze v tabulce `debug_incidents`:
+
+### Tabulka obsahuje:
+- **Basic Info**: incident_id, timestamp, user_id, error_level, error_message
+- **Page Data**: page_url, page_title, user_agent
+- **Binary Data**: screenshot_data (PNG), dom_html, console_logs  
+- **User Input**: user_comment, user_analysis_request
+- **System Data**: system_info, stack_trace
+- **Analysis**: status, analyzed_by, analysis_notes, resolution_notes
 
 ## 📝 Uživatelský komentář
 
@@ -83,18 +80,46 @@ Možná je potřeba ruční verifikace účtu.
 [Enter]
 ```
 
-## 🔍 Analýza Reports
+## 🔍 Analýza Incidents
 
-### Rychlý přehled:
-1. Otevři `README.md` pro základní informace
-2. Prohlédni si `screenshot.png` pro vizuální stav
-3. Přečti `user_comment.txt` pro kontext
-4. Otevři `dom.html` v browseru pro inspekci DOM
+### Database Analysis Tools:
 
-### Detailní analýza:
-- `error_info.json` - technické detaily chyby
-- `console_logs.json` - chyby z browser console
-- `system_info.json` - info o systému a prostředí
+```bash
+# Setup database table first
+node setup_debug_incidents.js
+
+# List recent incidents
+node analyze_debug_incidents.js list
+
+# Show specific incident details  
+node analyze_debug_incidents.js show INCIDENT_ID
+
+# Export incident data to files for detailed analysis
+node analyze_debug_incidents.js export INCIDENT_ID
+
+# Show statistics
+node analyze_debug_incidents.js stats
+
+# Mark incident as resolved
+node analyze_debug_incidents.js resolve INCIDENT_ID "Fixed login issue"
+```
+
+### SQL Queries for Analysis:
+```sql
+-- List recent incidents
+SELECT * FROM debug_incidents_summary ORDER BY timestamp DESC LIMIT 10;
+
+-- Get specific incident with all data
+SELECT * FROM debug_incidents WHERE incident_id = 'YOUR_INCIDENT_ID';
+
+-- Screenshots analysis (Claude can analyze these!)
+SELECT incident_id, user_comment, user_analysis_request, LENGTH(screenshot_data) as size 
+FROM debug_incidents WHERE screenshot_data IS NOT NULL;
+
+-- DOM analysis for Facebook issues
+SELECT incident_id, page_url, LEFT(dom_html, 500) as dom_preview 
+FROM debug_incidents WHERE dom_html LIKE '%facebook%';
+```
 
 ## ⚙️ Konfigurace
 

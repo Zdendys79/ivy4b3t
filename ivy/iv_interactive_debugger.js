@@ -10,6 +10,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
 import { Log } from './iv_log.class.js';
+import { db } from './iv_sql.js';
 
 export class InteractiveDebugger {
   constructor() {
@@ -135,14 +136,13 @@ export class InteractiveDebugger {
   }
 
   /**
-   * Vytvoří kompletní debug report
+   * Vytvoří kompletní debug report a uloží do databáze
    */
   async createDebugReport(errorLevel, message, context, timestamp, userId) {
     try {
-      const reportId = `${timestamp}_${userId}_${errorLevel}`;
-      const reportDir = path.join(this.outputDir, reportId);
+      const incidentId = `${timestamp}_${userId}_${errorLevel}`;
       
-      await fs.mkdir(reportDir, { recursive: true });
+      Log.info('[DEBUGGER]', '📊 Capturing debug data...');
 
       // 1. Základní informace o chybě
       const errorInfo = {
@@ -155,58 +155,50 @@ export class InteractiveDebugger {
         userAgent: await this.currentPage?.evaluate(() => navigator.userAgent).catch(() => 'unknown')
       };
 
-      await fs.writeFile(
-        path.join(reportDir, 'error_info.json'),
-        JSON.stringify(errorInfo, null, 2)
-      );
-
-      // 2. Screenshot
+      // 2. Screenshot jako binary data
+      let screenshotData = null;
       if (this.currentPage && !this.currentPage.isClosed()) {
         try {
-          await this.currentPage.screenshot({
-            path: path.join(reportDir, 'screenshot.png'),
+          screenshotData = await this.currentPage.screenshot({
+            type: 'png',
             fullPage: true
           });
-          Log.info('[DEBUGGER]', '📸 Screenshot captured');
+          Log.info('[DEBUGGER]', `📸 Screenshot captured (${screenshotData.length} bytes)`);
         } catch (err) {
           Log.warn('[DEBUGGER]', `Screenshot failed: ${err.message}`);
         }
       }
 
       // 3. DOM HTML
+      let domHtml = null;
       if (this.currentPage && !this.currentPage.isClosed()) {
         try {
-          const html = await this.currentPage.content();
-          await fs.writeFile(path.join(reportDir, 'dom.html'), html);
-          Log.info('[DEBUGGER]', '📄 DOM HTML captured');
+          domHtml = await this.currentPage.content();
+          Log.info('[DEBUGGER]', `📄 DOM captured (${domHtml.length} characters)`);
         } catch (err) {
           Log.warn('[DEBUGGER]', `DOM capture failed: ${err.message}`);
+          domHtml = `DOM capture failed: ${err.message}`;
         }
       }
 
-      // 4. Console logs (if available)
+      // 4. Console logs
+      let consoleLogs = null;
       try {
-        const consoleLogs = await this.currentPage?.evaluate(() => {
+        const logs = await this.currentPage?.evaluate(() => {
           if (window.capturedLogs) {
             return window.capturedLogs;
           }
           return ['Console logging not available'];
         }).catch(() => ['Console capture failed']);
 
-        await fs.writeFile(
-          path.join(reportDir, 'console_logs.json'),
-          JSON.stringify(consoleLogs, null, 2)
-        );
+        consoleLogs = JSON.stringify(logs, null, 2);
       } catch (err) {
-        Log.warn('[DEBUGGER]', `Console logs capture failed: ${err.message}`);
+        consoleLogs = JSON.stringify(['Console logs capture failed: ' + err.message]);
       }
 
       // 5. Uživatelský komentář
       const userComment = await this.getUserComment();
-      if (userComment) {
-        await fs.writeFile(path.join(reportDir, 'user_comment.txt'), userComment);
-        Log.info('[DEBUGGER]', '💬 User comment saved');
-      }
+      const userAnalysisRequest = await this.getUserAnalysisRequest();
 
       // 6. System information
       const systemInfo = {
@@ -215,23 +207,51 @@ export class InteractiveDebugger {
         arch: process.arch,
         memory: process.memoryUsage(),
         uptime: process.uptime(),
+        hostname: (await import('os')).hostname(),
         env: {
           NODE_ENV: process.env.NODE_ENV,
-          DEBUG: process.env.DEBUG
+          DEBUG: process.env.DEBUG,
+          INTERACTIVE_DEBUG: process.env.INTERACTIVE_DEBUG
         }
       };
 
-      await fs.writeFile(
-        path.join(reportDir, 'system_info.json'),
-        JSON.stringify(systemInfo, null, 2)
-      );
+      // 7. Stack trace pokud je dostupný
+      let stackTrace = null;
+      if (context.stack) {
+        stackTrace = context.stack;
+      } else if (context.error && context.error.stack) {
+        stackTrace = context.error.stack;
+      }
 
-      Log.success('[DEBUGGER]', `🎯 Debug report created: ${reportDir}`);
+      // 8. Uložení do databáze
+      const debugIncident = {
+        incident_id: incidentId,
+        user_id: userId,
+        error_level: errorLevel.toUpperCase(),
+        error_message: message,
+        error_context: JSON.stringify(context, null, 2),
+        page_url: errorInfo.url,
+        page_title: await this.currentPage?.title().catch(() => 'Unknown'),
+        user_agent: errorInfo.userAgent,
+        screenshot_data: screenshotData,
+        dom_html: domHtml,
+        console_logs: consoleLogs,
+        user_comment: userComment,
+        user_analysis_request: userAnalysisRequest,
+        system_info: JSON.stringify(systemInfo, null, 2),
+        stack_trace: stackTrace,
+        status: 'NEW'
+      };
+
+      Log.info('[DEBUGGER]', '💾 Saving debug incident to database...');
       
-      // Vytvoř README pro report
-      await this.createReportReadme(reportDir, reportId, errorInfo);
+      await this.saveDebugIncidentToDatabase(debugIncident);
 
-      return reportDir;
+      Log.success('[DEBUGGER]', `🎯 Debug incident saved to database with ID: ${incidentId}`);
+      Log.info('[DEBUGGER]', '🔍 Analysis can be done via database queries');
+      Log.info('[DEBUGGER]', `   SELECT * FROM debug_incidents WHERE incident_id = '${incidentId}';`);
+
+      return incidentId;
 
     } catch (err) {
       Log.error('[DEBUGGER]', `Failed to create debug report: ${err.message}`);
@@ -274,6 +294,87 @@ export class InteractiveDebugger {
         resolve(comment.trim());
       }, 120000);
     });
+  }
+
+  /**
+   * Získá specifický požadavek na analýzu od uživatele
+   */
+  async getUserAnalysisRequest() {
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+
+      console.log('\n🔍 What should Claude analyze? (press Enter twice to finish):');
+      console.log('   Examples: "Check why login failed", "Analyze DOM structure", "Look for blocked elements"');
+      
+      let request = '';
+      let emptyLines = 0;
+
+      rl.on('line', (line) => {
+        if (line.trim() === '') {
+          emptyLines++;
+          if (emptyLines >= 2) {
+            rl.close();
+            resolve(request.trim());
+            return;
+          }
+        } else {
+          emptyLines = 0;
+          request += line + '\n';
+        }
+      });
+
+      // Timeout after 1 minute
+      setTimeout(() => {
+        rl.close();
+        resolve(request.trim());
+      }, 60000);
+    });
+  }
+
+  /**
+   * Uloží debug incident do databáze
+   */
+  async saveDebugIncidentToDatabase(incident) {
+    try {
+      const sql = `
+        INSERT INTO debug_incidents (
+          incident_id, user_id, error_level, error_message, error_context,
+          page_url, page_title, user_agent, screenshot_data, dom_html,
+          console_logs, user_comment, user_analysis_request, system_info,
+          stack_trace, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const params = [
+        incident.incident_id,
+        incident.user_id,
+        incident.error_level,
+        incident.error_message,
+        incident.error_context,
+        incident.page_url,
+        incident.page_title,
+        incident.user_agent,
+        incident.screenshot_data,
+        incident.dom_html,
+        incident.console_logs,
+        incident.user_comment,
+        incident.user_analysis_request,
+        incident.system_info,
+        incident.stack_trace,
+        incident.status
+      ];
+
+      await db.safeExecute('system.insertDebugIncident', params);
+      
+      Log.info('[DEBUGGER]', `💾 Debug incident inserted into database`);
+      
+    } catch (err) {
+      Log.error('[DEBUGGER]', `Failed to save debug incident to database: ${err.message}`);
+      throw err;
+    }
   }
 
   /**

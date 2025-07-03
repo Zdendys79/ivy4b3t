@@ -515,5 +515,55 @@ export const SYSTEM = {
         ELSE CONCAT(Seconds_Behind_Master, ' seconds behind')
       END as replication_status
     FROM information_schema.REPLICA_HOST_STATUS
+  `,
+
+  // ===== DEBUG INCIDENTS SYSTEM =====
+
+  insertDebugIncident: `
+    INSERT INTO debug_incidents (
+      incident_id, user_id, error_level, error_message, error_context,
+      page_url, page_title, user_agent, screenshot_data, dom_html,
+      console_logs, user_comment, user_analysis_request, system_info,
+      stack_trace, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+
+  getDebugIncidents: `
+    SELECT * FROM debug_incidents_summary
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `,
+
+  getDebugIncidentById: `
+    SELECT * FROM debug_incidents
+    WHERE incident_id = ?
+  `,
+
+  updateDebugIncidentStatus: `
+    UPDATE debug_incidents 
+    SET status = ?, analyzed_by = ?, analysis_notes = ?, updated_at = NOW()
+    WHERE incident_id = ?
+  `,
+
+  markDebugIncidentResolved: `
+    UPDATE debug_incidents 
+    SET status = 'RESOLVED', resolution_notes = ?, resolved_at = NOW(), updated_at = NOW()
+    WHERE incident_id = ?
+  `,
+
+  deleteResolvedDebugIncidents: `
+    DELETE FROM debug_incidents 
+    WHERE status = 'RESOLVED' AND resolved_at < DATE_SUB(NOW(), INTERVAL ? DAY)
+  `,
+
+  getDebugIncidentStats: `
+    SELECT 
+      status,
+      error_level,
+      COUNT(*) as count,
+      MAX(timestamp) as latest_incident
+    FROM debug_incidents
+    GROUP BY status, error_level
+    ORDER BY latest_incident DESC
   `
 };
