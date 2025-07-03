@@ -34,9 +34,11 @@ export class Log {
   static warn(prefix, ...msg) {
     if (shouldLog('warn')) console.warn(`${now()} ${prefix} ${icons.warn}`, ...msg);
     
-    // Trigger interactive debugger for warnings too
-    const message = msg.join(' ');
-    this.triggerDebugger('WARNING', `${prefix}: ${message}`, { prefix, message });
+    // Trigger interactive debugger for warnings (but NOT for debugger messages to avoid loops)
+    if (prefix !== '[DEBUGGER]') {
+      const message = msg.join(' ');
+      this.triggerDebugger('WARNING', `${prefix}: ${message}`, { prefix, message });
+    }
   }
 
   static success(prefix, ...msg) {
