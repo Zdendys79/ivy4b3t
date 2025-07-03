@@ -8,6 +8,7 @@
 
 import { Log } from './iv_log.class.js';
 import { handleFBError, quickErrorReport, analyzeErrorPatterns } from './iv_fb-error-workflow.js';
+import * as wait from './iv_wait.js';
 
 
 /**
@@ -648,60 +649,58 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
               warningDetails.some(detail => detail.includes('join') || detail.includes('přidat'))) {
             Log.warn(`[${user.id}]`, '⚠️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
             
-            // Automatické přidání ke skupině
+            // Automatické přidání ke skupině (pouze jednou v pracovním bloku)
             Log.info(`[${user.id}]`, '🤖 Pokus o automatické přidání ke skupině...');
             
             try {
-              const joinResult = await fbBot.handleJoinGroupRequest({
-                groupId: group.fb_id,
-                groupName: group.nazev || group.name,
-                userId: user.id
-              });
+              // Hledání pouze správného textu tlačítka
+              const joinButtons = await fbBot._findByText("Přidat se ke skupině", { timeout: 3000 });
               
-              if (joinResult.success) {
-                Log.success(`[${user.id}]`, `✅ Automatické přidání úspěšné: ${joinResult.reason}`);
+              if (joinButtons.length > 0) {
+                Log.info('[FB]', `✅ Nalezeno tlačítko: "Přidat se ke skupině"`);
+                await joinButtons[0].click();
                 
-                // Vrátí ready: true s informací o úspěšném přidání
-                return {
-                  ready: true,
-                  reason: 'Úspěšně přidán do skupiny - může pokračovat',
-                  critical: false,
-                  shouldNavigate: false,
-                  joinedAutomatically: true,
-                  joinResult: joinResult,
-                  analysisDetails: analysis
-                };
+                // Čekání na zpracování
+                await wait.delay(5000);
+                
+                // Ověření zda tlačítko zmizelo
+                const buttonsAfter = await fbBot._findByText("Přidat se ke skupině", { timeout: 1000 });
+                if (buttonsAfter.length === 0) {
+                  Log.success('[FB]', `✅ Úspěšně kliknuto na "Přidat se ke skupině" - tlačítko zmizelo`);
+                  Log.success(`[${user.id}]`, `✅ Automatické přidání úspěšné: Úspěšně použito tlačítko: "Přidat se ke skupině"`);
+                  
+                  // Vrátí ready: true s informací o úspěšném přidání
+                  return {
+                    ready: true,
+                    reason: 'Úspěšně přidán do skupiny - může pokračovat',
+                    critical: false,
+                    shouldNavigate: false,
+                    joinedAutomatically: true,
+                    analysisDetails: analysis
+                  };
+                } else {
+                  Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" stále viditelné po kliknutí');
+                  throw new Error('Tlačítko nezmizelo po kliknutí');
+                }
               } else {
-                Log.warn(`[${user.id}]`, `⚠️ Automatické přidání selhalo: ${joinResult.reason}`);
-                
-                // Vrátí původní stav requiresJoin
-                return {
-                  ready: false,
-                  reason: errorPattern?.reason || 'Není člen skupiny - automatické přidání selhalo',
-                  critical: false,
-                  shouldNavigate: false,
-                  requiresJoin: true,
-                  hasActionButton: errorPattern?.hasActionButton || false,
-                  joinAttemptFailed: true,
-                  joinResult: joinResult,
-                  analysisDetails: analysis
-                };
+                Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" nenalezeno');
+                throw new Error('Tlačítko pro přidání nenalezeno');
               }
               
             } catch (joinErr) {
-              Log.error(`[${user.id}]`, `❌ Chyba při automatickém přidávání: ${joinErr.message}`);
+              Log.warn(`[${user.id}]`, `⚠️ Automatické přidání selhalo: ${joinErr.message}`);
               
               // Vrátí původní stav requiresJoin
               return {
                 ready: false,
-                reason: errorPattern?.reason || 'Není člen skupiny - chyba při automatickém přidání',
+                reason: errorPattern?.reason || 'Není člen skupiny - automatické přidání selhalo',
                 critical: false,
                 shouldNavigate: false,
                 requiresJoin: true,
                 hasActionButton: errorPattern?.hasActionButton || false,
-                joinError: joinErr.message,
+                joinAttemptFailed: true,
                 analysisDetails: analysis
-              };
+                };
             }
           }
           
