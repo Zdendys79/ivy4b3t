@@ -2,7 +2,11 @@
   "name": "ivy",
   "type": "module",
   "version": "1.0.0",
+<<<<<<< Updated upstream
   "versionCode": "5b0ef75",
+=======
+  "versionCode": "890c5f0",
+>>>>>>> Stashed changes
   "description": "Hlavní klient Ivy4B3T pro automatizaci interakcí na FBu",
   "main": "ivy.js",
   "scripts": {
