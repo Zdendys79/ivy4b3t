@@ -12,22 +12,8 @@ Systém pro interaktivní debugging umožňuje automatické zastavení při chyb
 
 ## 🚀 Aktivace
 
-### Způsob 1: Environment Variable
-```bash
-export INTERACTIVE_DEBUG=true
-./start.sh
-```
-
-### Způsob 2: Dočasně pro jeden běh
-```bash
-INTERACTIVE_DEBUG=true node ivy.js
-```
-
-### Způsob 3: PowerShell (Windows)
-```powershell
-$env:INTERACTIVE_DEBUG = "true"
-./start.sh
-```
+Interactive debugging je **vždy aktivní** jako integrální součást aplikace.
+Není potřeba žádná speciální aktivace - systém se spouští automaticky.
 
 ## 🔧 Použití
 
@@ -105,32 +91,24 @@ FROM debug_incidents WHERE dom_html LIKE '%facebook%';
 Defaultně 30 sekund, po kterých automaticky pokračuje.
 
 ### Automatické spuštění:
-Přidej do `start.sh`:
-```bash
-export INTERACTIVE_DEBUG=true
-```
+Debugging je vždy aktivní - žádná konfigurace není potřeba.
 
-### Vypnutí:
-```bash
-unset INTERACTIVE_DEBUG
-# nebo
-export INTERACTIVE_DEBUG=false
-```
+### Dočasné vypnutí:
+Pokud je potřeba dočasně vypnout debugging, lze použít volbu [d] během běhu.
 
 ## 🎯 Použití ve vývoji
 
 ### Pro debugging konkrétního problému:
-1. Aktivuj interactive debugging
-2. Spusť robota
-3. Počkej na problém 
-4. Stiskni [s] pro debug report
-5. Analyzuj report a oprav problém
+1. Spusť robota (debugging je vždy aktivní)
+2. Počkej na problém 
+3. Stiskni [s] pro debug report
+4. Analyzuj report a oprav problém
 
 ### Pro monitoring produkčního běhu:
-1. Nech interactive debugging vypnutý
-2. V případě problémů dočasně aktivuj
-3. Vytvoř report pro konkrétní chybu
-4. Vypni zpět pro normální běh
+1. Debugging běží automaticky na pozadí
+2. Při problémech se zobrazí interaktivní volby
+3. Stiskni [s] pro vytvoření debug reportu
+4. Nebo [c] pro pokračování bez reportu
 
 ## 🚨 Upozornění
 
@@ -143,20 +121,20 @@ export INTERACTIVE_DEBUG=false
 
 ### Debugging login problémů:
 ```bash
-INTERACTIVE_DEBUG=true node ivy.js
+./start.sh
 # Když dojde k login problému -> [s]
 # Analyzuj screenshot a DOM pro příčinu
 ```
 
 ### Monitoring nových features:
 ```bash
-export INTERACTIVE_DEBUG=true
 ./start.sh
 # Sleduj nové funkce a zachyť problémy
+# Debugging běží automaticky
 ```
 
 ### Jednorázový test:
 ```bash
-INTERACTIVE_DEBUG=true npm start
-# Pro rychlý test s debugging podporou
+npm start
+# Debugging je vždy aktivní
 ```

@@ -14,7 +14,7 @@ import { db } from './iv_sql.js';
 
 export class InteractiveDebugger {
   constructor() {
-    this.isEnabled = process.env.INTERACTIVE_DEBUG === 'true' || false;
+    this.isEnabled = true; // Always enabled as integral part of the application
     this.outputDir = './debug_reports';
     this.currentPage = null;
     this.currentUser = null;
