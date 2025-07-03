@@ -11,15 +11,14 @@ Write-Host "=== 🐙 Commit Script for B3 ==="
 # 1️⃣ First, ensure we're up to date with remote
 Write-Host "[GIT] Synchronizing with remote repository..."
 
-# Check if there are uncommitted changes
-$hasChanges = git status --porcelain
-if ($hasChanges) {
-    Write-Host "❌ You have uncommitted changes. Please handle them first:"
-    Write-Host "   - Either commit them manually, or"
-    Write-Host "   - Stash them with: git stash"
-    Write-Host "   - Then run this script again"
+# Show current changes (if any)
+$changes = git status --porcelain
+if ($changes) {
+    Write-Host "📋 Found uncommitted changes:"
     git status --short
-    exit 1
+    Write-Host "📦 These changes will be included in the commit"
+} else {
+    Write-Host "✅ No uncommitted changes found"
 }
 
 # Pull latest changes from remote

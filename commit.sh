@@ -9,14 +9,14 @@ echo "=== 🐙 Commit Script for B3 ==="
 # 1️⃣ First, ensure we're up to date with remote
 echo "[GIT] Synchronizing with remote repository..."
 
-# Check if there are uncommitted changes
-if [ -n "$(git status --porcelain)" ]; then
-    echo "❌ You have uncommitted changes. Please handle them first:"
-    echo "   - Either commit them manually, or"
-    echo "   - Stash them with: git stash"
-    echo "   - Then run this script again"
+# Show current changes (if any)
+changes=$(git status --porcelain)
+if [ -n "$changes" ]; then
+    echo "📋 Found uncommitted changes:"
     git status --short
-    exit 1
+    echo "📦 These changes will be included in the commit"
+else
+    echo "✅ No uncommitted changes found"
 fi
 
 # Pull latest changes from remote
