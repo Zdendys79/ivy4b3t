@@ -177,8 +177,18 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
   try {
     Log.info(`[${user.id}]`, `🔁 Začínám opakované UTIO postování pro typ: ${groupType}`);
 
+    // Získej informace o limitech pro tento typ skupiny
+    const limitInfo = await db.getUserCycleLimitInfo(user.id, groupType);
+    const maxPosts = limitInfo.posts_available_this_cycle || 0;
+    
+    Log.info(`[${user.id}]`, `📊 Dostupné posty v tomto cyklu: ${maxPosts} (limit: ${limitInfo.max_posts_per_cycle}, použito: ${limitInfo.current_posts})`);
+    
+    if (maxPosts === 0) {
+      Log.warn(`[${user.id}]`, `Žádné dostupné posty pro typ ${groupType} - limit vyčerpán`);
+      return 0;
+    }
+
     let successfulPosts = 0;
-    const maxPosts = 5; // Maximum postů v jednom cyklu
 
     for (let attempt = 1; attempt <= maxPosts; attempt++) {
       Log.info(`[${user.id}]`, `📝 Post ${attempt}/${maxPosts} pro typ ${groupType}`);

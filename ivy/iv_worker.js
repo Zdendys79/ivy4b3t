@@ -172,10 +172,18 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
         Log.success(`[${user.id}]`, `Akce ${actionCode} úspěšně dokončena`);
       }
 
-      // Nastavení času pro další spuštění této akce
-      const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;
-      await db.updateActionPlan(user.id, actionCode, randMin);
-      Log.info(`[${user.id}]`, `Akce ${actionCode} nastavena na opakování za ${randMin} minut`);
+      // Pro post_utio akce zkontroluj, zda ještě nebylo dosaženo 1/3 limitu
+      const shouldRepeat = await db.shouldRepeatUtioAction(user.id, actionCode);
+      
+      if (shouldRepeat) {
+        // Nenastavuj čas do budoucna - nech akci dostupnou pro okamžité opakování
+        Log.info(`[${user.id}]`, `Akce ${actionCode} zůstává dostupná pro opakování (nevyčerpán 1/3 limit)`);
+      } else {
+        // Standardní chování - nastav čas pro další spuštění
+        const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;
+        await db.updateActionPlan(user.id, actionCode, randMin);
+        Log.info(`[${user.id}]`, `Akce ${actionCode} nastavena na opakování za ${randMin} minut`);
+      }
 
       actionCount++;
 
