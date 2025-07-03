@@ -343,9 +343,9 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
  */
 async function getAvailableGroups(userId, groupType) {
   try {
-    // Zkus novou funkci
-    if (typeof db.getAvailableGroupsByType === 'function') {
-      return await db.getAvailableGroupsByType(userId, groupType);
+    // Použij existující metodu z QueryBuilder (s opačným pořadím parametrů)
+    if (typeof db.getAvailableGroups === 'function') {
+      return await db.getAvailableGroups(groupType.toUpperCase(), userId);
     }
 
     // Fallback na starší funkce
