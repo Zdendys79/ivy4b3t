@@ -2,7 +2,7 @@
   "name": "ivy",
   "type": "module",
   "version": "1.0.0",
-  "versionCode": "3f9df1d",
+  "versionCode": "344ca8d",
   "description": "Hlavní klient Ivy4B3T pro automatizaci interakcí na FBu",
   "main": "ivy.js",
   "scripts": {

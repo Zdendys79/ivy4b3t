@@ -15,6 +15,6 @@ CLAUDE.memory
 
 # Behavioral profiles - NEVER commit sensitive user data
 behavioral_profiles_schema.sql
-*behavioral_profiles*
 *behavior_data*
 setup_behavioral_tables.js
+# Allow SQL queries but not sensitive schema/data files
