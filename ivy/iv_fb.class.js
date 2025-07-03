@@ -1484,6 +1484,110 @@ export class FBBot {
       return false;
     }
   }
+  
+  /**
+   * Pokročilá metoda pro automatické přidání ke skupině
+   * Podporuje různé texty tlačítek a poskytuje detailní feedback
+   */
+  async handleJoinGroupRequest(groupInfo = {}) {
+    try {
+      Log.info('[FB]', '🔄 Pokouším se přidat ke skupině...');
+      
+      // Možné texty tlačítek pro přidání
+      const joinButtonTexts = [
+        "Přidat se ke skupině",
+        "Připojit se ke skupině", 
+        "Požádat o členství",
+        "Join Group",
+        "Join this group",
+        "Request to join"
+      ];
+      
+      let joinSuccessful = false;
+      let usedButtonText = null;
+      
+      // Zkus všechny možné texty tlačítek
+      for (const buttonText of joinButtonTexts) {
+        try {
+          Log.info('[FB]', `🔍 Hledám tlačítko: "${buttonText}"`);
+          
+          const buttons = await this._findByText(buttonText, { timeout: 2000 });
+          if (buttons.length > 0) {
+            Log.info('[FB]', `✅ Nalezeno tlačítko: "${buttonText}"`);
+            
+            await buttons[0].click();
+            usedButtonText = buttonText;
+            
+            // Čekání na zpracování žádosti
+            await wait.delay(3000 + Math.random() * 2000);
+            
+            // Ověření zda se tlačítko změnilo nebo zmizelo
+            const buttonsAfter = await this._findByText(buttonText, { timeout: 1000 });
+            if (buttonsAfter.length === 0) {
+              joinSuccessful = true;
+              Log.success('[FB]', `✅ Úspěšně kliknuto na "${buttonText}" - tlačítko zmizelo`);
+              break;
+            } else {
+              // Kontrola zda se text tlačítka změnil na "Požadavek odeslán" nebo podobně
+              const statusTexts = [
+                "Požadavek odeslán",
+                "Žádost odeslána", 
+                "Request sent",
+                "Pending",
+                "Čeká na schválení"
+              ];
+              
+              let statusFound = false;
+              for (const statusText of statusTexts) {
+                const statusElements = await this._findByText(statusText, { timeout: 1000 });
+                if (statusElements.length > 0) {
+                  joinSuccessful = true;
+                  statusFound = true;
+                  Log.success('[FB]', `✅ Žádost odeslána - detekován status: "${statusText}"`);
+                  break;
+                }
+              }
+              
+              if (statusFound) break;
+            }
+          }
+        } catch (buttonErr) {
+          Log.debug('[FB]', `Tlačítko "${buttonText}" nenalezeno: ${buttonErr.message}`);
+          continue;
+        }
+      }
+      
+      if (!joinSuccessful) {
+        Log.warn('[FB]', '⚠️ Žádné tlačítko pro přidání ke skupině nenalezeno');
+        return {
+          success: false,
+          reason: 'Tlačítko pro přidání ke skupině nenalezeno',
+          attempted: joinButtonTexts
+        };
+      }
+      
+      // Úspěch
+      Log.success('[FB]', `🎉 Úspěšně zpracována žádost o členství pomocí: "${usedButtonText}"`);
+      
+      // Dlouhé čekání pro stabilizaci stavu
+      await wait.delay(10000 + Math.random() * 5000);
+      
+      return {
+        success: true,
+        reason: `Úspěšně použito tlačítko: "${usedButtonText}"`,
+        buttonText: usedButtonText,
+        groupInfo: groupInfo
+      };
+      
+    } catch (err) {
+      Log.error('[FB]', `❌ Chyba při zpracování žádosti o členství: ${err.message}`);
+      return {
+        success: false,
+        reason: `Chyba: ${err.message}`,
+        error: err
+      };
+    }
+  }
 
   async testXPath(selector) {
     try {

@@ -5,7 +5,6 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import mysql from 'mysql2/promise';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -15,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const mode = process.argv[2];
-const projectRoot = 'E:/B3projekty/ivy4b3t';
+const projectRoot = '/home/remotes/ivy4b3t';
 
 if (!mode) {
   console.error('[GIT-COMMIT-VERSION] Nebyl zadán režim spuštění (pre/post).');
@@ -54,23 +53,24 @@ if (mode === 'pre') {
       process.exit(1);
     }
 
-    const dbConfigPath = path.join(__dirname, 'sql', 'sql_config.json');
-    const dbConfigRaw = await fs.readFile(dbConfigPath, 'utf8');
-    const dbConfig = JSON.parse(dbConfigRaw);
+    // Use environment variables for database access
+    const dbUser = process.env.CLAUDE_DB_USER;
+    const dbPass = process.env.CLAUDE_DB_PASS;
+    
+    if (!dbUser || !dbPass) {
+      console.error('[POST-COMMIT] Chybí databázové přístupové údaje v environment variables.');
+      process.exit(1);
+    }
 
-    const connection = await mysql.createConnection(dbConfig);
     const hostname = os.hostname();
     const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
     const gitHash = execSync('git rev-parse HEAD', { cwd: projectRoot }).toString().trim();
 
-    const sql = `
-      INSERT INTO versions (code, hash, source, hostname, created)
-      VALUES (?, ?, 'git', ?, ?);
-    `;
+    // Use mysql CLI instead of mysql2 library
+    const sql = `INSERT INTO ivy.versions (code, hash, source, hostname, created) VALUES ('${versionCode}', '${gitHash}', 'git', '${hostname}', '${timestamp}');`;
+    const mysqlCmd = `mysql -u ${dbUser} -p${dbPass} -e "${sql}"`;
 
-    await connection.execute(sql, [versionCode, gitHash, hostname, timestamp]);
-    await connection.end();
+    execSync(mysqlCmd, { stdio: 'pipe' });
 
     console.log(`[POST-COMMIT] Verze ${versionCode} (${gitHash.slice(0,7)}) zapsána do databáze.`);
   } catch (err) {

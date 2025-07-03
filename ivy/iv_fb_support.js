@@ -576,3 +576,252 @@ export async function analyzeUserErrorHistory(user, days = 7) {
     };
   }
 }
+
+/**
+ * Specializované ověření připravenosti FB pro UTIO operace
+ * Kontroluje specifické podmínky pro postování přes UTIO
+ */
+export async function verifyFBReadinessForUtio(user, group, fbBot) {
+  try {
+    Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost FB pro UTIO operaci...');
+
+    // Základní kontroly
+    if (!fbBot || !fbBot.page || fbBot.page.isClosed()) {
+      return {
+        ready: false,
+        reason: 'FBBot není dostupný',
+        critical: true,
+        shouldNavigate: false
+      };
+    }
+
+    const currentUrl = fbBot.page.url();
+
+    // Kontrola na základní FB doménu
+    if (!currentUrl.includes('facebook.com')) {
+      return {
+        ready: false,
+        reason: 'Stránka není na FB doméně',
+        critical: true,
+        shouldNavigate: false
+      };
+    }
+
+    // Kontrola zda jsme ve správné skupině
+    const expectedGroupUrl = `facebook.com/groups/${group.fb_id}`;
+    if (!currentUrl.includes(group.fb_id)) {
+      Log.info(`[${user.id}]`, `🔄 Nejsme ve správné skupině, je potřeba navigace`);
+      return {
+        ready: false,
+        reason: `Nejsme ve skupině ${group.nazev}`,
+        critical: false,
+        shouldNavigate: true
+      };
+    }
+
+    // Detailní analýza stránky skupiny
+    if (fbBot.pageAnalyzer) {
+      try {
+        const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
+          includeGroupAnalysis: true,
+          forceRefresh: false
+        });
+
+        // Kontrola výsledku analýzy
+        if (analysis.status === 'error') {
+          return {
+            ready: false,
+            reason: `Analýza skupiny selhala: ${analysis.details?.join(', ') || 'Neznámá chyba'}`,
+            critical: true,
+            shouldNavigate: false,
+            analysisDetails: analysis
+          };
+        }
+
+        if (analysis.status === 'warning') {
+          // Používej nové detailní warning informace
+          const warningDetails = analysis.details || [];
+          const errorPattern = analysis.errors?.patterns;
+          
+          // Kontrola na "přidat se ke skupině" tlačítko
+          if (errorPattern?.type === 'JOIN_GROUP_REQUIRED' || 
+              warningDetails.some(detail => detail.includes('join') || detail.includes('přidat'))) {
+            Log.warn(`[${user.id}]`, '⚠️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
+            
+            // Automatické přidání ke skupině
+            Log.info(`[${user.id}]`, '🤖 Pokus o automatické přidání ke skupině...');
+            
+            try {
+              const joinResult = await fbBot.handleJoinGroupRequest({
+                groupId: group.fb_id,
+                groupName: group.nazev || group.name,
+                userId: user.id
+              });
+              
+              if (joinResult.success) {
+                Log.success(`[${user.id}]`, `✅ Automatické přidání úspěšné: ${joinResult.reason}`);
+                
+                // Vrátí ready: true s informací o úspěšném přidání
+                return {
+                  ready: true,
+                  reason: 'Úspěšně přidán do skupiny - může pokračovat',
+                  critical: false,
+                  shouldNavigate: false,
+                  joinedAutomatically: true,
+                  joinResult: joinResult,
+                  analysisDetails: analysis
+                };
+              } else {
+                Log.warn(`[${user.id}]`, `⚠️ Automatické přidání selhalo: ${joinResult.reason}`);
+                
+                // Vrátí původní stav requiresJoin
+                return {
+                  ready: false,
+                  reason: errorPattern?.reason || 'Není člen skupiny - automatické přidání selhalo',
+                  critical: false,
+                  shouldNavigate: false,
+                  requiresJoin: true,
+                  hasActionButton: errorPattern?.hasActionButton || false,
+                  joinAttemptFailed: true,
+                  joinResult: joinResult,
+                  analysisDetails: analysis
+                };
+              }
+              
+            } catch (joinErr) {
+              Log.error(`[${user.id}]`, `❌ Chyba při automatickém přidávání: ${joinErr.message}`);
+              
+              // Vrátí původní stav requiresJoin
+              return {
+                ready: false,
+                reason: errorPattern?.reason || 'Není člen skupiny - chyba při automatickém přidání',
+                critical: false,
+                shouldNavigate: false,
+                requiresJoin: true,
+                hasActionButton: errorPattern?.hasActionButton || false,
+                joinError: joinErr.message,
+                analysisDetails: analysis
+              };
+            }
+          }
+          
+          // Kontrola na čekající žádost o členství
+          if (errorPattern?.type === 'MEMBERSHIP_PENDING') {
+            Log.warn(`[${user.id}]`, '⚠️ Žádost o členství čeká na schválení');
+            return {
+              ready: false,
+              reason: errorPattern.reason,
+              critical: false,
+              shouldNavigate: false,
+              membershipPending: true,
+              analysisDetails: analysis
+            };
+          }
+          
+          // Kontrola na nedostupnost pole pro psaní
+          if (errorPattern?.type === 'NO_WRITE_FIELD' || 
+              warningDetails.some(detail => detail.includes('pole pro psaní'))) {
+            Log.warn(`[${user.id}]`, '⚠️ Pole pro psaní není dostupné');
+            return {
+              ready: false,
+              reason: errorPattern?.reason || 'Není k dispozici pole pro psaní příspěvku',
+              critical: false,
+              shouldNavigate: false,
+              analysisDetails: analysis
+            };
+          }
+          
+          // Kontrola na uzavřenou skupinu
+          if (errorPattern?.type === 'GROUP_CLOSED') {
+            Log.warn(`[${user.id}]`, '⚠️ Skupina je uzavřená nebo soukromá');
+            return {
+              ready: false,
+              reason: errorPattern.reason,
+              critical: false,
+              shouldNavigate: false,
+              analysisDetails: analysis
+            };
+          }
+          
+          // Kontrola na odepřený přístup
+          if (errorPattern?.type === 'ACCESS_DENIED') {
+            Log.warn(`[${user.id}]`, '⚠️ Přístup odepřen');
+            return {
+              ready: false,
+              reason: errorPattern.reason,
+              critical: true,
+              shouldNavigate: false,
+              analysisDetails: analysis
+            };
+          }
+
+          // Obecné varování - pokračuj s opatrností
+          const detailMessage = warningDetails.length > 0 ? warningDetails.join(', ') : 'Detekováno obecné varování';
+          Log.warn(`[${user.id}]`, `⚠️ Skupina má varování: ${detailMessage}`);
+          return {
+            ready: true,
+            reason: 'Připraveno s varováním',
+            critical: false,
+            shouldNavigate: false,
+            warning: true,
+            warningDetails: warningDetails,
+            analysisDetails: analysis
+          };
+        }
+
+        // Status OK
+        if (analysis.status === 'ok') {
+          Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování');
+          return {
+            ready: true,
+            reason: 'Skupina připravena',
+            critical: false,
+            shouldNavigate: false,
+            analysisDetails: analysis
+          };
+        }
+        
+        // Status ready (pro zpětnou kompatibilitu)
+        if (analysis.status === 'ready') {
+          Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování');
+          return {
+            ready: true,
+            reason: 'Skupina připravena',
+            critical: false,
+            shouldNavigate: false,
+            analysisDetails: analysis
+          };
+        }
+
+      } catch (analysisErr) {
+        Log.error(`[${user.id}]`, `Chyba analýzy skupiny: ${analysisErr.message}`);
+        return {
+          ready: false,
+          reason: `Chyba při analýze skupiny: ${analysisErr.message}`,
+          critical: true,
+          shouldNavigate: false
+        };
+      }
+    }
+
+    // Fallback bez analýzy
+    Log.info(`[${user.id}]`, '📋 PageAnalyzer není dostupný, používám základní kontrolu');
+    return {
+      ready: true,
+      reason: 'Základní kontrola OK (bez detailní analýzy)',
+      critical: false,
+      shouldNavigate: false,
+      warning: true,
+      warningDetails: ['Bez detailní analýzy']
+    };
+
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při ověřování UTIO připravenosti: ${err.message}`);
+    return {
+      ready: false,
+      reason: `Chyba ověření: ${err.message}`,
+      critical: true,
+      shouldNavigate: false
+    };
+  }
+}

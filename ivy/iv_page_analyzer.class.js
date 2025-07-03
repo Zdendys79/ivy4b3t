@@ -75,7 +75,8 @@ export class PageAnalyzer {
         navigation: navigationAnalysis,
         posting: postingAnalysis,
         group: groupAnalysis,
-        recommendations: this._generateRecommendations(basicAnalysis, errorAnalysis, complexityAnalysis)
+        recommendations: this._generateRecommendations(basicAnalysis, errorAnalysis, complexityAnalysis),
+        details: this._generateDetailedWarnings(errorAnalysis, groupAnalysis)
       };
 
       // Cache výsledek
@@ -446,12 +447,17 @@ export class PageAnalyzer {
           isClosed: false,
           canPost: false,
           needsApproval: false,
-          isMember: false
+          isMember: false,
+          hasJoinButton: false,
+          joinButtonText: '',
+          writeFieldAvailable: false,
+          membershipStatus: 'unknown',
+          warningDetails: []
         };
 
-        // Detekce typu skupiny
-        const privacyIndicators = document.querySelectorAll('*');
-        for (const element of privacyIndicators) {
+        // Detekce typu skupiny a členství
+        const allElements = document.querySelectorAll('*');
+        for (const element of allElements) {
           const text = element.textContent?.toLowerCase() || '';
 
           if (text.includes('soukromá skupina') || text.includes('private group')) {
@@ -465,13 +471,60 @@ export class PageAnalyzer {
           }
           if (text.includes('člen') || text.includes('member')) {
             info.isMember = true;
+            info.membershipStatus = 'member';
           }
         }
 
-        // Kontrola možnosti postování
-        const postButton = document.querySelector('[aria-label*="příspěvek"], [placeholder*="Co máte na mysli"]');
-        info.canPost = postButton !== null;
+        // Detekce tlačítek pro přidání ke skupině
+        const joinButtons = Array.from(document.querySelectorAll('*')).filter(el => {
+          const text = el.textContent?.toLowerCase() || '';
+          return text.includes('přidat se ke skupině') || 
+                 text.includes('join group') || 
+                 text.includes('join this group') ||
+                 text.includes('připojit se ke skupině') ||
+                 text.includes('požádat o členství') ||
+                 text.includes('request to join');
+        });
 
+        if (joinButtons.length > 0) {
+          info.hasJoinButton = true;
+          info.joinButtonText = joinButtons[0].textContent.trim();
+          info.membershipStatus = 'not_member';
+          info.warningDetails.push(`Detekováno tlačítko: "${info.joinButtonText}"`);
+        }
+
+        // Kontrola možnosti postování
+        const postSelectors = [
+          '[aria-label*="příspěvek"]',
+          '[placeholder*="Co máte na mysli"]',
+          '[placeholder*="What\'s on your mind"]',
+          '[data-testid="status-attachment-mentions-input"]'
+        ];
+        
+        const postElements = postSelectors.map(selector => document.querySelector(selector)).filter(Boolean);
+        info.writeFieldAvailable = postElements.length > 0;
+        info.canPost = info.writeFieldAvailable && info.isMember;
+        
+        // Detailní důvody proč není možné postovat
+        if (!info.canPost) {
+          if (!info.isMember && !info.hasJoinButton) {
+            info.warningDetails.push('Není člen skupiny a není dostupné tlačítko pro přidání');
+          } else if (!info.isMember) {
+            info.warningDetails.push('Není člen skupiny - je potřeba se přidat');
+          } else if (!info.writeFieldAvailable) {
+            info.warningDetails.push('Pole pro psaní příspěvku není dostupné');
+          }
+        }
+        
+        // Detekce čekající žádosti o členství
+        const bodyText = document.body.textContent.toLowerCase();
+        if (bodyText.includes('žádost odeslána') || bodyText.includes('request sent') || 
+            bodyText.includes('čeká na schválení') || bodyText.includes('pending approval')) {
+          info.needsApproval = true;
+          info.membershipStatus = 'pending';
+          info.warningDetails.push('Žádost o členství čeká na schválení');
+        }
+        
         return info;
       });
 
@@ -581,27 +634,112 @@ export class PageAnalyzer {
         texts: ['suspicious activity', 'podezřelá aktivita', 'unusual activity'],
         reason: 'Detekována podezřelá aktivita',
         type: 'SUSPICIOUS_ACTIVITY'
+      },
+      {
+        texts: ['přidat se ke skupině', 'join group', 'join this group', 'připojit se ke skupině'],
+        reason: 'Není člen skupiny - je potřeba se přidat',
+        type: 'JOIN_GROUP_REQUIRED'
+      },
+      {
+        texts: ['žádost o členství', 'membership request', 'pending approval', 'čeká na schválení'],
+        reason: 'Žádost o členství čeká na schválení',
+        type: 'MEMBERSHIP_PENDING'
+      },
+      {
+        texts: ['skupina je uzavřená', 'group is closed', 'private group', 'soukromá skupina'],
+        reason: 'Skupina je uzavřená nebo soukromá',
+        type: 'GROUP_CLOSED'
+      },
+      {
+        texts: ['nemáte oprávnění', 'not authorized', 'access denied', 'přístup zamítnut'],
+        reason: 'Nemáte oprávnění pro tuto akci',
+        type: 'ACCESS_DENIED'
       }
     ];
 
     try {
-      const bodyText = await this.page.evaluate(() =>
-        document.body.textContent.toLowerCase()
-      );
+      const pageData = await this.page.evaluate(() => {
+        const bodyText = document.body.textContent.toLowerCase();
+        
+        // Detekce tlačítek pro přidání ke skupině
+        const joinButtons = Array.from(document.querySelectorAll('*')).filter(el => {
+          const text = el.textContent?.toLowerCase() || '';
+          return text.includes('přidat se ke skupině') || 
+                 text.includes('join group') || 
+                 text.includes('join this group') ||
+                 text.includes('připojit se ke skupině');
+        });
+        
+        // Detekce polí pro psaní
+        const writeFields = document.querySelectorAll([
+          '[placeholder*="Co máte na mysli"]',
+          '[placeholder*="What\'s on your mind"]',
+          '[aria-label*="příspěvek"]',
+          '[data-testid="status-attachment-mentions-input"]'
+        ].join(','));
+        
+        return {
+          bodyText: bodyText,
+          hasJoinButton: joinButtons.length > 0,
+          hasWriteField: writeFields.length > 0,
+          joinButtonCount: joinButtons.length
+        };
+      });
 
+      const detectedPatterns = [];
+      
       for (const pattern of patterns) {
-        const found = pattern.texts.some(text =>
-          bodyText.includes(text.toLowerCase())
+        const textFound = pattern.texts.some(text =>
+          pageData.bodyText.includes(text.toLowerCase())
         );
-
-        if (found) {
-          return {
+        
+        // Speciální logika pro JOIN_GROUP_REQUIRED
+        if (pattern.type === 'JOIN_GROUP_REQUIRED') {
+          if (textFound || pageData.hasJoinButton) {
+            detectedPatterns.push({
+              detected: true,
+              pattern: pattern,
+              reason: pattern.reason,
+              type: pattern.type,
+              hasActionButton: pageData.hasJoinButton,
+              additionalInfo: `Počet tlačítek: ${pageData.joinButtonCount}`
+            });
+          }
+        } else if (textFound) {
+          detectedPatterns.push({
             detected: true,
             pattern: pattern,
             reason: pattern.reason,
             type: pattern.type
-          };
+          });
         }
+      }
+      
+      // Pokud není pole pro psaní, ale nejsou ani join tlačítka, pak je to jiný problém
+      if (!pageData.hasWriteField && !pageData.hasJoinButton && pageData.bodyText.includes('group')) {
+        detectedPatterns.push({
+          detected: true,
+          pattern: {
+            reason: 'Pole pro psaní není dostupné v této skupině',
+            type: 'NO_WRITE_FIELD'
+          },
+          reason: 'Pole pro psaní není dostupné v této skupině',
+          type: 'NO_WRITE_FIELD'
+        });
+      }
+      
+      if (detectedPatterns.length > 0) {
+        // Vrátit nejzávažnější problém
+        const criticalPattern = detectedPatterns.find(p => 
+          ['ACCOUNT_LOCKED', 'IDENTITY_VERIFICATION', 'VIDEOSELFIE'].includes(p.type)
+        );
+        
+        if (criticalPattern) {
+          return criticalPattern;
+        }
+        
+        // Vrátit první warning pattern
+        return detectedPatterns[0];
       }
 
       return { detected: false };
@@ -833,7 +971,7 @@ export class PageAnalyzer {
       return 'suspicious';
     }
 
-    return 'ready';
+    return 'ok';
   }
 
   _generateRecommendations(basic, errors, complexity) {
@@ -893,5 +1031,31 @@ export class PageAnalyzer {
       maxSize: 50,
       lastAnalysis: this.lastAnalysis ? this.lastAnalysis.timestamp : null
     };
+  }
+  
+  /**
+   * Generuje detailní varování pro konkrétní stavy
+   * @param {Object} errorAnalysis - Výsledek analýzy chyb
+   * @param {Object} groupAnalysis - Výsledek analýzy skupiny
+   * @returns {Array} Seznam detailních varování
+   */
+  _generateDetailedWarnings(errorAnalysis, groupAnalysis) {
+    const warnings = [];
+    
+    // Zpracuj chybové patterny
+    if (errorAnalysis && errorAnalysis.patterns && errorAnalysis.patterns.detected) {
+      warnings.push(errorAnalysis.patterns.reason);
+      
+      if (errorAnalysis.patterns.additionalInfo) {
+        warnings.push(errorAnalysis.patterns.additionalInfo);
+      }
+    }
+    
+    // Zpracuj varování ze skupiny
+    if (groupAnalysis && groupAnalysis.warningDetails && groupAnalysis.warningDetails.length > 0) {
+      warnings.push(...groupAnalysis.warningDetails);
+    }
+    
+    return warnings;
   }
 }
