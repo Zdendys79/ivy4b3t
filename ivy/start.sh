@@ -189,6 +189,11 @@ main_loop() {
             1)
                 echo "[START] ⚠️  Obecná chyba nebo neočekávané ukončení"
                 ;;
+            99)
+                echo "[START] 🛑 QUIT požadavek z interactive debuggeru"
+                echo "[START] 👋 Ukončuji start.sh na požádání uživatele"
+                exit 0
+                ;;
             130)
                 echo "[START] 🛑 Ukončeno uživatelem (Ctrl+C)"
                 echo "[START] 👋 Ukončuji start.sh na požádání uživatele"

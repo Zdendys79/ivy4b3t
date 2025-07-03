@@ -66,6 +66,7 @@ export class InteractiveDebugger {
     Log.warn('[DEBUGGER]', '  [s] - STOP and create debug report');
     Log.warn('[DEBUGGER]', '  [c] - CONTINUE without report');
     Log.warn('[DEBUGGER]', '  [d] - DISABLE interactive debugging');
+    Log.warn('[DEBUGGER]', '  [q] - QUIT program completely');
     Log.warn('[DEBUGGER]', '');
     Log.warn('[DEBUGGER]', '⏱️  Auto-continue in 30 seconds...');
 
@@ -85,6 +86,10 @@ export class InteractiveDebugger {
         Log.info('[DEBUGGER]', '❌ Disabling interactive debugging');
         this.enable(false);
         return false; // Continue
+        
+      case 'q':
+        Log.info('[DEBUGGER]', '🛑 QUIT program requested by user');
+        process.exit(99); // Special exit code for complete quit
         
       default:
         Log.info('[DEBUGGER]', '⏱️ Timeout - continuing execution...');
@@ -114,21 +119,26 @@ export class InteractiveDebugger {
       }, timeoutSeconds * 1000);
 
       // User input
-      rl.question('Enter your choice: ', (answer) => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          rl.close();
-          const trimmed = answer.trim().toLowerCase();
-          // Only accept valid choices, otherwise treat as timeout
-          if (['s', 'c', 'd'].includes(trimmed)) {
-            resolve(trimmed);
-          } else {
-            console.log(`[DEBUGGER] Invalid choice '${trimmed}', treating as timeout...`);
-            resolve('timeout');
+      const askForInput = () => {
+        rl.question('Enter your choice: ', (answer) => {
+          if (!resolved) {
+            const trimmed = answer.trim().toLowerCase();
+            // Only accept valid choices
+            if (['s', 'c', 'd', 'q'].includes(trimmed)) {
+              resolved = true;
+              clearTimeout(timeout);
+              rl.close();
+              resolve(trimmed);
+            } else {
+              // Invalid input - ask again
+              console.log(`[DEBUGGER] NO reaction! Use s/c/d/q`);
+              askForInput(); // Ask again
+            }
           }
-        }
-      });
+        });
+      };
+      
+      askForInput();
 
       // Handle Ctrl+C gracefully
       rl.on('SIGINT', () => {
