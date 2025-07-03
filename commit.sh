@@ -26,7 +26,31 @@ git pull
 # 4️⃣ Restore stashed changes (if any)
 if [ "$stashed" = true ]; then
     echo "[GIT] Restoring stash..."
-    git stash pop
+    
+    # Try to pop stash and check for conflicts
+    if git stash pop; then
+        echo "[GIT] Stash restored successfully."
+    else
+        echo "⚠️ Merge conflicts detected during stash pop!"
+        echo "Please resolve conflicts manually and then run:"
+        echo "  git add -A"
+        echo "  git stash drop"
+        echo "  ./commit.sh"
+        exit 1
+    fi
+    
+    # Additional check for unresolved conflicts
+    if git status --porcelain | grep -q "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"; then
+        echo "❌ Unresolved merge conflicts found:"
+        git status --porcelain | grep "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"
+        echo ""
+        echo "Please resolve conflicts manually:"
+        echo "1. Edit conflicted files"
+        echo "2. Remove conflict markers (<<<<<<< ======= >>>>>>>)"
+        echo "3. Run: git add <resolved-files>"
+        echo "4. Run: ./commit.sh"
+        exit 1
+    fi
 fi
 
 # 5️⃣ Get commit message from temporary file
@@ -46,7 +70,15 @@ if [ ! -s "$tempFile" ]; then
     exit 1
 fi
 
-# 6️⃣ Commit changes
+# 6️⃣ Final conflict check before commit
+if git status --porcelain | grep -q "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"; then
+    echo "❌ Cannot commit: Unresolved merge conflicts still exist!"
+    git status --porcelain | grep "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"
+    rm "$tempFile"
+    exit 1
+fi
+
+# Commit changes
 echo "[GIT] Adding all changes..."
 git add -A
 
