@@ -8,56 +8,31 @@ chcp 65001 > $null
 
 Write-Host "=== 🐙 Commit Script for B3 ==="
 
-# 1️⃣ Check if there are changes
+# 1️⃣ First, ensure we're up to date with remote
+Write-Host "[GIT] Synchronizing with remote repository..."
+
+# Check if there are uncommitted changes
 $hasChanges = git status --porcelain
-
-# 2️⃣ If changes exist, perform stash
-$stashed = $false
 if ($hasChanges) {
-    Write-Host "[GIT] Uncommitted changes found, performing stash..."
-    git stash save "Auto-stash before pull"
-    $stashed = $true
-} else {
-    Write-Host "[GIT] No changes found, stash not needed."
+    Write-Host "❌ You have uncommitted changes. Please handle them first:"
+    Write-Host "   - Either commit them manually, or"
+    Write-Host "   - Stash them with: git stash"
+    Write-Host "   - Then run this script again"
+    git status --short
+    exit 1
 }
 
-# 3️⃣ Pull current state from GIT
-Write-Host "[GIT] Updating repository (git pull)..."
+# Pull latest changes from remote
+Write-Host "[GIT] Pulling latest changes..."
 git pull
-
-# 4️⃣ Restore stashed changes (if any)
-if ($stashed) {
-    Write-Host "[GIT] Restoring stash..."
-    
-    # Try to pop stash and check for conflicts
-    $stashResult = git stash pop 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "⚠️ Merge conflicts detected during stash pop!"
-        Write-Host "Please resolve conflicts manually and then run:"
-        Write-Host "  git add -A"
-        Write-Host "  git stash drop"
-        Write-Host "  .\commit.ps1"
-        exit 1
-    } else {
-        Write-Host "[GIT] Stash restored successfully."
-    }
-    
-    # Additional check for unresolved conflicts
-    $conflictFiles = git status --porcelain | Select-String "^UU|^AA|^DD|^AU|^UA|^DU|^UD"
-    if ($conflictFiles) {
-        Write-Host "❌ Unresolved merge conflicts found:"
-        $conflictFiles | ForEach-Object { Write-Host $_.Line }
-        Write-Host ""
-        Write-Host "Please resolve conflicts manually:"
-        Write-Host "1. Edit conflicted files"
-        Write-Host "2. Remove conflict markers (<<<<<<< ======= >>>>>>>)"
-        Write-Host "3. Run: git add <resolved-files>"
-        Write-Host "4. Run: .\commit.ps1"
-        exit 1
-    }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Git pull failed. Please resolve any issues manually and try again."
+    exit 1
 }
 
-# 5️⃣ Get commit message from external editor
+Write-Host "✅ Repository synchronized with remote"
+
+# 2️⃣ Get commit message from external editor
 $tempFile = "$env:TEMP\commit_message.txt"
 if (Test-Path $tempFile) { Remove-Item $tempFile }
 New-Item -ItemType File -Path $tempFile | Out-Null
@@ -70,23 +45,14 @@ if ((Get-Content $tempFile -Raw).Trim().Length -eq 0) {
     exit 1
 }
 
-# 6️⃣ Final conflict check before commit
-$conflictFiles = git status --porcelain | Select-String "^UU|^AA|^DD|^AU|^UA|^DU|^UD"
-if ($conflictFiles) {
-    Write-Host "❌ Cannot commit: Unresolved merge conflicts still exist!"
-    $conflictFiles | ForEach-Object { Write-Host $_.Line }
-    Remove-Item $tempFile
-    exit 1
-}
-
-# Commit changes
+# 6️⃣ Commit changes
 Write-Host "[GIT] Adding all changes..."
 git add -A
 
 Write-Host "[GIT] Creating commit..."
 git commit -F $tempFile
 
-# 7️⃣ Push
+# 3️⃣ Push
 Write-Host "[GIT] Pushing commit to remote repository..."
 git push
 

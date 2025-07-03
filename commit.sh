@@ -6,54 +6,29 @@ set -e  # Exit on error
 
 echo "=== 🐙 Commit Script for B3 ==="
 
-# 1️⃣ Check if there are changes
-hasChanges=$(git status --porcelain)
+# 1️⃣ First, ensure we're up to date with remote
+echo "[GIT] Synchronizing with remote repository..."
 
-# 2️⃣ If changes exist, perform stash
-stashed=false
-if [ -n "$hasChanges" ]; then
-    echo "[GIT] Uncommitted changes found, performing stash..."
-    git stash save "Auto-stash before pull"
-    stashed=true
-else
-    echo "[GIT] No changes found, stash not needed."
+# Check if there are uncommitted changes
+if [ -n "$(git status --porcelain)" ]; then
+    echo "❌ You have uncommitted changes. Please handle them first:"
+    echo "   - Either commit them manually, or"
+    echo "   - Stash them with: git stash"
+    echo "   - Then run this script again"
+    git status --short
+    exit 1
 fi
 
-# 3️⃣ Pull current state from GIT
-echo "[GIT] Updating repository (git pull)..."
-git pull
-
-# 4️⃣ Restore stashed changes (if any)
-if [ "$stashed" = true ]; then
-    echo "[GIT] Restoring stash..."
-    
-    # Try to pop stash and check for conflicts
-    if git stash pop; then
-        echo "[GIT] Stash restored successfully."
-    else
-        echo "⚠️ Merge conflicts detected during stash pop!"
-        echo "Please resolve conflicts manually and then run:"
-        echo "  git add -A"
-        echo "  git stash drop"
-        echo "  ./commit.sh"
-        exit 1
-    fi
-    
-    # Additional check for unresolved conflicts
-    if git status --porcelain | grep -q "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"; then
-        echo "❌ Unresolved merge conflicts found:"
-        git status --porcelain | grep "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"
-        echo ""
-        echo "Please resolve conflicts manually:"
-        echo "1. Edit conflicted files"
-        echo "2. Remove conflict markers (<<<<<<< ======= >>>>>>>)"
-        echo "3. Run: git add <resolved-files>"
-        echo "4. Run: ./commit.sh"
-        exit 1
-    fi
+# Pull latest changes from remote
+echo "[GIT] Pulling latest changes..."
+if ! git pull; then
+    echo "❌ Git pull failed. Please resolve any issues manually and try again."
+    exit 1
 fi
 
-# 5️⃣ Get commit message from temporary file
+echo "✅ Repository synchronized with remote"
+
+# 2️⃣ Get commit message from temporary file
 tempFile="/tmp/commit_message.txt"
 if [ -f "$tempFile" ]; then
     rm "$tempFile"
@@ -70,22 +45,14 @@ if [ ! -s "$tempFile" ]; then
     exit 1
 fi
 
-# 6️⃣ Final conflict check before commit
-if git status --porcelain | grep -q "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"; then
-    echo "❌ Cannot commit: Unresolved merge conflicts still exist!"
-    git status --porcelain | grep "^UU\|^AA\|^DD\|^AU\|^UA\|^DU\|^UD"
-    rm "$tempFile"
-    exit 1
-fi
-
-# Commit changes
+# 6️⃣ Commit changes
 echo "[GIT] Adding all changes..."
 git add -A
 
 echo "[GIT] Creating commit..."
 git commit -F "$tempFile"
 
-# 7️⃣ Push
+# 3️⃣ Push
 echo "[GIT] Pushing commit to remote repository..."
 git push
 
