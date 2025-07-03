@@ -119,7 +119,14 @@ export class InteractiveDebugger {
           resolved = true;
           clearTimeout(timeout);
           rl.close();
-          resolve(answer.trim());
+          const trimmed = answer.trim().toLowerCase();
+          // Only accept valid choices, otherwise treat as timeout
+          if (['s', 'c', 'd'].includes(trimmed)) {
+            resolve(trimmed);
+          } else {
+            console.log(`[DEBUGGER] Invalid choice '${trimmed}', treating as timeout...`);
+            resolve('timeout');
+          }
         }
       });
 

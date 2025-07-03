@@ -171,7 +171,6 @@ main_loop() {
 
         echo "[START] 🎯 Spouštím robota..."
         echo "[START] 📂 Pracovní adresář: $(pwd)"
-        echo "[START] 🐛 Debug ENV: ${DEBUG_KEEP_BROWSER_OPEN:-"not set"}"
         echo ""
 
         # Spuštění aplikace
