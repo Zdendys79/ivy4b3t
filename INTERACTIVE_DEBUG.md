@@ -56,18 +56,14 @@ Po stisknutí [s] se zobrazí prompt:
 📝 Please describe what went wrong (press Enter twice to finish):
 ```
 
-**Jak psát text:**
-- **Enter** - nový řádek v textu
-- **Dvojitý Enter** (prázdný řádek) - dokončí vstup
-
 Můžeš napsat popis problému, například:
 ```
 Uživatel nemohl být přihlášen na Facebook.
 Stránka zobrazovala captcha která nebyla vyřešena.
 Možná je potřeba ruční verifikace účtu.
 
-[Enter - prázdný řádek]
-[Enter - dokončí vstup]
+[Enter]
+[Enter]
 ```
 
 ## 🔍 Analýza Incidents
