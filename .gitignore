@@ -10,6 +10,3 @@ node_modules/
 *.bak
 *.code-workspace
 
-# Claude memory file
-CLAUDE.memory
-
