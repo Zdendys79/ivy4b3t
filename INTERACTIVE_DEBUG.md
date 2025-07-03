@@ -82,28 +82,6 @@ Možná je potřeba ruční verifikace účtu.
 
 ## 🔍 Analýza Incidents
 
-### Database Analysis Tools:
-
-```bash
-# Setup database table first
-node setup_debug_incidents.js
-
-# List recent incidents
-node analyze_debug_incidents.js list
-
-# Show specific incident details  
-node analyze_debug_incidents.js show INCIDENT_ID
-
-# Export incident data to files for detailed analysis
-node analyze_debug_incidents.js export INCIDENT_ID
-
-# Show statistics
-node analyze_debug_incidents.js stats
-
-# Mark incident as resolved
-node analyze_debug_incidents.js resolve INCIDENT_ID "Fixed login issue"
-```
-
 ### SQL Queries for Analysis:
 ```sql
 -- List recent incidents
