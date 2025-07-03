@@ -161,6 +161,56 @@ export class QueryBuilder {
   }
 
   // =========================================================
+  // BEHAVIORAL PROFILES - Pokročilé lidské chování
+  // =========================================================
+
+  async getBehavioralProfile(userId) {
+    const result = await this.safeQueryFirst('behavioral_profiles.getUserProfile', [userId]);
+    if (!result) {
+      // Vytvoř default profil pokud neexistuje
+      await this.safeExecute('behavioral_profiles.createDefaultProfile', [userId]);
+      return await this.safeQueryFirst('behavioral_profiles.getUserProfile', [userId]);
+    }
+    return result;
+  }
+
+  async updateBehavioralMood(userId, mood, energyLevel) {
+    return await this.safeExecute('behavioral_profiles.updateMoodAndEnergy', [
+      mood, energyLevel, userId
+    ]);
+  }
+
+  async logEmotionalState(userId, emotion, intensity, trigger, duration = 30) {
+    return await this.safeExecute('behavioral_profiles.logEmotionalState', [
+      userId, emotion, intensity, trigger, duration
+    ]);
+  }
+
+  async getCurrentEmotion(userId) {
+    return await this.safeQueryFirst('behavioral_profiles.getCurrentEmotion', [userId]);
+  }
+
+  async saveBehaviorPattern(userId, contextType, patternName, patternData, frequency = 1, successRate = 1.0) {
+    return await this.safeExecute('behavioral_profiles.saveBehaviorPattern', [
+      userId, contextType, patternName, JSON.stringify(patternData), frequency, successRate
+    ]);
+  }
+
+  async getCachedPattern(userId, contextType, patternName) {
+    const result = await this.safeQueryFirst('behavioral_profiles.getCachedPattern', [
+      userId, contextType, patternName
+    ]);
+    if (result && result.pattern_data) {
+      result.pattern_data = JSON.parse(result.pattern_data);
+    }
+    return result;
+  }
+
+  async initializeBehavioralProfiles() {
+    return await this.safeExecute('behavioral_profiles.initializeAllProfiles');
+  }
+
+  // =========================================================
   // GROUPS - Správa FB skupin
   // =========================================================
 

@@ -14,6 +14,7 @@ import { SYSTEM } from './system.js';
 import { LOGS } from './logs.js';
 import { QUOTES } from './quotes.js';
 import { ERROR_REPORTS } from './error-reports.js';
+import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import userLimits from './user_limits.js';
 import actionQuality from './action_quality.js';
 import systemMetrics from './system_metrics.js';
@@ -33,6 +34,7 @@ export const SQL = {
   logs: LOGS,
   quotes: QUOTES,
   error_reports: ERROR_REPORTS,
+  behavioral_profiles: BEHAVIORAL_PROFILES,
   user_limits: userLimits,
   action_quality: actionQuality,
   system_metrics: systemMetrics,

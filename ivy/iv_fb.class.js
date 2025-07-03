@@ -5,6 +5,7 @@ import fs from 'fs';
 
 import { Log } from './iv_log.class.js';
 import { PageAnalyzer } from './iv_page_analyzer.class.js';
+import { getHumanBehavior } from './iv_human_behavior_advanced.js';
 
 import * as wait from './iv_wait.js';
 
@@ -12,12 +13,14 @@ const CONFIG_PATH = path.resolve('./config.json');
 const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
 
 export class FBBot {
-  constructor(context) {
+  constructor(context, userId = null) {
     this.context = context;
     this.page = null;
     this.newThingElement = null;
     this.isInitialized = false;
     this.pageAnalyzer = null;
+    this.userId = userId;
+    this.humanBehavior = null;
   }
 
   /**
@@ -204,7 +207,23 @@ export class FBBot {
     return true;
   }
 
-  async _typeLikeHuman(text) {
+  async _typeLikeHuman(text, context = 'neutral') {
+    // Pokud máme userId, použij pokročilé chování
+    if (this.userId) {
+      try {
+        if (!this.humanBehavior) {
+          this.humanBehavior = await getHumanBehavior(this.userId);
+        }
+        
+        await this.humanBehavior.typeLikeHuman(this.page, text, context);
+        return;
+      } catch (error) {
+        Log.warn(`[${this.userId}]`, `⚠️ Pokročilé psaní selhalo, používám fallback: ${error.message}`);
+        // Pokračuj fallback metodou
+      }
+    }
+
+    // Fallback na původní metodu
     const el = await this.page.evaluateHandle(() => document.activeElement);
     const chars = text.split('');
 

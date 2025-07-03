@@ -315,7 +315,7 @@ async function executeUICommand(user, uiCommand) {
     await support.closeBlankTabs(context);
 
     // Inicializuj pouze FB (UI příkazy obvykle potřebují jen FB)
-    fbBot = new FBBot(context);
+    fbBot = new FBBot(context, user.id);
     if (!await fbBot.init()) {
       throw new Error('FB initialization failed for UI command');
     }
@@ -560,7 +560,7 @@ async function initializeRequiredServices(user, context, requirements, existingF
 
       if (fbBot) await fbBot.close();
 
-      fbBot = new FBBot(context);
+      fbBot = new FBBot(context, user.id);
       if (!await fbBot.init()) {
         throw new Error('FB initialization failed');
       }
