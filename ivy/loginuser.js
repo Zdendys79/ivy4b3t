@@ -101,7 +101,7 @@ process.on('SIGINT', async () => {
       Log.success('[LOGINUSER]', `Uživatel ${selectedUser.name} ${selectedUser.surname} úspěšně přihlášen na FB!`);
       await db.userLogedToFB(selectedUser.id);
     } else {
-      Log.error('[LOGINUSER]', 'Přihlášení na FB selhalo');
+      await Log.error('[LOGINUSER]', 'Přihlášení na FB selhalo');
     }
 
     // Počkej hodinu (nebo dokud uživatel browser nezavře)
@@ -116,7 +116,7 @@ process.on('SIGINT', async () => {
     Log.info('[LOGINUSER]', 'Časový limit vypršel nebo browser byl zavřen');
 
   } catch (err) {
-    Log.error('[LOGINUSER]', `Chyba: ${err.message}`);
+    await Log.error('[LOGINUSER]', `Chyba: ${err.message}`);
     console.error(err);
   } finally {
     if (browser) {
@@ -124,7 +124,7 @@ process.on('SIGINT', async () => {
         await browser.close();
         Log.info('[LOGINUSER]', 'Browser úspěšně zavřen');
       } catch (err) {
-        Log.warn('[LOGINUSER]', `Chyba při zavírání browseru: ${err.message}`);
+        await Log.warn('[LOGINUSER]', `Chyba při zavírání browseru: ${err.message}`);
       }
     }
 
@@ -149,7 +149,7 @@ async function launchBrowserForUser(user) {
     Log.info('[LOGINUSER]', `SingletonLock pro ${profileDir} odstraněn`);
   } catch (err) {
     if (err.code !== 'ENOENT') {
-      Log.warn('[LOGINUSER]', `Chyba při mazání SingletonLock: ${err.message}`);
+      await Log.warn('[LOGINUSER]', `Chyba při mazání SingletonLock: ${err.message}`);
     }
   }
 
@@ -200,7 +200,7 @@ async function getRandomReferer() {
       return result.url;
     }
   } catch (err) {
-    Log.warn('[LOGINUSER]', `Chyba při získávání refereru z DB: ${err.message}`);
+    await Log.warn('[LOGINUSER]', `Chyba při získávání refereru z DB: ${err.message}`);
   }
 
   // Fallback referer

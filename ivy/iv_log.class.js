@@ -31,12 +31,12 @@ export class Log {
     if (shouldLog('info')) console.log(`${now()} ${prefix} ${icons.info}`, ...msg);
   }
 
-  static warn(prefix, ...msg) {
+  static async warn(prefix, ...msg) {
     if (shouldLog('warn')) console.warn(`${now()} ${prefix} ${icons.warn}`, ...msg);
     
     // Trigger interactive debugger for warnings
     const message = msg.join(' ');
-    this.triggerDebugger('WARNING', `${prefix}: ${message}`, { prefix, message });
+    await this.triggerDebugger('WARNING', `${prefix}: ${message}`, { prefix, message });
   }
 
   static success(prefix, ...msg) {
@@ -51,14 +51,14 @@ export class Log {
     if (shouldLog('debug')) console.log(`${now()} ${prefix} ${icons.db}`, ...msg);
   }
 
-  static error(prefix, err) {
+  static async error(prefix, err) {
     const type = err?.name || typeof err;
     const message = err?.message || String(err);
     const stack = err?.stack ? '\n' + err.stack : '';
     console.error(`${now()} ${prefix} ${icons.error} [${type}]: ${message}${stack}`);
     
     // Trigger interactive debugger for errors
-    this.triggerDebugger('ERROR', `${prefix}: ${message}`, { type, stack, prefix });
+    await this.triggerDebugger('ERROR', `${prefix}: ${message}`, { type, stack, prefix });
   }
 
   // Interactive debugging methods

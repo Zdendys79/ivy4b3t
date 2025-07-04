@@ -57,9 +57,9 @@ export class ErrorReportBuilder {
    * Přidá detailní analýzu stránky do reportu
    * @param {Object} pageAnalysis - Výsledek PageAnalyzer.analyzeFullPage()
    */
-  addPageAnalysis(pageAnalysis) {
+  async addPageAnalysis(pageAnalysis) {
     if (!pageAnalysis) {
-      Log.warn('[ERROR_REPORT]', 'Prázdná analýza stránky');
+      await Log.warn('[ERROR_REPORT]', 'Prázdná analýza stránky');
       return;
     }
 
@@ -175,7 +175,7 @@ export class ErrorReportBuilder {
       }
 
     } catch (err) {
-      Log.error('[ERROR_REPORT]', `Chyba při ukládání error reportu: ${err.message}`);
+      await Log.error('[ERROR_REPORT]', `Chyba při ukládání error reportu: ${err.message}`);
       return null;
     }
   }
@@ -207,7 +207,7 @@ export class ErrorReportBuilder {
 
       return null;
     } catch (err) {
-      Log.error('[ERROR_REPORT]', `Chyba při ukládání základního error reportu: ${err.message}`);
+      await Log.error('[ERROR_REPORT]', `Chyba při ukládání základního error reportu: ${err.message}`);
       return null;
     }
   }

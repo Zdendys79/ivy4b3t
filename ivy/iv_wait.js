@@ -78,7 +78,7 @@ export async function delay(delay_time, verbose = true) { // wait delay_time ms
  * @returns {Promise<boolean>} true = uživatel stiskl 'a', false = timeout
  */
 export async function waitForUserIntervention(reason = 'Error detected', timeoutSeconds = 60) {
-  Log.warn('[INTERVENTION]', `${reason} - Čekám ${timeoutSeconds}s na zásah obsluhy`);
+  await Log.warn('[INTERVENTION]', `${reason} - Čekám ${timeoutSeconds}s na zásah obsluhy`);
   Log.info('[INTERVENTION]', '⚠️  Stiskněte klávesu "a" pro hlubší analýzu chyby');
   Log.info('[INTERVENTION]', '⏳ Nebo počkejte na automatické pokračování...');
 
@@ -183,7 +183,7 @@ export async function advancedUserIntervention(options = {}) {
     }
   } = options;
 
-  Log.warn('[INTERVENTION]', reason);
+  await Log.warn('[INTERVENTION]', reason);
   Log.info('[INTERVENTION]', '📋 Dostupné akce:');
 
   for (const [key, config] of Object.entries(keys)) {

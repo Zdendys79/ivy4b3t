@@ -345,7 +345,7 @@ export class QueryBuilder {
       const actions = await this.getUserActions(user.id);
       if (!actions.length) {
         if (debugMode) {
-          Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
+          await Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
         }
         return null;
       }
@@ -358,7 +358,7 @@ export class QueryBuilder {
 
     } catch (err) {
       if (debugMode) {
-        Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
+        await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
       }
       return null;
     }
@@ -426,7 +426,7 @@ export class QueryBuilder {
 
     } catch (err) {
       if (debugMode) {
-        Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
+        await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
       }
       return null;
     }
@@ -459,7 +459,7 @@ export class QueryBuilder {
       return { c: 0 };
 
     } catch (err) {
-      Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
+      await Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
       return { c: 0 };
     }
   }
@@ -484,7 +484,7 @@ export class QueryBuilder {
       return result;
 
     } catch (err) {
-      Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
+      await Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
       return false;
     }
   }
@@ -508,12 +508,12 @@ export class QueryBuilder {
   /**
    * Ověří dostupnost všech SQL modulů
    */
-  validateSQLModules() {
+  async validateSQLModules() {
     const requiredModules = ['users', 'actions', 'groups', 'limits', 'system', 'quotes', 'logs'];
     const missing = requiredModules.filter(module => !this.SQL[module]);
 
     if (missing.length > 0) {
-      Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
+      await Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
       return false;
     }
 

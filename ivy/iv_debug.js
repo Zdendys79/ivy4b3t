@@ -16,7 +16,7 @@ const CONFIG_PATH = path.resolve('./config.json');
 let _debugMode = null;
 let _debugLogged = false;
 
-export function isDebugMode() {
+export async function isDebugMode() {
   if (_debugMode === null) {
     try {
       const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
@@ -29,7 +29,7 @@ export function isDebugMode() {
         _debugLogged = true;
       }
     } catch (err) {
-      Log.error('[DEBUG]', `Chyba při čtení config.json: ${err.message}`);
+      await Log.error('[DEBUG]', `Chyba při čtení config.json: ${err.message}`);
       _debugMode = true; // fallback na debug režim
     }
   }

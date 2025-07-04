@@ -22,7 +22,7 @@ import { ErrorReportBuilder } from './iv_ErrorReportBuilder.class.js';
  */
 export async function handleFBError(user, fbBot, group = null, errorDetails = {}) {
   try {
-    Log.warn('[ERROR_WORKFLOW]', `Detekována chyba pro uživatele ${user.id}: ${errorDetails.type || 'UNKNOWN'}`);
+    await Log.warn('[ERROR_WORKFLOW]', `Detekována chyba pro uživatele ${user.id}: ${errorDetails.type || 'UNKNOWN'}`);
 
     const pageUrl = fbBot.page ? fbBot.page.url() : 'unknown';
     const errorType = errorDetails.type || 'UNKNOWN';
@@ -67,7 +67,7 @@ export async function handleFBError(user, fbBot, group = null, errorDetails = {}
     }
 
   } catch (err) {
-    Log.error('[ERROR_WORKFLOW]', `Chyba v error workflow: ${err.message}`);
+    await Log.error('[ERROR_WORKFLOW]', `Chyba v error workflow: ${err.message}`);
     return {
       action: 'error',
       success: false,
@@ -111,11 +111,11 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
         reportBuilder.addPageAnalysis(fullAnalysis);
 
       } catch (analysisErr) {
-        Log.warn('[ERROR_ANALYSIS]', `Detailní analýza selhala: ${analysisErr.message}`);
+        await Log.warn('[ERROR_ANALYSIS]', `Detailní analýza selhala: ${analysisErr.message}`);
         reportBuilder.addNotes(`Analýza selhala: ${analysisErr.message}`);
       }
     } else {
-      Log.warn('[ERROR_ANALYSIS]', 'PageAnalyzer není k dispozici');
+      await Log.warn('[ERROR_ANALYSIS]', 'PageAnalyzer není k dispozici');
       reportBuilder.addNotes('PageAnalyzer nedostupný');
     }
 
@@ -130,7 +130,7 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
         Log.info('[ERROR_ANALYSIS]', 'Screenshot přidán do reportu');
       }
     } catch (screenshotErr) {
-      Log.warn('[ERROR_ANALYSIS]', `Screenshot selhal: ${screenshotErr.message}`);
+      await Log.warn('[ERROR_ANALYSIS]', `Screenshot selhal: ${screenshotErr.message}`);
     }
 
     // Uložení kompletního reportu
@@ -140,7 +140,7 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
       Log.success('[ERROR_ANALYSIS]', `Kompletní error report vytvořen s ID: ${reportId}`);
 
       // Zobrazení shrnutí
-      displayAnalysisSummary(fullAnalysis, reportId);
+      await displayAnalysisSummary(fullAnalysis, reportId);
 
       return {
         success: true,
@@ -152,7 +152,7 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
     }
 
   } catch (err) {
-    Log.error('[ERROR_ANALYSIS]', `Detailní analýza selhala: ${err.message}`);
+    await Log.error('[ERROR_ANALYSIS]', `Detailní analýza selhala: ${err.message}`);
     return {
       success: false,
       error: err.message
@@ -196,7 +196,7 @@ async function askUserNextAction() {
  * @param {Object} analysis - Výsledek analýzy
  * @param {number} reportId - ID error reportu
  */
-function displayAnalysisSummary(analysis, reportId) {
+async function displayAnalysisSummary(analysis, reportId) {
   if (!analysis) {
     Log.info('[ERROR_SUMMARY]', '📄 Error report uložen bez detailní analýzy');
     return;
@@ -211,9 +211,9 @@ function displayAnalysisSummary(analysis, reportId) {
   }
 
   if (analysis.errors && analysis.errors.hasErrors) {
-    Log.warn('[ERROR_SUMMARY]', `❌ Typ chyby: ${analysis.errors.patterns.type || 'UNKNOWN'}`);
-    Log.warn('[ERROR_SUMMARY]', `⚠️  Důvod: ${analysis.errors.patterns.reason || 'Neznámý'}`);
-    Log.warn('[ERROR_SUMMARY]', `🔥 Závažnost: ${analysis.errors.severity || 'unknown'}`);
+    await Log.warn('[ERROR_SUMMARY]', `❌ Typ chyby: ${analysis.errors.patterns.type || 'UNKNOWN'}`);
+    await Log.warn('[ERROR_SUMMARY]', `⚠️  Důvod: ${analysis.errors.patterns.reason || 'Neznámý'}`);
+    await Log.warn('[ERROR_SUMMARY]', `🔥 Závažnost: ${analysis.errors.severity || 'unknown'}`);
   }
 
   if (analysis.complexity) {
@@ -253,7 +253,7 @@ export async function enhancedFBReadiness(user, fbBot, verificationOptions = {})
 
     // Pokud NENÍ připraven a máme error details, spustíme error workflow
     if (!basicReadiness.ready && basicReadiness.analysis) {
-      Log.warn('[ENHANCED_FB]', `Detekován problém: ${basicReadiness.reason}`);
+      await Log.warn('[ENHANCED_FB]', `Detekován problém: ${basicReadiness.reason}`);
 
       const errorDetails = {
         type: basicReadiness.analysis.errors?.patterns?.type || 'UNKNOWN',
@@ -274,7 +274,7 @@ export async function enhancedFBReadiness(user, fbBot, verificationOptions = {})
     return basicReadiness;
 
   } catch (err) {
-    Log.error('[ENHANCED_FB]', `Chyba v enhanced FB readiness: ${err.message}`);
+    await Log.error('[ENHANCED_FB]', `Chyba v enhanced FB readiness: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba při ověření: ${err.message}`,
@@ -325,7 +325,7 @@ export async function quickErrorReport(user, errorType, reason, url) {
 
     return reportId;
   } catch (err) {
-    Log.error('[QUICK_REPORT]', `Chyba při vytváření rychlého reportu: ${err.message}`);
+    await Log.error('[QUICK_REPORT]', `Chyba při vytváření rychlého reportu: ${err.message}`);
     return null;
   }
 }
@@ -389,7 +389,7 @@ export async function analyzeErrorPatterns(errorType, days = 7) {
     return analysis;
 
   } catch (err) {
-    Log.error('[PATTERN_ANALYSIS]', `Chyba při analýze patterns: ${err.message}`);
+    await Log.error('[PATTERN_ANALYSIS]', `Chyba při analýze patterns: ${err.message}`);
     return {
       hasPatterns: false,
       count: 0,
