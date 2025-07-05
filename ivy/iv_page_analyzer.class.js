@@ -240,21 +240,34 @@ export class PageAnalyzer {
 
   async _performErrorAnalysis() {
     try {
-      // Detekce specifických chybových vzorů
-      const errorPatterns = await this._detectErrorPatterns();
+      let finalErrorPatterns = await this._detectErrorPatterns();
 
-      // Kontrola zablokovaného účtu
       const accountLocked = await this._checkAccountLocked();
-
-      // Kontrola checkpoint
       const checkpoint = await this._checkCheckpoint();
 
+      // Pokud hlavní detekce nic nenašla, zkontroluj obecnější stavy
+      if (!finalErrorPatterns.detected) {
+        if (accountLocked) {
+          finalErrorPatterns = {
+            detected: true,
+            reason: 'Účet je zablokován nebo omezen (obecná detekce)',
+            type: 'ACCOUNT_LOCKED_GENERIC'
+          };
+        } else if (checkpoint.detected) {
+          finalErrorPatterns = {
+            detected: true,
+            reason: 'Detekován bezpečnostní checkpoint (obecná detekce)',
+            type: 'CHECKPOINT_GENERIC'
+          };
+        }
+      }
+
       return {
-        hasErrors: errorPatterns.detected || accountLocked || checkpoint.detected,
+        hasErrors: finalErrorPatterns.detected,
         accountLocked: accountLocked,
         checkpoint: checkpoint,
-        patterns: errorPatterns,
-        severity: this._calculateErrorSeverity(errorPatterns, accountLocked, checkpoint)
+        patterns: finalErrorPatterns,
+        severity: this._calculateErrorSeverity(finalErrorPatterns, accountLocked, checkpoint)
       };
 
     } catch (err) {
@@ -263,7 +276,7 @@ export class PageAnalyzer {
         hasErrors: true,
         accountLocked: false,
         checkpoint: { detected: false },
-        patterns: { detected: false },
+        patterns: { detected: false, reason: `Chyba analýzy: ${err.message}` },
         severity: 'unknown'
       };
     }

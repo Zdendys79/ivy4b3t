@@ -1,9 +1,8 @@
-refactor: Ensure async consistency in logging
+fix: Improve error reason specification in PageAnalyzer
 
-- Marked `getActionRequirements` in `iv_actions.js` as `async` to properly handle the `await Log.warn` call.
-- Updated all calls to `getActionRequirements` in `iv_actions.js` and `iv_worker.js` to use `await`.
-- Marked the `disconnected` event handler in `iv_worker.js` as `async` to allow `await` for `Log.warn`.
-- This change ensures that all functions that directly or indirectly call asynchronous logging functions are themselves asynchronous, preventing runtime errors.
+- Modified the `_performErrorAnalysis` method in `iv_page_analyzer.class.js`.
+- The logic now ensures that if a general error state (like a locked account or a checkpoint) is detected without a specific pattern match, a clear and descriptive reason is generated.
+- This prevents the system from reporting a vague "Unspecified problem" and provides more precise information to the debugger and logs.
 
 🤖 Generated with Gemini
 Co-Authored-By: Gemini <noreply@google.com>
