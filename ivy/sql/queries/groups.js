@@ -106,11 +106,7 @@ export const GROUPS = {
     WHERE id = ?
   `,
 
-  markAsSell: `
-    UPDATE fb_groups
-    SET sell = 1
-    WHERE id = ?
-  `,
+  
 
   resetCooldowns: `
     UPDATE fb_groups
@@ -158,8 +154,7 @@ export const GROUPS = {
       COUNT(*) as total_groups,
       COUNT(CASE WHEN fg.priority > 0 THEN 1 END) as active_groups,
       COUNT(CASE WHEN fg.priority > 0 THEN 1 END) as priority_groups,
-      AVG(fg.priority) as avg_priority,
-      COUNT(CASE WHEN fg.sell = 1 THEN 1 END) as sell_groups
+      AVG(fg.priority) as avg_priority
     FROM fb_groups fg
     GROUP BY fg.typ
     ORDER BY fg.typ

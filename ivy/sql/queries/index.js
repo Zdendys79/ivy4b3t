@@ -133,7 +133,7 @@ export const QueryUtils = {
    */
   validateAgainstSchema() {
     const knownTables = {
-      'fb_groups': ['id', 'fb_id', 'nazev', 'priority', 'user_counter', 'note', 'last_seen', 'next_seen', 'typ', 'region_id', 'district_id', 'sell'],
+      'fb_groups': ['id', 'fb_id', 'nazev', 'priority', 'user_counter', 'note', 'last_seen', 'next_seen', 'typ', 'region_id', 'district_id'],
       'fb_users': ['id', 'name', 'surname', 'day_limit', 'max_limit', 'next_worktime', 'next_statement', 'e_mail', 'e_pass', 'fb_login', 'fb_pass', 'u_login', 'u_pass', 'locked', 'lock_reason', 'lock_type', 'unlocked', 'day_limit_updated', 'last_add_group', 'portal_id', 'host'],
       'fb_error_reports': ['id', 'created', 'user_id', 'user_name', 'user_surname', 'group_id', 'group_fb_id', 'error_type', 'error_reason', 'page_url', 'page_title', 'page_elements_summary', 'detected_buttons', 'detected_texts', 'full_analysis_data', 'hostname', 'user_agent', 'reviewed', 'resolved', 'resolution_notes'],
       'quotes': ['id', 'user_id', 'posted', 'text', 'hash'],

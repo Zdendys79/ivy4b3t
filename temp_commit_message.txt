@@ -1,8 +1,8 @@
-fix: Remove redundant readiness check in FBBot.openGroup
+feat: Remove 'sell' column and related logic from groups
 
-- Removed the `verifyPostingReadiness` call from `FBBot.openGroup` in `iv_fb.class.js`.
-- This check was redundant and caused misleading "Unknown page type" warnings, as it was performed before navigating to the actual group page.
-- The comprehensive readiness check is already handled appropriately in `iv_fb_support.js` after the group page has loaded.
+- Removed the logic that appends '/selling' to group URLs in `FBBot.openGroup` in `ivy/iv_fb.class.js`.
+- Removed all SQL queries and references related to the `sell` column in `fb_groups` from `ivy/sql/queries/groups.js` and `ivy/sql/queries/index.js`.
+- Provided a SQL command to drop the `sell` column from the `fb_groups` table, as it is no longer used in the application logic.
 
 🤖 Generated with Gemini
 Co-Authored-By: Gemini <noreply@google.com>

@@ -1275,7 +1275,7 @@ export class FBBot {
       let fbGroupUrl = "https://FB.com/";
       fbGroupUrl += group.typ === "P" ? "" : "groups/";
       fbGroupUrl += group.fb_id;
-      fbGroupUrl += group.sell ? "/selling" : "";
+      
 
       Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);
 
