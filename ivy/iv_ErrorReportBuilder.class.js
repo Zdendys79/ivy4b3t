@@ -175,7 +175,7 @@ export class ErrorReportBuilder {
       }
 
     } catch (err) {
-      await await Log.error('[ERROR_REPORT]', `Chyba při ukládání error reportu: ${err.message}`);
+      await Log.error('[ERROR_REPORT]', `Chyba při ukládání error reportu: ${err.message}`);
       return null;
     }
   }
@@ -207,7 +207,7 @@ export class ErrorReportBuilder {
 
       return null;
     } catch (err) {
-      await await Log.error('[ERROR_REPORT]', `Chyba při ukládání základního error reportu: ${err.message}`);
+      await Log.error('[ERROR_REPORT]', `Chyba při ukládání základního error reportu: ${err.message}`);
       return null;
     }
   }

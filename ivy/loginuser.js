@@ -101,7 +101,7 @@ process.on('SIGINT', async () => {
       Log.success('[LOGINUSER]', `Uživatel ${selectedUser.name} ${selectedUser.surname} úspěšně přihlášen na FB!`);
       await db.userLogedToFB(selectedUser.id);
     } else {
-      await await Log.error('[LOGINUSER]', 'Přihlášení na FB selhalo');
+      await Log.error('[LOGINUSER]', 'Přihlášení na FB selhalo');
     }
 
     // Počkej hodinu (nebo dokud uživatel browser nezavře)
@@ -116,7 +116,7 @@ process.on('SIGINT', async () => {
     Log.info('[LOGINUSER]', 'Časový limit vypršel nebo browser byl zavřen');
 
   } catch (err) {
-    await await Log.error('[LOGINUSER]', `Chyba: ${err.message}`);
+    await Log.error('[LOGINUSER]', `Chyba: ${err.message}`);
     console.error(err);
   } finally {
     if (browser) {

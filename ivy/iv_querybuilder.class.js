@@ -134,13 +134,13 @@ export class QueryBuilder {
 
   async getUserCycleLimitInfo(userId, groupType) {
     const groupTypeUpper = groupType.toUpperCase();
-    
+
     // Nejdřív získej basic limit info pro time_window_hours
     const limitBasic = await this.safeQueryFirst('limits.getUserLimit', [userId, groupTypeUpper]);
     if (!limitBasic) {
       return { max_posts_per_cycle: 0, posts_available_this_cycle: 0, current_posts: 0 };
     }
-    
+
     // Pak použij getUserLimitUsageDetailed s správným time_window_hours
     const result = await this.safeQueryFirst('limits.getUserLimitUsageDetailed', [
       userId, groupTypeUpper, limitBasic.time_window_hours, userId, groupTypeUpper
@@ -152,10 +152,10 @@ export class QueryBuilder {
     if (!actionCode.startsWith('post_utio_')) {
       return false; // Není UTIO akce
     }
-    
+
     const groupType = actionCode.replace('post_utio_', '').toUpperCase();
     const limitInfo = await this.getUserCycleLimitInfo(userId, groupType);
-    
+
     // Opakuj akci, pokud ještě nejsou vyčerpány posty pro tento cyklus
     return limitInfo.posts_available_this_cycle > 0;
   }
@@ -358,7 +358,7 @@ export class QueryBuilder {
 
     } catch (err) {
       if (debugMode) {
-        await await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
+        await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
       }
       return null;
     }
@@ -426,7 +426,7 @@ export class QueryBuilder {
 
     } catch (err) {
       if (debugMode) {
-        await await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
+        await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
       }
       return null;
     }
@@ -459,7 +459,7 @@ export class QueryBuilder {
       return { c: 0 };
 
     } catch (err) {
-      await await Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
+      await Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
       return { c: 0 };
     }
   }
@@ -484,7 +484,7 @@ export class QueryBuilder {
       return result;
 
     } catch (err) {
-      await await Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
+      await Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
       return false;
     }
   }
@@ -513,7 +513,7 @@ export class QueryBuilder {
     const missing = requiredModules.filter(module => !this.SQL[module]);
 
     if (missing.length > 0) {
-      await await Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
+      await Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
       return false;
     }
 

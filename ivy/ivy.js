@@ -37,7 +37,7 @@ Log.info('[IVY]', `Verze klienta: ${versionCode}`);
       await workerTick();
       await delay(60000);
     } catch (err) {
-      await await Log.error('[IVY]', err);
+      await Log.error('[IVY]', err);
       await delay(60000);
     }
   }

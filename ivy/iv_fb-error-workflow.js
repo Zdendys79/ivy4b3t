@@ -67,7 +67,7 @@ export async function handleFBError(user, fbBot, group = null, errorDetails = {}
     }
 
   } catch (err) {
-    await await Log.error('[ERROR_WORKFLOW]', `Chyba v error workflow: ${err.message}`);
+    await Log.error('[ERROR_WORKFLOW]', `Chyba v error workflow: ${err.message}`);
     return {
       action: 'error',
       success: false,
@@ -152,7 +152,7 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
     }
 
   } catch (err) {
-    await await Log.error('[ERROR_ANALYSIS]', `Detailní analýza selhala: ${err.message}`);
+    await Log.error('[ERROR_ANALYSIS]', `Detailní analýza selhala: ${err.message}`);
     return {
       success: false,
       error: err.message
@@ -274,7 +274,7 @@ export async function enhancedFBReadiness(user, fbBot, verificationOptions = {})
     return basicReadiness;
 
   } catch (err) {
-    await await Log.error('[ENHANCED_FB]', `Chyba v enhanced FB readiness: ${err.message}`);
+    await Log.error('[ENHANCED_FB]', `Chyba v enhanced FB readiness: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba při ověření: ${err.message}`,
@@ -325,7 +325,7 @@ export async function quickErrorReport(user, errorType, reason, url) {
 
     return reportId;
   } catch (err) {
-    await await Log.error('[QUICK_REPORT]', `Chyba při vytváření rychlého reportu: ${err.message}`);
+    await Log.error('[QUICK_REPORT]', `Chyba při vytváření rychlého reportu: ${err.message}`);
     return null;
   }
 }
@@ -389,7 +389,7 @@ export async function analyzeErrorPatterns(errorType, days = 7) {
     return analysis;
 
   } catch (err) {
-    await await Log.error('[PATTERN_ANALYSIS]', `Chyba při analýze patterns: ${err.message}`);
+    await Log.error('[PATTERN_ANALYSIS]', `Chyba při analýze patterns: ${err.message}`);
     return {
       hasPatterns: false,
       count: 0,
