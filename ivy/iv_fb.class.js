@@ -1268,14 +1268,7 @@ export class FBBot {
 
   async openGroup(group) {
     try {
-      // NOVÉ - Ověření před otevřením skupiny
-      if (this.pageAnalyzer) {
-        const readinessCheck = await this.verifyPostingReadiness();
-        if (!readinessCheck.ready) {
-          await Log.warn('[FB]', `Stránka není připravena pro otevření skupiny: ${readinessCheck.reason}`);
-          // Neblokuj, ale zaloguj varování
-        }
-      }
+      
 
       await this.bringToFront();
 

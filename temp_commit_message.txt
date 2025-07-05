@@ -1,9 +1,8 @@
-fix: PageAnalyzer robustness and logging
+fix: Remove redundant readiness check in FBBot.openGroup
 
-- Corrected the order of analysis steps in `analyzeFullPage` to ensure `complexityAnalysis` and `navigationAnalysis` are computed before being passed to `_performErrorAnalysis`.
-- Added defensive checks in `_performErrorAnalysis` to handle potentially uninitialized `complexityAnalysis` and `navigationAnalysis` by providing default fallback objects.
-- Enhanced debug logging in `analyzeFullPage` to output the results of complexity and navigation analysis, aiding in future debugging.
-- This addresses the "Cannot access 'complexityAnalysis' before initialization" error and improves the overall stability and diagnostic capabilities of the PageAnalyzer.
+- Removed the `verifyPostingReadiness` call from `FBBot.openGroup` in `iv_fb.class.js`.
+- This check was redundant and caused misleading "Unknown page type" warnings, as it was performed before navigating to the actual group page.
+- The comprehensive readiness check is already handled appropriately in `iv_fb_support.js` after the group page has loaded.
 
 🤖 Generated with Gemini
 Co-Authored-By: Gemini <noreply@google.com>
