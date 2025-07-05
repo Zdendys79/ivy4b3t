@@ -64,15 +64,14 @@ if (mode === 'pre') {
 
     const hostname = os.hostname();
     const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const gitHash = execSync('git rev-parse HEAD', { cwd: projectRoot }).toString().trim();
 
-    // Use mysql CLI instead of mysql2 library
-    const sql = `INSERT INTO ivy.versions (code, hash, source, hostname, created) VALUES ('${versionCode}', '${gitHash}', 'git', '${hostname}', '${timestamp}');`;
+    // Use mysql CLI instead of mysql2 library - removed hash column
+    const sql = `INSERT INTO ivy.versions (code, source, hostname, created) VALUES ('${versionCode}', 'git', '${hostname}', '${timestamp}');`;
     const mysqlCmd = `mysql -u ${dbUser} -p${dbPass} -e "${sql}"`;
 
     execSync(mysqlCmd, { stdio: 'pipe' });
 
-    console.log(`[POST-COMMIT] Verze ${versionCode} (${gitHash.slice(0,7)}) zapsána do databáze.`);
+    console.log(`[POST-COMMIT] Verze ${versionCode} zapsána do databáze.`);
   } catch (err) {
     console.error('[POST-COMMIT] Chyba při zápisu do databáze:', err.message);
     process.exit(1);
