@@ -343,9 +343,6 @@ export async function closeBlankTabs(context) {
             Log.info('[BROWSER]', 'Zavírám prázdnou výchozí záložku.');
             await page.close();
             closedCount++;
-          } else {
-            await Log.warn('[BROWSER]', '');
-          }
         }
       } catch (err) {
         await Log.warn('[BROWSER]', `Chyba při kontrole záložky: ${err.message}`);
