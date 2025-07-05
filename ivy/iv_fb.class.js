@@ -214,7 +214,7 @@ export class FBBot {
         if (!this.humanBehavior) {
           this.humanBehavior = await getHumanBehavior(this.userId);
         }
-        
+
         await this.humanBehavior.typeLikeHuman(this.page, text, context);
         return;
       } catch (error) {
@@ -1136,7 +1136,7 @@ export class FBBot {
       context.visibility !== 'hidden'
     );
   }
-  
+
 
   selectBestCandidate(candidates) {
     // Prioritizujeme kandidáty podle preferencí
@@ -1328,7 +1328,7 @@ export class FBBot {
         const [counter] = await this._findByText(label, { timeout: 3500 });
         if (counter) {
           const value = await this.page.evaluate(el => el.textContent, counter);
-          return this.getCounterValue(value);
+          return await this.getCounterValue(value);
         }
       } catch (err) {
         await Log.error(`[FB] Counter "${label}" nenalezen: ${err}`);
@@ -1337,7 +1337,7 @@ export class FBBot {
     return 0;
   }
 
-  getCounterValue(str) {
+  async getCounterValue(str) {
     try {
       let regex = /[+-]?\d+(\.\d+)?/g;
       let [floats] = str.replace(",", ".").match(regex).map(v => parseFloat(v));
@@ -1484,7 +1484,7 @@ export class FBBot {
       return false;
     }
   }
-  
+
 
   async testXPath(selector) {
     try {
