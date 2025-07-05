@@ -1,12 +1,9 @@
-fix: Remove redundant git hash from post-commit hook
+fix: Add empty hash field to maintain database compatibility
 
-- Removed execSync('git rev-parse HEAD') from post-commit section
-- Post-commit now only reads versionCode from package.json 
-- Removed hash column from INSERT statement to ivy.versions table
-- Simplified post-commit logic: package.json → database only
-- No more git operations in post-commit hook
-
-This ensures post-commit is pure JSON reader with no git dependencies.
+- Added empty string for hash field in INSERT statement
+- Maintains compatibility with existing ivy.versions table structure
+- Hash field is now ignored but still present for database requirements
+- Post-commit no longer reads git data, only inserts empty hash
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

@@ -65,8 +65,8 @@ if (mode === 'pre') {
     const hostname = os.hostname();
     const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    // Use mysql CLI instead of mysql2 library - removed hash column
-    const sql = `INSERT INTO ivy.versions (code, source, hostname, created) VALUES ('${versionCode}', 'git', '${hostname}', '${timestamp}');`;
+    // Use mysql CLI instead of mysql2 library - hash set to empty string for now
+    const sql = `INSERT INTO ivy.versions (code, hash, source, hostname, created) VALUES ('${versionCode}', '', 'git', '${hostname}', '${timestamp}');`;
     const mysqlCmd = `mysql -u ${dbUser} -p${dbPass} -e "${sql}"`;
 
     execSync(mysqlCmd, { stdio: 'pipe' });
