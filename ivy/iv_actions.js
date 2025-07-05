@@ -18,7 +18,7 @@ import { Log } from './iv_log.class.js';
  * @param {string} actionCode - kód akce
  * @returns {object} - {needsFB: boolean, needsUtio: boolean}
  */
-export function getActionRequirements(actionCode) {
+export async function getActionRequirements(actionCode) {
   const requirements = {
     needsFB: false,
     needsUtio: false
@@ -70,7 +70,7 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
   try {
     Log.info(`[${user.id}]`, `🔍 Ověřuji připravenost pro akci: ${actionCode}`);
 
-    const actionRequirements = getActionRequirements(actionCode);
+    const actionRequirements = await getActionRequirements(actionCode);
 
     // Pokud akce nevyžaduje FB, není co ověřovat
     if (!actionRequirements.needsFB) {

@@ -163,7 +163,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Inicializace potřebných služeb pro akci
-      const requirements = getActionRequirements(actionCode);
+      const requirements = await getActionRequirements(actionCode);
       ({ fbBot, utioBot } = await initializeRequiredServices(
         user, context, requirements, fbBot, utioBot
       ));
@@ -727,7 +727,7 @@ async function prepareBrowser(user) {
   });
 
   let browserClosed = false;
-  browser.on('disconnected', () => {
+  browser.on('disconnected', async () => {
     browserClosed = true;
     await Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
   });

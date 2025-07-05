@@ -1,15 +1,9 @@
-fix: Correct asynchronous logging calls
+refactor: Ensure async consistency in logging
 
-- Removed duplicate 'await' from 'Log.warn' and 'Log.error' calls across multiple files.
-- This ensures that all asynchronous logging functions are called correctly with a single 'await', preventing potential runtime issues.
-- Affected files include:
-  - ivy/iv_fb-error-workflow.js
-  - ivy/iv_ui.class.js
-  - ivy/iv_wait.js
-  - ivy/iv_querybuilder.class.js
-  - ivy/iv_ErrorReportBuilder.class.js
-  - ivy/loginuser.js
-  - ivy/iv_debug.js
+- Marked `getActionRequirements` in `iv_actions.js` as `async` to properly handle the `await Log.warn` call.
+- Updated all calls to `getActionRequirements` in `iv_actions.js` and `iv_worker.js` to use `await`.
+- Marked the `disconnected` event handler in `iv_worker.js` as `async` to allow `await` for `Log.warn`.
+- This change ensures that all functions that directly or indirectly call asynchronous logging functions are themselves asynchronous, preventing runtime errors.
 
 🤖 Generated with Gemini
 Co-Authored-By: Gemini <noreply@google.com>
