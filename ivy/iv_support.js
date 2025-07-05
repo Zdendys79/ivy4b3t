@@ -344,7 +344,7 @@ export async function closeBlankTabs(context) {
             await page.close();
             closedCount++;
           } else {
-            await Log.warn('[BROWSER]', 'Nelze zavřít jedinou záložku.');
+            await Log.warn('[BROWSER]', '');
           }
         }
       } catch (err) {
