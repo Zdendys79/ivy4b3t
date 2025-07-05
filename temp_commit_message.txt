@@ -1,9 +1,9 @@
-feat: Implement intelligent error detection in PageAnalyzer
+fix: PageAnalyzer robustness and logging
 
-- Refactored `_performErrorAnalysis` in `iv_page_analyzer.class.js` to prioritize structural analysis.
-- If the page structure is deemed "normal" (rich content, standard navigation), no keyword-based error detection is performed, preventing false positives.
-- Keyword-based error detection (e.g., for checkpoints, locked accounts) is now only triggered if the page structure is suspicious.
-- Improved logging provides clear messages about the detection process, including whether a page was considered normal or suspicious, and what specific keywords/patterns were found if an error is detected.
+- Corrected the order of analysis steps in `analyzeFullPage` to ensure `complexityAnalysis` and `navigationAnalysis` are computed before being passed to `_performErrorAnalysis`.
+- Added defensive checks in `_performErrorAnalysis` to handle potentially uninitialized `complexityAnalysis` and `navigationAnalysis` by providing default fallback objects.
+- Enhanced debug logging in `analyzeFullPage` to output the results of complexity and navigation analysis, aiding in future debugging.
+- This addresses the "Cannot access 'complexityAnalysis' before initialization" error and improves the overall stability and diagnostic capabilities of the PageAnalyzer.
 
 🤖 Generated with Gemini
 Co-Authored-By: Gemini <noreply@google.com>

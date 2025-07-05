@@ -48,14 +48,16 @@ export class PageAnalyzer {
       // Základní analýza stránky
       const basicAnalysis = await this._performBasicAnalysis();
 
-      // Analýza chybových stavů
-      const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis);
-
       // Analýza komplexnosti stránky
       const complexityAnalysis = await this._performComplexityAnalysis();
+      Log.debug('[ANALYZER]', 'Complexity Analysis Result:', complexityAnalysis);
 
       // Analýza navigace
       const navigationAnalysis = await this._performNavigationAnalysis();
+      Log.debug('[ANALYZER]', 'Navigation Analysis Result:', navigationAnalysis);
+
+      // Analýza chybových stavů
+      const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis);
 
       // Pokročilé analýzy podle potřeby
       const postingAnalysis = includePostingCapability ?
@@ -240,8 +242,12 @@ export class PageAnalyzer {
 
   async _performErrorAnalysis(complexityAnalysis, navigationAnalysis) {
     try {
+      // Defenzivní kontrola vstupních parametrů
+      const safeComplexity = complexityAnalysis || { isNormal: false, metrics: {}, suspiciouslySimple: true };
+      const safeNavigation = navigationAnalysis || { hasStandardNavigation: false, elements: {} };
+
       // KROK 1: Vyhodnocení struktury stránky
-      const isNormalStructure = complexityAnalysis.isNormal && navigationAnalysis.hasStandardNavigation;
+      const isNormalStructure = safeComplexity.isNormal && safeNavigation.hasStandardNavigation;
 
       if (isNormalStructure) {
         Log.info('[ANALYZER]', 'Struktura stránky je normální. Předpokládám, že není chyba.');
