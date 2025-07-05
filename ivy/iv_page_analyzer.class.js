@@ -91,7 +91,7 @@ export class PageAnalyzer {
       return result;
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při analýze stránky: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při analýze stránky: ${err.message}`);
       throw err;
     }
   }
@@ -118,7 +118,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při rychlé kontrole: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při rychlé kontrole: ${err.message}`);
       return {
         url: this.page.url(),
         isLoggedIn: false,
@@ -186,7 +186,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při ověřování postování: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při ověřování postování: ${err.message}`);
       return {
         canPost: false,
         reason: `Chyba při ověřování: ${err.message}`,
@@ -215,7 +215,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při základní analýze: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při základní analýze: ${err.message}`);
       return {
         url: this.page.url(),
         title: 'Unknown',
@@ -233,7 +233,7 @@ export class PageAnalyzer {
       }
       return await this.page.title();
     } catch (err) {
-      Log.warn('[ANALYZER]', `Cannot get page title: ${err.message}`);
+      await Log.warn('[ANALYZER]', `Cannot get page title: ${err.message}`);
       return 'Title unavailable';
     }
   }
@@ -258,7 +258,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při analýze chyb: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při analýze chyb: ${err.message}`);
       return {
         hasErrors: true,
         accountLocked: false,
@@ -308,7 +308,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při analýze komplexnosti: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při analýze komplexnosti: ${err.message}`);
       return {
         metrics: null,
         isNormal: false,
@@ -347,7 +347,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při analýze navigace: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při analýze navigace: ${err.message}`);
       return {
         elements: {},
         hasStandardNavigation: false,
@@ -420,7 +420,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při analýze postování: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při analýze postování: ${err.message}`);
       return {
         elements: {},
         canInteract: false,
@@ -535,7 +535,7 @@ export class PageAnalyzer {
       };
 
     } catch (err) {
-      Log.error('[ANALYZER]', `Chyba při analýze skupiny: ${err.message}`);
+      await Log.error('[ANALYZER]', `Chyba při analýze skupiny: ${err.message}`);
       return {
         isGroup: false,
         reason: `Chyba: ${err.message}`

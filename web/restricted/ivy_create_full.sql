@@ -434,17 +434,15 @@ CREATE TABLE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- Version tracking table
--- Tracks application versions and git commits for deployment management
+-- Tracks application versions for deployment management
 CREATE TABLE
   `versions` (
     `id` int (10) unsigned NOT NULL AUTO_INCREMENT,
     `code` varchar(7) NOT NULL,
-    `hash` char(40) NOT NULL,
     `source` varchar(64) DEFAULT 'git',
     `hostname` varchar(32) DEFAULT NULL,
     `created` timestamp NULL DEFAULT current_timestamp(),
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uniq_hash` (`hash`),
     KEY `idx_created` (`created` DESC)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_czech_ci;
 

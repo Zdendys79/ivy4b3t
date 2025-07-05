@@ -39,7 +39,7 @@ export class UIBot {
       }
       return null;
     } catch (err) {
-      Log.error('[UI] checkForCommand', err);
+      await await Log.error('[UI] checkForCommand', err);
       return null;
     }
   }
@@ -51,7 +51,7 @@ export class UIBot {
    */
   async processCommand(command) {
     if (this.isProcessing) {
-      Log.warn('[UI]', 'UI příkaz se již zpracovává, přeskakuji');
+      await Log.warn('[UI]', 'UI příkaz se již zpracovává, přeskakuji');
       return false;
     }
 
@@ -88,7 +88,7 @@ export class UIBot {
           break;
 
         default:
-          Log.warn('[UI]', `Neznámý příkaz: ${command.command}`);
+          await Log.warn('[UI]', `Neznámý příkaz: ${command.command}`);
           result = false;
       }
 
@@ -96,11 +96,11 @@ export class UIBot {
         await db.uICommandSolved(command.id);
         Log.success('[UI]', `Příkaz ${command.command} úspěšně dokončen`);
       } else {
-        Log.error('[UI]', `Příkaz ${command.command} se nezdařil`);
+        await await Log.error('[UI]', `Příkaz ${command.command} se nezdařil`);
       }
 
     } catch (err) {
-      Log.error('[UI] processCommand', err);
+      await await Log.error('[UI] processCommand', err);
       result = false;
     } finally {
       this.isProcessing = false;
@@ -143,7 +143,7 @@ export class UIBot {
    * @private
    */
   async _handleRestart(command) {
-    Log.warn('[UI]', 'Restart příkaz přijat - ukončuji proces');
+    await Log.warn('[UI]', 'Restart příkaz přijat - ukončuji proces');
 
     await this._cleanup();
     await db.systemLog("UI command", "Požadavek na restart programu.", command.data);
@@ -191,7 +191,7 @@ export class UIBot {
   async _handleCallUser(data) {
     const userId = data.user_id;
     if (!userId) {
-      Log.error('[UI]', 'call_user: Chybí user_id');
+      await await Log.error('[UI]', 'call_user: Chybí user_id');
       return false;
     }
 
@@ -201,7 +201,7 @@ export class UIBot {
       // Získej data uživatele
       const user = await db.getUserById(userId);
       if (!user) {
-        Log.error('[UI]', `Uživatel ${userId} nenalezen`);
+        await await Log.error('[UI]', `Uživatel ${userId} nenalezen`);
         return false;
       }
 
@@ -223,7 +223,7 @@ export class UIBot {
       }
 
     } catch (err) {
-      Log.error('[UI] call_user', err);
+      await await Log.error('[UI] call_user', err);
       return false;
     }
   }
@@ -237,7 +237,7 @@ export class UIBot {
   async _handleUserGroup(data) {
     const { user_id, group_id } = data;
     if (!user_id || !group_id) {
-      Log.error('[UI]', 'user_group: Chybí user_id nebo group_id');
+      await await Log.error('[UI]', 'user_group: Chybí user_id nebo group_id');
       return false;
     }
 
@@ -249,12 +249,12 @@ export class UIBot {
       const group = await db.getGroupById(group_id);
 
       if (!user) {
-        Log.error('[UI]', `Uživatel ${user_id} nenalezen`);
+        await await Log.error('[UI]', `Uživatel ${user_id} nenalezen`);
         return false;
       }
 
       if (!group) {
-        Log.error('[UI]', `Skupina ${group_id} nenalezena`);
+        await await Log.error('[UI]', `Skupina ${group_id} nenalezena`);
         return false;
       }
 
@@ -281,7 +281,7 @@ export class UIBot {
       }
 
     } catch (err) {
-      Log.error('[UI] user_group', err);
+      await await Log.error('[UI] user_group', err);
       return false;
     }
   }
@@ -355,7 +355,7 @@ export class UIBot {
 
       // Kontrola, zda je browser stále připojen
       if (this.browser && !this.browser.isConnected()) {
-        Log.warn('[UI]', 'Browser se odpojil během čekání');
+        await Log.warn('[UI]', 'Browser se odpojil během čekání');
         break;
       }
 
@@ -386,7 +386,7 @@ export class UIBot {
         await this.browser.close();
         Log.info('[UI]', 'Browser uzavřen');
       } catch (err) {
-        Log.warn('[UI]', `Chyba při zavírání browseru: ${err.message}`);
+        await Log.warn('[UI]', `Chyba při zavírání browseru: ${err.message}`);
       }
     }
 

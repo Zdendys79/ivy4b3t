@@ -34,7 +34,7 @@ export async function addMeToGroup(user, group, fbBot) {
     return true;
   }
 
-  Log.warn(`[${user.id}]`, `Nepodařilo se přidat do skupiny ${group.fb_id}`);
+  await Log.warn(`[${user.id}]`, `Nepodařilo se přidat do skupiny ${group.fb_id}`);
   return false;
 }
 
@@ -65,7 +65,7 @@ export async function decreaseUserLimit(user) {
   if (new_limit < 3) new_limit = 3;
 
   await db.setUserLimit(user, new_limit, user.day_limit);
-  Log.warn(`[${user.id}]`, `Denní limit snížen na ${new_limit}`);
+  await Log.warn(`[${user.id}]`, `Denní limit snížen na ${new_limit}`);
 }
 
 /**
@@ -78,7 +78,7 @@ export async function randomReferer() {
     Log.db('[REFERER]', `Použit referer z DB: ${selected}`);
     return selected;
   } catch (err) {
-    Log.error('[REFERER]', err);
+    await Log.error('[REFERER]', err);
     return "https://www.google.cz";
   }
 }
@@ -98,7 +98,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     const readinessCheck = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
 
     if (!readinessCheck.ready) {
-      Log.error(`[${user.id}]`, `❌ FB není připraven: ${readinessCheck.reason}`);
+      await Log.error(`[${user.id}]`, `❌ FB není připraven: ${readinessCheck.reason}`);
 
       if (readinessCheck.critical) {
         return false; // Kritická chyba - ukončit
@@ -108,35 +108,35 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
         Log.info(`[${user.id}]`, 'Pokusím se přejít do správné skupiny...');
         const navigated = await fbBot.openGroup(group);
         if (!navigated) {
-          Log.error(`[${user.id}]`, 'Nepodařilo se přejít do skupiny');
+          await Log.error(`[${user.id}]`, 'Nepodařilo se přejít do skupiny');
           return false;
         }
 
         // Znovu ověř po navigaci
         const recheckResult = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
         if (!recheckResult.ready) {
-          Log.error(`[${user.id}]`, `Ani po navigaci není připraveno: ${recheckResult.reason}`);
+          await Log.error(`[${user.id}]`, `Ani po navigaci není připraveno: ${recheckResult.reason}`);
           return false;
         }
       } else {
-        Log.warn(`[${user.id}]`, '⚠️ Pokračuji přes varování...');
+        await Log.warn(`[${user.id}]`, '⚠️ Pokračuji přes varování...');
       }
     }
 
     // Kontrola vstupních parametrů
     if (!user || !group || !fbBot) {
-      Log.error('[SUPPORT]', 'pasteMsg: Chybí povinné parametry');
+      await Log.error('[SUPPORT]', 'pasteMsg: Chybí povinné parametry');
       return false;
     }
 
     if (!user.portal_id || !group.region_id || !group.district_id) {
-      Log.error('[SUPPORT]', `pasteMsg: Chybí ID parametry - portal: ${user.portal_id}, region: ${group.region_id}, okres: ${group.district_id}`);
+      await Log.error('[SUPPORT]', `pasteMsg: Chybí ID parametry - portal: ${user.portal_id}, region: ${group.region_id}, okres: ${group.district_id}`);
       return false;
     }
 
     // Zkontroluj dostupnost UTIO
     if (!utioBot || !utioBot.isReady()) {
-      Log.error('[SUPPORT]', 'pasteMsg: UtioBot není k dispozici nebo není připraven');
+      await Log.error('[SUPPORT]', 'pasteMsg: UtioBot není k dispozici nebo není připraven');
       return false;
     }
 
@@ -155,7 +155,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       const m = await utioBot.getMessage(user.portal_id, group.region_id, group.district_id);
 
       if (!m || !Array.isArray(m) || m.length === 0) {
-        Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Žádná zpráva z UTIO`);
+        await Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Žádná zpráva z UTIO`);
         cnt++;
         if (cnt < 5) {
           await wait.delay(2000);
@@ -166,7 +166,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       const fullMessage = m.join('\n').trim();
 
       if (!fullMessage || fullMessage.length === 0) {
-        Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Prázdná zpráva z UTIO`);
+        await Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Prázdná zpráva z UTIO`);
         cnt++;
         if (cnt < 5) {
           await wait.delay(2000);
@@ -187,11 +187,11 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
           Log.success(`[${user.id}]`, `Zpráva prošla kontrolou duplicity`);
           break;
         } else {
-          Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Zpráva už byla použita (duplicita)`);
+          await Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Zpráva už byla použita (duplicita)`);
         }
 
       } catch (hashErr) {
-        Log.error(`[${user.id}]`, `Chyba při vytváření MD5 hash: ${hashErr.message}`);
+        await Log.error(`[${user.id}]`, `Chyba při vytváření MD5 hash: ${hashErr.message}`);
         message = [fullMessage];
         break;
       }
@@ -204,7 +204,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     } while (!message && cnt < 5);
 
     if (!message) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se získat platnou zprávu z UTIO po 5 pokusech');
+      await Log.error(`[${user.id}]`, 'Nepodařilo se získat platnou zprávu z UTIO po 5 pokusech');
       return false;
     }
 
@@ -213,7 +213,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       Log.info(`[${user.id}]`, '🔄 Přepínám zpět na FB záložku...');
 
       if (!await fbBot.bringToFront()) {
-        Log.error(`[${user.id}]`, 'Nepodařilo se přepnout na FB záložku');
+        await Log.error(`[${user.id}]`, 'Nepodařilo se přepnout na FB záložku');
         return false;
       }
 
@@ -222,7 +222,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       // Ověř že jsme stále ve správném stavu
       const postReturnCheck = await fbSupport.verifyStateAfterUtioReturn(user, group, fbBot, FBState);
       if (!postReturnCheck.valid) {
-        Log.error(`[${user.id}]`, `Problém po návratu z UTIO: ${postReturnCheck.reason}`);
+        await Log.error(`[${user.id}]`, `Problém po návratu z UTIO: ${postReturnCheck.reason}`);
 
         if (postReturnCheck.shouldReload) {
           Log.info(`[${user.id}]`, 'Pokusím se obnovit stránku...');
@@ -234,7 +234,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       }
 
     } catch (returnErr) {
-      Log.error(`[${user.id}]`, `Chyba při návratu z UTIO: ${returnErr.message}`);
+      await Log.error(`[${user.id}]`, `Chyba při návratu z UTIO: ${returnErr.message}`);
       return false;
     }
 
@@ -242,7 +242,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     Log.info(`[${user.id}]`, '📝 Vkládám zprávu do FB...');
 
     if (!await fbBot.pasteMessage(message[0])) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do FB');
+      await Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do FB');
       return false;
     }
 
@@ -250,7 +250,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     return message;
 
   } catch (err) {
-    Log.error(`[${user.id}] UTIO`, err);
+    await Log.error(`[${user.id}] UTIO`, err);
     return false;
   }
 }
@@ -263,13 +263,13 @@ export async function writeMsg(user, messageText, fbBot) {
     Log.info(`[${user.id}]`, '✍️ Píšu zprávu do FB...');
 
     if (!messageText || messageText.trim().length === 0) {
-      Log.error(`[${user.id}]`, 'writeMsg: Prázdná zpráva');
+      await Log.error(`[${user.id}]`, 'writeMsg: Prázdná zpráva');
       return false;
     }
 
     // Použij FBBot funkci pro psaní
     if (!await fbBot.writeMessage(messageText)) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se napsat zprávu');
+      await Log.error(`[${user.id}]`, 'Nepodařilo se napsat zprávu');
       return false;
     }
 
@@ -277,7 +277,7 @@ export async function writeMsg(user, messageText, fbBot) {
     return true;
 
   } catch (err) {
-    Log.error(`[${user.id}] writeMsg`, err);
+    await Log.error(`[${user.id}] writeMsg`, err);
     return false;
   }
 }
@@ -316,7 +316,7 @@ export async function updatePostStats(group, user, actionCode) {
     return true;
 
   } catch (err) {
-    Log.error('[SUPPORT]', `Chyba při aktualizaci statistik: ${err.message}`);
+    await Log.error('[SUPPORT]', `Chyba při aktualizaci statistik: ${err.message}`);
     return false;
   }
 }
@@ -344,18 +344,18 @@ export async function closeBlankTabs(context) {
             await page.close();
             closedCount++;
           } else {
-            Log.warn('[BROWSER]', 'Nelze zavřít jedinou záložku.');
+            await Log.warn('[BROWSER]', 'Nelze zavřít jedinou záložku.');
           }
         }
       } catch (err) {
-        Log.warn('[BROWSER]', `Chyba při kontrole záložky: ${err.message}`);
+        await Log.warn('[BROWSER]', `Chyba při kontrole záložky: ${err.message}`);
       }
     }
     if (closedCount > 0) {
       Log.info('[BROWSER]', `Zavřeno ${closedCount} prázdných záložek`);
     }
   } catch (err) {
-    Log.error('[BROWSER]', `Chyba při zavírání prázdných záložek: ${err.message}`);
+    await Log.error('[BROWSER]', `Chyba při zavírání prázdných záložek: ${err.message}`);
   }
 }
 

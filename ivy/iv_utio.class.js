@@ -26,7 +26,7 @@ export class UtioBot {
   async init() {
     try {
       if (!this.context) {
-        Log.error('[UTIO]', 'Context není k dispozici pro inicializaci');
+        await Log.error('[UTIO]', 'Context není k dispozici pro inicializaci');
         return false;
       }
 
@@ -34,7 +34,7 @@ export class UtioBot {
       this.page = await this.context.newPage();
 
       if (!this.page) {
-        Log.error('[UTIO]', 'Nepodařilo se vytvořit novou stránku');
+        await Log.error('[UTIO]', 'Nepodařilo se vytvořit novou stránku');
         return false;
       }
 
@@ -52,7 +52,7 @@ export class UtioBot {
       return true;
 
     } catch (err) {
-      Log.error('[UTIO] init', err);
+      await Log.error('[UTIO] init', err);
       this.page = null;
       return false;
     }
@@ -65,14 +65,14 @@ export class UtioBot {
   async bringToFront() {
     try {
       if (!this._isPageReady()) {
-        Log.error('[UTIO]', 'Stránka není připravena pro bringToFront');
+        await Log.error('[UTIO]', 'Stránka není připravena pro bringToFront');
         return false;
       }
 
       await this.page.bringToFront();
       return true;
     } catch (err) {
-      Log.error('[UTIO] bringToFront', err);
+      await Log.error('[UTIO] bringToFront', err);
       return false;
     }
   }
@@ -85,7 +85,7 @@ export class UtioBot {
   async screenshot(name) {
     try {
       if (!this._isPageReady()) {
-        Log.warn('[UTIO]', 'Nelze pořídit screenshot - stránka není připravena');
+        await Log.warn('[UTIO]', 'Nelze pořídit screenshot - stránka není připravena');
         return false;
       }
 
@@ -94,7 +94,7 @@ export class UtioBot {
       Log.info(`[UTIO]`, `Screenshot uložen: ${filename}`);
       return true;
     } catch (err) {
-      Log.error('[UTIO] screenshot', err);
+      await Log.error('[UTIO] screenshot', err);
       return false;
     }
   }
@@ -107,12 +107,12 @@ export class UtioBot {
   async openUtio(user) {
     try {
       if (!this._isPageReady()) {
-        Log.error('[UTIO]', 'Stránka není připravena pro přihlášení');
+        await Log.error('[UTIO]', 'Stránka není připravena pro přihlášení');
         return false;
       }
 
       if (!user || !user.u_login || !user.u_pass) {
-        Log.error('[UTIO]', 'Chybí přihlašovací údaje uživatele');
+        await Log.error('[UTIO]', 'Chybí přihlašovací údaje uživatele');
         return false;
       }
 
@@ -135,12 +135,12 @@ export class UtioBot {
         Log.success('[UTIO]', `Uživatel ${user.u_login} úspěšně přihlášen`);
         return true;
       } else {
-        Log.error('[UTIO]', `Přihlášení uživatele ${user.u_login} se nezdařilo`);
+        await Log.error('[UTIO]', `Přihlášení uživatele ${user.u_login} se nezdařilo`);
         return false;
       }
 
     } catch (err) {
-      Log.error('[UTIO] openUtio', err);
+      await Log.error('[UTIO] openUtio', err);
       return false;
     }
   }
@@ -154,12 +154,12 @@ export class UtioBot {
    */
   async getMessage(portalId, regionId, districtId) {
     if (!this._isPageReady()) {
-      Log.error('[UTIO]', 'Stránka není připravena pro getMessage');
+      await Log.error('[UTIO]', 'Stránka není připravena pro getMessage');
       return false;
     }
 
     if (!this.isLoggedIn) {
-      Log.error('[UTIO]', 'Uživatel není přihlášen pro getMessage');
+      await Log.error('[UTIO]', 'Uživatel není přihlášen pro getMessage');
       return false;
     }
 
@@ -191,12 +191,12 @@ export class UtioBot {
         Log.info('[UTIO]', `První řádek: "${message[0].substring(0, 50)}..."`);
         return message;
       } else {
-        Log.warn('[UTIO]', 'Nepodařilo se získat validní zprávu');
+        await Log.warn('[UTIO]', 'Nepodařilo se získat validní zprávu');
         return false;
       }
 
     } catch (err) {
-      Log.error('[UTIO] getMessage', err);
+      await Log.error('[UTIO] getMessage', err);
       return false;
     }
   }
@@ -208,7 +208,7 @@ export class UtioBot {
   async logout() {
     try {
       if (!this._isPageReady()) {
-        Log.warn('[UTIO]', 'Stránka není připravena pro logout');
+        await Log.warn('[UTIO]', 'Stránka není připravena pro logout');
         return true; // Technicky úspěch, není co odhlašovat
       }
 
@@ -230,14 +230,14 @@ export class UtioBot {
         Log.info('[UTIO]', 'Uživatel úspěšně odhlášen');
         return true;
       } else {
-        Log.warn('[UTIO]', 'Logout odkaz nenalezen - uživatel možná není přihlášen');
+        await Log.warn('[UTIO]', 'Logout odkaz nenalezen - uživatel možná není přihlášen');
         this.isLoggedIn = false;
         this.currentUser = null;
         return false;
       }
 
     } catch (err) {
-      Log.error('[UTIO] logout', err);
+      await Log.error('[UTIO] logout', err);
       return false;
     }
   }
@@ -267,7 +267,7 @@ export class UtioBot {
 
       return true;
     } catch (err) {
-      Log.error('[UTIO] close', err);
+      await Log.error('[UTIO] close', err);
       return false;
     }
   }
@@ -329,12 +329,12 @@ export class UtioBot {
         await this.page.waitForSelector('a[href="/site/logout"]', { timeout: 10000 });
         return true;
       } catch (loginErr) {
-        Log.error('[UTIO]', 'Přihlášení se nezdařilo - logout odkaz nenalezen');
+        await Log.error('[UTIO]', 'Přihlášení se nezdařilo - logout odkaz nenalezen');
         return false;
       }
 
     } catch (err) {
-      Log.error('[UTIO] _performLogin', err);
+      await Log.error('[UTIO] _performLogin', err);
       return false;
     }
   }
@@ -354,7 +354,7 @@ export class UtioBot {
       await wait.delay(2000);
       return true;
     } catch (err) {
-      Log.error('[UTIO] _navigateToMessageGenerator', err);
+      await Log.error('[UTIO] _navigateToMessageGenerator', err);
       return false;
     }
   }
@@ -399,7 +399,7 @@ export class UtioBot {
 
       return true;
     } catch (err) {
-      Log.error('[UTIO] _fillMessageForm', err);
+      await Log.error('[UTIO] _fillMessageForm', err);
       return false;
     }
   }
@@ -431,7 +431,7 @@ export class UtioBot {
 
       return true;
     } catch (err) {
-      Log.error('[UTIO] _generateMessage', err);
+      await Log.error('[UTIO] _generateMessage', err);
       return false;
     }
   }
@@ -446,7 +446,7 @@ export class UtioBot {
       // Získej HTML obsah zprávy
       const html = await this.page.$eval('#copy', el => el.innerHTML);
       if (!html || html.length === 0) {
-        Log.warn('[UTIO]', 'Zpráva k zobrazení nenalezena nebo je prázdná');
+        await Log.warn('[UTIO]', 'Zpráva k zobrazení nenalezena nebo je prázdná');
         return false;
       }
 
@@ -455,13 +455,13 @@ export class UtioBot {
       const message = html.split(regex).filter(line => line.trim().length > 0);
 
       if (message.length === 0) {
-        Log.warn('[UTIO]', 'Parsovaná zpráva je prázdná');
+        await Log.warn('[UTIO]', 'Parsovaná zpráva je prázdná');
         return false;
       }
 
       return message;
     } catch (err) {
-      Log.error('[UTIO] _extractMessage', err);
+      await Log.error('[UTIO] _extractMessage', err);
       return false;
     }
   }
@@ -517,7 +517,7 @@ export async function newUtioTab(context) {
 
 export async function openUtio(login, pass) {
   if (!utioBot) {
-    Log.error('[UTIO]', 'UtioBot nebyl inicializován');
+    await Log.error('[UTIO]', 'UtioBot nebyl inicializován');
     return false;
   }
   return await utioBot.openUtio({ u_login: login, u_pass: pass });
@@ -525,7 +525,7 @@ export async function openUtio(login, pass) {
 
 export async function getMessage(portal_id, region_id, district_id) {
   if (!utioBot) {
-    Log.error('[UTIO]', 'UtioBot nebyl inicializován');
+    await Log.error('[UTIO]', 'UtioBot nebyl inicializován');
     return false;
   }
   return await utioBot.getMessage(portal_id, region_id, district_id);
@@ -545,7 +545,7 @@ export async function closeUtio() {
 
 export async function bringToFront() {
   if (!utioBot) {
-    Log.error('[UTIO]', 'UtioBot nebyl inicializován');
+    await Log.error('[UTIO]', 'UtioBot nebyl inicializován');
     return false;
   }
   return await utioBot.bringToFront();

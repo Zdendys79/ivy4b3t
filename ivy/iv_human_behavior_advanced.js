@@ -44,7 +44,7 @@ export class AdvancedHumanBehavior {
       
       return true;
     } catch (error) {
-      Log.error(`[${this.userId}] AdvancedHumanBehavior.initialize`, error);
+      await Log.error(`[${this.userId}] AdvancedHumanBehavior.initialize`, error);
       return false;
     }
   }
@@ -102,7 +102,7 @@ export class AdvancedHumanBehavior {
       Log.success(`[${this.userId}]`, `✅ Psaní dokončeno s ${totalErrors} chybami`);
       
     } catch (error) {
-      Log.error(`[${this.userId}] typeLikeHuman`, error);
+      await Log.error(`[${this.userId}] typeLikeHuman`, error);
       await this.updateEmotionalState('frustrated', 0.7, 'typing_failed');
       throw error;
     }
@@ -378,7 +378,7 @@ export class AdvancedHumanBehavior {
       
       Log.debug(`[${this.userId}]`, `😊 Emocionální stav aktualizován: ${emotion} (${intensity})`);
     } catch (error) {
-      Log.error(`[${this.userId}] updateEmotionalState`, error);
+      await Log.error(`[${this.userId}] updateEmotionalState`, error);
     }
   }
 
@@ -396,7 +396,7 @@ export class AdvancedHumanBehavior {
         1.0 // success_rate
       ]);
     } catch (error) {
-      Log.error(`[${this.userId}] saveBehaviorPattern`, error);
+      await Log.error(`[${this.userId}] saveBehaviorPattern`, error);
     }
   }
 

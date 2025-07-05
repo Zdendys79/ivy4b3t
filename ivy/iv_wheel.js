@@ -61,7 +61,7 @@ export async function getRandomAction(availableActions = null, userId = null) {
   const debugMode = isDebugMode();
 
   if (!userId) {
-    Log.warn('[WHEEL]', 'Nebylo zadáno userId - nemohu zkontrolovat limity');
+    await Log.warn('[WHEEL]', 'Nebylo zadáno userId - nemohu zkontrolovat limity');
     return null;
   }
 
@@ -70,7 +70,7 @@ export async function getRandomAction(availableActions = null, userId = null) {
     const actionsWithLimits = await db.getUserActionsWithLimits(userId);
 
     if (!actionsWithLimits || !actionsWithLimits.length) {
-      Log.warn('[WHEEL]', `Žádné dostupné akce pro uživatele ${userId}`);
+      await Log.warn('[WHEEL]', `Žádné dostupné akce pro uživatele ${userId}`);
       return null;
     }
 
@@ -100,14 +100,14 @@ export async function getRandomAction(availableActions = null, userId = null) {
 
     const pickedCode = wheel.pick();
     if (!pickedCode) {
-      Log.warn('[WHEEL]', `Kolo štěstí nevrátilo žádnou akci pro uživatele ${userId}`);
+      await Log.warn('[WHEEL]', `Kolo štěstí nevrátilo žádnou akci pro uživatele ${userId}`);
       return null;
     }
 
     // Najdi a vrať vybraný objekt
     const selected = wheelItems.find(item => item.code === pickedCode);
     if (!selected) {
-      Log.error('[WHEEL]', `Vybraná akce ${pickedCode} nebyla nalezena v seznamu`);
+      await Log.error('[WHEEL]', `Vybraná akce ${pickedCode} nebyla nalezena v seznamu`);
       return null;
     }
 
@@ -122,7 +122,7 @@ export async function getRandomAction(availableActions = null, userId = null) {
     };
 
   } catch (err) {
-    Log.error('[WHEEL]', `Chyba při výběru akce pro uživatele ${userId}: ${err.message}`);
+    await Log.error('[WHEEL]', `Chyba při výběru akce pro uživatele ${userId}: ${err.message}`);
     return null;
   }
 }
@@ -140,7 +140,7 @@ export async function getActionStats(userId) {
     const allLimitsUsage = await db.getUserAllLimitsWithUsage(userId);
 
     if (!actionsWithLimits) {
-      Log.warn('[WHEEL]', `Nepodařilo se získat akce pro uživatele ${userId}`);
+      await Log.warn('[WHEEL]', `Nepodařilo se získat akce pro uživatele ${userId}`);
       return null;
     }
 
@@ -186,7 +186,7 @@ export async function getActionStats(userId) {
     return stats;
 
   } catch (err) {
-    Log.error('[WHEEL]', `Chyba při získávání statistik pro uživatele ${userId}: ${err.message}`);
+    await Log.error('[WHEEL]', `Chyba při získávání statistik pro uživatele ${userId}: ${err.message}`);
     return null;
   }
 }
@@ -201,7 +201,7 @@ export async function hasAvailableActions(userId) {
     const stats = await getActionStats(userId);
     return stats && stats.available_actions > 0;
   } catch (err) {
-    Log.error('[WHEEL]', `Chyba při kontrole dostupných akcí pro uživatele ${userId}: ${err.message}`);
+    await Log.error('[WHEEL]', `Chyba při kontrole dostupných akcí pro uživatele ${userId}: ${err.message}`);
     return false;
   }
 }
@@ -256,7 +256,7 @@ export async function getActionRecommendations(userId) {
     return recommendations;
 
   } catch (err) {
-    Log.error('[WHEEL]', `Chyba při získávání doporučení pro uživatele ${userId}: ${err.message}`);
+    await Log.error('[WHEEL]', `Chyba při získávání doporučení pro uživatele ${userId}: ${err.message}`);
     return null;
   }
 }
@@ -266,7 +266,7 @@ export async function getActionRecommendations(userId) {
  * @deprecated Používej getRandomAction s userId
  */
 async function filterPostUtioActions(userId, actions) {
-  Log.warn('[WHEEL]', 'filterPostUtioActions je deprecated - používej getRandomAction s userId');
+  await Log.warn('[WHEEL]', 'filterPostUtioActions je deprecated - používej getRandomAction s userId');
 
   try {
     const filteredActions = [];
@@ -286,7 +286,7 @@ async function filterPostUtioActions(userId, actions) {
 
     return filteredActions;
   } catch (err) {
-    Log.error('[WHEEL]', `Chyba při filtrování akcí: ${err.message}`);
+    await Log.error('[WHEEL]', `Chyba při filtrování akcí: ${err.message}`);
     return actions;
   }
 }

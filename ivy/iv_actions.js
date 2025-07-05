@@ -51,7 +51,7 @@ export function getActionRequirements(actionCode) {
       break;
 
     default:
-      Log.warn('[ACTIONS]', `Neznámý action_code: ${actionCode}`);
+      await Log.warn('[ACTIONS]', `Neznámý action_code: ${actionCode}`);
       break;
   }
 
@@ -91,7 +91,7 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
     const readinessResult = await fbSupport.verifyFBReadiness(user, fbBot, verificationOptions);
 
     if (!readinessResult.ready) {
-      Log.warn(`[${user.id}]`, `⚠️ Akce ${actionCode} není připravena: ${readinessResult.reason}`);
+      await Log.warn(`[${user.id}]`, `⚠️ Akce ${actionCode} není připravena: ${readinessResult.reason}`);
     } else {
       Log.success(`[${user.id}]`, `✅ Akce ${actionCode} je připravena`);
     }
@@ -99,7 +99,7 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
     return readinessResult;
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při ověřování akce ${actionCode}: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při ověřování akce ${actionCode}: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba při ověřování: ${err.message}`,
@@ -124,7 +124,7 @@ async function performUtioPost(user, fbBot, group, utioBot) {
     const readinessCheck = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
 
     if (!readinessCheck.ready) {
-      Log.error(`[${user.id}]`, `❌ Předběžné ověření selhalo: ${readinessCheck.reason}`);
+      await Log.error(`[${user.id}]`, `❌ Předběžné ověření selhalo: ${readinessCheck.reason}`);
 
       if (readinessCheck.critical) {
         return false; // Kritická chyba
@@ -134,14 +134,14 @@ async function performUtioPost(user, fbBot, group, utioBot) {
         Log.info(`[${user.id}]`, '🔄 Pokusím se opravit navigaci...');
         const navigated = await fbBot.openGroup(group);
         if (!navigated) {
-          Log.error(`[${user.id}]`, 'Oprava navigace selhala');
+          await Log.error(`[${user.id}]`, 'Oprava navigace selhala');
           return false;
         }
 
         // Znovu ověř po opravě
         const recheckResult = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
         if (!recheckResult.ready) {
-          Log.error(`[${user.id}]`, `I po opravě není připraveno: ${recheckResult.reason}`);
+          await Log.error(`[${user.id}]`, `I po opravě není připraveno: ${recheckResult.reason}`);
           return false;
         }
       }
@@ -152,7 +152,7 @@ async function performUtioPost(user, fbBot, group, utioBot) {
     // Volání původní funkce s novým ověřením
     const message = await support.pasteMsg(user, group, fbBot, utioBot);
     if (!message) {
-      Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
+      await Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
       return false;
     }
 
@@ -160,7 +160,7 @@ async function performUtioPost(user, fbBot, group, utioBot) {
     return true;
 
   } catch (err) {
-    Log.error(`[${user.id}] performUtioPost`, err);
+    await Log.error(`[${user.id}] performUtioPost`, err);
     return false;
   }
 }
@@ -184,7 +184,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
     Log.info(`[${user.id}]`, `📊 Dostupné posty v tomto cyklu: ${maxPosts} (limit: ${limitInfo.max_posts_per_cycle}, použito: ${limitInfo.current_posts})`);
     
     if (maxPosts === 0) {
-      Log.warn(`[${user.id}]`, `Žádné dostupné posty pro typ ${groupType} - limit vyčerpán`);
+      await Log.warn(`[${user.id}]`, `Žádné dostupné posty pro typ ${groupType} - limit vyčerpán`);
       return 0;
     }
 
@@ -196,14 +196,14 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
       // Zkontroluj limit před každým postem
       const stillCanPost = await db.canUserPostToGroupType(user.id, groupType);
       if (!stillCanPost) {
-        Log.warn(`[${user.id}]`, `Limit dosažen během cyklu po ${successfulPosts} úspěšných postech`);
+        await Log.warn(`[${user.id}]`, `Limit dosažen během cyklu po ${successfulPosts} úspěšných postech`);
         break;
       }
 
       // Najdi dostupné skupiny tohoto typu
       const availableGroups = await getAvailableGroups(user.id, groupType);
       if (!availableGroups.length) {
-        Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu ${groupType} pro další post`);
+        await Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu ${groupType} pro další post`);
         break;
       }
 
@@ -221,7 +221,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
         });
 
         if (!preGroupCheck.ready && preGroupCheck.critical) {
-          Log.error(`[${user.id}]`, `Kritická chyba před otevřením skupiny: ${preGroupCheck.reason}`);
+          await Log.error(`[${user.id}]`, `Kritická chyba před otevřením skupiny: ${preGroupCheck.reason}`);
           break; // Ukonči celý cyklus
         }
 
@@ -238,7 +238,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
               const { waitForUserIntervention } = await import('./iv_wait.js');
               const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
 
-              Log.warn(`[${user.id}]`, `🚨 Group error detected: ${selectedGroup.fb_id}`);
+              await Log.warn(`[${user.id}]`, `🚨 Group error detected: ${selectedGroup.fb_id}`);
 
               // 60s countdown s možností stisknout 'a'
               const userWantsAnalysis = await waitForUserIntervention(
@@ -272,12 +272,12 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
               }
 
               // Program pokračuje i s chybou (podle původní logiky)
-              Log.warn(`[${user.id}]`, 'Pokračuji přes group error...');
+              await Log.warn(`[${user.id}]`, 'Pokračuji přes group error...');
             }
           }
 
         } catch (groupErr) {
-          Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
+          await Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
 
           // Error i při pokusu o otevření skupiny
           const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
@@ -300,13 +300,13 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
         });
 
         if (!postGroupCheck.ready) {
-          Log.warn(`[${user.id}]`, `Skupina ${selectedGroup.fb_id} není připravena: ${postGroupCheck.reason}`);
+          await Log.warn(`[${user.id}]`, `Skupina ${selectedGroup.fb_id} není připravena: ${postGroupCheck.reason}`);
 
           if (postGroupCheck.critical) {
             continue; // Zkus další skupinu
           }
 
-          Log.warn(`[${user.id}]`, 'Pokračuji přes varování...');
+          await Log.warn(`[${user.id}]`, 'Pokračuji přes varování...');
         }
 
         // Získej zprávu z UTIO a publikuj ji
@@ -320,11 +320,11 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
 
           Log.success(`[${user.id}]`, `✅ Post ${attempt} úspěšný! Celkem: ${successfulPosts}/${attempt}`);
         } else {
-          Log.warn(`[${user.id}]`, `❌ Post ${attempt} neúspěšný`);
+          await Log.warn(`[${user.id}]`, `❌ Post ${attempt} neúspěšný`);
         }
 
       } catch (groupErr) {
-        Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
+        await Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
         continue; // Pokračuj s další skupinou
       }
 
@@ -340,7 +340,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
     return successfulPosts;
 
   } catch (err) {
-    Log.error(`[${user.id}] performRepeatedUtioPost`, err);
+    await Log.error(`[${user.id}] performRepeatedUtioPost`, err);
     return 0;
   }
 }
@@ -364,10 +364,10 @@ async function getAvailableGroups(userId, groupType) {
       return allGroups.filter(g => g.group_type === groupType || g.typ === groupType);
     }
 
-    Log.warn(`[${userId}]`, 'Žádná funkce pro získání skupin není dostupná');
+    await Log.warn(`[${userId}]`, 'Žádná funkce pro získání skupin není dostupná');
     return [];
   } catch (err) {
-    Log.error(`[${userId}] getAvailableGroups`, err);
+    await Log.error(`[${userId}] getAvailableGroups`, err);
     return [];
   }
 }
@@ -388,7 +388,7 @@ export async function runAction(user, actionCode, context) {
     // Předběžné ověření připravenosti akce
     const readinessCheck = await verifyActionReadiness(user, fbBot, actionCode);
     if (!readinessCheck.ready && readinessCheck.critical) {
-      Log.error(`[${user.id}]`, `❌ Akce ${actionCode} není připravena: ${readinessCheck.reason}`);
+      await Log.error(`[${user.id}]`, `❌ Akce ${actionCode} není připravena: ${readinessCheck.reason}`);
       return false;
     }
 
@@ -451,7 +451,7 @@ export async function runAction(user, actionCode, context) {
         break;
 
       default:
-        Log.error(`[${user.id}]`, `Neznámá akce: ${actionCode}`);
+        await Log.error(`[${user.id}]`, `Neznámá akce: ${actionCode}`);
         return false;
     }
 
@@ -465,13 +465,13 @@ export async function runAction(user, actionCode, context) {
     if (result) {
       Log.success(`[${user.id}]`, `✅ Akce ${actionCode} dokončena úspěšně`);
     } else {
-      Log.warn(`[${user.id}]`, `❌ Akce ${actionCode} se nezdařila`);
+      await Log.warn(`[${user.id}]`, `❌ Akce ${actionCode} se nezdařila`);
     }
 
     return result;
 
   } catch (err) {
-    Log.error(`[${user.id}] runAction`, err);
+    await Log.error(`[${user.id}] runAction`, err);
     await logActionQuality(user, actionCode, false, {
       reason: err.message,
       verificationUsed: false,
@@ -506,7 +506,7 @@ async function navigateToHomepage(user, fbBot) {
     return true;
 
   } catch (err) {
-    Log.error(`[${user.id}] navigateToHomepage`, err);
+    await Log.error(`[${user.id}] navigateToHomepage`, err);
     return false;
   }
 }
@@ -518,7 +518,7 @@ async function quotePost(user, fbBot) {
   try {
     const quote = await db.getRandomQuote(user.id);
     if (!quote) {
-      Log.warn(`[${user.id}]`, 'Žádný vhodný citát k dispozici.');
+      await Log.warn(`[${user.id}]`, 'Žádný vhodný citát k dispozici.');
       return false;
     }
 
@@ -526,7 +526,7 @@ async function quotePost(user, fbBot) {
 
     // Přejdi na homepage
     if (!await navigateToHomepage(user, fbBot)) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se přejít na homepage před psaním citátu.');
+      await Log.error(`[${user.id}]`, 'Nepodařilo se přejít na homepage před psaním citátu.');
       return false;
     }
 
@@ -536,7 +536,7 @@ async function quotePost(user, fbBot) {
     const result = await support.writeMsg(user, postText, fbBot);
 
     if (!result) {
-      Log.error(`[${user.id}]`, 'Nepodařilo se napsat citát.');
+      await Log.error(`[${user.id}]`, 'Nepodařilo se napsat citát.');
       return false;
     }
 
@@ -547,7 +547,7 @@ async function quotePost(user, fbBot) {
     return true;
 
   } catch (err) {
-    Log.error(`[${user.id}] quotePost`, err);
+    await Log.error(`[${user.id}] quotePost`, err);
     return false;
   }
 }
@@ -574,41 +574,41 @@ async function logActionQuality(user, actionCode, success, details = {}) {
 
     // Reporting pro monitoring
     if (!success) {
-      Log.warn(`[${user.id}]`, `📊 Neúspěšná akce ${actionCode}: ${details.reason || 'Neznámý důvod'}`);
+      await Log.warn(`[${user.id}]`, `📊 Neúspěšná akce ${actionCode}: ${details.reason || 'Neznámý důvod'}`);
     }
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při logování kvality akce: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při logování kvality akce: ${err.message}`);
   }
 }
 
 // Placeholder funkce pro neimplementované akce
 async function groupPost(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'groupPost není zatím implementováno.');
+  await Log.warn(`[${user.id}]`, 'groupPost není zatím implementováno.');
   return false;
 }
 
 async function timelinePost(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'timelinePost není zatím implementováno.');
+  await Log.warn(`[${user.id}]`, 'timelinePost není zatím implementováno.');
   return false;
 }
 
 async function comment(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'comment není zatím implementováno.');
+  await Log.warn(`[${user.id}]`, 'comment není zatím implementováno.');
   return false;
 }
 
 async function react(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'react není zatím implementováno.');
+  await Log.warn(`[${user.id}]`, 'react není zatím implementováno.');
   return false;
 }
 
 async function messengerCheck(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'messengerCheck není zatím implementováno.');
+  await Log.warn(`[${user.id}]`, 'messengerCheck není zatím implementováno.');
   return false;
 }
 
 async function messengerReply(user, fbBot) {
-  Log.warn(`[${user.id}]`, 'messengerReply není zatím implementováno.');
+  await Log.warn(`[${user.id}]`, 'messengerReply není zatím implementováno.');
   return false;
 }

@@ -56,7 +56,7 @@ export async function tick() {
 
       const uiUser = uiResult.requestedUser;
       if (!uiUser) {
-        Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
+        await Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
         await waitWithHeartbeat(1); // Krátké čekání
         return;
       }
@@ -148,7 +148,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // 🎯 KROK 4: LOSOVÁNÍ AKCE NA KOLE ŠTĚSTÍ
       const picked = await getRandomAction(actions, user.id);
       if (!picked) {
-        Log.warn(`[${user.id}]`, 'Krok 4: Kolo štěstí vrátilo null, pravděpodobně vyčerpané limity');
+        await Log.warn(`[${user.id}]`, 'Krok 4: Kolo štěstí vrátilo null, pravděpodobně vyčerpané limity');
         continue; // Zkus znovu, možná se uvolní jiné akce
       }
 
@@ -214,7 +214,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
       // Kontrola, zda se prohlížeč nezavřel
       if (browserClosed) {
-        Log.warn(`[${user.id}]`, 'Prohlížeč se zavřel, ukončuji cyklus');
+        await Log.warn(`[${user.id}]`, 'Prohlížeč se zavřel, ukončuji cyklus');
         break;
       }
 
@@ -228,7 +228,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
     Log.success(`[${user.id}]`, `Cyklus dokončen. Provedeno ${actionCount} akcí.`);
 
   } catch (err) {
-    Log.error(`[${user.id}] executeUserActionCycle`, err);
+    await Log.error(`[${user.id}] executeUserActionCycle`, err);
     await pauseOnError(browser, browserClosed);
   } finally {
     // 🎯 KROK 8: ZAVŘENÍ PROHLÍŽEČE A CLEANUP
@@ -252,7 +252,7 @@ async function executeEndingAction(user, picked) {
       Log.success(`[${user.id}]`, `Ukončující akce ${picked.code} dokončena, další za ${randMin} minut`);
     }
   } catch (err) {
-    Log.error(`[${user.id}] executeEndingAction`, err);
+    await Log.error(`[${user.id}] executeEndingAction`, err);
   }
 }
 
@@ -299,7 +299,7 @@ async function checkUICommandsAndHeartbeat(currentUser) {
     return result;
 
   } catch (err) {
-    Log.error('[WORKER]', `Chyba při kontrole UI příkazů: ${err.message}`);
+    await Log.error('[WORKER]', `Chyba při kontrole UI příkazů: ${err.message}`);
     return result;
   }
 }
@@ -338,7 +338,7 @@ async function executeUICommand(user, uiCommand) {
       const { waitForUserIntervention } = await import('./iv_wait.js');
       const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
 
-      Log.warn(`[${user.id}]`, `🚨 Problem with FB: ${fbStatus}`);
+      await Log.warn(`[${user.id}]`, `🚨 Problem with FB: ${fbStatus}`);
 
       // 60s countdown s možností stisknout 'a'
       const userWantsAnalysis = await waitForUserIntervention(
@@ -397,7 +397,7 @@ async function executeUICommand(user, uiCommand) {
       if (uiSuccess) {
         Log.success(`[${user.id}]`, `UI příkaz ${uiCommand.command} dokončen, pokračuji s akcemi`);
       } else {
-        Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} selhal`);
+        await Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} selhal`);
       }
     } finally {
       await uiBot.close();
@@ -407,7 +407,7 @@ async function executeUICommand(user, uiCommand) {
     return !browserClosed; // Pokračuj pouze pokud se prohlížeč nezavřel
 
   } catch (err) {
-    Log.error(`[${user.id}] executeUICommand`, err);
+    await Log.error(`[${user.id}] executeUICommand`, err);
 
     // A2: Pokud byl prohlížeč uzavřen nebo chyba, cleanup a restart
     if (fbBot) {
@@ -445,13 +445,13 @@ async function executeUICommandForCurrentUser(user, browser, context, fbBot, uti
       if (uiSuccess) {
         Log.success(`[${user.id}]`, `UI příkaz ${uiCommand.command} dokončen`);
       } else {
-        Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} selhal`);
+        await Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} selhal`);
       }
     } catch (err) {
       if (err.message === 'UI command timeout') {
-        Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} vypršel (5 minut)`);
+        await Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} vypršel (5 minut)`);
       } else {
-        Log.error(`[${user.id}]`, `UI příkaz ${uiCommand.command} chyba: ${err.message}`);
+        await Log.error(`[${user.id}]`, `UI příkaz ${uiCommand.command} chyba: ${err.message}`);
       }
     } finally {
       await uiBot.close();
@@ -463,7 +463,7 @@ async function executeUICommandForCurrentUser(user, browser, context, fbBot, uti
 
     // Kontrola, zda se prohlížeč nezavřel během UI akce nebo čekání
     if (!browser || !browser.isConnected()) {
-      Log.warn(`[${user.id}]`, 'Prohlížeč se zavřel během/po UI příkazu');
+      await Log.warn(`[${user.id}]`, 'Prohlížeč se zavřel během/po UI příkazu');
       return false; // Způsobí restart cyklu
     }
 
@@ -471,7 +471,7 @@ async function executeUICommandForCurrentUser(user, browser, context, fbBot, uti
     return true; // Pokračuj s akcemi
 
   } catch (err) {
-    Log.error(`[${user.id}] executeUICommandForCurrentUser`, err);
+    await Log.error(`[${user.id}] executeUICommandForCurrentUser`, err);
     return false; // Nepokračuj - způsobí restart
   }
 }
@@ -503,7 +503,7 @@ async function extractRequestedUserFromUICommand(uiCommand) {
     return null;
 
   } catch (err) {
-    Log.warn('[WORKER]', `Chyba při extrakci uživatele z UI příkazu: ${err.message}`);
+    await Log.warn('[WORKER]', `Chyba při extrakci uživatele z UI příkazu: ${err.message}`);
     return null;
   }
 }
@@ -525,7 +525,7 @@ async function waitWithHeartbeat(waitMinutes = null) {
       await db.heartBeat(0, 0, 'IVY4B3T');
       Log.debug('[WORKER]', 'Heartbeat odeslán během čekání');
     } catch (err) {
-      Log.warn('[WORKER]', `Chyba při heartBeat: ${err.message}`);
+      await Log.warn('[WORKER]', `Chyba při heartBeat: ${err.message}`);
     }
 
     // Čekání 30 sekund nebo do konce
@@ -663,7 +663,7 @@ async function cleanupUserSession(user, browser, fbBot, utioBot, browserClosed) 
       await fbBot.close();
       Log.debug(`[${user.id}]`, 'FBBot uzavřen');
     } catch (err) {
-      Log.warn('[WORKER]', `Chyba při cleanup FBBot: ${err.message}`);
+      await Log.warn('[WORKER]', `Chyba při cleanup FBBot: ${err.message}`);
     }
   }
 
@@ -672,7 +672,7 @@ async function cleanupUserSession(user, browser, fbBot, utioBot, browserClosed) 
       await utioBot.close();
       Log.debug(`[${user.id}]`, 'UtioBot uzavřen');
     } catch (err) {
-      Log.warn('[WORKER]', `Chyba při cleanup UtioBot: ${err.message}`);
+      await Log.warn('[WORKER]', `Chyba při cleanup UtioBot: ${err.message}`);
     }
   }
 
@@ -685,7 +685,7 @@ async function cleanupUserSession(user, browser, fbBot, utioBot, browserClosed) 
 // ==========================================
 
 async function pauseOnError(browser, browserClosed) {
-  Log.warn('[WORKER]', 'Nastal error – čekám na uzavření prohlížeče nebo 10 minut.');
+  await Log.warn('[WORKER]', 'Nastal error – čekám na uzavření prohlížeče nebo 10 minut.');
   if (browserClosed) {
     await wait.delay(10 * 60 * 1000);
     return;
@@ -707,7 +707,7 @@ async function prepareBrowser(user) {
     Log.debug('[WORKER]', `SingletonLock pro ${profileDir} odstraněn.`);
   } catch (err) {
     if (err.code !== 'ENOENT') {
-      Log.warn('[WORKER]', `Chyba při mazání SingletonLock: ${err.message}`);
+      await Log.warn('[WORKER]', `Chyba při mazání SingletonLock: ${err.message}`);
     }
   }
 
@@ -729,7 +729,7 @@ async function prepareBrowser(user) {
   let browserClosed = false;
   browser.on('disconnected', () => {
     browserClosed = true;
-    Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
+    await Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
   });
 
   const context = browser.defaultBrowserContext();
@@ -767,7 +767,7 @@ async function cleanupBrowser(browser, browserClosed) {
     Log.info('[WORKER]', 'Prohlížeč úspěšně uzavřen.');
 
   } catch (err) {
-    Log.warn('[WORKER]', `Chyba při uzavírání prohlížeče: ${err.message}`);
+    await Log.warn('[WORKER]', `Chyba při uzavírání prohlížeče: ${err.message}`);
 
     try {
       const pages = await browser.pages();
@@ -777,7 +777,7 @@ async function cleanupBrowser(browser, browserClosed) {
       await browser.close();
       Log.info('[WORKER]', 'Prohlížeč force-uzavřen.');
     } catch (forceErr) {
-      Log.error('[WORKER]', `Force close také selhal: ${forceErr.message}`);
+      await Log.error('[WORKER]', `Force close také selhal: ${forceErr.message}`);
     }
   }
 }
@@ -803,6 +803,6 @@ async function showAccountLockStats() {
       }
     }
   } catch (err) {
-    Log.error('[STATS]', `Chyba při načítání statistik: ${err.message}`);
+    await Log.error('[STATS]', `Chyba při načítání statistik: ${err.message}`);
   }
 }

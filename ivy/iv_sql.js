@@ -44,7 +44,7 @@ async function executeQuery(queryPath, params = []) {
 
   if (!query) {
     const error = `Query not found: ${queryPath}`;
-    Log.error('[SQL]', error);
+    await Log.error('[SQL]', error);
     throw new Error(error);
   }
 
@@ -63,14 +63,14 @@ async function executeQuery(queryPath, params = []) {
 
   } catch (err) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `Query failed: ${queryPath}`);
-      Log.error('[SQL][DEBUG]', `SQL: ${query}`);
-      Log.error('[SQL][DEBUG]', `Params: ${JSON.stringify(params)}`);
-      Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
-      if (err.code) Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
-      if (err.sqlState) Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);
+      await Log.error('[SQL][DEBUG]', `Query failed: ${queryPath}`);
+      await Log.error('[SQL][DEBUG]', `SQL: ${query}`);
+      await Log.error('[SQL][DEBUG]', `Params: ${JSON.stringify(params)}`);
+      await Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
+      if (err.code) await Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
+      if (err.sqlState) await Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);
     } else {
-      Log.error('[SQL]', `Query ${queryPath} failed: ${err.code || err.message}`);
+      await Log.error('[SQL]', `Query ${queryPath} failed: ${err.code || err.message}`);
     }
 
     throw err;
@@ -103,9 +103,9 @@ async function safeQueryFirst(queryPath, params = []) {
     return rows[0];
   } catch (err) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `safeQueryFirst ${queryPath} exception: ${err.message}`);
+      await Log.error('[SQL][DEBUG]', `safeQueryFirst ${queryPath} exception: ${err.message}`);
     } else {
-      Log.error('[SQL]', `safeQueryFirst ${queryPath} failed`);
+      await Log.error('[SQL]', `safeQueryFirst ${queryPath} failed`);
     }
     return false;
   }
@@ -132,9 +132,9 @@ async function safeQueryAll(queryPath, params = []) {
     return rows || [];
   } catch (err) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `safeQueryAll ${queryPath} exception: ${err.message}`);
+      await Log.error('[SQL][DEBUG]', `safeQueryAll ${queryPath} exception: ${err.message}`);
     } else {
-      Log.error('[SQL]', `safeQueryAll ${queryPath} failed`);
+      await Log.error('[SQL]', `safeQueryAll ${queryPath} failed`);
     }
     return [];
   }
@@ -160,17 +160,17 @@ async function safeExecute(queryPath, params = []) {
       return true;
     } else {
       if (debugMode) {
-        Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} returned false`);
+        await Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} returned false`);
       } else {
-        Log.error('[SQL]', `safeExecute ${queryPath} failed`);
+        await Log.error('[SQL]', `safeExecute ${queryPath} failed`);
       }
       return false;
     }
   } catch (err) {
     if (debugMode) {
-      Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} exception: ${err.message}`);
+      await Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} exception: ${err.message}`);
     } else {
-      Log.error('[SQL]', `safeExecute ${queryPath} failed`);
+      await Log.error('[SQL]', `safeExecute ${queryPath} failed`);
     }
     return false;
   }
@@ -191,7 +191,7 @@ export async function testConnection() {
     Log.info('[SQL]', 'Database connection test successful');
     return true;
   } catch (err) {
-    Log.error('[SQL]', `Database connection test failed: ${err.message}`);
+    await Log.error('[SQL]', `Database connection test failed: ${err.message}`);
     return false;
   }
 }
@@ -205,7 +205,7 @@ export async function closeConnection() {
     Log.info('[SQL]', 'Database connection pool closed');
     return true;
   } catch (err) {
-    Log.error('[SQL]', `Error closing database connection: ${err.message}`);
+    await Log.error('[SQL]', `Error closing database connection: ${err.message}`);
     return false;
   }
 }
@@ -270,7 +270,7 @@ export async function initializeDatabase() {
     return true;
 
   } catch (err) {
-    Log.error('[SQL]', `Database initialization failed: ${err.message}`);
+    await Log.error('[SQL]', `Database initialization failed: ${err.message}`);
     return false;
   }
 }

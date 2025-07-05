@@ -78,7 +78,7 @@ export async function verifyFBReadiness(user, fbBot, options = {}) {
           };
 
           if (enableErrorReporting) {
-            Log.warn(`[${user.id}]`, `Kritická chyba detekována: ${errorDetails.type}`);
+            await Log.warn(`[${user.id}]`, `Kritická chyba detekována: ${errorDetails.type}`);
 
             const workflowResult = await handleFBError(user, fbBot, requireSpecificGroup, errorDetails);
 
@@ -145,7 +145,7 @@ export async function verifyFBReadiness(user, fbBot, options = {}) {
         };
 
       } catch (analysisErr) {
-        Log.error(`[${user.id}]`, `Chyba při detailní analýze: ${analysisErr.message}`);
+        await Log.error(`[${user.id}]`, `Chyba při detailní analýze: ${analysisErr.message}`);
 
         if (enableErrorReporting) {
           await quickErrorReport(user, 'ANALYSIS_ERROR', `Chyba analýzy: ${analysisErr.message}`, currentUrl);
@@ -171,7 +171,7 @@ export async function verifyFBReadiness(user, fbBot, options = {}) {
     return basicCheck;
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při ověřování připravenosti: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při ověřování připravenosti: ${err.message}`);
 
     if (enableErrorReporting) {
       await quickErrorReport(user, 'VERIFICATION_ERROR', `Chyba ověření: ${err.message}`, 'unknown');
@@ -229,7 +229,7 @@ export async function performBasicReadinessCheck(user, group, fbBot) {
     };
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při základním ověření: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při základním ověření: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba při ověření: ${err.message}`,
@@ -274,7 +274,7 @@ export async function verifyGroupPostingCapability(user, group, fbBot) {
     };
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při ověřování posting capability: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při ověřování posting capability: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba při ověřování: ${err.message}`,
@@ -307,7 +307,7 @@ export async function verifyPostingField(user, fbBot) {
     };
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při kontrole posting pole: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při kontrole posting pole: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba kontroly pole: ${err.message}`,
@@ -344,7 +344,7 @@ export async function checkPageResponsiveness(user, fbBot) {
     };
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při kontrole responzivnosti: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při kontrole responzivnosti: ${err.message}`);
     return {
       responsive: false,
       reason: `Chyba responzivnosti: ${err.message}`,
@@ -375,7 +375,7 @@ export async function verifyStateAfterUtioReturn(user, group, fbBot, originalSta
 
     // Kontrola zda se stránka dramaticky nezměnila
     if (Math.abs(currentTitle.length - originalState.title.length) > 50) {
-      Log.warn(`[${user.id}]`, 'Titul stránky se významně změnil');
+      await Log.warn(`[${user.id}]`, 'Titul stránky se významně změnil');
     }
 
     // Rychlá kontrola dostupnosti FB funkcí
@@ -436,7 +436,7 @@ export async function verifyStateAfterUtioReturn(user, group, fbBot, originalSta
     };
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při ověřování stavu: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při ověřování stavu: ${err.message}`);
     return {
       valid: false,
       reason: `Chyba při ověřování: ${err.message}`,
@@ -474,7 +474,7 @@ export async function isFBReady(fbBot) {
     return true;
 
   } catch (err) {
-    Log.warn('[FB_SUPPORT]', `Chyba při kontrole FB stránky: ${err.message}`);
+    await Log.warn('[FB_SUPPORT]', `Chyba při kontrole FB stránky: ${err.message}`);
     return false;
   }
 }
@@ -568,7 +568,7 @@ export async function analyzeUserErrorHistory(user, days = 7) {
     return analysis;
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při analýze historie: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při analýze historie: ${err.message}`);
     return {
       hasHistory: false,
       errorCount: 0,
@@ -647,7 +647,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           // Kontrola na "přidat se ke skupině" tlačítko
           if (errorPattern?.type === 'JOIN_GROUP_REQUIRED' || 
               warningDetails.some(detail => detail.includes('join') || detail.includes('přidat'))) {
-            Log.warn(`[${user.id}]`, '⚠️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
+            await Log.warn(`[${user.id}]`, '⚠️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
             
             // Automatické přidání ke skupině (pouze jednou v pracovním bloku)
             Log.info(`[${user.id}]`, '🤖 Pokus o automatické přidání ke skupině...');
@@ -679,16 +679,16 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
                     analysisDetails: analysis
                   };
                 } else {
-                  Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" stále viditelné po kliknutí');
+                  await Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" stále viditelné po kliknutí');
                   throw new Error('Tlačítko nezmizelo po kliknutí');
                 }
               } else {
-                Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" nenalezeno');
+                await Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" nenalezeno');
                 throw new Error('Tlačítko pro přidání nenalezeno');
               }
               
             } catch (joinErr) {
-              Log.warn(`[${user.id}]`, `⚠️ Automatické přidání selhalo: ${joinErr.message}`);
+              await Log.warn(`[${user.id}]`, `⚠️ Automatické přidání selhalo: ${joinErr.message}`);
               
               // Vrátí původní stav requiresJoin
               return {
@@ -706,7 +706,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           
           // Kontrola na čekající žádost o členství
           if (errorPattern?.type === 'MEMBERSHIP_PENDING') {
-            Log.warn(`[${user.id}]`, '⚠️ Žádost o členství čeká na schválení');
+            await Log.warn(`[${user.id}]`, '⚠️ Žádost o členství čeká na schválení');
             return {
               ready: false,
               reason: errorPattern.reason,
@@ -720,7 +720,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           // Kontrola na nedostupnost pole pro psaní
           if (errorPattern?.type === 'NO_WRITE_FIELD' || 
               warningDetails.some(detail => detail.includes('pole pro psaní'))) {
-            Log.warn(`[${user.id}]`, '⚠️ Pole pro psaní není dostupné');
+            await Log.warn(`[${user.id}]`, '⚠️ Pole pro psaní není dostupné');
             return {
               ready: false,
               reason: errorPattern?.reason || 'Není k dispozici pole pro psaní příspěvku',
@@ -732,7 +732,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           
           // Kontrola na uzavřenou skupinu
           if (errorPattern?.type === 'GROUP_CLOSED') {
-            Log.warn(`[${user.id}]`, '⚠️ Skupina je uzavřená nebo soukromá');
+            await Log.warn(`[${user.id}]`, '⚠️ Skupina je uzavřená nebo soukromá');
             return {
               ready: false,
               reason: errorPattern.reason,
@@ -744,7 +744,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           
           // Kontrola na odepřený přístup
           if (errorPattern?.type === 'ACCESS_DENIED') {
-            Log.warn(`[${user.id}]`, '⚠️ Přístup odepřen');
+            await Log.warn(`[${user.id}]`, '⚠️ Přístup odepřen');
             return {
               ready: false,
               reason: errorPattern.reason,
@@ -756,7 +756,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
 
           // Obecné varování - pokračuj s opatrností
           const detailMessage = warningDetails.length > 0 ? warningDetails.join(', ') : 'Detekováno obecné varování';
-          Log.warn(`[${user.id}]`, `⚠️ Skupina má varování: ${detailMessage}`);
+          await Log.warn(`[${user.id}]`, `⚠️ Skupina má varování: ${detailMessage}`);
           return {
             ready: true,
             reason: 'Připraveno s varováním',
@@ -793,7 +793,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
         }
 
       } catch (analysisErr) {
-        Log.error(`[${user.id}]`, `Chyba analýzy skupiny: ${analysisErr.message}`);
+        await Log.error(`[${user.id}]`, `Chyba analýzy skupiny: ${analysisErr.message}`);
         return {
           ready: false,
           reason: `Chyba při analýze skupiny: ${analysisErr.message}`,
@@ -815,7 +815,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
     };
 
   } catch (err) {
-    Log.error(`[${user.id}]`, `Chyba při ověřování UTIO připravenosti: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Chyba při ověřování UTIO připravenosti: ${err.message}`);
     return {
       ready: false,
       reason: `Chyba ověření: ${err.message}`,

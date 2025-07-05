@@ -27,7 +27,7 @@ export class InteractiveDebugger {
     try {
       await fs.mkdir(this.outputDir, { recursive: true });
     } catch (err) {
-      Log.warn('[DEBUGGER]', `Cannot create output directory: ${err.message}`);
+      await Log.warn('[DEBUGGER]', `Cannot create output directory: ${err.message}`);
     }
   }
 
@@ -182,7 +182,7 @@ export class InteractiveDebugger {
           });
           Log.info('[DEBUGGER]', `📸 Screenshot captured (${screenshotData.length} bytes)`);
         } catch (err) {
-          Log.warn('[DEBUGGER]', `Screenshot failed: ${err.message}`);
+          await Log.warn('[DEBUGGER]', `Screenshot failed: ${err.message}`);
         }
       }
 
@@ -193,7 +193,7 @@ export class InteractiveDebugger {
           domHtml = await this.currentPage.content();
           Log.info('[DEBUGGER]', `📄 DOM captured (${domHtml.length} characters)`);
         } catch (err) {
-          Log.warn('[DEBUGGER]', `DOM capture failed: ${err.message}`);
+          await Log.warn('[DEBUGGER]', `DOM capture failed: ${err.message}`);
           domHtml = `DOM capture failed: ${err.message}`;
         }
       }
@@ -271,7 +271,7 @@ export class InteractiveDebugger {
       return incidentId;
 
     } catch (err) {
-      Log.error('[DEBUGGER]', `Failed to create debug report: ${err.message}`);
+      await Log.error('[DEBUGGER]', `Failed to create debug report: ${err.message}`);
       return null;
     }
   }
@@ -389,7 +389,7 @@ export class InteractiveDebugger {
       Log.info('[DEBUGGER]', `💾 Debug incident inserted into database`);
       
     } catch (err) {
-      Log.error('[DEBUGGER]', `Failed to save debug incident to database: ${err.message}`);
+      await Log.error('[DEBUGGER]', `Failed to save debug incident to database: ${err.message}`);
       throw err;
     }
   }

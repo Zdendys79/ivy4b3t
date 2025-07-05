@@ -30,12 +30,12 @@ export class FBBot {
   async init() {
     try {
       if (this.isInitialized) {
-        Log.warn('[FB]', 'FBBot už je inicializován');
+        await Log.warn('[FB]', 'FBBot už je inicializován');
         return true;
       }
 
       if (!this.context) {
-        Log.error('[FB]', 'Context není k dispozici pro inicializaci');
+        await Log.error('[FB]', 'Context není k dispozici pro inicializaci');
         return false;
       }
 
@@ -43,7 +43,7 @@ export class FBBot {
       this.page = await this.context.newPage();
 
       if (!this.page) {
-        Log.error('[FB]', 'Nepodařilo se vytvořit novou stránku');
+        await Log.error('[FB]', 'Nepodařilo se vytvořit novou stránku');
         return false;
       }
 
@@ -58,7 +58,7 @@ export class FBBot {
       return true;
 
     } catch (err) {
-      Log.error('[FB] init', err);
+      await Log.error('[FB] init', err);
       this.page = null;
       this.isInitialized = false;
       return false;
@@ -75,7 +75,7 @@ export class FBBot {
   }
   async bringToFront() {
     if (!this.isReady()) {
-      Log.error('[FB]', 'FBBot není připraven pro bringToFront');
+      await Log.error('[FB]', 'FBBot není připraven pro bringToFront');
       return false;
     }
 
@@ -83,14 +83,14 @@ export class FBBot {
       await this.page.bringToFront();
       return true;
     } catch (err) {
-      Log.error('[FB] bringToFront', err);
+      await Log.error('[FB] bringToFront', err);
       return false;
     }
   }
 
   async screenshot(name) {
     if (!this.isReady()) {
-      Log.error('[FB]', 'FBBot není připraven pro screenshot');
+      await Log.error('[FB]', 'FBBot není připraven pro screenshot');
       return false;
     }
 
@@ -100,7 +100,7 @@ export class FBBot {
       Log.info(`[FB] Screenshot uložen: ${filename}`);
       return true;
     } catch (err) {
-      Log.error('[FB] screenshot', err);
+      await Log.error('[FB] screenshot', err);
       return false;
     }
   }
@@ -117,7 +117,7 @@ export class FBBot {
   async _findByText(text, options = {}) {
     try {
       if (!this.page || !this.page.waitForSelector) {
-        Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje waitForSelector.');
+        await Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje waitForSelector.');
         return [];
       }
 
@@ -158,7 +158,7 @@ export class FBBot {
       }
 
     } catch (err) {
-      Log.warn(`[FB] _findByText selhalo pro "${text}":`, err);
+      await Log.warn(`[FB] _findByText selhalo pro "${text}":`, err);
       return [];
     }
   }
@@ -170,7 +170,7 @@ export class FBBot {
   async _waitForText(text, options = {}) {
     try {
       if (!this.page || !this.page.waitForSelector) {
-        Log.warn('[FB] _waitForText selhalo: this.page není připraven.');
+        await Log.warn('[FB] _waitForText selhalo: this.page není připraven.');
         return null;
       }
 
@@ -188,7 +188,7 @@ export class FBBot {
       const selector = `xpath/${xpath}`;
       return await this.page.waitForSelector(selector, { timeout });
     } catch (err) {
-      Log.warn('[FB] _waitForText selhalo:', err);
+      await Log.warn('[FB] _waitForText selhalo:', err);
       return null;
     }
   }
@@ -218,7 +218,7 @@ export class FBBot {
         await this.humanBehavior.typeLikeHuman(this.page, text, context);
         return;
       } catch (error) {
-        Log.warn(`[${this.userId}]`, `⚠️ Pokročilé psaní selhalo, používám fallback: ${error.message}`);
+        await Log.warn(`[${this.userId}]`, `⚠️ Pokročilé psaní selhalo, používám fallback: ${error.message}`);
         // Pokračuj fallback metodou
       }
     }
@@ -302,7 +302,7 @@ export class FBBot {
     try {
       return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován") ? 'account_locked' : false;
     } catch (err) {
-      Log.error('[FB]', `Legacy account lock check failed: ${err}`);
+      await Log.error('[FB]', `Legacy account lock check failed: ${err}`);
       return false;
     }
   }
@@ -332,7 +332,7 @@ export class FBBot {
       };
 
     } catch (err) {
-      Log.error('[FB]', `Chyba při legacy analýze komplexnosti: ${err}`);
+      await Log.error('[FB]', `Chyba při legacy analýze komplexnosti: ${err}`);
       return { isNormal: true, metrics: null, suspiciouslySimple: false };
     }
   }
@@ -359,25 +359,25 @@ export class FBBot {
         // Zkontroluj výsledky analýzy
         if (analysis.status === 'blocked') {
           const errorReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
-          Log.error('[FB]', `Účet je zablokován: ${errorReason}`);
+          await Log.error('[FB]', `Účet je zablokován: ${errorReason}`);
           return 'account_locked';
         }
 
         if (analysis.status === 'warning') {
           const warningReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
-          Log.warn('[FB]', `Detekován problém: ${warningReason}`);
+          await Log.warn('[FB]', `Detekován problém: ${warningReason}`);
           // Pokračuj, ale s varováním
         }
       }
 
     } catch (err) {
-      Log.error('[FB]', `Chyba při načítání stránky: ${err}`);
+      await Log.error('[FB]', `Chyba při načítání stránky: ${err}`);
       return false;
     }
 
     // Stávající logika kontroly a přihlášení
     if (await this.isAccountLocked()) {
-      Log.error('[FB]', 'Účet je zablokovaný.');
+      await Log.error('[FB]', 'Účet je zablokovaný.');
       return 'account_locked';
     }
 
@@ -416,11 +416,11 @@ export class FBBot {
         Log.success(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je nyní přihlášen.`);
         return 'now_loged';
       } else {
-        Log.warn(`[FB] Uživatel není přihlášen na FB.`);
+        await Log.warn(`[FB] Uživatel není přihlášen na FB.`);
         return false;
       }
     } catch (err) {
-      Log.error(`[FB] Chyba při loginu: ${err}`);
+      await Log.error(`[FB] Chyba při loginu: ${err}`);
       return false;
     }
   }
@@ -448,7 +448,7 @@ export class FBBot {
     try {
       // Pokud nemáme analyzer, použij fallback
       if (!this.pageAnalyzer) {
-        Log.warn('[FB]', 'PageAnalyzer není k dispozici, používám fallback detekci');
+        await Log.warn('[FB]', 'PageAnalyzer není k dispozici, používám fallback detekci');
         return await this._legacyAccountLockCheck();
       }
 
@@ -462,7 +462,7 @@ export class FBBot {
         });
 
         if (fullAnalysis.errors.hasErrors) {
-          Log.warn('[FB]', `Detekován problém s účtem: ${fullAnalysis.errors.patterns.reason || 'Neznámý problém'}`);
+          await Log.warn('[FB]', `Detekován problém s účtem: ${fullAnalysis.errors.patterns.reason || 'Neznámý problém'}`);
 
           // Zpětná kompatibilita - vrať string pro kritické chyby
           if (fullAnalysis.errors.severity === 'critical') {
@@ -482,7 +482,7 @@ export class FBBot {
       return false; // Žádný problém
 
     } catch (err) {
-      Log.error('[FB]', `Chyba při detekci zablokovaného účtu: ${err.message}`);
+      await Log.error('[FB]', `Chyba při detekci zablokovaného účtu: ${err.message}`);
       // Fallback při chybě
       return await this._legacyAccountLockCheck();
     }
@@ -491,7 +491,7 @@ export class FBBot {
   async verifyPostingReadiness(targetGroup = null) {
     try {
       if (!this.pageAnalyzer) {
-        Log.warn('[FB]', 'PageAnalyzer není k dispozici pro ověření postování');
+        await Log.warn('[FB]', 'PageAnalyzer není k dispozici pro ověření postování');
         return {
           ready: false,
           reason: 'Analyzer není dostupný'
@@ -547,7 +547,7 @@ export class FBBot {
       };
 
     } catch (err) {
-      Log.error('[FB]', `Chyba při ověřování připravenosti: ${err.message}`);
+      await Log.error('[FB]', `Chyba při ověřování připravenosti: ${err.message}`);
       return {
         ready: false,
         reason: `Chyba při ověřování: ${err.message}`
@@ -569,7 +569,7 @@ export class FBBot {
     }
 
     // Fallback na původní implementaci
-    Log.warn('[FB]', 'Používám původní analyzePageComplexity - doporučuje se přejít na PageAnalyzer');
+    await Log.warn('[FB]', 'Používám původní analyzePageComplexity - doporučuje se přejít na PageAnalyzer');
     return await this._legacyComplexityAnalysis();
   }
 
@@ -644,7 +644,7 @@ export class FBBot {
           }
         } catch (err) {
           // Pokračuj na další text při chybě
-          Log.warn(`[FB] Chyba při hledání textu "${text}": ${err}`);
+          await Log.warn(`[FB] Chyba při hledání textu "${text}": ${err}`);
           continue;
         }
       }
@@ -661,7 +661,7 @@ export class FBBot {
   async safelyFindByText(text) {
     try {
       if (!this.page || typeof this.page.evaluate !== 'function') {
-        Log.warn(`[FB] Page objektu není k dispozici pro hledání textu`);
+        await Log.warn(`[FB] Page objektu není k dispozici pro hledání textu`);
         return [];
       }
 
@@ -675,7 +675,7 @@ export class FBBot {
       return found;
 
     } catch (err) {
-      Log.warn(`[FB] safelyFindByText selhalo pro "${text}": ${err}`);
+      await Log.warn(`[FB] safelyFindByText selhalo pro "${text}": ${err}`);
       return [];
     }
   }
@@ -713,7 +713,7 @@ export class FBBot {
       return false;
 
     } catch (err) {
-      Log.error(`[FB] Chyba při kontrole navigace: ${err}`);
+      await Log.error(`[FB] Chyba při kontrole navigace: ${err}`);
       return false;
     }
   }
@@ -735,7 +735,7 @@ export class FBBot {
     for (const indicator of videoselfieIndicators) {
       const found = await this._findByText(indicator, { timeout: 1500 });
       if (found.length > 0) {
-        Log.warn(`[FB] Detekován videoselfie požadavek: "${indicator}"`);
+        await Log.warn(`[FB] Detekován videoselfie požadavek: "${indicator}"`);
         return true;
       }
     }
@@ -749,11 +749,11 @@ export class FBBot {
       });
 
       if (hasVideoElements) {
-        Log.warn(`[FB] Detekována video/camera rozhraní - možný videoselfie`);
+        await Log.warn(`[FB] Detekována video/camera rozhraní - možný videoselfie`);
         return true;
       }
     } catch (err) {
-      Log.error(`[FB] Chyba při detekci video elementů: ${err}`);
+      await Log.error(`[FB] Chyba při detekci video elementů: ${err}`);
     }
 
     return false;
@@ -778,7 +778,7 @@ export class FBBot {
 
       throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
-      Log.error('[FB] newThing()', err);
+      await Log.error('[FB] newThing()', err);
       //await this.debugFindText();
       return false;
     }
@@ -793,7 +793,7 @@ export class FBBot {
       Log.info(`[FB] Kliknuto na pole pro psaní příspěvku.`);
       return true;
     } catch (err) {
-      Log.error(`[FB] Klik na newThingElement selhal: ${err}`);
+      await Log.error(`[FB] Klik na newThingElement selhal: ${err}`);
       return false;
     }
   }
@@ -808,7 +808,7 @@ export class FBBot {
       return true;
 
     } catch (err) {
-      Log.error(`[FB] Chyba při psaní příspěvku: ${err}`);
+      await Log.error(`[FB] Chyba při psaní příspěvku: ${err}`);
       return false;
     }
   }
@@ -816,7 +816,7 @@ export class FBBot {
   async pasteFromClipboard() {
     try {
       if (!this.page || this.page.isClosed()) {
-        Log.error('[FB] Stránka není dostupná pro vložení ze schránky.');
+        await Log.error('[FB] Stránka není dostupná pro vložení ze schránky.');
         return false;
       }
 
@@ -833,7 +833,7 @@ export class FBBot {
       return true;
 
     } catch (err) {
-      Log.error(`[FB] Chyba při vkládání ze schránky: ${err}`);
+      await Log.error(`[FB] Chyba při vkládání ze schránky: ${err}`);
       return false;
     }
   }
@@ -841,7 +841,7 @@ export class FBBot {
   async clickSendButton() {
     try {
       if (!this.page || this.page.isClosed()) {
-        Log.error('[FB] Stránka není dostupná.');
+        await Log.error('[FB] Stránka není dostupná.');
         return false;
       }
 
@@ -909,11 +909,11 @@ export class FBBot {
         }
       }
 
-      Log.warn('[FB] Nepodařilo se najít odeslací tlačítko.');
+      await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko.');
       return false;
 
     } catch (err) {
-      Log.error(`[FB] Chyba při odesílání:`, err);
+      await Log.error(`[FB] Chyba při odesílání:`, err);
       return false;
     }
   }
@@ -951,11 +951,11 @@ export class FBBot {
         }
       }
 
-      Log.warn('[FB] Fallback klikání nenašlo vhodné tlačítko.');
+      await Log.warn('[FB] Fallback klikání nenašlo vhodné tlačítko.');
       return false;
 
     } catch (err) {
-      Log.error('[FB] Fallback klikání selhalo:', err);
+      await Log.error('[FB] Fallback klikání selhalo:', err);
       return false;
     }
   }
@@ -1112,7 +1112,7 @@ export class FBBot {
       return candidates;
 
     } catch (err) {
-      Log.error(`[FB] Chyba při hledání tlačítek: ${err}`);
+      await Log.error(`[FB] Chyba při hledání tlačítek: ${err}`);
       return [];
     }
   }
@@ -1170,7 +1170,7 @@ export class FBBot {
       }, element);
 
       if (!stillValid) {
-        Log.warn('[FB] Element už není platný pro kliknutí.');
+        await Log.warn('[FB] Element už není platný pro kliknutí.');
         return false;
       }
 
@@ -1225,15 +1225,15 @@ export class FBBot {
           }
 
         } catch (clickErr) {
-          Log.warn(`[FB] Metoda kliknutí ${index + 1} selhala: ${clickErr.message}`);
+          await Log.warn(`[FB] Metoda kliknutí ${index + 1} selhala: ${clickErr.message}`);
         }
       }
 
-      Log.warn('[FB] Všechny metody kliknutí selhaly.');
+      await Log.warn('[FB] Všechny metody kliknutí selhaly.');
       return false;
 
     } catch (err) {
-      Log.error(`[FB] Chyba při klikání: ${err}`);
+      await Log.error(`[FB] Chyba při klikání: ${err}`);
       return false;
     }
   }
@@ -1261,7 +1261,7 @@ export class FBBot {
       }
       return true;
     } catch (err) {
-      Log.error(`[FB] Chyba v defaultRange: ${err}`);
+      await Log.error(`[FB] Chyba v defaultRange: ${err}`);
       return false;
     }
   }
@@ -1272,7 +1272,7 @@ export class FBBot {
       if (this.pageAnalyzer) {
         const readinessCheck = await this.verifyPostingReadiness();
         if (!readinessCheck.ready) {
-          Log.warn('[FB]', `Stránka není připravena pro otevření skupiny: ${readinessCheck.reason}`);
+          await Log.warn('[FB]', `Stránka není připravena pro otevření skupiny: ${readinessCheck.reason}`);
           // Neblokuj, ale zaloguj varování
         }
       }
@@ -1303,11 +1303,11 @@ export class FBBot {
         Log.info('[FB]', `Analýza skupiny dokončena - stav: ${groupAnalysis.status}`);
 
         if (groupAnalysis.group && !groupAnalysis.group.isGroup) {
-          Log.warn('[FB]', `URL neodpovídá skupině: ${groupAnalysis.group.reason}`);
+          await Log.warn('[FB]', `URL neodpovídá skupině: ${groupAnalysis.group.reason}`);
         }
 
         if (groupAnalysis.posting && !groupAnalysis.posting.canInteract) {
-          Log.warn('[FB]', 'Ve skupině není možné interagovat');
+          await Log.warn('[FB]', 'Ve skupině není možné interagovat');
         }
       }
 
@@ -1315,7 +1315,7 @@ export class FBBot {
       return true;
 
     } catch (err) {
-      Log.error('[FB]', `Chyba při otevírání skupiny ${group.fb_id}: ${err.message}`);
+      await Log.error('[FB]', `Chyba při otevírání skupiny ${group.fb_id}: ${err.message}`);
       return false;
     }
   }
@@ -1331,7 +1331,7 @@ export class FBBot {
           return this.getCounterValue(value);
         }
       } catch (err) {
-        Log.error(`[FB] Counter "${label}" nenalezen: ${err}`);
+        await Log.error(`[FB] Counter "${label}" nenalezen: ${err}`);
       }
     }
     return 0;
@@ -1344,7 +1344,7 @@ export class FBBot {
       if (str.includes("tis.")) floats *= 1000;
       return floats;
     } catch (err) {
-      Log.error(`[FB] Chyba při parsování counter value: ${err}`);
+      await Log.error(`[FB] Chyba při parsování counter value: ${err}`);
       return 0;
     }
   }
@@ -1356,7 +1356,7 @@ export class FBBot {
       Log.info(`[FB] Přidání do skupiny úspěšné.`);
       return true;
     } catch (err) {
-      Log.error(`[FB] Chyba při přidávání do skupiny: ${err}`);
+      await Log.error(`[FB] Chyba při přidávání do skupiny: ${err}`);
       return false;
     }
   }
@@ -1372,7 +1372,7 @@ export class FBBot {
         await wait.delay(5 * wait.timeout());
         return true;
       } catch (err) {
-        Log.error(`[FB] Chyba při klikání na "To se mi líbí": ${err}`);
+        await Log.error(`[FB] Chyba při klikání na "To se mi líbí": ${err}`);
         return false;
       }
     } else {
@@ -1440,7 +1440,7 @@ export class FBBot {
       await this.page.screenshot({ path: filename });
       Log.info(`[FB] Screenshot uložen: ${filename}`);
     } catch (err) {
-      Log.error(`[FB] Chyba při ukládání screenshotu: ${err}`);
+      await Log.error(`[FB] Chyba při ukládání screenshotu: ${err}`);
     }
   }
 
@@ -1449,7 +1449,7 @@ export class FBBot {
       const image = await this.page.screenshot({ type: 'png' });
       return image;
     } catch (err) {
-      Log.error(`[FB] Screenshot pro DB selhal: ${err}`);
+      await Log.error(`[FB] Screenshot pro DB selhal: ${err}`);
       return null;
     }
   }
@@ -1470,7 +1470,7 @@ export class FBBot {
       await this._clickByText("Diskuze");
       return true;
     } catch (err) {
-      Log.error(`[FB] Chyba v clickDiscus: ${err}`);
+      await Log.error(`[FB] Chyba v clickDiscus: ${err}`);
       return false;
     }
   }
@@ -1480,7 +1480,7 @@ export class FBBot {
       await this._clickByText("Přidat se ke skupině");
       return true;
     } catch (err) {
-      Log.error(`[FB] Chyba v joinToGroup: ${err}`);
+      await Log.error(`[FB] Chyba v joinToGroup: ${err}`);
       return false;
     }
   }
@@ -1493,7 +1493,7 @@ export class FBBot {
       if (!found.length) throw `Element pro XPath ${selector} nenalezen.`;
       return found[0];
     } catch (err) {
-      Log.error(`[FB] Chyba v testXPath: ${err}`);
+      await Log.error(`[FB] Chyba v testXPath: ${err}`);
       return false;
     }
   }
@@ -1523,7 +1523,7 @@ export class FBBot {
           Log.info(`[${i + 1}]`, text.replace(/\n/g, ' '));
         }
       } catch (err) {
-        Log.error('[DEBUG]', err);
+        await Log.error('[DEBUG]', err);
       }
     }
 
@@ -1554,7 +1554,7 @@ export class FBBot {
       return true;
 
     } catch (err) {
-      Log.error('[FB] close', err);
+      await Log.error('[FB] close', err);
       return false;
     }
   }
@@ -1569,7 +1569,7 @@ export class FBBot {
 
   async getCurrentPageAnalysis(forceRefresh = false) {
     if (!this.pageAnalyzer) {
-      Log.warn('[FB]', 'PageAnalyzer není k dispozici');
+      await Log.warn('[FB]', 'PageAnalyzer není k dispozici');
       return null;
     }
 
@@ -1580,7 +1580,7 @@ export class FBBot {
         forceRefresh: forceRefresh
       });
     } catch (err) {
-      Log.error('[FB]', `Chyba při získávání analýzy: ${err.message}`);
+      await Log.error('[FB]', `Chyba při získávání analýzy: ${err.message}`);
       return null;
     }
   }

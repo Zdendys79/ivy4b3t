@@ -358,7 +358,7 @@ export class QueryBuilder {
 
     } catch (err) {
       if (debugMode) {
-        await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
+        await await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
       }
       return null;
     }
@@ -426,7 +426,7 @@ export class QueryBuilder {
 
     } catch (err) {
       if (debugMode) {
-        await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
+        await await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
       }
       return null;
     }
@@ -459,7 +459,7 @@ export class QueryBuilder {
       return { c: 0 };
 
     } catch (err) {
-      await Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
+      await await Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
       return { c: 0 };
     }
   }
@@ -484,7 +484,7 @@ export class QueryBuilder {
       return result;
 
     } catch (err) {
-      await Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
+      await await Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
       return false;
     }
   }
@@ -513,7 +513,7 @@ export class QueryBuilder {
     const missing = requiredModules.filter(module => !this.SQL[module]);
 
     if (missing.length > 0) {
-      await Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
+      await await Log.error('[QueryBuilder]', `Missing SQL modules: ${missing.join(', ')}`);
       return false;
     }
 

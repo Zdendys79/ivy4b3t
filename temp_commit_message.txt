@@ -1,10 +1,15 @@
-fix: Add empty hash field to maintain database compatibility
+fix: Correct asynchronous logging calls
 
-- Added empty string for hash field in INSERT statement
-- Maintains compatibility with existing ivy.versions table structure
-- Hash field is now ignored but still present for database requirements
-- Post-commit no longer reads git data, only inserts empty hash
+- Removed duplicate 'await' from 'Log.warn' and 'Log.error' calls across multiple files.
+- This ensures that all asynchronous logging functions are called correctly with a single 'await', preventing potential runtime issues.
+- Affected files include:
+  - ivy/iv_fb-error-workflow.js
+  - ivy/iv_ui.class.js
+  - ivy/iv_wait.js
+  - ivy/iv_querybuilder.class.js
+  - ivy/iv_ErrorReportBuilder.class.js
+  - ivy/loginuser.js
+  - ivy/iv_debug.js
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+🤖 Generated with Gemini
+Co-Authored-By: Gemini <noreply@google.com>
