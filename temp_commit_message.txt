@@ -1,8 +1,9 @@
-fix: Improve error reason specification in PageAnalyzer
+feat: Implement intelligent error detection in PageAnalyzer
 
-- Modified the `_performErrorAnalysis` method in `iv_page_analyzer.class.js`.
-- The logic now ensures that if a general error state (like a locked account or a checkpoint) is detected without a specific pattern match, a clear and descriptive reason is generated.
-- This prevents the system from reporting a vague "Unspecified problem" and provides more precise information to the debugger and logs.
+- Refactored `_performErrorAnalysis` in `iv_page_analyzer.class.js` to prioritize structural analysis.
+- If the page structure is deemed "normal" (rich content, standard navigation), no keyword-based error detection is performed, preventing false positives.
+- Keyword-based error detection (e.g., for checkpoints, locked accounts) is now only triggered if the page structure is suspicious.
+- Improved logging provides clear messages about the detection process, including whether a page was considered normal or suspicious, and what specific keywords/patterns were found if an error is detected.
 
 🤖 Generated with Gemini
 Co-Authored-By: Gemini <noreply@google.com>

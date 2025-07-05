@@ -49,7 +49,7 @@ export class PageAnalyzer {
       const basicAnalysis = await this._performBasicAnalysis();
 
       // Analýza chybových stavů
-      const errorAnalysis = await this._performErrorAnalysis();
+      const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis);
 
       // Analýza komplexnosti stránky
       const complexityAnalysis = await this._performComplexityAnalysis();
@@ -238,8 +238,25 @@ export class PageAnalyzer {
     }
   }
 
-  async _performErrorAnalysis() {
+  async _performErrorAnalysis(complexityAnalysis, navigationAnalysis) {
     try {
+      // KROK 1: Vyhodnocení struktury stránky
+      const isNormalStructure = complexityAnalysis.isNormal && navigationAnalysis.hasStandardNavigation;
+
+      if (isNormalStructure) {
+        Log.info('[ANALYZER]', 'Struktura stránky je normální. Předpokládám, že není chyba.');
+        return {
+          hasErrors: false,
+          accountLocked: false,
+          checkpoint: { detected: false },
+          patterns: { detected: false, reason: 'Struktura stránky je normální' },
+          severity: 'none'
+        };
+      }
+
+      Log.warn('[ANALYZER]', 'Struktura stránky NENÍ normální. Hledám chybové vzory...');
+
+      // KROK 2: Hledání chybových vzorů (pouze pokud struktura není normální)
       let finalErrorPatterns = await this._detectErrorPatterns();
 
       const accountLocked = await this._checkAccountLocked();
@@ -262,6 +279,7 @@ export class PageAnalyzer {
         }
       }
 
+      // KROK 3: Sestavení výsledku
       return {
         hasErrors: finalErrorPatterns.detected,
         accountLocked: accountLocked,
