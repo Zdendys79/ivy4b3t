@@ -9,3 +9,4 @@ node_modules/
 *.bak
 *.code-workspace
 
+commit_message.txt
