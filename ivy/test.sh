@@ -52,6 +52,7 @@ basic_update_git() {
     if [[ ! -d "$REPO_DIR/.git" ]]; then
         echo "[START] CHYBA: $REPO_DIR není git repozitář!"
         return 1
+    fi
     }
 
     cd "$REPO_DIR" || return 1
