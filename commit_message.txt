@@ -1,5 +1,5 @@
-fix(Core): Final stabilization and bug fixes
+fix(ConsoleLogger): Implement robust recursive sanitization
 
-- fix(ConsoleLogger): Added a `[LOGGER-FAIL]` prefix to error messages originating from the logger itself, making them clearly distinguishable from application errors.
-- fix(Debugger): Resolved a memory leak by properly cleaning up `stdin` listeners after user input. This prevents the `MaxListenersExceededWarning` and ensures the debugger is stable.
-- fix(Support): Corrected a `wait is not defined` runtime error by adding the proper `iv_wait.js` module import to `iv_support.js`. This resolves the crash that occurred after successfully fetching a message from UTIO.
+- Replaced the simple string replacement with a recursive JSON.stringify replacer.
+- This new implementation traverses nested objects and arrays, replacing all occurrences of double quotes and backslashes to ensure that the resulting string is always safe for SQL insertion.
+- This definitively resolves the recurring `logs.insertConsoleLogBatch` failures, which were the primary source of application instability and debugger spam.

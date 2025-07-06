@@ -46,20 +46,25 @@ class ConsoleLogger {
         }[level] || 'INFO';
 
         const message = args.map(arg => {
-            let strArg;
-            if (typeof arg === 'object' && arg !== null) {
-                strArg = JSON.stringify(arg, null, 2);
-            } else {
-                strArg = String(arg);
+            try {
+                // Use a recursive replacer to handle nested objects/arrays
+                const sanitizedJson = JSON.stringify(arg, (key, value) => {
+                    if (typeof value === 'string') {
+                        return value.replace(/"/g, "'").replace(/\\/g, '/');
+                    }
+                    return value;
+                }, 2);
+                return sanitizedJson;
+            } catch (e) {
+                // Fallback for non-serializable objects
+                return String(arg).replace(/"/g, "'").replace(/\\/g, '/');
             }
-            // Replace double quotes with single quotes to prevent SQL errors
-            return strArg.replace(/"/g, "'");
         }).join(' ');
 
         // Simple parsing for prefix
-        const prefixMatch = message.match(/^(\[.*?\])/);
+        const prefixMatch = message.match(/^'(\[.*?\])'/); // Adjusted for single quotes
         const prefix = prefixMatch ? prefixMatch[1] : null;
-        const finalMessage = prefix ? message.substring(prefix.length).trim() : message;
+        const finalMessage = prefix ? message.substring(prefix.length + 2).trim() : message;
 
         this.logBuffer.push({
             level: mappedLevel,
