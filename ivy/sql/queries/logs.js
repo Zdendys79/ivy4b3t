@@ -31,7 +31,7 @@ export const LOGS = {
 
   insertConsoleLogBatch: `
     INSERT INTO log_console (session_id, version_code, hostname, level, prefix, message)
-    VALUES (?, ?, ?, ?, ?, ?)
+    VALUES ?
   `,
 
   getRecentSystemErrors: `

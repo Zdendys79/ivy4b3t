@@ -48,7 +48,9 @@ Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
   }
 })();
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   Log.info('[IVY] Proces ukončen signálem SIGTERM.');
+  // Flush pending logs before exit
+  await consoleLogger.flush();
   process.exit(0);
 });

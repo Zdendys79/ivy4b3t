@@ -1,9 +1,10 @@
-fix: Correct SQL batch insert syntax and closeDB import
+feat: Implement batch logging with 100-item buffer and proper cleanup
 
-- Fix SQL syntax in logs.insertConsoleLogBatch: change VALUES ? to VALUES (?, ?, ?, ?, ?, ?)  
-- Change ConsoleLogger to use individual inserts instead of batch insert
-- Fix closeDB import in test.js: import closeDB and call closeDB() instead of db.closeDB()
-- Resolves MariaDB SQL syntax error ER_PARSE_ERROR (1064)
+- Add batchSize property (100) to ConsoleLogger for efficient batch inserts
+- Auto-flush when buffer reaches 100 items
+- Restore proper batch SQL syntax (VALUES ?) with array parameter wrapping
+- Add console logger flush to ivy.js SIGTERM handler for clean shutdown
+- Ensure all pending logs are saved before application exit
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

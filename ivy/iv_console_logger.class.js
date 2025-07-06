@@ -12,6 +12,7 @@ class ConsoleLogger {
         this.originalConsole = {};
         this.flushInterval = null;
         this.isInitialized = false;
+        this.batchSize = 100; // Flush when buffer reaches 100 items
     }
 
     init() {
@@ -86,6 +87,11 @@ class ConsoleLogger {
             prefix: prefix,
             message: truncatedMessage
         });
+
+        // Auto-flush when buffer reaches batch size
+        if (this.logBuffer.length >= this.batchSize) {
+            this.flush();
+        }
     }
 
     async flush() {
@@ -96,19 +102,17 @@ class ConsoleLogger {
         const logsToFlush = [...this.logBuffer];
         this.logBuffer = [];
 
+        const params = logsToFlush.map(log => [
+            this.sessionId,
+            this.versionCode,
+            this.hostname,
+            log.level,
+            log.prefix,
+            log.message
+        ]);
+
         try {
-            // Insert logs one by one instead of batch to avoid SQL syntax issues
-            for (const log of logsToFlush) {
-                const params = [
-                    this.sessionId,
-                    this.versionCode,
-                    this.hostname,
-                    log.level,
-                    log.prefix,
-                    log.message
-                ];
-                await db.safeExecute('logs.insertConsoleLogBatch', params);
-            }
+            await db.safeExecute('logs.insertConsoleLogBatch', [params]);
         } catch (err) {
             this.originalConsole.error('[LOGGER-FAIL] Failed to flush logs to database:', err);
             // Put logs back to buffer to try again later
