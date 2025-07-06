@@ -19,15 +19,17 @@ clear
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GIT_COMMON_PATH="$SCRIPT_DIR/git-common.sh"
 
-# Zkus najít git-common.sh v aktuálním adresáři
-if [[ -f "$GIT_COMMON_PATH" ]]; then
-    source "$GIT_COMMON_PATH"
-else
-    echo "[START] VAROVÁNÍ: git-common.sh nenalezen v $SCRIPT_DIR, používám základní Git operace"
-    USE_BASIC_GIT=true
+# Zkontroluj git-common.sh
+if [[ ! -f "$GIT_COMMON_PATH" ]]; then
+    echo "[START] ❌ CHYBA: git-common.sh nenalezen v $SCRIPT_DIR"
+    echo "[START] Tento skript vyžaduje git-common.sh pro správnou funkci."
+    exit 1
 fi
 
-# Výchozí konfigurace (použije se pokud git-common.sh není dostupný)
+# Načti git-common.sh
+source "$GIT_COMMON_PATH"
+
+# Výchozí konfigurace
 REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
 SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
 TARGET_DIR=${TARGET_DIR:-~/ivy}
@@ -45,33 +47,6 @@ TIME_WINDOW=60
 
 # Pole pro uchovávání časů pokusů
 declare -a attempt_times=()
-
-# ===========================================
-# 🔧 FALLBACK FUNKCE (pokud git-common.sh není dostupný)
-# ===========================================
-
-basic_update_git() {
-    echo "[START] Aktualizuji Git repozitář..."
-    if [[ ! -d "$REPO_DIR/.git" ]]; then
-        echo "[START] CHYBA: $REPO_DIR není git repozitář!"
-        return 1
-    fi
-
-    cd "$REPO_DIR" || return 1
-    git fetch origin "$BRANCH" || return 1
-    git checkout "$BRANCH" || return 1
-    git pull origin "$BRANCH" || return 1
-    return 0
-}
-
-basic_sync_files() {
-    echo "[START] Kopíruji $SOURCE_SUBFOLDER do $TARGET_DIR..."
-    rsync -av --delete \
-        --exclude node_modules \
-        --exclude sql/sql_config.json \
-        "$REPO_DIR/$SOURCE_SUBFOLDER/" "$TARGET_DIR/" || return 1
-    return 0
-}
 
 # ===========================================
 # 🔄 FUNKCE PRO SPRÁVU RESTARTŮ
@@ -126,29 +101,10 @@ main_loop() {
         echo "[START] 🚀 ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
 
         # Git aktualizace a synchronizace souborů
-        if [[ "$USE_BASIC_GIT" == "true" ]]; then
-            # Použij základní Git operace
-            if ! basic_update_git || ! basic_sync_files; then
-                echo "[START] ❌ Aktualizace souborů selhala!"
-                sleep 5
-                continue
-            fi
-        else
-            # Použij pokročilé Git operace z modulu
-            if command -v update_and_sync &>/dev/null; then
-                if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
-                    echo "[START] ❌ Aktualizace souborů selhala!"
-                    sleep 5
-                    continue
-                fi
-            else
-                echo "[START] VAROVÁNÍ: update_and_sync není dostupná, používám základní metodu"
-                if ! basic_update_git || ! basic_sync_files; then
-                    echo "[START] ❌ Aktualizace souborů selhala!"
-                    sleep 5
-                    continue
-                fi
-            fi
+        if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
+            echo "[START] ❌ Aktualizace souborů selhala!"
+            sleep 5
+            continue
         fi
 
         # Přejdi do cílového adresáře
@@ -158,11 +114,9 @@ main_loop() {
             continue
         }
 
-        # Zobraz informace o verzi (pokud jsou dostupné)
-        if command -v get_git_info &>/dev/null; then
-            echo "[START] 📋 Informace o verzi:"
-            get_git_info "$REPO_DIR" | sed 's/^/[START]   /'
-        fi
+        # Zobraz informace o verzi
+        echo "[START] 📋 Informace o verzi:"
+        get_git_info "$REPO_DIR" | sed 's/^/[START]   /'
 
         # Kontrola hlavního souboru
         if [[ ! -f "ivy.js" ]]; then
@@ -240,9 +194,6 @@ echo "📂 Repozitář: $REPO_DIR"
 echo "🎯 Cíl: $TARGET_DIR"
 echo "🌿 Větev: $BRANCH"
 echo "🔄 Limit restartů: $MAX_RETRIES za $TIME_WINDOW sekund"
-echo "🔧 Git modul: $([ "$USE_BASIC_GIT" == "true" ] && echo "základní" || echo "pokročilý")"
-echo ""
-echo "💡 Pro ukončení použijte Ctrl+C"
 echo "======================================================"
 
 # Kontrola základních závislostí
@@ -261,6 +212,21 @@ for cmd in git node rsync jq; do
 done
 
 echo "[START] ✅ Všechny závislosti jsou k dispozici"
+echo ""
+
+# Zkontroluj funkce z git-common.sh
+if ! command -v update_and_sync &>/dev/null; then
+    echo "[START] ❌ CHYBA: Funkce update_and_sync není dostupná z git-common.sh!"
+    exit 1
+fi
+
+if ! command -v get_git_info &>/dev/null; then
+    echo "[START] ❌ CHYBA: Funkce get_git_info není dostupná z git-common.sh!"
+    exit 1
+fi
+
+echo "[START] ✅ Git modul načten úspěšně"
+echo "[START] 💡 Pro ukončení použijte Ctrl+C"
 echo ""
 
 # Spuštění hlavní smyčky
