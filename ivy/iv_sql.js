@@ -96,16 +96,15 @@ async function executeQuery(queryPath, params = []) {
     return rows;
 
   } catch (err) {
-    if (debugMode) {
-      await Log.error('[SQL][DEBUG]', `Query failed: ${queryPath}`);
-      await Log.error('[SQL][DEBUG]', `SQL: ${_truncateLog(query)}`);
-      await Log.error('[SQL][DEBUG]', `Params: ${_truncateLog(params)}`);
-      await Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
-      if (err.code) await Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
-      if (err.sqlState) await Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);
-    } else {
-      await Log.error('[SQL]', `Query ${queryPath} failed: ${err.code || err.message}`);
-    }
+    // ALWAYS show detailed SQL errors
+    await Log.error('[SQL]', `Query failed: ${queryPath}`);
+    await Log.error('[SQL]', `SQL: ${_truncateLog(query)}`);
+    await Log.error('[SQL]', `Params: ${_truncateLog(params)}`);
+    await Log.error('[SQL]', `Error: ${err.message}`);
+    if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
+    if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
+    if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
+    if (err.sql) await Log.error('[SQL]', `SQL Query: ${_truncateLog(err.sql)}`);
 
     throw err;
   }
@@ -136,11 +135,11 @@ async function safeQueryFirst(queryPath, params = []) {
 
     return rows[0];
   } catch (err) {
-    if (debugMode) {
-      await Log.error('[SQL][DEBUG]', `safeQueryFirst ${queryPath} exception: ${err.message}`);
-    } else {
-      await Log.error('[SQL]', `safeQueryFirst ${queryPath} failed`);
-    }
+    // ALWAYS show detailed SQL errors
+    await Log.error('[SQL]', `safeQueryFirst ${queryPath} exception: ${err.message}`);
+    if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
+    if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
+    if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
     return false;
   }
 }
@@ -165,11 +164,11 @@ async function safeQueryAll(queryPath, params = []) {
 
     return rows || [];
   } catch (err) {
-    if (debugMode) {
-      await Log.error('[SQL][DEBUG]', `safeQueryAll ${queryPath} exception: ${err.message}`);
-    } else {
-      await Log.error('[SQL]', `safeQueryAll ${queryPath} failed`);
-    }
+    // ALWAYS show detailed SQL errors
+    await Log.error('[SQL]', `safeQueryAll ${queryPath} exception: ${err.message}`);
+    if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
+    if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
+    if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
     return [];
   }
 }
@@ -201,11 +200,11 @@ async function safeExecute(queryPath, params = []) {
       return false;
     }
   } catch (err) {
-    if (debugMode) {
-      await Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} exception: ${err.message}`);
-    } else {
-      await Log.error('[SQL]', `safeExecute ${queryPath} failed`);
-    }
+    // ALWAYS show detailed SQL errors
+    await Log.error('[SQL]', `safeExecute ${queryPath} exception: ${err.message}`);
+    if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
+    if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
+    if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
     return false;
   }
 }

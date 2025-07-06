@@ -20,6 +20,7 @@ export class InteractiveDebugger {
     this.outputDir = './debug_reports';
     this.currentPage = null;
     this.currentUser = null;
+    this.isActive = false; // Prevent multiple concurrent debugger sessions
     
     // Ensure output directory exists
     this.ensureOutputDir();
@@ -57,6 +58,14 @@ export class InteractiveDebugger {
       return false; // Pokračuj bez zastavení
     }
 
+    // Prevent multiple concurrent debugger sessions
+    if (this.isActive) {
+      Log.info('[DEBUGGER]', `⏸️ Debugger already active, skipping: ${message}`);
+      return false; // Continue without pausing
+    }
+
+    this.isActive = true;
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const userId = this.currentUser?.id || 'unknown';
     
@@ -74,20 +83,25 @@ export class InteractiveDebugger {
 
     const response = await this.waitForUserInput(30);
 
+    let result = false;
+    
     switch (response.toLowerCase()) {
       case 's':
         Log.info('[DEBUGGER]', '🔍 Creating debug report...');
         await this.createDebugReport(errorLevel, message, context, timestamp, userId);
-        return true; // Stop execution
+        result = true; // Stop execution
+        break;
         
       case 'c':
         Log.info('[DEBUGGER]', '▶️ Continuing execution...');
-        return false; // Continue
+        result = false; // Continue
+        break;
         
       case 'd':
         Log.info('[DEBUGGER]', '❌ Disabling interactive debugging');
         this.enable(false);
-        return false; // Continue
+        result = false; // Continue
+        break;
         
       case 'q':
         Log.info('[DEBUGGER]', '🛑 QUIT program requested by user');
@@ -95,8 +109,12 @@ export class InteractiveDebugger {
         
       default:
         Log.info('[DEBUGGER]', '⏱️ Timeout - continuing execution...');
-        return false; // Continue
+        result = false; // Continue
+        break;
     }
+
+    this.isActive = false; // Release the lock
+    return result;
   }
 
   /**
@@ -104,24 +122,21 @@ export class InteractiveDebugger {
    */
   async waitForUserInput(timeoutSeconds = 30) {
     return new Promise((resolve) => {
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: true // Enable interactive terminal
-      });
-
       let resolved = false;
 
       const cleanup = () => {
         if (timeout) clearTimeout(timeout);
-        process.stdin.setRawMode(false);
+        if (process.stdin.isTTY) {
+          process.stdin.setRawMode(false);
+        }
         process.stdin.removeListener('data', onData);
+        process.stdin.removeListener('SIGINT', onSigint);
         process.stdin.pause();
-        rl.close();
       };
 
       const onData = (key) => {
         const choice = key.toString().toLowerCase();
+        Log.info('[DEBUGGER]', `🔤 Key received: "${choice}" (code: ${key[0]})`);
         if (['s', 'c', 'd', 'q'].includes(choice)) {
           if (!resolved) {
             resolved = true;
@@ -142,16 +157,19 @@ export class InteractiveDebugger {
       // Timeout
       const timeout = setTimeout(() => {
         if (!resolved) {
+          Log.info('[DEBUGGER]', `⏰ Timeout reached after ${timeoutSeconds} seconds`);
           resolved = true;
           cleanup();
           resolve('timeout');
         }
       }, timeoutSeconds * 1000);
 
-      // Setup listeners
-      process.stdin.setRawMode(true);
+      // Setup listeners - pouze raw mode bez readline
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true);
+      }
       process.stdin.on('data', onData);
-      rl.on('SIGINT', onSigint);
+      process.stdin.on('SIGINT', onSigint);
       process.stdin.resume();
     });
   }

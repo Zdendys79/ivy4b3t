@@ -1,9 +1,9 @@
-fix: Enable interactive terminal in debugger to wait for user input
+fix: Always show detailed SQL errors regardless of debug mode
 
-- Change terminal: false to terminal: true in readline.createInterface
-- Fixes issue where debugger options didn't wait for user input
-- Interactive debugger now properly pauses for user choice (s/c/d/q)
-- Resolves auto-continue behavior that ignored user interaction
+- Remove debug mode conditions from SQL error logging
+- Add additional error details (errno, sqlState, sql query)
+- Apply to all SQL functions: executeQuery, safeQueryFirst, safeQueryAll, safeExecute
+- Enable detailed error diagnosis for insertConsoleLogBatch and other SQL issues
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
