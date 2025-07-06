@@ -96,17 +96,19 @@ class ConsoleLogger {
         const logsToFlush = [...this.logBuffer];
         this.logBuffer = [];
 
-        const params = logsToFlush.map(log => [
-            this.sessionId,
-            this.versionCode,
-            this.hostname,
-            log.level,
-            log.prefix,
-            log.message
-        ]);
-
         try {
-            await db.safeExecute('logs.insertConsoleLogBatch', params);
+            // Insert logs one by one instead of batch to avoid SQL syntax issues
+            for (const log of logsToFlush) {
+                const params = [
+                    this.sessionId,
+                    this.versionCode,
+                    this.hostname,
+                    log.level,
+                    log.prefix,
+                    log.message
+                ];
+                await db.safeExecute('logs.insertConsoleLogBatch', params);
+            }
         } catch (err) {
             this.originalConsole.error('[LOGGER-FAIL] Failed to flush logs to database:', err);
             // Put logs back to buffer to try again later

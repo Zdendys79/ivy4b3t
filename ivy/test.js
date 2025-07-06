@@ -14,7 +14,7 @@
 
 import { consoleLogger } from './iv_console_logger.class.js';
 import { Log } from './iv_log.class.js';
-import { initializeDatabase, db } from './iv_sql.js';
+import { initializeDatabase, db, closeDB } from './iv_sql.js';
 import { interactiveDebugger, setDebugContext } from './iv_interactive_debugger.js';
 import { get as getVersion } from './iv_version.js';
 import os from 'node:os';
@@ -81,7 +81,7 @@ async function runTest() {
     await consoleLogger.flush();
 
     // Close DB connection
-    await db.closeDB();
+    await closeDB();
     process.exit(0);
 }
 

@@ -1,9 +1,9 @@
-fix: Always show detailed SQL errors regardless of debug mode
+fix: Correct SQL batch insert syntax and closeDB import
 
-- Remove debug mode conditions from SQL error logging
-- Add additional error details (errno, sqlState, sql query)
-- Apply to all SQL functions: executeQuery, safeQueryFirst, safeQueryAll, safeExecute
-- Enable detailed error diagnosis for insertConsoleLogBatch and other SQL issues
+- Fix SQL syntax in logs.insertConsoleLogBatch: change VALUES ? to VALUES (?, ?, ?, ?, ?, ?)  
+- Change ConsoleLogger to use individual inserts instead of batch insert
+- Fix closeDB import in test.js: import closeDB and call closeDB() instead of db.closeDB()
+- Resolves MariaDB SQL syntax error ER_PARSE_ERROR (1064)
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
