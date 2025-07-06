@@ -31,7 +31,6 @@
 │   ├── iv_rhythm.js          ← Plánování akcí podle `action_plan`
 │   ├── iv_actions.js         ← Implementace akcí na základě `action_code`
 │   ├── iv_log.class.js       ← Centralizované logování s podporou úrovní a ikon
-│   ├── iv_debug.js           ← Helper pro debug režim podle větve v config.json
 │   ├── config.json           ← Konfigurace větve, log úrovní, ikon a chování
 │   ├── git-common.sh         ← Společný modul pro Git operace napříč skripty
 │   ├── start.sh              ← Opakovaný spouštěcí skript (git pull + rsync + `node ivy.js`)
@@ -108,7 +107,6 @@
 | `iv_rhythm.js`          | Modul pro plánování akcí z `action_definitions` a `user_action_plan`      |
 | `iv_actions.js`         | Realizace konkrétních typů akcí uživatelů (např. delay, sleep, like)      |
 | `iv_log.class.js`       | Centralizované logování s podporou úrovní (debug, info, warn, error)      |
-| `iv_debug.js`           | Helper pro určení debug režimu podle větve v config.json                  |
 
 ### Složka ivy - konfigurační soubory
 

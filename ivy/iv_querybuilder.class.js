@@ -10,7 +10,6 @@ import os from 'node:os';
 
 import { SQL } from './sql/queries/index.js';
 import { Log } from './iv_log.class.js';
-import { isDebugMode } from './iv_debug.js';
 
 const hostname = os.hostname();
 
@@ -340,7 +339,6 @@ export class QueryBuilder {
    * Kombinovaná funkce pro získání uživatele s akcemi
    */
   async getUserWithAvailableActions() {
-    const debugMode = isDebugMode();
 
     try {
       const user = await this.getUser();
@@ -348,22 +346,16 @@ export class QueryBuilder {
 
       const actions = await this.getUserActions(user.id);
       if (!actions.length) {
-        if (debugMode) {
-          await Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
-        }
+        await Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
         return null;
       }
 
-      if (debugMode) {
-        Log.debug('[SQL]', `User ${user.id} has ${actions.length} actions: ${actions.map(a => a.action_code).join(', ')}`);
-      }
+      Log.debug('[SQL]', `User ${user.id} has ${actions.length} actions: ${actions.map(a => a.action_code).join(', ')}`);
 
       return { user, actions };
 
     } catch (err) {
-      if (debugMode) {
-        await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
-      }
+      await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
       return null;
     }
   }
@@ -397,7 +389,6 @@ export class QueryBuilder {
    * Debug funkce pro diagnostiku problémů s uživateli
    */
   async debugUserSelectionIssue(host = hostname) {
-    const debugMode = isDebugMode();
 
     try {
       const allUsers = await this.getUsersByHostname(host);
@@ -422,16 +413,12 @@ export class QueryBuilder {
         });
       }
 
-      if (debugMode) {
-        Log.debug('[SQL]', 'User selection debug:', results);
-      }
+      Log.debug('[SQL]', 'User selection debug:', results);
 
       return results;
 
     } catch (err) {
-      if (debugMode) {
-        await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
-      }
+      await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
       return null;
     }
   }
@@ -440,25 +427,18 @@ export class QueryBuilder {
    * Pokročilá verifikace zprávy s detailním logováním
    */
   async verifyMessageAdvanced(groupId, messageHash) {
-    const debugMode = isDebugMode();
 
     try {
-      if (debugMode) {
         Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
-      }
 
       const result = await this.verifyMessage(groupId, messageHash);
 
       if (result) {
-        if (debugMode) {
           Log.debug('[SQL]', `Found duplicate message with hash ${messageHash.substring(0, 8)} (ID: ${result.id})`);
-        }
         return { c: 1, id: result.id };
       }
 
-      if (debugMode) {
         Log.debug('[SQL]', `No duplicate found for hash ${messageHash.substring(0, 8)}`);
-      }
 
       return { c: 0 };
 
@@ -472,18 +452,13 @@ export class QueryBuilder {
    * Store message s pokročilým logováním
    */
   async storeMessageAdvanced(userId, text, groupId = null) {
-    const debugMode = isDebugMode();
 
     try {
-      if (debugMode) {
         Log.debug('[SQL]', `Storing message: user ${userId}, text length: ${text.length}`);
-      }
 
       const result = await this.storeMessage(userId, text, null);
 
-      if (debugMode) {
         Log.debug('[SQL]', `Message stored successfully`);
-      }
 
       return result;
 

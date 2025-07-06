@@ -12,11 +12,7 @@ import mysql from 'mysql2/promise';
 import { QueryUtils } from './sql/queries/index.js';
 import { QueryBuilder } from './iv_querybuilder.class.js';
 import { Log } from './iv_log.class.js';
-import { isDebugMode } from './iv_debug.js';
 
-// =========================================================
-// DATABASE CONNECTION SETUP
-// =========================================================
 
 const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
 
@@ -28,52 +24,31 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-  // Removed deprecated options: acquireTimeout, timeout
 });
 
-// =========================================================
-// HELPER FUNCTIONS
-// =========================================================
-
-/**
- * Zkrátí dlouhé texty pro logování.
- * @param {string | any} data - Data k zkrácení.
- * @param {number} maxLines - Maximální počet řádků pro string.
- * @param {number} maxJsonLength - Maximální délka pro JSON string.
- * @returns {string} Zkrácený string.
- */
 function _truncateLog(data, maxLines = 10, maxJsonLength = 500) {
-    if (typeof data === 'string') {
-        const lines = data.split('\n');
-        if (lines.length > maxLines) {
-            const head = lines.slice(0, 2).join('\n');
-            const tail = lines.slice(-3).join('\n');
-            return `${head}\n...\n${tail}`;
-        }
-        return data;
+  if (typeof data === 'string') {
+    const lines = data.split('\n');
+    if (lines.length > maxLines) {
+      const head = lines.slice(0, 2).join('\n');
+      const tail = lines.slice(-3).join('\n');
+      return `${head}\n...\n${tail}`;
     }
+    return data;
+  }
 
-    try {
-        const jsonString = JSON.stringify(data);
-        if (jsonString.length > maxJsonLength) {
-            return `${jsonString.substring(0, maxJsonLength)}...`;
-        }
-        return jsonString;
-    } catch (e) {
-        return String(data);
+  try {
+    const jsonString = JSON.stringify(data);
+    if (jsonString.length > maxJsonLength) {
+      return `${jsonString.substring(0, maxJsonLength)}...`;
     }
+    return jsonString;
+  } catch (e) {
+    return String(data);
+  }
 }
 
-
-// =========================================================
-// CORE DATABASE FUNCTIONS
-// =========================================================
-
-/**
- * Hlavní funkce pro vykonání SQL dotazu
- */
 async function executeQuery(queryPath, params = []) {
-  const debugMode = isDebugMode();
   const query = QueryUtils.getQuery(queryPath);
 
   if (!query) {
@@ -82,21 +57,15 @@ async function executeQuery(queryPath, params = []) {
     throw new Error(error);
   }
 
-  if (debugMode) {
-    Log.debug('[SQL]', `Executing query: ${queryPath} with params: ${_truncateLog(params)}`);
-  }
+  Log.debug('[SQL]', `Executing query: ${queryPath} with params: ${_truncateLog(params)}`);
 
   try {
     const [rows] = await pool.execute(query, params);
 
-    if (debugMode) {
-      Log.debug('[SQL]', `Query ${queryPath} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
-    }
+    Log.debug('[SQL]', `Query ${queryPath} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
 
     return rows;
-
   } catch (err) {
-    // ALWAYS show detailed SQL errors
     await Log.error('[SQL]', `Query failed: ${queryPath}`);
     await Log.error('[SQL]', `SQL: ${_truncateLog(query)}`);
     await Log.error('[SQL]', `Params: ${_truncateLog(params)}`);
@@ -105,37 +74,23 @@ async function executeQuery(queryPath, params = []) {
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
     if (err.sql) await Log.error('[SQL]', `SQL Query: ${_truncateLog(err.sql)}`);
-
     throw err;
   }
 }
 
-/**
- * Bezpečné vykonání dotazu s očekáváním prvního řádku
- */
 async function safeQueryFirst(queryPath, params = []) {
-  const debugMode = isDebugMode();
+  Log.debug('[SQL]', `safeQueryFirst: ${queryPath}`);
 
   try {
-    if (debugMode) {
-      Log.debug('[SQL]', `safeQueryFirst: ${queryPath}`);
-    }
-
     const rows = await executeQuery(queryPath, params);
     if (!rows || !rows.length || !rows[0]) {
-      if (debugMode) {
-        Log.debug('[SQL]', `safeQueryFirst ${queryPath} returned no results`);
-      }
+      Log.debug('[SQL]', `safeQueryFirst ${queryPath} returned no results`);
       return false;
     }
 
-    if (debugMode) {
-      Log.debug('[SQL]', `safeQueryFirst ${queryPath} returned 1 row`);
-    }
-
+    Log.debug('[SQL]', `safeQueryFirst ${queryPath} returned 1 row`);
     return rows[0];
   } catch (err) {
-    // ALWAYS show detailed SQL errors
     await Log.error('[SQL]', `safeQueryFirst ${queryPath} exception: ${err.message}`);
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
@@ -144,27 +99,16 @@ async function safeQueryFirst(queryPath, params = []) {
   }
 }
 
-/**
- * Bezpečné vykonání dotazu s očekáváním více řádků
- */
 async function safeQueryAll(queryPath, params = []) {
-  const debugMode = isDebugMode();
+  Log.debug('[SQL]', `safeQueryAll: ${queryPath}`);
 
   try {
-    if (debugMode) {
-      Log.debug('[SQL]', `safeQueryAll: ${queryPath}`);
-    }
-
     const rows = await executeQuery(queryPath, params);
     const resultCount = rows ? rows.length : 0;
 
-    if (debugMode) {
-      Log.debug('[SQL]', `safeQueryAll ${queryPath} returned ${resultCount} rows`);
-    }
-
+    Log.debug('[SQL]', `safeQueryAll ${queryPath} returned ${resultCount} rows`);
     return rows || [];
   } catch (err) {
-    // ALWAYS show detailed SQL errors
     await Log.error('[SQL]', `safeQueryAll ${queryPath} exception: ${err.message}`);
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
@@ -173,34 +117,20 @@ async function safeQueryAll(queryPath, params = []) {
   }
 }
 
-/**
- * Bezpečné vykonání dotazu bez očekávání výsledku (INSERT, UPDATE, DELETE)
- */
 async function safeExecute(queryPath, params = []) {
-  const debugMode = isDebugMode();
+  Log.debug('[SQL]', `safeExecute: ${queryPath}`);
 
   try {
-    if (debugMode) {
-      Log.debug('[SQL]', `safeExecute: ${queryPath}`);
-    }
-
     const result = await executeQuery(queryPath, params);
 
     if (result !== false) {
-      if (debugMode) {
-        Log.debug('[SQL]', `safeExecute ${queryPath} successful`);
-      }
+      Log.debug('[SQL]', `safeExecute ${queryPath} successful`);
       return true;
     } else {
-      if (debugMode) {
-        await Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} returned false`);
-      } else {
-        await Log.error('[SQL]', `safeExecute ${queryPath} failed`);
-      }
+      await Log.error('[SQL][DEBUG]', `safeExecute ${queryPath} returned false`);
       return false;
     }
   } catch (err) {
-    // ALWAYS show detailed SQL errors
     await Log.error('[SQL]', `safeExecute ${queryPath} exception: ${err.message}`);
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
@@ -209,13 +139,6 @@ async function safeExecute(queryPath, params = []) {
   }
 }
 
-// =========================================================
-// CONNECTION UTILITIES
-// =========================================================
-
-/**
- * Test databázového připojení
- */
 export async function testConnection() {
   try {
     const connection = await pool.getConnection();
@@ -229,9 +152,6 @@ export async function testConnection() {
   }
 }
 
-/**
- * Uzavření databázového poolu
- */
 export async function closeConnection() {
   try {
     await pool.end();
@@ -243,9 +163,6 @@ export async function closeConnection() {
   }
 }
 
-/**
- * Získání statistik připojení
- */
 export function getConnectionStats() {
   return {
     config: {
@@ -261,89 +178,50 @@ export function getConnectionStats() {
   };
 }
 
-// =========================================================
-// QUERY BUILDER INSTANCE
-// =========================================================
-
-/**
- * Hlavní instance QueryBuilder s předanými safe funkcemi
- */
 export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute);
 
-// =========================================================
-// VALIDATION AND STARTUP
-// =========================================================
-
-/**
- * Inicializace a validace databázového připojení
- */
 export async function initializeDatabase() {
-  const debugMode = isDebugMode();
-  
   try {
-    // Test připojení
     const connectionOk = await testConnection();
     if (!connectionOk) {
       throw new Error('Database connection failed');
     }
 
-    // Validace SQL modulů
     const modulesOk = db.validateSQLModules();
     if (!modulesOk) {
       throw new Error('SQL modules validation failed');
     }
 
-    if (debugMode) {
-      const stats = getConnectionStats();
-      Log.debug('[SQL]', 'Database initialized:', stats);
-      Log.debug('[SQL]', 'QueryBuilder stats:', db.getStats());
-    }
+    const stats = getConnectionStats();
+    Log.debug('[SQL]', 'Database initialized:', stats);
+    Log.debug('[SQL]', 'QueryBuilder stats:', db.getStats());
 
     Log.info('[SQL]', 'Database initialization successful');
     return true;
-
   } catch (err) {
     await Log.error('[SQL]', `Database initialization failed: ${err.message}`);
     return false;
   }
 }
 
-// =========================================================
-// EXPORTS
-// =========================================================
-
-// Export the SQL modules for direct access
 export { SQL } from './sql/queries/index.js';
-
-// EXPORT pro správu připojení
 export { testConnection as testDB, closeConnection as closeDB };
 
 export async function verifyMsg(groupId, messageHash) {
-  const debugMode = isDebugMode();
+  Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
 
   try {
-    if (debugMode) {
-      Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
-    }
-
     const result = await safeQueryFirst('quotes.findByHash', [messageHash]);
 
     if (result) {
-      if (debugMode) {
-        Log.debug('[SQL]', `Found duplicate message with hash ${messageHash.substring(0, 8)} (ID: ${result.id})`);
-      }
-
+      Log.debug('[SQL]', `Found duplicate message with hash ${messageHash.substring(0, 8)} (ID: ${result.id})`);
       return { c: 1, id: result.id };
     }
 
-    if (debugMode) {
-      Log.debug('[SQL]', `No duplicate found for hash ${messageHash.substring(0, 8)}`);
-    }
-
+    Log.debug('[SQL]', `No duplicate found for hash ${messageHash.substring(0, 8)}`);
     return { c: 0 };
-
   } catch (err) {
-    Log.error('[SQL]', `verifyMsg error: ${err.message}`);
+    await Log.error('[SQL]', `verifyMsg error: ${err.message}`);
     return { c: 0 };
   }
 }

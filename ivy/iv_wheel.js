@@ -12,7 +12,6 @@
 
 import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
-import { isDebugMode } from './iv_debug.js';
 
 export class Wheel {
   constructor(activities) {
@@ -58,7 +57,6 @@ export class Wheel {
  * @returns {Promise<Object|null>} - Vybraná akce nebo null
  */
 export async function getRandomAction(availableActions = null, userId = null) {
-  const debugMode = isDebugMode();
 
   if (!userId) {
     await Log.warn('[WHEEL]', 'Nebylo zadáno userId - nemohu zkontrolovat limity');
@@ -87,15 +85,13 @@ export async function getRandomAction(availableActions = null, userId = null) {
     const wheel = new Wheel(wheelItems);
     const stats = wheel.getStats();
 
-    if (debugMode) {
-      Log.debug('[WHEEL]', `User ${userId} wheel stats:`, stats);
+    Log.debug('[WHEEL]', `User ${userId} wheel stats:`, stats);
 
-      const postUtioActions = wheelItems.filter(item => item.code.startsWith('post_utio_'));
-      const blockedPostUtio = postUtioActions.filter(item => item.effective_weight === 0);
+    const postUtioActions = wheelItems.filter(item => item.code.startsWith('post_utio_'));
+    const blockedPostUtio = postUtioActions.filter(item => item.effective_weight === 0);
 
-      if (blockedPostUtio.length > 0) {
-        Log.debug('[WHEEL]', `Blocked post_utio actions: ${blockedPostUtio.map(a => a.code).join(', ')}`);
-      }
+    if (blockedPostUtio.length > 0) {
+      Log.debug('[WHEEL]', `Blocked post_utio actions: ${blockedPostUtio.map(a => a.code).join(', ')}`);
     }
 
     const pickedCode = wheel.pick();
@@ -133,7 +129,6 @@ export async function getRandomAction(availableActions = null, userId = null) {
  * @returns {Promise<Object|null>} - Statistiky akcí
  */
 export async function getActionStats(userId) {
-  const debugMode = isDebugMode();
 
   try {
     const actionsWithLimits = await db.getUserActionsWithLimits(userId);
@@ -179,9 +174,7 @@ export async function getActionStats(userId) {
         .map(a => a.action_code)
     };
 
-    if (debugMode) {
-      Log.debug('[WHEEL]', `Action stats for user ${userId}:`, stats);
-    }
+    Log.debug('[WHEEL]', `Action stats for user ${userId}:`, stats);
 
     return stats;
 
