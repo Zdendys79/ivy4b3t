@@ -113,6 +113,9 @@ main_loop() {
                 sleep 5
                 continue
             fi
+            
+            # Obnov execute permissions na skripty
+            chmod +x "$TARGET_DIR"/*.sh 2>/dev/null || true
         else
             # Před git pull - uloží hash aktuálního scriptu
             CURRENT_HASH=$(sha256sum "$0" | cut -d' ' -f1)
@@ -124,6 +127,9 @@ main_loop() {
                 sleep 5
                 continue
             fi
+            
+            # Obnov execute permissions na skripty
+            chmod +x "$TARGET_DIR"/*.sh 2>/dev/null || true
             
             # Po git pull - porovná hash
             NEW_HASH=$(sha256sum "$0" | cut -d' ' -f1)
