@@ -1,10 +1,9 @@
-feat: Implement batch logging with 100-item buffer and proper cleanup
+fix: Add mutex protection to prevent concurrent flush operations
 
-- Add batchSize property (100) to ConsoleLogger for efficient batch inserts
-- Auto-flush when buffer reaches 100 items
-- Restore proper batch SQL syntax (VALUES ?) with array parameter wrapping
-- Add console logger flush to ivy.js SIGTERM handler for clean shutdown
-- Ensure all pending logs are saved before application exit
+- Add isFlushingInProgress flag to ConsoleLogger constructor
+- Protect flush() method with mutex to prevent race conditions
+- Ensure only one flush operation runs at a time from multiple triggers
+- Maintain thread-safety for database batch operations
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
