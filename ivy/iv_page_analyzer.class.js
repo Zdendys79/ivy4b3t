@@ -852,10 +852,17 @@ export class PageAnalyzer {
         const isReadOnly = document.body.textContent.includes('pouze pro čtení') ||
           document.body.textContent.includes('read only');
 
+        // Kontrola existence záložky "Diskuze"
+        const discussionTab = Array.from(document.querySelectorAll('span, a, div[role="button"]')).find(el => {
+            const text = el.textContent?.trim().toLowerCase();
+            return text === 'diskuze' || text === 'discussion';
+        });
+
         return {
           isMember: isMember,
           canPost: canPost,
-          isReadOnly: isReadOnly
+          isReadOnly: isReadOnly,
+          discussionTabAvailable: discussionTab !== undefined && discussionTab !== null
         };
       });
 
@@ -874,6 +881,13 @@ export class PageAnalyzer {
       }
 
       if (!groupStatus.canPost) {
+        if (groupStatus.discussionTabAvailable) {
+            return {
+                canPost: false,
+                reason: 'Je potřeba přejít na diskuzi',
+                actionRequired: 'click_discussion_tab'
+            };
+        }
         return {
           canPost: false,
           reason: 'Pole pro psaní příspěvku není dostupné'
