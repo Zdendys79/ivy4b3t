@@ -284,6 +284,10 @@ export class QueryBuilder {
     return await this.safeQueryFirst('quotes.findByHash', [messageHash]);
   }
 
+  async verifyMsg(groupId, messageHash) {
+    return await this.verifyMessage(groupId, messageHash);
+  }
+
   async storeMessage(userId, text, author = null) {
     return await this.safeExecute('quotes.insertQuote', [userId, text, author]);
   }

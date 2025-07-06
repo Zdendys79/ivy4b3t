@@ -316,5 +316,35 @@ export async function initializeDatabase() {
 // Export the SQL modules for direct access
 export { SQL } from './sql/queries/index.js';
 
-// Export pro debug a testing
-export { executeQuery, safeQueryFirst, safeQueryAll, safeExecute };
+// EXPORT pro správu připojení
+export { testConnection as testDB, closeConnection as closeDB };
+
+export async function verifyMsg(groupId, messageHash) {
+  const debugMode = isDebugMode();
+
+  try {
+    if (debugMode) {
+      Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
+    }
+
+    const result = await safeQueryFirst('quotes.findByHash', [messageHash]);
+
+    if (result) {
+      if (debugMode) {
+        Log.debug('[SQL]', `Found duplicate message with hash ${messageHash.substring(0, 8)} (ID: ${result.id})`);
+      }
+
+      return { c: 1, id: result.id };
+    }
+
+    if (debugMode) {
+      Log.debug('[SQL]', `No duplicate found for hash ${messageHash.substring(0, 8)}`);
+    }
+
+    return { c: 0 };
+
+  } catch (err) {
+    Log.error('[SQL]', `verifyMsg error: ${err.message}`);
+    return { c: 0 };
+  }
+}

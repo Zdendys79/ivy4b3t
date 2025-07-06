@@ -1,10 +1,5 @@
-fix(ConsoleLogger): Correct batch insert parameter wrapping
+fix(Core): Stabilize logging and restore missing function
 
-- The `insertConsoleLogBatch` query was failing due to incorrect parameter wrapping. The array of log entries was being wrapped in an additional array, causing the `mysql2` library to fail.
-- The call in `iv_console_logger.class.js` has been corrected to pass the parameters directly.
-- This resolves the primary issue of failing log flushes and the resulting debugger pauses.
-
-refactor(SQL): Improve log truncation for large data
-
-- The `_truncateLog` helper function in `iv_sql.js` has been refactored to reliably shorten long log messages, especially large JSON payloads for batch inserts.
-- This prevents the console from being flooded with unreadable data when debugging.
+- fix(ConsoleLogger): Prevent recursive error logging by using `originalConsole.error` in the flush catch block. This stops the logger from trying to log its own failures, resolving the primary cause of debugger spam and stabilizing the application.
+- fix(QueryBuilder): Re-introduce `db.verifyMsg` by creating an alias to the existing `db.verifyMessage` method. This restores functionality for code calling the legacy function name, resolving the `db.verifyMsg is not a function` error.
+- refactor(SQL): The `verifyMsg` function has been restored in `iv_sql.js` to ensure it is available for direct calls if needed.
