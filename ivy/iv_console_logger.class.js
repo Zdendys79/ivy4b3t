@@ -46,6 +46,9 @@ class ConsoleLogger {
         }[level] || 'INFO';
 
         const message = args.map(arg => {
+            if (arg instanceof Error) {
+                return `[${arg.name}]: ${arg.message}${arg.stack ? '\n' + arg.stack : ''}`;
+            }
             try {
                 // Use a recursive replacer to handle nested objects/arrays
                 const sanitizedJson = JSON.stringify(arg, (key, value) => {
@@ -68,10 +71,16 @@ class ConsoleLogger {
         const prefix = prefixMatch ? prefixMatch[1] : null;
         const finalMessage = prefix ? message.substring(prefix.length).trim() : message;
 
+        // Omezení délky zprávy pro databázi
+        const MAX_MESSAGE_LENGTH = 1024; // Maximální délka zprávy pro sloupec TEXT
+        const truncatedMessage = finalMessage.length > MAX_MESSAGE_LENGTH
+            ? finalMessage.substring(0, MAX_MESSAGE_LENGTH - 3) + '...'
+            : finalMessage;
+
         this.logBuffer.push({
             level: mappedLevel,
             prefix: prefix,
-            message: finalMessage
+            message: truncatedMessage
         });
     }
 

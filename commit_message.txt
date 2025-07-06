@@ -1,6 +1,5 @@
-fix: Resolve logging issues and improve console output
+feat: Consolidate AI memory into AI_memory.md
 
-- Addressed a bug where some logging functions (specifically in the Analyzer) were not awaited, leading to program execution chaos.
-- Enhanced `ConsoleLogger` to remove all types of quotes (single, double, backticks) and backslashes from logged strings for cleaner output.
-- Adjusted prefix parsing in `ConsoleLogger` to correctly extract and trim messages.
-- Added `clear` command to `start.sh` for a cleaner console on script execution.
+- Created a new file `AI_memory.md` to consolidate all AI-related instructions, context, and memories.
+- Updated `CLAUDE.md` and `GEMINI.md` to import content from `AI_memory.md`, centralizing the memory system.
+- This change ensures consistent and persistent memory for the AI assistant across sessions and tools.

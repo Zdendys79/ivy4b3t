@@ -12,6 +12,8 @@ import readline from 'readline';
 import { Log } from './iv_log.class.js';
 import { db } from './iv_sql.js';
 
+process.stdin.setMaxListeners(20); // Zvýšení limitu pro posluchače kvůli interaktivnímu debuggeru
+
 export class InteractiveDebugger {
   constructor() {
     this.isEnabled = true; // Always enabled as integral part of the application
