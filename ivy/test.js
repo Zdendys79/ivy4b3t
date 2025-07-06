@@ -1,15 +1,12 @@
 /**
  * @file ivy/test.js
- * @brief Test script for debugging incidents and logging functionality.
+ * @brief Test script for console logging and offline buffer functionality.
  *
- * This script simulates various log messages (INFO, WARN, ERROR, DEBUG, SUCCESS)
- * and triggers the debug report generation process. It includes a test for
- * logging a very long message to verify database column limits and ensures
- * that detailed SQL error messages are correctly captured.
- *
- * It initializes the ConsoleLogger and database connection, then generates
- * log messages and simulates an error to trigger the interactive debugger
- * and save a debug report to the `debug_incidents` table.
+ * This script generates multiple log messages to test:
+ * - Batch flush when reaching 100+ messages
+ * - Time-based flush during 30s pause
+ * - Shutdown flush when program exits
+ * - Success messages for database operations
  */
 
 import { consoleLogger } from './iv_console_logger.class.js';
@@ -36,46 +33,45 @@ async function runTest() {
     }
     Log.success('[TEST]', 'Database initialized successfully.');
 
-    // Set up dummy context for debugger
-    const dummyUser = { id: 999, name: 'Test', surname: 'User' };
-    const dummyPage = {
-        url: () => 'http://test.example.com/debug',
-        title: async () => 'Test Debug Page',
-        screenshot: async () => Buffer.from('dummy_screenshot_data'),
-        content: async () => '<html><body><h1>Test Debug Page</h1></body></html>',
-        isClosed: () => false,
-        evaluate: async (fn) => {
-            if (fn.toString().includes('navigator.userAgent')) {
-                return 'TestUserAgent/1.0';
-            }
-            if (fn.toString().includes('window.capturedLogs')) {
-                return ['Dummy captured log 1', 'Dummy captured log 2'];
-            }
-            return null;
+    // Disable interactive debugger to avoid pauses during test
+    interactiveDebugger.enable(false);
+
+    Log.info('[TEST]', 'Generating 130+ log messages to test batch flush...');
+    
+    // Generate 130 log messages to trigger batch flush at 100
+    for (let i = 1; i <= 130; i++) {
+        const messageTypes = ['info', 'debug', 'success'];
+        const randomType = messageTypes[Math.floor(Math.random() * messageTypes.length)];
+        const randomData = {
+            iteration: i,
+            timestamp: Date.now(),
+            randomValue: Math.floor(Math.random() * 1000),
+            hostname: os.hostname(),
+            version: getVersion()
+        };
+        
+        Log[randomType]('[TEST]', `Message ${i}/130: Random test data:`, JSON.stringify(randomData));
+        
+        // Small delay to make it more realistic
+        if (i % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
-    };
-    setDebugContext(dummyUser, dummyPage);
-    interactiveDebugger.enable(true); // Ensure debugger is enabled
-
-    Log.info('[TEST]', 'Generating various log messages...');
-    Log.debug('[TEST]', 'This is a debug message.');
-    Log.warn('[TEST]', 'This is a warning message.');
-    Log.success('[TEST]', 'This is a success message.');
-
-    // Simulate a very long log message to trigger DB error
-    const longMessage = 'A'.repeat(2000); // Exceeds 1024 char limit for 'message' column
-    Log.info('[TEST]', `Attempting to log a very long message (${longMessage.length} chars)...`);
-    Log.info('[TEST]', longMessage); // This should trigger the DB error on flush
-
-    // Simulate a custom error to trigger interactive debugger and debug_incidents save
-    Log.info('[TEST]', 'Simulating a custom error to trigger debug report...');
-    try {
-        throw new Error('SimulatedError: This is a test error for debug report generation.');
-    } catch (err) {
-        await Log.error('[TEST]', err); // This should pause and try to save to debug_incidents
     }
-
-    Log.info('[TEST]', 'Test finished. Check console output and database for debug reports.');
+    
+    Log.info('[TEST]', 'Generated 130 messages. First batch should be flushed to database.');
+    Log.info('[TEST]', 'Now waiting 30 seconds to test time-based flush...');
+    
+    // Wait 30 seconds to test time-based flush
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    
+    Log.info('[TEST]', 'Creating final batch of messages before shutdown...');
+    
+    // Generate a few more messages before shutdown
+    for (let i = 1; i <= 15; i++) {
+        Log.info('[TEST]', `Final message ${i}/15: Testing shutdown flush`);
+    }
+    
+    Log.info('[TEST]', 'Test completed. Check console for flush confirmations and database for all entries.');
 
     // Ensure logs are flushed before exiting
     await consoleLogger.flush();
