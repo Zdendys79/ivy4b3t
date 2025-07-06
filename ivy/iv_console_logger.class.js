@@ -1,0 +1,94 @@
+
+import os from 'node:os';
+import { db } from './iv_sql.js';
+import { get as getVersion } from './iv_version.js';
+
+class ConsoleLogger {
+    constructor() {
+        this.logBuffer = [];
+        this.sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        this.versionCode = getVersion();
+        this.hostname = os.hostname();
+        this.originalConsole = {};
+        this.flushInterval = null;
+        this.isInitialized = false;
+    }
+
+    init() {
+        if (this.isInitialized) {
+            return;
+        }
+
+        const levels = ['log', 'warn', 'error', 'info', 'debug'];
+        levels.forEach(level => {
+            this.originalConsole[level] = console[level];
+            console[level] = (...args) => {
+                this.originalConsole[level](...args);
+                this.capture(level.toUpperCase(), args);
+            };
+        });
+
+        this.flushInterval = setInterval(() => this.flush(), 10000); // Flush every 10 seconds
+        process.on('beforeExit', () => this.flush());
+        
+        this.isInitialized = true;
+        this.originalConsole.log(`[ConsoleLogger] Initialized with session ID: ${this.sessionId}`);
+    }
+
+    capture(level, args) {
+        // Remap console.log to INFO, etc.
+        const mappedLevel = {
+            LOG: 'INFO',
+            WARN: 'WARN',
+            ERROR: 'ERROR',
+            INFO: 'INFO',
+            DEBUG: 'DEBUG'
+        }[level] || 'INFO';
+
+        const message = args.map(arg => {
+            if (typeof arg === 'object' && arg !== null) {
+                return JSON.stringify(arg, null, 2);
+            }
+            return String(arg);
+        }).join(' ');
+
+        // Simple parsing for prefix
+        const prefixMatch = message.match(/^(\[.*?\])/);
+        const prefix = prefixMatch ? prefixMatch[1] : null;
+        const finalMessage = prefix ? message.substring(prefix.length).trim() : message;
+
+        this.logBuffer.push({
+            level: mappedLevel,
+            prefix: prefix,
+            message: finalMessage
+        });
+    }
+
+    async flush() {
+        if (this.logBuffer.length === 0) {
+            return;
+        }
+
+        const logsToFlush = [...this.logBuffer];
+        this.logBuffer = [];
+
+        const params = logsToFlush.map(log => [
+            this.sessionId,
+            this.versionCode,
+            this.hostname,
+            log.level,
+            log.prefix,
+            log.message
+        ]);
+
+        try {
+            await db.safeExecute('logs.insertConsoleLogBatch', [params]);
+        } catch (err) {
+            this.originalConsole.error('[ConsoleLogger] Failed to flush logs to database:', err);
+            // Put logs back to buffer to try again later
+            this.logBuffer.unshift(...logsToFlush);
+        }
+    }
+}
+
+export const consoleLogger = new ConsoleLogger();

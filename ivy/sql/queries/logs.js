@@ -29,6 +29,11 @@ export const LOGS = {
     LIMIT ?
   `,
 
+  insertConsoleLogBatch: `
+    INSERT INTO log_console (session_id, version_code, hostname, level, prefix, message)
+    VALUES ?
+  `,
+
   getRecentSystemErrors: `
     SELECT time, hostname, title, text, data
     FROM log_s
@@ -36,6 +41,8 @@ export const LOGS = {
     ORDER BY time DESC
     LIMIT ?
   `,
+
+  customCleanup: ``,
 
   // ===== UŽIVATELSKÝ LOG (log_u) =====
 

@@ -18,12 +18,17 @@ import { db } from './iv_sql.js'
 import { get as getVersion } from './iv_version.js';
 import { tick as workerTick } from './iv_worker.js';
 import { Log } from './iv_log.class.js';
+import { consoleLogger } from './iv_console_logger.class.js';
 
 const hostname = os.hostname();
 const versionCode = getVersion();
 
+// Initialize the console logger
+consoleLogger.init();
+
 Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode}`);
+Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
 (async () => {
   while (true) {
