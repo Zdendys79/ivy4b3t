@@ -1,3 +1,5 @@
-fix: Ensure full SQL error details are logged
+feat: Add debug incident logging test script and improve error logging
 
-- Modified `iv_log.class.js` to pass the original error object directly to `console.error`, allowing `ConsoleLogger` to capture and log complete SQL error messages, including database-specific details.
+- Created `ivy/test_debug_incidents.js` to simulate various log messages and trigger debug report generation, including testing long messages for database column limits.
+- Created `ivy/test.sh` as a wrapper to run the new test script.
+- Further refined error logging in `ivy/iv_log.class.js` to ensure full SQL error details are captured and displayed.
