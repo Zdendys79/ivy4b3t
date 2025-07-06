@@ -12,6 +12,9 @@ clear
 # 📂 KONFIGURACE A INICIALIZACE
 # ===========================================
 
+# Nastav REPO_DIR na aktuální pracovní adresář
+REPO_DIR="$(pwd)"
+
 # Import společného Git modulu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GIT_COMMON_PATH="$SCRIPT_DIR/git-common.sh"
@@ -147,6 +150,14 @@ cd "$TARGET_DIR" || {
     echo "[TEST] ❌ Nepodařilo se přejít do $TARGET_DIR"
     exit 1
 }
+
+# Instalace Node.js závislostí v cílovém adresáři
+echo "[TEST] 📦 Instaluji Node.js závislosti v $TARGET_DIR..."
+if ! npm install; then
+    echo "[TEST] ❌ Instalace Node.js závislostí selhala!"
+    exit 1
+fi
+echo "[TEST] ✅ Node.js závislosti úspěšně nainstalovány."
 
 # Zobraz informace o verzi
 echo "[TEST] 📋 Informace o verzi:"

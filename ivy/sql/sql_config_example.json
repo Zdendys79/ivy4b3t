@@ -1,7 +1,6 @@
 {
-    "README":"Copy/rename this file to sql_config.json in the project folder /ivy/sql. Type in valid values ​​and delete this line if necessary.",
-    "host":"localhost",
-    "user":"database_user",
-    "password":"unbreakable_database_password",
-    "database":"database_name"
+    "host":"83.167.224.200",
+    "user":"claude",
+    "password":"xI4PIY99Yl0TyWJASLQrwd15+v9P3cY7eHba",
+    "database":"ivy"
 }

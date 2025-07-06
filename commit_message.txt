@@ -1,10 +1,8 @@
-fix: Replace batch insert with transaction-based individual inserts
+fix: Resolve logging and database connection issues
 
-- Change insertConsoleLogBatch to insertConsoleLog for single record insert
-- Use database transaction with individual INSERT queries for each log
-- Maintain atomicity while avoiding MariaDB batch insert syntax issues
-- Ensure all logs are inserted or none on transaction failure
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+- Fixed `ReferenceError: logsToFlush is not defined` by moving its declaration.
+- Implemented a `transaction` function in `iv_sql.js` for batch inserts.
+- Updated `iv_console_logger.class.js` to use the new `transaction` function.
+- Corrected `test.sh` to set `REPO_DIR` to the current working directory.
+- Added `npm install` to `test.sh` to ensure dependencies are installed on the VM.
+- Updated `sql_config_example.json` with correct database credentials and host.

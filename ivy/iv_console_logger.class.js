@@ -1,6 +1,6 @@
 
 import os from 'node:os';
-import { db } from './iv_sql.js';
+import { db, transaction } from './iv_sql.js';
 import { get as getVersion } from './iv_version.js';
 
 class ConsoleLogger {
@@ -107,14 +107,15 @@ class ConsoleLogger {
 
         this.isFlushingInProgress = true;
 
+        let logsToFlush = [];
         try {
-            const logsToFlush = [...this.logBuffer];
+            logsToFlush = [...this.logBuffer];
             this.logBuffer = [];
 
             // Use transaction for batch insert
-            await db.transaction(async (connection) => {
+            await transaction(async (connection) => {
                 for (const log of logsToFlush) {
-                    await connection.query(
+                    await connection.execute(
                         db.getQuery('logs.insertConsoleLog'),
                         [this.sessionId, this.versionCode, this.hostname, log.level, log.prefix, log.message]
                     );
