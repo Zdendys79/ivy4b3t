@@ -37,12 +37,12 @@ const pool = mysql.createPool({
 
 /**
  * Zkrátí dlouhé texty pro logování.
- * @param {string | any[]} data - Data k zkrácení (string nebo pole).
+ * @param {string | any} data - Data k zkrácení.
  * @param {number} maxLines - Maximální počet řádků pro string.
- * @param {number} maxArrayItems - Maximální počet prvků pro pole.
+ * @param {number} maxJsonLength - Maximální délka pro JSON string.
  * @returns {string} Zkrácený string.
  */
-function _truncateLog(data, maxLines = 5, maxArrayItems = 10) {
+function _truncateLog(data, maxLines = 10, maxJsonLength = 500) {
     if (typeof data === 'string') {
         const lines = data.split('\n');
         if (lines.length > maxLines) {
@@ -53,16 +53,15 @@ function _truncateLog(data, maxLines = 5, maxArrayItems = 10) {
         return data;
     }
 
-    if (Array.isArray(data)) {
-        if (data.length > maxArrayItems) {
-            const head = data.slice(0, 5);
-            const tail = data.slice(-5);
-            return JSON.stringify(head) + ' ... ' + JSON.stringify(tail);
+    try {
+        const jsonString = JSON.stringify(data);
+        if (jsonString.length > maxJsonLength) {
+            return `${jsonString.substring(0, maxJsonLength)}...`;
         }
-        return JSON.stringify(data);
+        return jsonString;
+    } catch (e) {
+        return String(data);
     }
-
-    return String(data);
 }
 
 

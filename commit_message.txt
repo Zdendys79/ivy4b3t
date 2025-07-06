@@ -1,0 +1,10 @@
+fix(ConsoleLogger): Correct batch insert parameter wrapping
+
+- The `insertConsoleLogBatch` query was failing due to incorrect parameter wrapping. The array of log entries was being wrapped in an additional array, causing the `mysql2` library to fail.
+- The call in `iv_console_logger.class.js` has been corrected to pass the parameters directly.
+- This resolves the primary issue of failing log flushes and the resulting debugger pauses.
+
+refactor(SQL): Improve log truncation for large data
+
+- The `_truncateLog` helper function in `iv_sql.js` has been refactored to reliably shorten long log messages, especially large JSON payloads for batch inserts.
+- This prevents the console from being flooded with unreadable data when debugging.
