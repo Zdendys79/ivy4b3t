@@ -1,5 +1,5 @@
-fix(ConsoleLogger): Sanitize log messages to prevent SQL errors
+fix(Core): Final stabilization and bug fixes
 
-- All double quotes in captured console messages are now replaced with single quotes before being added to the log buffer.
-- This prevents invalid SQL from being generated during batch log inserts, which was the root cause of the recurring `logs.insertConsoleLogBatch` query failures.
-- This change should finally stabilize the console logging mechanism and prevent the debugger from being triggered by logging failures.
+- fix(ConsoleLogger): Added a `[LOGGER-FAIL]` prefix to error messages originating from the logger itself, making them clearly distinguishable from application errors.
+- fix(Debugger): Resolved a memory leak by properly cleaning up `stdin` listeners after user input. This prevents the `MaxListenersExceededWarning` and ensures the debugger is stable.
+- fix(Support): Corrected a `wait is not defined` runtime error by adding the proper `iv_wait.js` module import to `iv_support.js`. This resolves the crash that occurred after successfully fetching a message from UTIO.

@@ -104,50 +104,53 @@ export class InteractiveDebugger {
     return new Promise((resolve) => {
       const rl = readline.createInterface({
         input: process.stdin,
-        output: process.stdout
+        output: process.stdout,
+        terminal: false // We handle raw mode ourselves
       });
 
       let resolved = false;
+
+      const cleanup = () => {
+        if (timeout) clearTimeout(timeout);
+        process.stdin.setRawMode(false);
+        process.stdin.removeListener('data', onData);
+        process.stdin.pause();
+        rl.close();
+      };
+
+      const onData = (key) => {
+        const choice = key.toString().toLowerCase();
+        if (['s', 'c', 'd', 'q'].includes(choice)) {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(choice);
+          }
+        }
+      };
+
+      const onSigint = () => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve('c'); // Continue on Ctrl+C
+        }
+      };
 
       // Timeout
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          process.stdin.setRawMode(false);
-          process.stdin.pause();
-          rl.close();
+          cleanup();
           resolve('timeout');
         }
       }, timeoutSeconds * 1000);
 
-      // User input
+      // Setup listeners
       process.stdin.setRawMode(true);
+      process.stdin.on('data', onData);
+      rl.on('SIGINT', onSigint);
       process.stdin.resume();
-      process.stdin.on('data', (key) => {
-        const choice = key.toString().toLowerCase();
-        if (['s', 'c', 'd', 'q'].includes(choice)) {
-          if (!resolved) {
-            resolved = true;
-            clearTimeout(timeout);
-            process.stdin.setRawMode(false);
-            process.stdin.pause();
-            rl.close();
-            resolve(choice);
-          }
-        }
-      });
-
-      // Handle Ctrl+C gracefully
-      rl.on('SIGINT', () => {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          process.stdin.setRawMode(false);
-          process.stdin.pause();
-          rl.close();
-          resolve('c'); // Continue on Ctrl+C
-        }
-      });
     });
   }
 

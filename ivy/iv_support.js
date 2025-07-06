@@ -11,7 +11,7 @@
 import md5 from 'md5';
 
 // Local modules - named imports (UPDATED)
-import { timeout } from './iv_wait.js';
+import * as wait from './iv_wait.js';
 import { db } from './iv_sql.js';
 import { Log } from './iv_log.class.js';
 
