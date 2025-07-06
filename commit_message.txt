@@ -1,9 +1,12 @@
-fix: Replace db.getQuery() with QueryUtils.getQuery() in ConsoleLogger
+feat: Add offline buffer system to ConsoleLogger with database failover
 
-- Add QueryUtils import to iv_console_logger.class.js
-- Replace db.getQuery('logs.insertConsoleLog') with QueryUtils.getQuery()
-- Use modular SQL system instead of deprecated db method
-- Fix console logger database flush functionality
+- Implement persistent file-based logging when database unavailable
+- Add retry mechanism with exponential backoff (3 attempts, 5s delay)
+- Create recovery system to process pending logs on database restoration
+- Add graceful shutdown with buffer preservation across restarts
+- Organize offline logs in pending/processing/failed directories
+- Add success messages for database operations and recovery status
+- Ensure continuity across application restarts with session tracking
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
