@@ -1,4 +1,9 @@
-revert: Revert accidental sql_config.json copy in test.sh
+fix: Correct REPO_DIR configuration in test.sh
 
-- Reverted the change in `test.sh` that copied `sql_config_example.json` to `sql_config.json`.
-- The `sql_config.json` file is now expected to be created manually by the administrator during installation, as it contains sensitive data.
+- Fix REPO_DIR path to match start.sh configuration
+- Change from $(dirname "$SCRIPT_DIR") to ~/git/ivy4b3t
+- Ensures proper Git repository access in test script
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

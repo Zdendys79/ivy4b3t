@@ -12,9 +12,6 @@ clear
 # 📂 KONFIGURACE A INICIALIZACE
 # ===========================================
 
-# Nastav REPO_DIR na aktuální pracovní adresář
-REPO_DIR="$(pwd)"
-
 # Import společného Git modulu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GIT_COMMON_PATH="$SCRIPT_DIR/git-common.sh"
