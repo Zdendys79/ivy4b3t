@@ -32,6 +32,41 @@ const pool = mysql.createPool({
 });
 
 // =========================================================
+// HELPER FUNCTIONS
+// =========================================================
+
+/**
+ * Zkrátí dlouhé texty pro logování.
+ * @param {string | any[]} data - Data k zkrácení (string nebo pole).
+ * @param {number} maxLines - Maximální počet řádků pro string.
+ * @param {number} maxArrayItems - Maximální počet prvků pro pole.
+ * @returns {string} Zkrácený string.
+ */
+function _truncateLog(data, maxLines = 5, maxArrayItems = 10) {
+    if (typeof data === 'string') {
+        const lines = data.split('\n');
+        if (lines.length > maxLines) {
+            const head = lines.slice(0, 2).join('\n');
+            const tail = lines.slice(-3).join('\n');
+            return `${head}\n...\n${tail}`;
+        }
+        return data;
+    }
+
+    if (Array.isArray(data)) {
+        if (data.length > maxArrayItems) {
+            const head = data.slice(0, 5);
+            const tail = data.slice(-5);
+            return JSON.stringify(head) + ' ... ' + JSON.stringify(tail);
+        }
+        return JSON.stringify(data);
+    }
+
+    return String(data);
+}
+
+
+// =========================================================
 // CORE DATABASE FUNCTIONS
 // =========================================================
 
@@ -49,7 +84,7 @@ async function executeQuery(queryPath, params = []) {
   }
 
   if (debugMode) {
-    Log.debug('[SQL]', `Executing query: ${queryPath} with params: ${JSON.stringify(params)}`);
+    Log.debug('[SQL]', `Executing query: ${queryPath} with params: ${_truncateLog(params)}`);
   }
 
   try {
@@ -64,8 +99,8 @@ async function executeQuery(queryPath, params = []) {
   } catch (err) {
     if (debugMode) {
       await Log.error('[SQL][DEBUG]', `Query failed: ${queryPath}`);
-      await Log.error('[SQL][DEBUG]', `SQL: ${query}`);
-      await Log.error('[SQL][DEBUG]', `Params: ${JSON.stringify(params)}`);
+      await Log.error('[SQL][DEBUG]', `SQL: ${_truncateLog(query)}`);
+      await Log.error('[SQL][DEBUG]', `Params: ${_truncateLog(params)}`);
       await Log.error('[SQL][DEBUG]', `Error: ${err.message}`);
       if (err.code) await Log.error('[SQL][DEBUG]', `Error code: ${err.code}`);
       if (err.sqlState) await Log.error('[SQL][DEBUG]', `SQL State: ${err.sqlState}`);

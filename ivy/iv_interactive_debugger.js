@@ -113,38 +113,37 @@ export class InteractiveDebugger {
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true;
+          process.stdin.setRawMode(false);
+          process.stdin.pause();
           rl.close();
           resolve('timeout');
         }
       }, timeoutSeconds * 1000);
 
       // User input
-      const askForInput = () => {
-        rl.question('Enter your choice: ', (answer) => {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.on('data', (key) => {
+        const choice = key.toString().toLowerCase();
+        if (['s', 'c', 'd', 'q'].includes(choice)) {
           if (!resolved) {
-            const trimmed = answer.trim().toLowerCase();
-            // Only accept valid choices
-            if (['s', 'c', 'd', 'q'].includes(trimmed)) {
-              resolved = true;
-              clearTimeout(timeout);
-              rl.close();
-              resolve(trimmed);
-            } else {
-              // Invalid input - ask again
-              console.log(`[DEBUGGER] NO reaction! Use s/c/d/q`);
-              askForInput(); // Ask again
-            }
+            resolved = true;
+            clearTimeout(timeout);
+            process.stdin.setRawMode(false);
+            process.stdin.pause();
+            rl.close();
+            resolve(choice);
           }
-        });
-      };
-      
-      askForInput();
+        }
+      });
 
       // Handle Ctrl+C gracefully
       rl.on('SIGINT', () => {
         if (!resolved) {
           resolved = true;
           clearTimeout(timeout);
+          process.stdin.setRawMode(false);
+          process.stdin.pause();
           rl.close();
           resolve('c'); // Continue on Ctrl+C
         }
