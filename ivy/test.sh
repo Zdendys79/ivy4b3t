@@ -144,7 +144,7 @@ main_loop() {
                     echo "[START] ❌ Aktualizace souborů selhala!"
                     sleep 5
                     continue
-                }
+                fi
             fi
         fi
 

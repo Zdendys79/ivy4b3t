@@ -1,3 +1,17 @@
+/**
+ * @file ivy/test.js
+ * @brief Test script for debugging incidents and logging functionality.
+ *
+ * This script simulates various log messages (INFO, WARN, ERROR, DEBUG, SUCCESS)
+ * and triggers the debug report generation process. It includes a test for
+ * logging a very long message to verify database column limits and ensures
+ * that detailed SQL error messages are correctly captured.
+ *
+ * It initializes the ConsoleLogger and database connection, then generates
+ * log messages and simulates an error to trigger the interactive debugger
+ * and save a debug report to the `debug_incidents` table.
+ */
+
 import { consoleLogger } from './iv_console_logger.class.js';
 import { Log } from './iv_log.class.js';
 import { initializeDatabase, db } from './iv_sql.js';
