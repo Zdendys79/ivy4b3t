@@ -1,8 +1,4 @@
-fix: Resolve logging and database connection issues
+revert: Revert accidental sql_config.json copy in test.sh
 
-- Fixed `ReferenceError: logsToFlush is not defined` by moving its declaration.
-- Implemented a `transaction` function in `iv_sql.js` for batch inserts.
-- Updated `iv_console_logger.class.js` to use the new `transaction` function.
-- Corrected `test.sh` to set `REPO_DIR` to the current working directory.
-- Added `npm install` to `test.sh` to ensure dependencies are installed on the VM.
-- Updated `sql_config_example.json` with correct database credentials and host.
+- Reverted the change in `test.sh` that copied `sql_config_example.json` to `sql_config.json`.
+- The `sql_config.json` file is now expected to be created manually by the administrator during installation, as it contains sensitive data.

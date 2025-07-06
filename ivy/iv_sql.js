@@ -14,7 +14,7 @@ import { QueryBuilder } from './iv_querybuilder.class.js';
 import { Log } from './iv_log.class.js';
 
 
-const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config_example.json'));
+const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
 
 const pool = mysql.createPool({
   host: sql_setup.host,

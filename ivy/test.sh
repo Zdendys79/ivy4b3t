@@ -151,6 +151,8 @@ cd "$TARGET_DIR" || {
     exit 1
 }
 
+
+
 # Instalace Node.js závislostí v cílovém adresáři
 echo "[TEST] 📦 Instaluji Node.js závislosti v $TARGET_DIR..."
 if ! npm install; then
