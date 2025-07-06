@@ -1,4 +1,3 @@
-fix: Improve SQL error logging detail in ConsoleLogger
+fix: Ensure full SQL error details are logged
 
-- Refined the sanitization logic in `iv_console_logger.class.js` to ensure detailed SQL error messages are preserved and correctly displayed in logs.
-- Modified `capture` method to log simple strings (including error messages) as-is, and to only replace backslashes within strings when serializing objects to JSON, without removing quotes from the overall JSON string.
+- Modified `iv_log.class.js` to pass the original error object directly to `console.error`, allowing `ConsoleLogger` to capture and log complete SQL error messages, including database-specific details.

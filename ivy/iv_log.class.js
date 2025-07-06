@@ -52,12 +52,13 @@ export class Log {
   }
 
   static async error(prefix, err) {
+    // Pass the original error object to console.error so ConsoleLogger can capture it
+    console.error(err);
+    
+    // The rest of the logic for triggerDebugger remains, as it expects a message string
     const type = err?.name || typeof err;
     const message = err?.message || String(err);
     const stack = err?.stack ? '\n' + err.stack : '';
-    console.error(`${now()} ${prefix} ${icons.error} [${type}]: ${message}${stack}`);
-    
-    // Trigger interactive debugger for errors
     await this.triggerDebugger('ERROR', `${prefix}: ${message}`, { type, stack, prefix });
   }
 
