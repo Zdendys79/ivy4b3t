@@ -1,5 +1,6 @@
-fix(ConsoleLogger): Implement robust recursive sanitization
+fix: Resolve logging issues and improve console output
 
-- Replaced the simple string replacement with a recursive JSON.stringify replacer.
-- This new implementation traverses nested objects and arrays, replacing all occurrences of double quotes and backslashes to ensure that the resulting string is always safe for SQL insertion.
-- This definitively resolves the recurring `logs.insertConsoleLogBatch` failures, which were the primary source of application instability and debugger spam.
+- Addressed a bug where some logging functions (specifically in the Analyzer) were not awaited, leading to program execution chaos.
+- Enhanced `ConsoleLogger` to remove all types of quotes (single, double, backticks) and backslashes from logged strings for cleaner output.
+- Adjusted prefix parsing in `ConsoleLogger` to correctly extract and trim messages.
+- Added `clear` command to `start.sh` for a cleaner console on script execution.

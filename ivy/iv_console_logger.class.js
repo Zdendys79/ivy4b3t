@@ -50,21 +50,23 @@ class ConsoleLogger {
                 // Use a recursive replacer to handle nested objects/arrays
                 const sanitizedJson = JSON.stringify(arg, (key, value) => {
                     if (typeof value === 'string') {
-                        return value.replace(/"/g, "'").replace(/\\/g, '/');
+                        // Remove all types of quotes and backslashes
+                        return value.replace(/["'`]/g, '').replace(/\\/g, '/');
                     }
                     return value;
                 }, 2);
-                return sanitizedJson;
+                // Also remove quotes from the final JSON string itself
+                return sanitizedJson.replace(/["'`]/g, '');
             } catch (e) {
                 // Fallback for non-serializable objects
-                return String(arg).replace(/"/g, "'").replace(/\\/g, '/');
+                return String(arg).replace(/["'`]/g, '').replace(/\\/g, '/');
             }
         }).join(' ');
 
         // Simple parsing for prefix
-        const prefixMatch = message.match(/^'(\[.*?\])'/); // Adjusted for single quotes
+        const prefixMatch = message.match(/^(\[.*?\])/);
         const prefix = prefixMatch ? prefixMatch[1] : null;
-        const finalMessage = prefix ? message.substring(prefix.length + 2).trim() : message;
+        const finalMessage = prefix ? message.substring(prefix.length).trim() : message;
 
         this.logBuffer.push({
             level: mappedLevel,
