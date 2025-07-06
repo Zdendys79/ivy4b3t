@@ -1,9 +1,9 @@
-fix: Add chmod +x to restore execute permissions after file sync
+fix: Enable interactive terminal in debugger to wait for user input
 
-- Add chmod +x for all .sh files after update_and_sync operation
-- Prevents "Permission denied" errors when scripts restart after self-update
-- Applied to both start.sh and test.sh scripts
-- Ensures scripts remain executable after Git synchronization
+- Change terminal: false to terminal: true in readline.createInterface
+- Fixes issue where debugger options didn't wait for user input
+- Interactive debugger now properly pauses for user choice (s/c/d/q)
+- Resolves auto-continue behavior that ignored user interaction
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

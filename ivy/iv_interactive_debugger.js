@@ -107,7 +107,7 @@ export class InteractiveDebugger {
       const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
-        terminal: false // We handle raw mode ourselves
+        terminal: true // Enable interactive terminal
       });
 
       let resolved = false;
