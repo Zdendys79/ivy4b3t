@@ -132,7 +132,7 @@ main_loop() {
             if [[ "$CURRENT_HASH" != "$NEW_HASH" ]]; then
                 echo "[START] 🔄 Skript byl aktualizován (nový hash: ${NEW_HASH:0:8}...), restartuji..."
                 export SCRIPT_RESTARTED=1
-                exec "$0" "$@"  # Restart sebe sama
+                exec "$TARGET_DIR/start.sh" "$@"  # Restart z cílového adresáře
             else
                 echo "[START] ✅ Skript je aktuální, pokračuji..."
             fi

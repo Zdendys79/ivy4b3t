@@ -1,10 +1,9 @@
-feat: Add self-update mechanism to test.sh and start.sh scripts
+fix: Correct self-update restart path in test.sh and start.sh
 
-- Implement SHA256 hash-based self-update detection for both scripts
-- Add SCRIPT_RESTARTED environment variable to prevent infinite loops
-- Scripts now automatically restart when updated from Git repository
-- Display hash comparison info for debugging (first 8 characters)
-- Ensure only one restart per execution cycle using environment flag
+- Fix exec path to use TARGET_DIR instead of $0 for restart
+- Prevents "No such file or directory" error when restarting from Git repo path
+- Ensures scripts restart from correct working directory (~/ivy/)
+- Resolves issue where script tried to exec from source Git repository location
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
