@@ -46,10 +46,14 @@ class ConsoleLogger {
         }[level] || 'INFO';
 
         const message = args.map(arg => {
+            let strArg;
             if (typeof arg === 'object' && arg !== null) {
-                return JSON.stringify(arg, null, 2);
+                strArg = JSON.stringify(arg, null, 2);
+            } else {
+                strArg = String(arg);
             }
-            return String(arg);
+            // Replace double quotes with single quotes to prevent SQL errors
+            return strArg.replace(/"/g, "'");
         }).join(' ');
 
         // Simple parsing for prefix

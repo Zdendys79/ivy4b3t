@@ -1,5 +1,5 @@
-fix(Core): Stabilize logging and restore missing function
+fix(ConsoleLogger): Sanitize log messages to prevent SQL errors
 
-- fix(ConsoleLogger): Prevent recursive error logging by using `originalConsole.error` in the flush catch block. This stops the logger from trying to log its own failures, resolving the primary cause of debugger spam and stabilizing the application.
-- fix(QueryBuilder): Re-introduce `db.verifyMsg` by creating an alias to the existing `db.verifyMessage` method. This restores functionality for code calling the legacy function name, resolving the `db.verifyMsg is not a function` error.
-- refactor(SQL): The `verifyMsg` function has been restored in `iv_sql.js` to ensure it is available for direct calls if needed.
+- All double quotes in captured console messages are now replaced with single quotes before being added to the log buffer.
+- This prevents invalid SQL from being generated during batch log inserts, which was the root cause of the recurring `logs.insertConsoleLogBatch` query failures.
+- This change should finally stabilize the console logging mechanism and prevent the debugger from being triggered by logging failures.
