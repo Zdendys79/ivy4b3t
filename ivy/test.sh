@@ -162,8 +162,8 @@ main_loop() {
         fi
 
         # Kontrola hlavního souboru
-        if [[ ! -f "test_debug_incidents.js" ]]; then
-            echo "[START] ❌ Hlavní soubor test_debug_incidents.js nenalezen v $TARGET_DIR"
+        if [[ ! -f "test.js" ]]; then
+            echo "[START] ❌ Hlavní soubor test.js nenalezen v $TARGET_DIR"
             sleep 5
             continue
         fi
@@ -173,7 +173,7 @@ main_loop() {
         echo ""
 
         # Spuštění testovacího skriptu
-        node test_debug_incidents.js
+        node test.js
 
         local exit_code=$?
         echo ""

@@ -1,5 +1,5 @@
-feat: Add debug incident logging test script and improve error logging
+refactor: Rename test script to ivy/test.js and update references
 
-- Created `ivy/test_debug_incidents.js` to simulate various log messages and trigger debug report generation, including testing long messages for database column limits.
-- Created `ivy/test.sh` as a wrapper to run the new test script.
-- Further refined error logging in `ivy/iv_log.class.js` to ensure full SQL error details are captured and displayed.
+- Renamed `ivy/test_debug_incidents.js` to `ivy/test.js` to adhere to the new naming convention for test files.
+- Updated `ivy/test.sh` to correctly reference the new `ivy/test.js` file.
+- Confirmed that no passwords are stored directly in `AI_memory.md`, adhering to security guidelines.
