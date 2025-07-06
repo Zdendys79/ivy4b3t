@@ -1,8 +1,8 @@
-fix: Correct REPO_DIR configuration in test.sh
+test: Verify commit.sh script with file parameter
 
-- Fix REPO_DIR path to match start.sh configuration
-- Change from $(dirname "$SCRIPT_DIR") to ~/git/ivy4b3t
-- Ensures proper Git repository access in test script
+- Testing automated commit script with message file
+- Confirming proper usage: ./commit.sh commit_message.txt
+- Following correct commit procedures from instructions
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
