@@ -107,6 +107,11 @@ echo ""
 # Kontrola, zda už proběhl restart
 if [[ "$SCRIPT_RESTARTED" == "1" ]]; then
     echo "[TEST] ℹ️  Skript již byl restartován, pokračuji bez další aktualizace"
+    # Pouze synchronizace souborů bez self-update kontroly
+    if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
+        echo "[TEST] ❌ Aktualizace souborů selhala!"
+        exit 1
+    fi
 else
     # Před git pull - uloží hash aktuálního scriptu
     CURRENT_HASH=$(sha256sum "$0" | cut -d' ' -f1)

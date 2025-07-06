@@ -1,9 +1,9 @@
-fix: Correct self-update restart path in test.sh and start.sh
+fix: Restore self-update mechanism in test.sh for development workflow
 
-- Fix exec path to use TARGET_DIR instead of $0 for restart
-- Prevents "No such file or directory" error when restarting from Git repo path
-- Ensures scripts restart from correct working directory (~/ivy/)
-- Resolves issue where script tried to exec from source Git repository location
+- Add back self-update mechanism that was incorrectly removed
+- Ensure test.sh synchronizes files even after restart to get latest code
+- Maintain essential auto-update for VPS-00 development to Test VM workflow
+- Required for testing latest code changes from development environment
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
