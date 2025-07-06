@@ -1,5 +1,4 @@
-feat: Consolidate AI memory into AI_memory.md
+fix: Improve SQL error logging detail in ConsoleLogger
 
-- Created a new file `AI_memory.md` to consolidate all AI-related instructions, context, and memories.
-- Updated `CLAUDE.md` and `GEMINI.md` to import content from `AI_memory.md`, centralizing the memory system.
-- This change ensures consistent and persistent memory for the AI assistant across sessions and tools.
+- Refined the sanitization logic in `iv_console_logger.class.js` to ensure detailed SQL error messages are preserved and correctly displayed in logs.
+- Modified `capture` method to log simple strings (including error messages) as-is, and to only replace backslashes within strings when serializing objects to JSON, without removing quotes from the overall JSON string.

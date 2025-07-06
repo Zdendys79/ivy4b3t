@@ -49,20 +49,24 @@ class ConsoleLogger {
             if (arg instanceof Error) {
                 return `[${arg.name}]: ${arg.message}${arg.stack ? '\n' + arg.stack : ''}`;
             }
+            if (typeof arg === 'string') {
+                // For simple strings, return as is. No sanitization needed here.
+                return arg;
+            }
             try {
-                // Use a recursive replacer to handle nested objects/arrays
+                // For objects/arrays, stringify them.
+                // Only replace backslashes within strings in JSON, not quotes.
                 const sanitizedJson = JSON.stringify(arg, (key, value) => {
                     if (typeof value === 'string') {
-                        // Remove all types of quotes and backslashes
-                        return value.replace(/["'`]/g, '').replace(/\\/g, '/');
+                        return value.replace(/\\/g, '/');
                     }
                     return value;
                 }, 2);
-                // Also remove quotes from the final JSON string itself
-                return sanitizedJson.replace(/["'`]/g, '');
+                return sanitizedJson;
             } catch (e) {
-                // Fallback for non-serializable objects
-                return String(arg).replace(/["'`]/g, '').replace(/\\/g, '/');
+                // Fallback for non-serializable objects, return as string.
+                // Only replace backslashes, not quotes.
+                return String(arg).replace(/\\/g, '/');
             }
         }).join(' ');
 
