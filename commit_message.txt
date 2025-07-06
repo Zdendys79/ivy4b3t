@@ -1,8 +1,9 @@
-fix: Correct batch insert parameter format for MariaDB
+fix: Replace batch insert with transaction-based individual inserts
 
-- Remove array wrapping from batch insert parameters in ConsoleLogger
-- Fix SQL parameter passing to match MariaDB bulk insert expectations
-- Resolve "VALUES ?" syntax error in batch logging operations
+- Change insertConsoleLogBatch to insertConsoleLog for single record insert
+- Use database transaction with individual INSERT queries for each log
+- Maintain atomicity while avoiding MariaDB batch insert syntax issues
+- Ensure all logs are inserted or none on transaction failure
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
