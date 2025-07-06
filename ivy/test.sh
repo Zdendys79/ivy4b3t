@@ -53,7 +53,6 @@ basic_update_git() {
         echo "[START] CHYBA: $REPO_DIR není git repozitář!"
         return 1
     fi
-    }
 
     cd "$REPO_DIR" || return 1
     git fetch origin "$BRANCH" || return 1

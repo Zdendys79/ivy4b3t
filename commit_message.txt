@@ -1,4 +1,3 @@
-feat: Add git status after commit in commit.sh
+fix: Correct syntax errors in basic_update_git and basic_sync_files in test.sh
 
-- Added `git status` command at the end of `commit.sh` to explicitly show the repository's clean state after a successful commit and push.
-- This provides clear confirmation of the post-commit status, addressing user feedback.
+- Resolved `return: can only 'return' from a function or sourced script` and `syntax error near unexpected token '}'` by correctly closing `basic_update_git` and `basic_sync_files` functions in `ivy/test.sh`.
