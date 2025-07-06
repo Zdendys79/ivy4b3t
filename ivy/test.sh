@@ -150,13 +150,7 @@ cd "$TARGET_DIR" || {
 
 
 
-# Instalace Node.js závislostí v cílovém adresáři
-echo "[TEST] 📦 Instaluji Node.js závislosti v $TARGET_DIR..."
-if ! npm install; then
-    echo "[TEST] ❌ Instalace Node.js závislostí selhala!"
-    exit 1
-fi
-echo "[TEST] ✅ Node.js závislosti úspěšně nainstalovány."
+# Node.js závislosti by měly být již nainstalovány aktualizačním skriptem
 
 # Zobraz informace o verzi
 echo "[TEST] 📋 Informace o verzi:"

@@ -1,11 +1,9 @@
-test: Update test.js to verify console logging flush mechanisms
+refactor: Remove npm install from test.sh script
 
-- Generate 130+ log messages to test batch flush at 100 messages
-- Add 30 second pause to test time-based flush operations
-- Create final message batch to test shutdown flush
-- Remove error generation and interactive debugger pauses
-- Use random message types (info, debug, success) with realistic data
-- Test all three flush triggers: batch size, time, and program exit
+- Remove redundant npm install step from test script
+- Dependencies should be managed by installation/update scripts
+- Avoid masking potential dependency issues in setup scripts
+- Simplify test execution flow
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
