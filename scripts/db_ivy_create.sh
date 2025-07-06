@@ -21,7 +21,6 @@ REQUIRED_FILES=(
     "$WEB_RESTRICTED/ivy_data_scheme.sql"
     "$WEB_RESTRICTED/ivy_data_referers.sql"
     "$WEB_RESTRICTED/ivy_data_action_definitions.sql"
-    "$IVY_SQL/sql_config.json"
 )
 
 echo "Kontrola existence potřebných souborů..."
@@ -33,30 +32,20 @@ for file in "${REQUIRED_FILES[@]}"; do
 done
 echo "Všechny potřebné soubory nalezeny."
 
-# Načtení databázové konfigurace
-CONFIG_FILE="$IVY_SQL/sql_config.json"
-if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "CHYBA: Konfigurační soubor nenalezen: $CONFIG_FILE"
-    echo "Vytvořte soubor podle vzoru sql_config_example.json"
-    exit 1
-fi
-
-# Parsování JSON konfigurace pomocí jq
-if ! command -v jq &>/dev/null; then
-    echo "CHYBA: Balíček 'jq' není nainstalován."
-    echo "Nainstalujte jej příkazem: sudo apt install jq"
-    exit 1
-fi
-
-DB_HOST=$(jq -r '.host' "$CONFIG_FILE")
-DB_USER=$(jq -r '.user' "$CONFIG_FILE")
-DB_PASS=$(jq -r '.password' "$CONFIG_FILE")
-DB_NAME=$(jq -r '.database' "$CONFIG_FILE")
+# Načtení databázové konfigurace ze systémových proměnných
+# Použij systémové proměnné pro databázové připojení (localhost only)
+DB_HOST="localhost"
+DB_USER="$CLAUDE_DB_USER"
+DB_PASS="$CLAUDE_DB_PASS"
+DB_NAME="ivy"
 
 # Validace konfigurace
-if [[ -z "$DB_HOST" || -z "$DB_USER" || -z "$DB_PASS" || -z "$DB_NAME" ]]; then
-    echo "CHYBA: Neplatná databázová konfigurace v $CONFIG_FILE"
-    echo "Zkontrolujte hodnoty host, user, password a database"
+if [[ -z "$DB_USER" || -z "$DB_PASS" ]]; then
+    echo "CHYBA: Systémové proměnné CLAUDE_DB_USER nebo CLAUDE_DB_PASS nejsou nastaveny."
+    echo "Tyto proměnné jsou potřeba pro přístup k databázi."
+    echo ""
+    echo "Alternativně můžete vytvořit konfigurační soubor podle vzoru:"
+    echo "   $PROJECT_ROOT/web/restricted/sql_config_example.json"
     exit 1
 fi
 

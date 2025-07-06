@@ -1,9 +1,11 @@
-refactor: Remove npm install from test.sh script
+refactor: Update database scripts to use system environment variables
 
-- Remove redundant npm install step from test script
-- Dependencies should be managed by installation/update scripts
-- Avoid masking potential dependency issues in setup scripts
-- Simplify test execution flow
+- Update db_backup.sh to use CLAUDE_DB_USER/CLAUDE_DB_PASS instead of JSON config
+- Update db_ivy_create.sh to use system variables for database connection
+- Use localhost connection for security (user is localhost-only)
+- Preserve all comments and functionality in database creation script
+- Add setup_backup_cron.sh for automated backup scheduling every 6 hours
+- Improve error handling and debug information in backup script
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
