@@ -76,3 +76,5 @@ if [ -z "$1" ]; then
 fi
 
 echo "✅ Commit was successfully created and pushed."
+
+git status
