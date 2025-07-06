@@ -120,7 +120,7 @@ class ConsoleLogger {
                 log.message
             ]);
 
-            await db.safeExecute('logs.insertConsoleLogBatch', [params]);
+            await db.safeExecute('logs.insertConsoleLogBatch', params);
         } catch (err) {
             this.originalConsole.error('[LOGGER-FAIL] Failed to flush logs to database:', err);
             // Put logs back to buffer to try again later
