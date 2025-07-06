@@ -100,11 +100,42 @@ main_loop() {
         echo ""
         echo "[START] 🚀 ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
 
-        # Git aktualizace a synchronizace souborů
-        if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
-            echo "[START] ❌ Aktualizace souborů selhala!"
-            sleep 5
-            continue
+        # ===========================================
+        # 🔄 SELF-UPDATE MECHANISMUS
+        # ===========================================
+        
+        # Kontrola, zda už proběhl restart
+        if [[ "$SCRIPT_RESTARTED" == "1" ]]; then
+            echo "[START] ℹ️  Skript již byl restartován, pokračuji bez další aktualizace"
+            # Pouze synchronizace souborů bez self-update kontroly
+            if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
+                echo "[START] ❌ Aktualizace souborů selhala!"
+                sleep 5
+                continue
+            fi
+        else
+            # Před git pull - uloží hash aktuálního scriptu
+            CURRENT_HASH=$(sha256sum "$0" | cut -d' ' -f1)
+            echo "[START] 📊 Aktuální hash scriptu: ${CURRENT_HASH:0:8}..."
+            
+            # Git aktualizace a synchronizace souborů
+            if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
+                echo "[START] ❌ Aktualizace souborů selhala!"
+                sleep 5
+                continue
+            fi
+            
+            # Po git pull - porovná hash
+            NEW_HASH=$(sha256sum "$0" | cut -d' ' -f1)
+            
+            # Pokud se změnil → restart s označením
+            if [[ "$CURRENT_HASH" != "$NEW_HASH" ]]; then
+                echo "[START] 🔄 Skript byl aktualizován (nový hash: ${NEW_HASH:0:8}...), restartuji..."
+                export SCRIPT_RESTARTED=1
+                exec "$0" "$@"  # Restart sebe sama
+            else
+                echo "[START] ✅ Skript je aktuální, pokračuji..."
+            fi
         fi
 
         # Přejdi do cílového adresáře

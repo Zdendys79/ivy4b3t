@@ -1,3 +1,11 @@
-fix: Correct syntax errors in basic_update_git and basic_sync_files in test.sh
+feat: Add self-update mechanism to test.sh and start.sh scripts
 
-- Resolved `return: can only 'return' from a function or sourced script` and `syntax error near unexpected token '}'` by correctly closing `basic_update_git` and `basic_sync_files` functions in `ivy/test.sh`.
+- Implement SHA256 hash-based self-update detection for both scripts
+- Add SCRIPT_RESTARTED environment variable to prevent infinite loops
+- Scripts now automatically restart when updated from Git repository
+- Display hash comparison info for debugging (first 8 characters)
+- Ensure only one restart per execution cycle using environment flag
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
