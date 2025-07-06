@@ -1,8 +1,9 @@
-test: Verify commit.sh script with file parameter
+fix: Replace db.getQuery() with QueryUtils.getQuery() in ConsoleLogger
 
-- Testing automated commit script with message file
-- Confirming proper usage: ./commit.sh commit_message.txt
-- Following correct commit procedures from instructions
+- Add QueryUtils import to iv_console_logger.class.js
+- Replace db.getQuery('logs.insertConsoleLog') with QueryUtils.getQuery()
+- Use modular SQL system instead of deprecated db method
+- Fix console logger database flush functionality
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

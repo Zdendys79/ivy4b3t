@@ -34,31 +34,30 @@ At the end of each task (solution), create a draft commit message in English.
 1
 ---
 ### Git Commit Process
-When user says "commitni", use the automated commit script:
+When user says "commitni", use ONLY the automated commit script:
 
 ```bash
-# Execute the automated commit script
+# ALWAYS use this exact command
 ./commit.sh commit_message.txt
 ```
 
+**CRITICAL RULES:**
+- NEVER delete commit_message.txt - only edit it before next commit
+- NEVER use manual git commands for commit process
+- ALWAYS use ./commit.sh commit_message.txt (script handles editor when file provided)
+
 **The script automatically performs these steps:**
 1. **Check for changes** - detects uncommitted changes
-2. **Stash changes** - if needed before pull
-3. **Pull latest** - updates from remote repository
-4. **Restore stash** - if changes were stashed
-5. **Get commit message** - opens editor for message input
-6. **Add all changes** - stages all modifications
-7. **Create commit** - with hooks running automatically
-8. **Push to remote** - uploads commit to repository
-9. **Cleanup** - removes temporary files
+2. **Pull latest** - updates from remote repository  
+3. **Use commit message file** - reads from provided file parameter
+4. **Add all changes** - stages all modifications
+5. **Create commit** - with hooks running automatically
+6. **Push to remote** - uploads commit to repository
 
 **Git Hooks Setup:**
 - `pre-commit` hook: Updates package.json version before commit
 - `post-commit` hook: Updates database ivy.versions table after commit
 - Hooks are symlinked from `scripts/` to `.git/hooks/`
-
-**Manual Process (fallback):**
-If script fails, DO NOT use manual steps!
 
 
 

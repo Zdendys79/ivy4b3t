@@ -2,6 +2,7 @@
 import os from 'node:os';
 import { db, transaction } from './iv_sql.js';
 import { get as getVersion } from './iv_version.js';
+import { QueryUtils } from './sql/queries/index.js';
 
 class ConsoleLogger {
     constructor() {
@@ -116,7 +117,7 @@ class ConsoleLogger {
             await transaction(async (connection) => {
                 for (const log of logsToFlush) {
                     await connection.execute(
-                        db.getQuery('logs.insertConsoleLog'),
+                        QueryUtils.getQuery('logs.insertConsoleLog'),
                         [this.sessionId, this.versionCode, this.hostname, log.level, log.prefix, log.message]
                     );
                 }
