@@ -84,9 +84,9 @@ export class AdvancedHumanBehavior {
         const wordErrors = await this.typeWord(page, word, adjustedProfile, context);
         totalErrors += wordErrors;
         
-        // Pauza mezi slovy
+        // Pauza mezi slovy (s mezerou)
         if (wordIndex < words.length - 1) {
-          await this.interWordPause(adjustedProfile, context);
+          await this.interWordPause(page, adjustedProfile, context);
         }
         
         // Zkontroluj prokrastinaci
@@ -335,7 +335,9 @@ export class AdvancedHumanBehavior {
    * Výpočet zpoždění mezi znaky
    */
   calculateCharDelay(profile, context) {
-    const baseWPM = profile.avg_typing_speed * (0.8 + Math.random() * 0.4);
+    // Fallback pro chybějící typing speed
+    const typingSpeed = profile.avg_typing_speed || 40; // 40 WPM default
+    const baseWPM = typingSpeed * (0.8 + Math.random() * 0.4);
     const charsPerSecond = (baseWPM * 5) / 60; // 5 znaků = 1 slovo
     const baseDelay = 1000 / charsPerSecond;
     
@@ -343,13 +345,24 @@ export class AdvancedHumanBehavior {
     const variance = profile.typing_variance || 0.3;
     const varianceMultiplier = 1 + (Math.random() - 0.5) * variance;
     
-    return Math.max(20, baseDelay * varianceMultiplier);
+    const finalDelay = Math.max(20, baseDelay * varianceMultiplier);
+    
+    // Kontrola na NaN
+    if (isNaN(finalDelay)) {
+      Log.warn(`[${this.userId}]`, `⚠️ calculateCharDelay vrátil NaN, používám fallback 100ms`);
+      return 100;
+    }
+    
+    return finalDelay;
   }
 
   /**
-   * Pauza mezi slovy
+   * Pauza mezi slovy a napsání mezery
    */
-  async interWordPause(profile, context) {
+  async interWordPause(page, profile, context) {
+    // Nejprv napsat mezeru
+    await page.keyboard.type(' ');
+    
     const basePause = 100 + Math.random() * 200; // 100-300ms základní
     
     // Úpravy podle kontextu

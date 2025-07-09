@@ -1,8 +1,10 @@
-fix: Correct Facebook post field text spelling
+fix: Add missing spaces in human typing and fix NaN delay warning
 
-- Fix typo: "Napiště něco..." → "Napište něco..." (one 'p', not two)
-- Now matches exact Facebook group post field text
-- Should resolve post creation field detection issue
+- Fix interWordPause() function to actually type space characters between words
+- Add page parameter to interWordPause() function for keyboard access
+- Add fallback for missing avg_typing_speed in calculateCharDelay()
+- Add NaN check in calculateCharDelay() to prevent timeout warnings
+- Fix issue where typed text had no spaces between words
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
