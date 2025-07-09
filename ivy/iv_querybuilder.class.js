@@ -57,6 +57,10 @@ export class QueryBuilder {
     return await this.safeExecute('users.updateWorktime', [minutes, userId]);
   }
 
+  async updateUserDayCount(userId) {
+    return await this.safeExecute('users.updateDayCount', [userId, userId]);
+  }
+
   async setUserLimit(userId, dayLimit) {
     return await this.safeExecute('users.setLimit', [dayLimit, userId]);
   }

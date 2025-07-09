@@ -121,6 +121,17 @@ export const USERS = {
     WHERE id = ?
   `,
 
+  updateDayCount: `
+    UPDATE fb_users 
+    SET day_count = (
+      SELECT COUNT(*) 
+      FROM action_log 
+      WHERE account_id = ? 
+        AND DATE(timestamp) = CURDATE()
+    )
+    WHERE id = ?
+  `,
+
   updateStatement: `
     UPDATE fb_users
     SET next_statement = NOW() + INTERVAL ? HOUR

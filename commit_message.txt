@@ -1,11 +1,10 @@
-refactor: Remove unnecessary typeof db.* function checks and simplify code
+fix: Add missing updateUserDayCount function and day_count column
 
-- Remove all typeof db.function === 'function' checks - these are JS modules, not external APIs
-- Simplify database calls by removing redundant fallbacks between modules
-- Remove NaN check in calculateCharDelay - if it happens, it's a code bug to fix
-- Make calculateCharDelay synchronous again since it no longer needs await
-- Remove unreachable code and unnecessary fallback logic
-- Improve code clarity by removing defensive programming where not needed
+- Add day_count column to fb_users table for tracking daily activity
+- Add updateDayCount SQL query to count today's actions from action_log
+- Add updateUserDayCount method to QueryBuilder class
+- Fix error "db.updateUserDayCount is not a function" in iv_support.js
+- Query counts actions for current date from action_log table by account_id
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
