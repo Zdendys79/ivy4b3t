@@ -1,9 +1,9 @@
--- Vytvoření tabulky system_log
+-- Vytvoření tabulky log_system
 -- Tabulka pro systémový log spuštění, restartů a událostí podle hostname
 
 USE ivy;
 
-CREATE TABLE IF NOT EXISTS system_log (
+CREATE TABLE IF NOT EXISTS log_system (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     hostname VARCHAR(100) NOT NULL,
     event_type VARCHAR(50) NOT NULL,
@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS system_log (
 );
 
 -- Počáteční záznam o vytvoření tabulky
-INSERT INTO system_log (hostname, event_type, event_level, message, details, process_id) 
+INSERT INTO log_system (hostname, event_type, event_level, message, details, process_id) 
 VALUES (
     @@hostname,
     'SYSTEM_INIT',
     'INFO',
     'System log table created and initialized',
-    JSON_OBJECT('table_name', 'system_log', 'created_at', NOW()),
+    JSON_OBJECT('table_name', 'log_system', 'created_at', NOW()),
     CONNECTION_ID()
 );
 
-SELECT COUNT(*) as 'System log table created' FROM system_log;
+SELECT COUNT(*) as 'System log table created' FROM log_system;

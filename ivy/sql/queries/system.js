@@ -570,7 +570,7 @@ export const SYSTEM = {
   // ===== SYSTEM LOG =====
 
   insertSystemLog: `
-    INSERT INTO system_log (
+    INSERT INTO log_system (
       hostname, 
       event_type, 
       event_level, 
@@ -592,7 +592,7 @@ export const SYSTEM = {
       user_id,
       process_id,
       timestamp
-    FROM system_log
+    FROM log_system
     WHERE hostname = ?
       AND timestamp >= DATE_SUB(NOW(), INTERVAL ? HOUR)
     ORDER BY timestamp DESC
@@ -610,7 +610,7 @@ export const SYSTEM = {
       user_id,
       process_id,
       timestamp
-    FROM system_log
+    FROM log_system
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? HOUR)
     ORDER BY timestamp DESC
     LIMIT ?
@@ -623,14 +623,14 @@ export const SYSTEM = {
       event_level,
       COUNT(*) as count,
       MAX(timestamp) as latest_event
-    FROM system_log
+    FROM log_system
     WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? HOUR)
     GROUP BY hostname, event_type, event_level
     ORDER BY latest_event DESC
   `,
 
   cleanOldSystemLogs: `
-    DELETE FROM system_log 
+    DELETE FROM log_system 
     WHERE timestamp < DATE_SUB(NOW(), INTERVAL ? DAY)
   `
 };

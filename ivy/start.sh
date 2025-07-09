@@ -167,15 +167,24 @@ main_loop() {
         echo ""
 
         # Systémový log pro restart (pokud to není první pokus)
-        if [ $attempt -gt 1 ]; then
+        current_attempt=${#attempt_times[@]}
+        if [ $current_attempt -gt 1 ]; then
             node -e "
                 import { QueryBuilder } from './iv_querybuilder.class.js';
+                import { get as getVersion } from './iv_version.js';
                 const db = new QueryBuilder();
+                const version = getVersion();
                 db.logSystemEvent(
                     'RESTART',
                     'WARN',
                     'Ivy client restarted by start.sh',
-                    { attempt: $attempt, max_attempts: $max_attempts }
+                    { 
+                        attempt: $current_attempt, 
+                        max_attempts: $MAX_RETRIES,
+                        version: version,
+                        git_pull: true,
+                        restart_reason: 'automatic'
+                    }
                 ).catch(err => console.error('System log error:', err.message));
             " 2>/dev/null || true
         fi

@@ -1,15 +1,12 @@
-feat: Add comprehensive system logging for instance tracking
+feat: Add version info to restart logs and rename system_log to log_system
 
-- Create system_log table with hostname, event_type, event_level, message, and JSON details
-- Add system log queries (insertSystemLog, getSystemLogs, getSystemLogStats, cleanOldSystemLogs)
-- Add logSystemEvent() method to QueryBuilder for easy system logging
-- Log crash dialog detection and closure with URL and selector details
-- Log application startup with version, session_id, and system info
-- Log graceful shutdown with signal type and session details
-- Log restart attempts from start.sh with attempt count and max attempts
-- Add system_log creation to db_ivy_create.sh for new installations
-- Add system_log statistics to database setup reporting
-- Enable comprehensive tracking of instance lifecycle across VMs by hostname
+- Fix restart logging in start.sh by properly tracking attempt number using ${#attempt_times[@]}
+- Add version information to restart logs using iv_version.js
+- Rename system_log table to log_system for consistent log_* naming pattern
+- Update all SQL queries in system.js to reference log_system table
+- Rename create_system_log.sql to create_log_system.sql
+- Update database creation script references to new table name
+- Maintain consistency with existing log_console table naming convention
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
