@@ -36,6 +36,12 @@ export class AdvancedHumanBehavior {
         await db.safeExecute('behavioral_profiles.createDefaultProfile', [this.userId]);
         this.profile = await db.safeQueryFirst('behavioral_profiles.getUserProfile', [this.userId]);
       }
+      
+      // Fallback pokud databáze stále nevrátí profil
+      if (!this.profile) {
+        Log.warning(`[${this.userId}]`, '⚠️  Používám výchozí behavioral profil (databáze nedostupná)');
+        this.profile = this._createDefaultProfile();
+      }
 
       // Načti aktuální emocionální stav
       this.currentEmotion = await db.safeQueryFirst('behavioral_profiles.getCurrentEmotion', [this.userId]);
@@ -45,6 +51,8 @@ export class AdvancedHumanBehavior {
       return true;
     } catch (error) {
       await Log.error(`[${this.userId}] AdvancedHumanBehavior.initialize`, error);
+      Log.warning(`[${this.userId}]`, '⚠️  Chyba při načítání behavioral profilu, používám výchozí hodnoty');
+      this.profile = this._createDefaultProfile();
       return false;
     }
   }
@@ -420,6 +428,44 @@ export class AdvancedHumanBehavior {
       'sloppy': 0.3
     };
     return Math.random() < (chances[correctionStyle] || 0.7);
+  }
+
+  /**
+   * Vytvoří výchozí behavioral profil pro fallback
+   */
+  _createDefaultProfile() {
+    return {
+      user_id: this.userId,
+      avg_typing_speed: 150.0,
+      typing_variance: 0.3,
+      mistake_rate: 0.05,
+      correction_style: 'casual',
+      double_key_chance: 0.10,
+      backspace_delay: 200,
+      impatience_level: 0.5,
+      multitasking_tendency: 0.5,
+      attention_span: 90,
+      decision_speed: 0.5,
+      perfectionism: 0.5,
+      base_mood: 'neutral',
+      mood_volatility: 0.3,
+      frustration_threshold: 0.7,
+      energy_level: 0.8,
+      scroll_intensity: 'medium',
+      reading_speed: 240.0,
+      distraction_chance: 0.2,
+      procrastination_level: 0.4,
+      like_frequency: 0.10,
+      comment_tendency: 0.05,
+      hover_behavior: 'normal',
+      click_pattern: 'normal',
+      learning_rate: 0.1,
+      pattern_memory: 0.7,
+      behavior_confidence: 0.5,
+      last_mood_update: new Date().toISOString(),
+      created: new Date().toISOString(),
+      updated: new Date().toISOString()
+    };
   }
 }
 

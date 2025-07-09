@@ -50,11 +50,11 @@ export class PageAnalyzer {
 
       // Analýza komplexnosti stránky
       const complexityAnalysis = await this._performComplexityAnalysis();
-      Log.debug('[ANALYZER]', 'Complexity Analysis Result:', complexityAnalysis);
+      Log.info('[ANALYZER]', `Complexity: elements=${complexityAnalysis.elementCount || 0}, depth=${complexityAnalysis.maxDepth || 0}, errors=${complexityAnalysis.errors?.length || 0}`);
 
       // Analýza navigace
       const navigationAnalysis = await this._performNavigationAnalysis();
-      Log.debug('[ANALYZER]', 'Navigation Analysis Result:', navigationAnalysis);
+      Log.info('[ANALYZER]', `Navigation: links=${navigationAnalysis.linkCount || 0}, forms=${navigationAnalysis.formCount || 0}, buttons=${navigationAnalysis.buttonCount || 0}`);
 
       // Analýza chybových stavů
       const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis);
