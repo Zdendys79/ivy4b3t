@@ -1,11 +1,11 @@
-feat: Implement clipboard paste for UTIO posts instead of typing
+feat: Add 3-minute activity delay after user login for account rotation
 
-- Add pasteTextViaClipboard() method to FB class for fast text insertion
-- Modify pasteStatement() to support clipboard mode vs typing mode
-- Update UTIO posts (post_utio_g, post_utio_gv) to use clipboard paste
-- Maintain typing behavior for quotes and other non-UTIO actions
-- Add fallback from clipboard to typing if clipboard method fails
-- Significantly faster posting for UTIO content with URLs
+- Update openFB() to delay user activity by +3 minutes after login
+- Apply delay for both new logins ('now_loged') and existing sessions ('still_loged')
+- Prevent single account overuse during testing by promoting account rotation
+- Add db import to iv_fb.class.js for updateUserWorktime access
+- Include error handling for worktime update failures
+- Improve testing workflow by distributing load across multiple accounts
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

@@ -6,6 +6,7 @@ import fs from 'fs';
 import { Log } from './iv_log.class.js';
 import { PageAnalyzer } from './iv_page_analyzer.class.js';
 import { getHumanBehavior } from './iv_human_behavior_advanced.js';
+import * as db from './iv_querybuilder.class.js';
 
 import * as wait from './iv_wait.js';
 
@@ -383,6 +384,15 @@ export class FBBot {
 
     if (await this.isProfileLoaded(user)) {
       Log.info('[FB]', `Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
+      
+      // Posun času aktivity o +3 minuty i pro již přihlášené uživatele
+      try {
+        await db.updateUserWorktime(user.id, 3);
+        Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +3 minuty pro rotaci účtů`);
+      } catch (err) {
+        Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
+      }
+      
       return 'still_loged';
     }
 
@@ -414,6 +424,15 @@ export class FBBot {
 
       if (await this.isProfileLoaded(user)) {
         Log.success(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je nyní přihlášen.`);
+        
+        // Posun času aktivity o +3 minuty pro rotaci účtů během testování
+        try {
+          await db.updateUserWorktime(user.id, 3);
+          Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +3 minuty pro rotaci účtů`);
+        } catch (err) {
+          Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
+        }
+        
         return 'now_loged';
       } else {
         await Log.warn(`[FB] Uživatel není přihlášen na FB.`);
