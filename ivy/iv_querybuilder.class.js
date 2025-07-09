@@ -283,8 +283,19 @@ export class QueryBuilder {
     return await this.safeQueryFirst('quotes.getRandomForUser', [userId]);
   }
 
-  async updateQuoteNextSeen(quoteId, days = 7) {
+  async updateQuoteNextSeen(quoteId, days = 30) {
+    // Nastavit globální cooldown pro citát (bez logování uživatele)
     return await this.safeExecute('quotes.markAsUsed', [days, quoteId]);
+  }
+
+  async markQuoteAsUsed(quoteId, userId, days = 30) {
+    // Zaznamenat použití citátu uživatelem do action_log
+    const logResult = await this.logAction(userId, 'quote_post', quoteId.toString(), `Quote ${quoteId} used by user ${userId}`);
+    
+    // Nastavit globální cooldown na 30 dnů (aby se citáty neopakovaly)
+    const cooldownResult = await this.safeExecute('quotes.markAsUsed', [days, quoteId]);
+    
+    return logResult && cooldownResult;
   }
 
   async verifyMessage(groupId, messageHash) {
@@ -364,6 +375,12 @@ export class QueryBuilder {
 
     } catch (err) {
       await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
+      
+      // Re-throw function-not-found errors to ensure fail-fast behavior
+      if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+        throw err;
+      }
+      
       return null;
     }
   }
@@ -427,6 +444,12 @@ export class QueryBuilder {
 
     } catch (err) {
       await Log.error('[SQL][DEBUG]', `debugUserSelectionIssue error: ${err.message}`);
+      
+      // Re-throw function-not-found errors to ensure fail-fast behavior
+      if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+        throw err;
+      }
+      
       return null;
     }
   }
@@ -452,6 +475,12 @@ export class QueryBuilder {
 
     } catch (err) {
       await Log.error('[SQL]', `verifyMessageAdvanced error: ${err.message}`);
+      
+      // Re-throw function-not-found errors to ensure fail-fast behavior
+      if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+        throw err;
+      }
+      
       return { c: 0 };
     }
   }
@@ -472,6 +501,12 @@ export class QueryBuilder {
 
     } catch (err) {
       await Log.error('[SQL]', `storeMessageAdvanced error: ${err.message}`);
+      
+      // Re-throw function-not-found errors to ensure fail-fast behavior
+      if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+        throw err;
+      }
+      
       return false;
     }
   }

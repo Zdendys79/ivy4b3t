@@ -97,6 +97,12 @@ async function safeQueryFirst(queryPath, params = []) {
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
+    
+    // Re-throw function-not-found errors to ensure fail-fast behavior
+    if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+      throw err;
+    }
+    
     return false;
   }
 }
@@ -116,6 +122,12 @@ async function safeQueryAll(queryPath, params = []) {
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
+    
+    // Re-throw function-not-found errors to ensure fail-fast behavior
+    if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+      throw err;
+    }
+    
     return [];
   }
 }
@@ -139,6 +151,12 @@ async function safeExecute(queryPath, params = []) {
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
+    
+    // Re-throw function-not-found errors to ensure fail-fast behavior
+    if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
+      throw err;
+    }
+    
     return false;
   }
 }
