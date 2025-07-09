@@ -143,7 +143,7 @@ export class AdvancedHumanBehavior {
       }
       
       // Pauza mezi znaky
-      const charDelay = this.calculateCharDelay(profile, context);
+      const charDelay = await this.calculateCharDelay(profile, context);
       await wait.delay(charDelay, false);
       
       // Občasný dvojitý stisk
@@ -334,7 +334,7 @@ export class AdvancedHumanBehavior {
   /**
    * Výpočet zpoždění mezi znaky
    */
-  calculateCharDelay(profile, context) {
+  async calculateCharDelay(profile, context) {
     // Fallback pro chybějící typing speed
     const typingSpeed = profile.avg_typing_speed || 40; // 40 WPM default
     const baseWPM = typingSpeed * (0.8 + Math.random() * 0.4);

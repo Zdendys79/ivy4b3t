@@ -1,10 +1,10 @@
-fix: Add missing await to Log.warn calls to fix debugger pause issue
+fix: Make calculateCharDelay async and use consistent Log.warn instead of console.warn
 
-- Add await to Log.warn calls in iv_fb.class.js that were triggering debugger
-- Fix Log.warn in iv_human_behavior_advanced.js calculateCharDelay function
-- Fix Log.warn in iv_interactive_debugger.js waitForUserInput function
-- Resolve issue where debugger would not pause properly due to missing await
-- Ensure all async Log.warn calls wait for debugger interaction before continuing
+- Convert calculateCharDelay from sync to async function to properly handle Log.warn
+- Add await to calculateCharDelay call in typeWord function
+- Remove console.warn exception and maintain consistent logging throughout application
+- Ensure program can pause mid-typing if error occurs, maintaining human-like behavior
+- Remove direct console access outside of Log class for consistency
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
