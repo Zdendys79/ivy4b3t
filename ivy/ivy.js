@@ -30,6 +30,27 @@ Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode}`);
 Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
+// Záznam do systémového logu o spuštění
+try {
+  const queryBuilder = await import('./iv_querybuilder.class.js');
+  const dbInstance = new queryBuilder.QueryBuilder();
+  
+  await dbInstance.logSystemEvent(
+    'STARTUP',
+    'INFO',
+    `Ivy client started on ${hostname}`,
+    { 
+      version: versionCode,
+      session_id: consoleLogger.sessionId,
+      node_version: process.version,
+      platform: process.platform,
+      arch: process.arch
+    }
+  );
+} catch (err) {
+  Log.debug('[IVY]', `System log startup error: ${err.message}`);
+}
+
 (async () => {
   while (true) {
     try {
@@ -53,6 +74,26 @@ async function gracefulShutdown(signal) {
   Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
   
   try {
+    // Záznam do systémového logu o ukončení
+    try {
+      const queryBuilder = await import('./iv_querybuilder.class.js');
+      const dbInstance = new queryBuilder.QueryBuilder();
+      
+      await dbInstance.logSystemEvent(
+        'SHUTDOWN',
+        'INFO',
+        `Ivy client shutting down on ${hostname} (signal: ${signal})`,
+        { 
+          signal: signal,
+          version: versionCode,
+          session_id: consoleLogger.sessionId,
+          shutdown_type: 'graceful'
+        }
+      );
+    } catch (err) {
+      Log.debug('[IVY]', `System log shutdown error: ${err.message}`);
+    }
+    
     // Importuj worker pro přístup k browser shutdown
     const worker = await import('./iv_worker.js');
     

@@ -498,4 +498,55 @@ export class QueryBuilder {
 
     return true;
   }
+
+  // =========================================================
+  // SYSTEM LOG METHODS - Systémový log
+  // =========================================================
+
+  /**
+   * Vloží záznam do systémového logu
+   */
+  async logSystemEvent(eventType, eventLevel, message, details = null, userId = null, processId = null) {
+    const hostname = os.hostname();
+    
+    return await this.safeExecute('system.insertSystemLog', [
+      hostname,
+      eventType,
+      eventLevel,
+      message,
+      details ? JSON.stringify(details) : null,
+      userId,
+      processId || process.pid
+    ]);
+  }
+
+  /**
+   * Získá systémové logy pro aktuální hostname
+   */
+  async getSystemLogs(hours = 24, limit = 100) {
+    const hostname = os.hostname();
+    
+    return await this.safeQueryAll('system.getSystemLogs', [hostname, hours, limit]);
+  }
+
+  /**
+   * Získá všechny systémové logy ze všech hostnames
+   */
+  async getAllSystemLogs(hours = 24, limit = 100) {
+    return await this.safeQueryAll('system.getAllSystemLogs', [hours, limit]);
+  }
+
+  /**
+   * Získá statistiky systémového logu
+   */
+  async getSystemLogStats(hours = 24) {
+    return await this.safeQueryAll('system.getSystemLogStats', [hours]);
+  }
+
+  /**
+   * Vyčistí staré systémové logy
+   */
+  async cleanOldSystemLogs(days = 30) {
+    return await this.safeExecute('system.cleanOldSystemLogs', [days]);
+  }
 }

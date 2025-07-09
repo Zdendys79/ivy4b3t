@@ -178,6 +178,9 @@ run_sql_file "$WEB_RESTRICTED/ivy_data_action_definitions.sql" "Vkládání defi
 # 6. Vytvoření behavioral profiles tabulek
 run_sql_file "$WEB_RESTRICTED/create_behavioral_profiles.sql" "Vytváření behavioral profiles tabulek"
 
+# 7. Vytvoření system log tabulky
+run_sql_file "$WEB_RESTRICTED/create_system_log.sql" "Vytváření system log tabulky"
+
 # Finální kontrola
 echo "Finální kontrola databáze..."
 TABLE_COUNT=$(mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASS" -D"$DB_NAME" -e "SHOW TABLES;" | wc -l)
@@ -198,6 +201,7 @@ STATS_QUERIES=(
     "SELECT COUNT(*) as 'Behavioral profily' FROM user_behavioral_profiles;"
     "SELECT COUNT(*) as 'Emotional log' FROM user_emotional_log;"
     "SELECT COUNT(*) as 'Behavior cache' FROM user_behavior_cache;"
+    "SELECT COUNT(*) as 'System log' FROM system_log;"
 )
 
 for query in "${STATS_QUERIES[@]}"; do

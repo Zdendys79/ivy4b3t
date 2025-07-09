@@ -565,5 +565,72 @@ export const SYSTEM = {
     FROM debug_incidents
     GROUP BY status, error_level
     ORDER BY latest_incident DESC
+  `,
+
+  // ===== SYSTEM LOG =====
+
+  insertSystemLog: `
+    INSERT INTO system_log (
+      hostname, 
+      event_type, 
+      event_level, 
+      message, 
+      details, 
+      user_id, 
+      process_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `,
+
+  getSystemLogs: `
+    SELECT 
+      id,
+      hostname,
+      event_type,
+      event_level,
+      message,
+      details,
+      user_id,
+      process_id,
+      timestamp
+    FROM system_log
+    WHERE hostname = ?
+      AND timestamp >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `,
+
+  getAllSystemLogs: `
+    SELECT 
+      id,
+      hostname,
+      event_type,
+      event_level,
+      message,
+      details,
+      user_id,
+      process_id,
+      timestamp
+    FROM system_log
+    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `,
+
+  getSystemLogStats: `
+    SELECT 
+      hostname,
+      event_type,
+      event_level,
+      COUNT(*) as count,
+      MAX(timestamp) as latest_event
+    FROM system_log
+    WHERE timestamp >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+    GROUP BY hostname, event_type, event_level
+    ORDER BY latest_event DESC
+  `,
+
+  cleanOldSystemLogs: `
+    DELETE FROM system_log 
+    WHERE timestamp < DATE_SUB(NOW(), INTERVAL ? DAY)
   `
 };

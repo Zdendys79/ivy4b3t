@@ -1693,6 +1693,19 @@ export class FBBot {
             await element.click();
             await wait.delay(wait.timeout());
             Log.success('[FB]', 'Chromium crash dialog úspěšně zavřen');
+            
+            // Záznam do systémového logu
+            try {
+              await db.logSystemEvent(
+                'CRASH_DIALOG',
+                'WARN',
+                'Chromium crash dialog detected and closed',
+                { selector: selector, url: this.page.url() }
+              );
+            } catch (err) {
+              Log.debug('[FB]', `System log error: ${err.message}`);
+            }
+            
             return; // Dialog zavřen, ukončit
           }
         } catch (err) {

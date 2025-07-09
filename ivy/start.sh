@@ -166,6 +166,20 @@ main_loop() {
         echo "[START] 📂 Pracovní adresář: $(pwd)"
         echo ""
 
+        # Systémový log pro restart (pokud to není první pokus)
+        if [ $attempt -gt 1 ]; then
+            node -e "
+                import { QueryBuilder } from './iv_querybuilder.class.js';
+                const db = new QueryBuilder();
+                db.logSystemEvent(
+                    'RESTART',
+                    'WARN',
+                    'Ivy client restarted by start.sh',
+                    { attempt: $attempt, max_attempts: $max_attempts }
+                ).catch(err => console.error('System log error:', err.message));
+            " 2>/dev/null || true
+        fi
+
         # Spuštění aplikace
         # export DEBUG="puppeteer:*"  # pouze pro rozsáhlý debugging
         node ivy.js
