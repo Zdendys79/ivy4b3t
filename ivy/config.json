@@ -16,17 +16,12 @@
   },
   "new_post_texts": [
     "Napište něco...",
-    "Napište něco",
-    "veřejný příspěvek",
     "Co se vám honí hlavou",
     "Podělte se se skupinou"
   ],
   "submit_texts": [
     "Přidat",
-    "Zveřejnit",
-    "Post",
-    "Publikovat",
-    "Hotovo"
+    "Zveřejnit"
   ],
   "human_behavior": {
     "typing_mistakes_chance": 0.07,
