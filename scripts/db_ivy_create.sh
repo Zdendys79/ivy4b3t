@@ -196,6 +196,8 @@ STATS_QUERIES=(
     "SELECT COUNT(*) as 'Schéma (scheme)' FROM scheme;"
     "SELECT COUNT(*) as 'Referers' FROM referers;"
     "SELECT COUNT(*) as 'Behavioral profily' FROM user_behavioral_profiles;"
+    "SELECT COUNT(*) as 'Emotional log' FROM user_emotional_log;"
+    "SELECT COUNT(*) as 'Behavior cache' FROM user_behavior_cache;"
 )
 
 for query in "${STATS_QUERIES[@]}"; do

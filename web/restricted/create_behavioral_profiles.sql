@@ -1,8 +1,9 @@
--- Vytvoření tabulky user_behavioral_profiles
+-- Vytvoření behavioral profiles tabulek
 -- Tato tabulka ukládá behavioral profily uživatelů pro human behavior simulation
 
 USE ivy;
 
+-- Vytvoření tabulky user_behavioral_profiles
 CREATE TABLE IF NOT EXISTS user_behavioral_profiles (
     user_id SMALLINT(5) UNSIGNED PRIMARY KEY,
     avg_typing_speed DECIMAL(5,2) DEFAULT 150.00,
@@ -45,7 +46,7 @@ CREATE TABLE IF NOT EXISTS user_behavior_cache (
     pattern_name VARCHAR(100) NOT NULL,
     pattern_data TEXT,
     frequency INT DEFAULT 1,
-    success_rate DECIMAL(3,2) DEFAULT 0.5,
+    success_rate DECIMAL(3,2) DEFAULT 0.50,
     last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_pattern (user_id, context_type, pattern_name),
@@ -57,7 +58,7 @@ CREATE TABLE IF NOT EXISTS user_emotional_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id SMALLINT(5) UNSIGNED NOT NULL,
     emotion_type VARCHAR(30) NOT NULL,
-    intensity DECIMAL(3,2) DEFAULT 0.5,
+    intensity DECIMAL(3,2) DEFAULT 0.50,
     trigger_event VARCHAR(255),
     duration_minutes INT DEFAULT 30,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

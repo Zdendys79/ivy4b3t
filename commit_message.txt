@@ -1,10 +1,10 @@
-fix: Integrate behavioral profiles into main database creation script
+fix: Complete behavioral profiles tables creation and integration
 
-- Fix create_behavioral_profiles.sql to match actual database structure
-- Add behavioral profiles creation to db_ivy_create.sh workflow
-- Update decimal precision to match MariaDB format (150.00 vs 150.0)
-- Add behavioral profiles count to database statistics output
-- Ensure behavioral profiles are created during fresh database setup
+- Rewrite create_behavioral_profiles.sql with proper table definitions
+- Add user_emotional_log and user_behavior_cache tables statistics to db_ivy_create.sh
+- Fix decimal precision formatting (0.50 vs 0.5) for MariaDB compatibility
+- Add comprehensive random data generation for behavioral diversity
+- Ensure all behavioral profile queries will work after database setup
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
