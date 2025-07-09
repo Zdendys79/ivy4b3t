@@ -1,10 +1,10 @@
-fix: Create complete behavioral_profiles table with all required columns
+fix: Integrate behavioral profiles into main database creation script
 
-- Fix behavioral_profiles.getUserProfile query by recreating table with 30 columns
-- Add missing columns: typing_variance, mistake_rate, correction_style, etc.
-- Insert default profiles for all 101 users in fb_users table
-- Resolve "Query failed: behavioral_profiles.getUserProfile" error
-- Enable Facebook posting workflow to continue after behavioral profile lookup
+- Fix create_behavioral_profiles.sql to match actual database structure
+- Add behavioral profiles creation to db_ivy_create.sh workflow
+- Update decimal precision to match MariaDB format (150.00 vs 150.0)
+- Add behavioral profiles count to database statistics output
+- Ensure behavioral profiles are created during fresh database setup
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

@@ -175,6 +175,9 @@ run_sql_file "$WEB_RESTRICTED/ivy_data_referers.sql" "Vkládání výchozích re
 # 5. Vložení definic akcí
 run_sql_file "$WEB_RESTRICTED/ivy_data_action_definitions.sql" "Vkládání definic akcí"
 
+# 6. Vytvoření behavioral profiles tabulek
+run_sql_file "$WEB_RESTRICTED/create_behavioral_profiles.sql" "Vytváření behavioral profiles tabulek"
+
 # Finální kontrola
 echo "Finální kontrola databáze..."
 TABLE_COUNT=$(mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASS" -D"$DB_NAME" -e "SHOW TABLES;" | wc -l)
@@ -192,6 +195,7 @@ STATS_QUERIES=(
     "SELECT COUNT(*) as 'Akce (action_definitions)' FROM action_definitions;"
     "SELECT COUNT(*) as 'Schéma (scheme)' FROM scheme;"
     "SELECT COUNT(*) as 'Referers' FROM referers;"
+    "SELECT COUNT(*) as 'Behavioral profily' FROM user_behavioral_profiles;"
 )
 
 for query in "${STATS_QUERIES[@]}"; do
