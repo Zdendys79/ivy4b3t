@@ -66,7 +66,8 @@ async function executeQuery(queryPath, params = []) {
 
     return rows;
   } catch (err) {
-    await Log.error('[SQL]', `Query failed: ${queryPath}`);
+    const errorDetails = `${err.message}${err.code ? ` (code: ${err.code})` : ''}${err.errno ? ` (errno: ${err.errno})` : ''}`;
+    await Log.error('[SQL]', `Query failed: ${queryPath} - ${errorDetails}`);
     await Log.error('[SQL]', `SQL: ${_truncateLog(query)}`);
     await Log.error('[SQL]', `Params: ${_truncateLog(params)}`);
     await Log.error('[SQL]', `Error: ${err.message}`);
@@ -91,7 +92,8 @@ async function safeQueryFirst(queryPath, params = []) {
     Log.debug('[SQL]', `safeQueryFirst ${queryPath} returned 1 row`);
     return rows[0];
   } catch (err) {
-    await Log.error('[SQL]', `safeQueryFirst ${queryPath} exception: ${err.message}`);
+    const errorDetails = `${err.message}${err.code ? ` (code: ${err.code})` : ''}${err.errno ? ` (errno: ${err.errno})` : ''}`;
+    await Log.error('[SQL]', `safeQueryFirst ${queryPath} exception: ${errorDetails}`);
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
@@ -109,7 +111,8 @@ async function safeQueryAll(queryPath, params = []) {
     Log.debug('[SQL]', `safeQueryAll ${queryPath} returned ${resultCount} rows`);
     return rows || [];
   } catch (err) {
-    await Log.error('[SQL]', `safeQueryAll ${queryPath} exception: ${err.message}`);
+    const errorDetails = `${err.message}${err.code ? ` (code: ${err.code})` : ''}${err.errno ? ` (errno: ${err.errno})` : ''}`;
+    await Log.error('[SQL]', `safeQueryAll ${queryPath} exception: ${errorDetails}`);
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);
@@ -131,7 +134,8 @@ async function safeExecute(queryPath, params = []) {
       return false;
     }
   } catch (err) {
-    await Log.error('[SQL]', `safeExecute ${queryPath} exception: ${err.message}`);
+    const errorDetails = `${err.message}${err.code ? ` (code: ${err.code})` : ''}${err.errno ? ` (errno: ${err.errno})` : ''}`;
+    await Log.error('[SQL]', `safeExecute ${queryPath} exception: ${errorDetails}`);
     if (err.code) await Log.error('[SQL]', `Error code: ${err.code}`);
     if (err.errno) await Log.error('[SQL]', `Error number: ${err.errno}`);
     if (err.sqlState) await Log.error('[SQL]', `SQL State: ${err.sqlState}`);

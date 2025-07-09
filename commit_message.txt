@@ -1,10 +1,10 @@
-fix: Complete behavioral profiles tables creation and integration
+enhance: Add detailed MariaDB error messages to SQL logging
 
-- Rewrite create_behavioral_profiles.sql with proper table definitions
-- Add user_emotional_log and user_behavior_cache tables statistics to db_ivy_create.sh
-- Fix decimal precision formatting (0.50 vs 0.5) for MariaDB compatibility
-- Add comprehensive random data generation for behavioral diversity
-- Ensure all behavioral profile queries will work after database setup
+- Extend "Query failed" messages with error details, codes, and errno
+- Add errorDetails to executeQuery, safeQueryFirst, safeQueryAll, and safeExecute
+- Include MariaDB error codes and error numbers in primary error message
+- Improve debugging by showing database errors inline with query failures
+- Maintain detailed error logging for comprehensive troubleshooting
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
