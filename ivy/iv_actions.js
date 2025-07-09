@@ -354,18 +354,7 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
 async function getAvailableGroups(userId, groupType) {
   try {
     // Použij existující metodu z QueryBuilder (s opačným pořadím parametrů)
-    if (typeof db.getAvailableGroups === 'function') {
-      return await db.getAvailableGroups(groupType.toUpperCase(), userId);
-    }
-
-    // Fallback na starší funkce
-    if (typeof db.getGroups === 'function') {
-      const allGroups = await db.getGroups(userId);
-      return allGroups.filter(g => g.group_type === groupType || g.typ === groupType);
-    }
-
-    await Log.warn(`[${userId}]`, 'Žádná funkce pro získání skupin není dostupná');
-    return [];
+    return await db.getAvailableGroups(groupType.toUpperCase(), userId);
   } catch (err) {
     await Log.error(`[${userId}] getAvailableGroups`, err);
     return [];
@@ -568,9 +557,7 @@ async function logActionQuality(user, actionCode, success, details = {}) {
     };
 
     // Uložení do databáze pro analýzu kvality
-    if (typeof db.logActionQuality === 'function') {
-      await db.logActionQuality(qualityData);
-    }
+    await db.logActionQuality(qualityData);
 
     // Reporting pro monitoring
     if (!success) {

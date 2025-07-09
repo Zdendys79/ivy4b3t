@@ -629,11 +629,7 @@ async function initializeRequiredServices(user, context, requirements, existingF
       }
 
       if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
-        if (typeof db.lockAccountWithReason === 'function') {
-          await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
-        } else {
-          await db.lockAccount(user.id);
-        }
+        await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
         throw new Error('FB login failed');
       }
 
@@ -847,23 +843,19 @@ export async function shutdownAllBrowsers() {
 
 async function showAccountLockStats() {
   try {
-    if (typeof db.getAccountLockStats === 'function') {
-      const stats = await db.getAccountLockStats();
-      if (stats && stats.length > 0) {
-        stats.forEach(stat => {
-          Log.info('[STATS]', `${stat.lock_type}: ${stat.count} celkem (${stat.last_24h} za 24h, ${stat.last_7d} za 7d)`);
-        });
-      }
+    const stats = await db.getAccountLockStats();
+    if (stats && stats.length > 0) {
+      stats.forEach(stat => {
+        Log.info('[STATS]', `${stat.lock_type}: ${stat.count} celkem (${stat.last_24h} za 24h, ${stat.last_7d} za 7d)`);
+      });
     }
 
-    if (typeof db.getRecentAccountLocks === 'function') {
-      const recentLocks = await db.getRecentAccountLocks();
-      if (recentLocks && recentLocks.length > 0) {
-        Log.info('[STATS]', '=== Nedávná zablokování ===');
-        recentLocks.forEach(lock => {
-          Log.info('[STATS]', `${lock.lock_date}: ${lock.lock_type} - ${lock.daily_count}x`);
-        });
-      }
+    const recentLocks = await db.getRecentAccountLocks();
+    if (recentLocks && recentLocks.length > 0) {
+      Log.info('[STATS]', '=== Nedávná zablokování ===');
+      recentLocks.forEach(lock => {
+        Log.info('[STATS]', `${lock.lock_date}: ${lock.lock_type} - ${lock.daily_count}x`);
+      });
     }
   } catch (err) {
     await Log.error('[STATS]', `Chyba při načítání statistik: ${err.message}`);

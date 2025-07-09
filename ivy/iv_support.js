@@ -288,20 +288,18 @@ export async function writeMsg(user, messageText, fbBot) {
 export async function updatePostStats(group, user, actionCode) {
   try {
     // Aktualizuj čas posledního použití skupiny
-    if (group && typeof db.updateGroupLastSeen === 'function') {
+    if (group) {
       await db.updateGroupLastSeen(group.id);
     }
 
     // Nastav další možný čas použití skupiny
-    if (group && typeof db.updateGroupNextSeen === 'function') {
+    if (group) {
       const nextSeenMinutes = Math.round(120 + Math.random() * 360); // 2-8 hodin
       await db.updateGroupNextSeen(group.id, nextSeenMinutes);
     }
 
     // Aktualizuj statistiky uživatele
-    if (typeof db.updateUserDayCount === 'function') {
-      await db.updateUserDayCount(user.id);
-    }
+    await db.updateUserDayCount(user.id);
 
     // Zaloguj akci
     const referenceId = group ? group.id : '0';

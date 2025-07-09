@@ -1,10 +1,11 @@
-fix: Make calculateCharDelay async and use consistent Log.warn instead of console.warn
+refactor: Remove unnecessary typeof db.* function checks and simplify code
 
-- Convert calculateCharDelay from sync to async function to properly handle Log.warn
-- Add await to calculateCharDelay call in typeWord function
-- Remove console.warn exception and maintain consistent logging throughout application
-- Ensure program can pause mid-typing if error occurs, maintaining human-like behavior
-- Remove direct console access outside of Log class for consistency
+- Remove all typeof db.function === 'function' checks - these are JS modules, not external APIs
+- Simplify database calls by removing redundant fallbacks between modules
+- Remove NaN check in calculateCharDelay - if it happens, it's a code bug to fix
+- Make calculateCharDelay synchronous again since it no longer needs await
+- Remove unreachable code and unnecessary fallback logic
+- Improve code clarity by removing defensive programming where not needed
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
