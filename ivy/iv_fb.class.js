@@ -6,7 +6,7 @@ import fs from 'fs';
 import { Log } from './iv_log.class.js';
 import { PageAnalyzer } from './iv_page_analyzer.class.js';
 import { getHumanBehavior } from './iv_human_behavior_advanced.js';
-import * as db from './iv_querybuilder.class.js';
+import { db } from './iv_sql.js';
 
 import * as wait from './iv_wait.js';
 

@@ -1,10 +1,10 @@
-fix: Add missing spaces in human typing and fix NaN delay warning
+fix: Fix db.updateUserWorktime import error and improve debugger TTY handling
 
-- Fix interWordPause() function to actually type space characters between words
-- Add page parameter to interWordPause() function for keyboard access
-- Add fallback for missing avg_typing_speed in calculateCharDelay()
-- Add NaN check in calculateCharDelay() to prevent timeout warnings
-- Fix issue where typed text had no spaces between words
+- Fix incorrect db import in iv_fb.class.js - use proper db from iv_sql.js
+- Add TTY check in interactive debugger to handle non-terminal environments
+- Improve timeout logging in debugger with clearer messages
+- Fix "db.updateUserWorktime is not a function" error in FB login process
+- Add proper waiting behavior when no TTY is available for user input
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

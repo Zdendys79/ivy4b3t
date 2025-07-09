@@ -121,6 +121,13 @@ export class InteractiveDebugger {
    * Čeká na vstup uživatele s timeoutem
    */
   async waitForUserInput(timeoutSeconds = 30) {
+    // Kontrola, zda máme TTY pro interaktivní vstup
+    if (!process.stdin.isTTY) {
+      Log.warn('[DEBUGGER]', '🚫 No TTY available for interactive input - auto-continuing after timeout');
+      await new Promise(resolve => setTimeout(resolve, timeoutSeconds * 1000));
+      return 'timeout';
+    }
+
     return new Promise((resolve) => {
       let resolved = false;
 
@@ -154,10 +161,10 @@ export class InteractiveDebugger {
         }
       };
 
-      // Timeout
+      // Timeout s lepším loggingem
       const timeout = setTimeout(() => {
         if (!resolved) {
-          Log.info('[DEBUGGER]', `⏰ Timeout reached after ${timeoutSeconds} seconds`);
+          Log.info('[DEBUGGER]', `⏰ Timeout reached after ${timeoutSeconds} seconds - auto-continuing`);
           resolved = true;
           cleanup();
           resolve('timeout');
