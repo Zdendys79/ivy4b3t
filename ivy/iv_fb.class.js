@@ -783,9 +783,12 @@ export class FBBot {
 
   async newThing() {
     try {
+      Log.info('[FB]', `Hledám element pro psaní příspěvku. Texty: ${CONFIG.new_post_texts.join(', ')}`);
+      
       const promises = CONFIG.new_post_texts.map(text => {
         const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
         const selector = `xpath/${xpath}`;
+        Log.debug('[FB]', `Hledám text: "${text}" pomocí xpath: ${xpath}`);
         return this.page.waitForSelector(selector, { timeout: 5000 })
           .then(handle => ({ handle, text }))
           .catch(() => null);
@@ -794,55 +797,77 @@ export class FBBot {
       const result = await Promise.race(promises);
       if (result && result.handle) {
         this.newThingElement = result.handle;
-        Log.info('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
+        Log.success('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
         return true;
       }
 
+      Log.warn('[FB]', 'Žádný z přednastavených textů nebyl nalezen, spouštím diagnostiku...');
+      await this.debugPostCreationElements();
       throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
       await Log.error('[FB] newThing()', err);
-      //await this.debugFindText();
       return false;
     }
   }
 
   async clickNewThing() {
     try {
-      if (!this.newThingElement) throw `newThingElement není definován.`;
+      if (!this.newThingElement) {
+        Log.error('[FB]', 'newThingElement není definován. Možná selhal newThing()');
+        return false;
+      }
+      
+      Log.info('[FB]', 'Klikám na element pro psaní příspěvku...');
       await this.bringToFront();
       await this.newThingElement.click();
-      await wait.delay(3 * wait.timeout());
-      Log.info(`[FB] Kliknuto na pole pro psaní příspěvku.`);
+      
+      const delay = 3 * wait.timeout();
+      Log.info('[FB]', `Čekám ${delay}ms po kliknutí na pole pro psaní příspěvku...`);
+      await wait.delay(delay);
+      
+      Log.success('[FB]', 'Kliknuto na pole pro psaní příspěvku.');
       return true;
     } catch (err) {
-      await Log.error(`[FB] Klik na newThingElement selhal: ${err}`);
+      await Log.error('[FB]', `Klik na newThingElement selhal: ${err}`);
       return false;
     }
   }
 
   async pasteStatement(text, useClipboard = false) {
     try {
-      if (!text) throw `Prázdný text pro příspěvek.`;
+      if (!text) {
+        Log.error('[FB]', 'Prázdný text pro příspěvek - nelze pokračovat');
+        return false;
+      }
 
-      await wait.delay(10 * wait.timeout());
+      Log.info('[FB]', `Vkládám text příspěvku (${text.length} znaků). Metoda: ${useClipboard ? 'schránka' : 'psaní po písmenech'}`);
+      
+      const delay = 10 * wait.timeout();
+      Log.debug('[FB]', `Čekám ${delay}ms před vložením textu...`);
+      await wait.delay(delay);
       
       if (useClipboard) {
         // Použij vkládání přes schránku (rychlejší pro UTIO a RSS)
+        Log.info('[FB]', 'Pokus o vložení přes schránku...');
         const success = await this.pasteTextViaClipboard(text);
         if (!success) {
-          Log.warn('[FB] Vkládání přes schránku selhalo, přepínám na psaní po písmenech');
+          Log.warn('[FB]', 'Vkládání přes schránku selhalo, přepínám na psaní po písmenech');
           await this._typeLikeHuman(text);
+        } else {
+          Log.success('[FB]', 'Text úspěšně vložen přes schránku');
         }
       } else {
         // Použij psaní po písmenech (pro citáty a jiné akce)
+        Log.info('[FB]', 'Spouštím psaní po písmenech...');
         await this._typeLikeHuman(text);
+        Log.success('[FB]', 'Text úspěšně napsán po písmenech');
       }
       
-      Log.info(`[FB] Text vložen: ${text}`);
+      Log.success('[FB]', `Text vložen: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
       return true;
 
     } catch (err) {
-      await Log.error(`[FB] Chyba při psaní příspěvku: ${err}`);
+      await Log.error('[FB]', `Chyba při psaní příspěvku: ${err}`);
       return false;
     }
   }
@@ -894,6 +919,43 @@ export class FBBot {
 
     } catch (err) {
       await Log.error(`[FB] Chyba při vkládání textu pomocí schránky: ${err}`);
+      return false;
+    }
+  }
+
+  async writeMessage(text, useClipboard = false) {
+    try {
+      Log.info('[FB]', `Začínám psaní zprávy (${text.length} znaků)...`);
+      
+      // 1. Najdi pole pro psaní příspěvku
+      if (!await this.newThing()) {
+        Log.error('[FB]', 'Nepodařilo se najít pole pro psaní příspěvku');
+        return false;
+      }
+      
+      // 2. Klikni na pole pro psaní příspěvku
+      if (!await this.clickNewThing()) {
+        Log.error('[FB]', 'Nepodařilo se kliknout na pole pro psaní příspěvku');
+        return false;
+      }
+      
+      // 3. Vloži text příspěvku
+      if (!await this.pasteStatement(text, useClipboard)) {
+        Log.error('[FB]', 'Nepodařilo se vložit text příspěvku');
+        return false;
+      }
+      
+      // 4. Odešli příspěvek
+      if (!await this.clickSendButton()) {
+        Log.error('[FB]', 'Nepodařilo se odeslat příspěvek');
+        return false;
+      }
+      
+      Log.success('[FB]', 'Zpráva úspěšně napsána a odeslána!');
+      return true;
+      
+    } catch (err) {
+      await Log.error('[FB] writeMessage', err);
       return false;
     }
   }
@@ -1548,6 +1610,95 @@ export class FBBot {
     } catch (err) {
       await Log.error(`[FB] Chyba v testXPath: ${err}`);
       return false;
+    }
+  }
+
+  async debugPostCreationElements() {
+    try {
+      Log.info('[DEBUG]', 'Spouštím diagnostiku elementů pro vytvoření příspěvku...');
+      
+      // Najdi všechny span elementy s klikatelným obsahem
+      const spans = await this.page.$$('span');
+      Log.info('[DEBUG]', `Nalezeno ${spans.length} span elementů na stránce`);
+      
+      const postRelatedTexts = [];
+      for (const span of spans) {
+        try {
+          const spanData = await this.page.evaluate(el => {
+            const text = el.textContent?.trim();
+            const parent = el.parentElement;
+            const clickableParent = el.closest('button, div[role="button"], [tabindex], [onclick]');
+            
+            // Hledej texty související s psaním příspěvku
+            const postKeywords = ['napište', 'příspěvek', 'sdílet', 'psaní', 'honí hlavou', 'myslíte', 'skupina'];
+            const isPostRelated = postKeywords.some(keyword => 
+              text?.toLowerCase().includes(keyword.toLowerCase())
+            );
+            
+            return {
+              text: text || '',
+              hasClickableParent: !!clickableParent,
+              parentTag: parent?.tagName,
+              isPostRelated: isPostRelated,
+              visible: el.offsetWidth > 0 && el.offsetHeight > 0
+            };
+          }, span);
+          
+          if (spanData.isPostRelated && spanData.visible) {
+            postRelatedTexts.push(spanData.text);
+          }
+        } catch (err) {
+          // Element byl odstraněn během zpracování
+        }
+      }
+      
+      Log.info('[DEBUG]', `Nalezeno ${postRelatedTexts.length} textů souvisejících s příspěvky:`);
+      postRelatedTexts.forEach(text => {
+        Log.info('[DEBUG]', `- "${text}"`);
+      });
+      
+      // Pokus o nalezení alternativních selektorů
+      const alternativeSelectors = [
+        'div[role="button"][aria-label*="příspěvek"]',
+        'div[role="button"][aria-label*="Napište"]',
+        'div[role="button"][aria-label*="Co se"]',
+        'div[role="textbox"][aria-label*="příspěvek"]',
+        'div[role="textbox"][aria-label*="Napište"]',
+        'div[contenteditable="true"]',
+        'textarea[placeholder*="příspěvek"]',
+        'div[data-testid*="post"]',
+        'div[data-testid*="composer"]'
+      ];
+      
+      Log.info('[DEBUG]', 'Testování alternativních selektorů...');
+      for (const selector of alternativeSelectors) {
+        try {
+          const elements = await this.page.$$(selector);
+          if (elements.length > 0) {
+            Log.info('[DEBUG]', `Selektor "${selector}" našel ${elements.length} elementů`);
+            
+            // Test prvního elementu
+            const firstElement = elements[0];
+            const elementInfo = await this.page.evaluate(el => {
+              const rect = el.getBoundingClientRect();
+              return {
+                text: el.textContent?.trim() || '',
+                ariaLabel: el.getAttribute('aria-label') || '',
+                placeholder: el.getAttribute('placeholder') || '',
+                visible: rect.width > 0 && rect.height > 0,
+                tagName: el.tagName
+              };
+            }, firstElement);
+            
+            Log.info('[DEBUG]', `Element info: ${JSON.stringify(elementInfo)}`);
+          }
+        } catch (err) {
+          Log.debug('[DEBUG]', `Selektor "${selector}" selhal: ${err.message}`);
+        }
+      }
+      
+    } catch (err) {
+      Log.error('[DEBUG]', `Chyba v diagnostice: ${err.message}`);
     }
   }
 

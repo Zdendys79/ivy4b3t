@@ -1,10 +1,11 @@
-fix: Add missing logUserAction function and fix decimal minutes issue
+fix: Add missing writeMessage function and improve post creation diagnostics
 
-- Add logUserAction alias in QueryBuilder for iv_support.js compatibility
-- Fix decimal minutes in updateGroupNextSeen by rounding Math.random() result
-- Fix parameter order in updateGroupNextSeen from [groupId, minutes] to [minutes, groupId]
-- Rename system_log table to log_system to match SQL queries
-- Prevent excessive decimal places in database time calculations
+- Add writeMessage() method to FBBot class as wrapper for complete post workflow
+- Improve logging in newThing(), clickNewThing(), and pasteStatement() functions
+- Add debugPostCreationElements() function for automatic post button diagnostics
+- Add detailed step-by-step logging for post creation process
+- Fix issue where iv_support.js calls non-existent writeMessage() function
+- Add comprehensive error handling and diagnostics for Facebook UI changes
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
