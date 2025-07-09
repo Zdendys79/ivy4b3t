@@ -1,11 +1,10 @@
-fix: Resolve Facebook posting issues and reduce verbose logging
+fix: Create complete behavioral_profiles table with all required columns
 
-- Create missing user_behavioral_profiles table with 101 default profiles
-- Add fallback mechanism in iv_human_behavior_advanced.js for database failures
-- Shorten verbose Complexity Analysis Results output to single line format
-- Fix "Query failed: behavioral_profiles.getUserProfile" error
-- Implement graceful degradation when behavioral profiles unavailable
-- Add create_behavioral_profiles.sql script for behavioral tables setup
+- Fix behavioral_profiles.getUserProfile query by recreating table with 30 columns
+- Add missing columns: typing_variance, mistake_rate, correction_style, etc.
+- Insert default profiles for all 101 users in fb_users table
+- Resolve "Query failed: behavioral_profiles.getUserProfile" error
+- Enable Facebook posting workflow to continue after behavioral profile lookup
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
