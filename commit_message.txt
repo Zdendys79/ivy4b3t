@@ -1,11 +1,9 @@
-fix: Add missing writeMessage function and improve post creation diagnostics
+fix: Update Facebook post field text to match current UI
 
-- Add writeMessage() method to FBBot class as wrapper for complete post workflow
-- Improve logging in newThing(), clickNewThing(), and pasteStatement() functions
-- Add debugPostCreationElements() function for automatic post button diagnostics
-- Add detailed step-by-step logging for post creation process
-- Fix issue where iv_support.js calls non-existent writeMessage() function
-- Add comprehensive error handling and diagnostics for Facebook UI changes
+- Add "Napiště něco..." as primary text for Facebook group post creation
+- Keep existing "Napište něco" as fallback for other FB sections
+- Reorder new_post_texts to prioritize the correct group post field text
+- Fix issue where post creation field was not found in Facebook groups
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
