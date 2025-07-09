@@ -798,12 +798,24 @@ export class FBBot {
     }
   }
 
-  async pasteStatement(text) {
+  async pasteStatement(text, useClipboard = false) {
     try {
       if (!text) throw `Prázdný text pro příspěvek.`;
 
       await wait.delay(10 * wait.timeout());
-      await this._typeLikeHuman(text);
+      
+      if (useClipboard) {
+        // Použij vkládání přes schránku (rychlejší pro UTIO a RSS)
+        const success = await this.pasteTextViaClipboard(text);
+        if (!success) {
+          Log.warn('[FB] Vkládání přes schránku selhalo, přepínám na psaní po písmenech');
+          await this._typeLikeHuman(text);
+        }
+      } else {
+        // Použij psaní po písmenech (pro citáty a jiné akce)
+        await this._typeLikeHuman(text);
+      }
+      
       Log.info(`[FB] Text vložen: ${text}`);
       return true;
 
@@ -834,6 +846,32 @@ export class FBBot {
 
     } catch (err) {
       await Log.error(`[FB] Chyba při vkládání ze schránky: ${err}`);
+      return false;
+    }
+  }
+
+  async pasteTextViaClipboard(text) {
+    try {
+      if (!text) throw `Prázdný text pro vložení.`;
+
+      // Zkopíruj text do schránky
+      await this.page.evaluate((textToCopy) => {
+        return navigator.clipboard.writeText(textToCopy);
+      }, text);
+
+      await wait.delay(wait.timeout()); // Krátká pauza po kopírování
+
+      // Vloží text pomocí Ctrl+V
+      const success = await this.pasteFromClipboard();
+      
+      if (success) {
+        Log.info(`[FB] Text vložen pomocí schránky: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
+      }
+      
+      return success;
+
+    } catch (err) {
+      await Log.error(`[FB] Chyba při vkládání textu pomocí schránky: ${err}`);
       return false;
     }
   }

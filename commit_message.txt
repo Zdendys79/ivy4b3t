@@ -1,10 +1,11 @@
-enhance: Add detailed MariaDB error messages to SQL logging
+feat: Implement clipboard paste for UTIO posts instead of typing
 
-- Extend "Query failed" messages with error details, codes, and errno
-- Add errorDetails to executeQuery, safeQueryFirst, safeQueryAll, and safeExecute
-- Include MariaDB error codes and error numbers in primary error message
-- Improve debugging by showing database errors inline with query failures
-- Maintain detailed error logging for comprehensive troubleshooting
+- Add pasteTextViaClipboard() method to FB class for fast text insertion
+- Modify pasteStatement() to support clipboard mode vs typing mode
+- Update UTIO posts (post_utio_g, post_utio_gv) to use clipboard paste
+- Maintain typing behavior for quotes and other non-UTIO actions
+- Add fallback from clipboard to typing if clipboard method fails
+- Significantly faster posting for UTIO content with URLs
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

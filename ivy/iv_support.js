@@ -241,7 +241,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     // Vložení zprávy do FBu
     Log.info(`[${user.id}]`, '📝 Vkládám zprávu do FB...');
 
-    if (!await fbBot.pasteStatement(message[0])) {
+    if (!await fbBot.pasteStatement(message[0], true)) { // true = použij schránku pro UTIO
       await Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do FB');
       return false;
     }
