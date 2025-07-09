@@ -33,18 +33,27 @@ Constants: UPPER_SNAKE_CASE
 At the end of each task (solution), create a draft commit message in English.
 1
 ---
-### Git Commit Process
-When user says "commitni", use ONLY the automated commit script:
+### Git Commit Process - ABSOLUTNÍ PRIORITA!
+When user says "commitni" OR when making ANY changes to source code, configuration files, or installation scripts, use ONLY the automated commit script:
 
 ```bash
-# ALWAYS use this exact command
+# ALWAYS use this exact command - NO EXCEPTIONS!
 ./commit.sh commit_message.txt
 ```
 
-**CRITICAL RULES:**
+**ABSOLUTELY CRITICAL RULES - ZERO TOLERANCE:**
+- NEVER EVER use manual git commands (git add, git commit, git push) for commits
+- ALWAYS and ONLY use ./commit.sh commit_message.txt - NO EXCEPTIONS!
 - NEVER delete commit_message.txt - only edit it before next commit
-- NEVER use manual git commands for commit process
-- ALWAYS use ./commit.sh commit_message.txt (script handles editor when file provided)
+- The script handles ALL git operations including version management
+- This is THE ONLY way to commit in this project - MANDATORY!
+
+**AUTOMATIC COMMIT TRIGGERS:**
+- Any modification to source code files (*.js, *.class.js, *.php)
+- Any change to configuration files (*.json, *.sql, *.sh)
+- Any update to installation/setup scripts
+- Any database schema changes or SQL modifications
+- Any modification to web interface files
 
 **The script automatically performs these steps:**
 1. **Check for changes** - detects uncommitted changes
@@ -129,6 +138,14 @@ bash ~/Sync/scripts/db_backup.sh
 # Complete environment setup
 ./scripts/setup-ivy.sh
 ```
+
+### Database Development Rules - KRITICKÉ!
+**VŽDY při jakékoli úpravě MariaDB struktury:**
+1. **Aktualizuj SQL CREATE skripty** v `web/restricted/create_*.sql`
+2. **Aktualizuj instalační skripty** v `scripts/db_ivy_create.sh`
+3. **Aktualizuj SQL dotazy** v `ivy/sql/queries/*.js`
+4. **Otestuj kompletní databázovou instalaci** před commitem
+5. **Všechny úpravy databáze = automatický commit pomocí ./commit.sh**
 
 ### Database Access
 ```bash

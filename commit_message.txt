@@ -1,12 +1,11 @@
-feat: Add version info to restart logs and rename system_log to log_system
+docs: Update AI memory with critical commit and database rules
 
-- Fix restart logging in start.sh by properly tracking attempt number using ${#attempt_times[@]}
-- Add version information to restart logs using iv_version.js
-- Rename system_log table to log_system for consistent log_* naming pattern
-- Update all SQL queries in system.js to reference log_system table
-- Rename create_system_log.sql to create_log_system.sql
-- Update database creation script references to new table name
-- Maintain consistency with existing log_console table naming convention
+- Add automatic commit triggers for any source code, config, or installation changes
+- Emphasize zero tolerance for manual git commands - ONLY use ./commit.sh
+- Add critical database development rules for MariaDB structure changes
+- Require updates to CREATE scripts, installation scripts, and SQL queries
+- Mandate testing of complete database installation before commits
+- Enforce automatic commits for all database modifications
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
