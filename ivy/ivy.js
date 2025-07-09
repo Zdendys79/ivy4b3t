@@ -48,9 +48,27 @@ Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
   }
 })();
 
-process.on('SIGTERM', async () => {
-  Log.info('[IVY] Proces ukončen signálem SIGTERM.');
-  // Flush pending logs before exit
-  await consoleLogger.flush();
+// Graceful shutdown handler
+async function gracefulShutdown(signal) {
+  Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
+  
+  try {
+    // Importuj worker pro přístup k browser shutdown
+    const worker = await import('./iv_worker.js');
+    
+    // Zavři všechny aktivní browser instances
+    await worker.shutdownAllBrowsers();
+    
+    // Flush pending logs before exit
+    await consoleLogger.flush();
+    
+    Log.info('[IVY] Graceful shutdown dokončen');
+  } catch (err) {
+    Log.error('[IVY]', `Chyba při graceful shutdown: ${err.message}`);
+  }
+  
   process.exit(0);
-});
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT')); // Ctrl+C

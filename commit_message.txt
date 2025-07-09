@@ -1,11 +1,17 @@
-feat: Add 3-minute activity delay after user login for account rotation
+feat: Add graceful browser shutdown and crash dialog handling
 
-- Update openFB() to delay user activity by +3 minutes after login
-- Apply delay for both new logins ('now_loged') and existing sessions ('still_loged')
-- Prevent single account overuse during testing by promoting account rotation
-- Add db import to iv_fb.class.js for updateUserWorktime access
-- Include error handling for worktime update failures
-- Improve testing workflow by distributing load across multiple accounts
+A) Auto-dismiss Chromium crash dialogs:
+- Add _handleCrashDialogsAsync() method to automatically detect and close crash dialogs
+- Implement _detectAndCloseCrashDialogs() with multiple selector strategies
+- Run asynchronously with 5-second delay to not block main workflow
+- Handle "Chromium didn't shut down correctly" and similar crash recovery dialogs
+
+B) Graceful browser shutdown on Ctrl+C:
+- Add global activeBrowsers Set to track all browser instances
+- Implement shutdownAllBrowsers() function for coordinated browser cleanup
+- Add SIGINT handler to ivy.js for proper Ctrl+C handling
+- Ensure all pages and browser instances are closed before Node.js exit
+- Add 10-second timeout protection for shutdown operations
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

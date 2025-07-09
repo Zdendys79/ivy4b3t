@@ -36,6 +36,9 @@ const hostname = os.hostname();
 
 const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
 
+// Globální tracking aktivních browser instances pro graceful shutdown
+let activeBrowsers = new Set();
+
 /**
  * HLAVNÍ TICK FUNKCE - implementuje celý cyklus podle specifikace
  */
@@ -741,6 +744,9 @@ async function prepareBrowser(user) {
     await context.overridePermissions(origin, []);
   }
 
+  // Přidej browser do aktivních instances pro graceful shutdown
+  activeBrowsers.add(browser);
+
   return { browser, context, browserClosed };
 }
 
@@ -752,6 +758,8 @@ async function cleanupBrowser(browser, browserClosed) {
 
   if (browserClosed || !browser) {
     Log.info('[WORKER]', 'Prohlížeč již byl uzavřen nebo neexistuje.');
+    // Odstraň z aktivních browsers pokud tam je
+    activeBrowsers.delete(browser);
     return;
   }
 
@@ -779,7 +787,63 @@ async function cleanupBrowser(browser, browserClosed) {
     } catch (forceErr) {
       await Log.error('[WORKER]', `Force close také selhal: ${forceErr.message}`);
     }
+  } finally {
+    // Odstraň browser z aktivních instances
+    activeBrowsers.delete(browser);
   }
+  }
+}
+
+/**
+ * Graceful shutdown všech aktivních browser instances
+ */
+export async function shutdownAllBrowsers() {
+  if (activeBrowsers.size === 0) {
+    Log.info('[WORKER]', 'Žádné aktivní browser instances k uzavření');
+    return;
+  }
+
+  Log.info('[WORKER]', `Zavírám ${activeBrowsers.size} aktivních browser instances...`);
+  
+  const shutdownPromises = Array.from(activeBrowsers).map(async (browser) => {
+    try {
+      if (browser && !browser.isConnected()) {
+        Log.debug('[WORKER]', 'Browser již není připojen, přeskakuji');
+        return;
+      }
+      
+      // Zavři všechny stránky
+      const pages = await browser.pages();
+      for (const page of pages) {
+        if (!page.isClosed()) {
+          await page.close();
+        }
+      }
+      
+      // Zavři browser
+      await browser.close();
+      Log.debug('[WORKER]', 'Browser instance úspěšně uzavřena');
+    } catch (err) {
+      Log.warn('[WORKER]', `Chyba při zavírání browser instance: ${err.message}`);
+    }
+  });
+
+  try {
+    // Čekej max 10 sekund na zavření všech browsers
+    await Promise.race([
+      Promise.all(shutdownPromises),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Shutdown timeout')), 10000)
+      )
+    ]);
+    
+    Log.success('[WORKER]', 'Všechny browser instances úspěšně uzavřeny');
+  } catch (err) {
+    Log.warn('[WORKER]', `Timeout při zavírání browsers: ${err.message}`);
+  }
+  
+  // Vyčisti set
+  activeBrowsers.clear();
 }
 
 async function showAccountLockStats() {

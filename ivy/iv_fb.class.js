@@ -54,6 +54,9 @@ export class FBBot {
       // Nastavení user-agent a viewport
       await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
+      // Spusť asynchronní detekci a zavírání crash dialogů
+      this._handleCrashDialogsAsync();
+
       this.isInitialized = true;
       Log.success('[FB]', 'FB stránka inicializována');
       return true;
@@ -1640,6 +1643,71 @@ export class FBBot {
     if (this.pageAnalyzer) {
       this.pageAnalyzer.clearCache();
       Log.info('[FB]', 'Cache PageAnalyzer vyčištěna');
+    }
+  }
+
+  /**
+   * Asynchronní detekce a zavírání Chromium crash dialogů
+   * Spouští se na pozadí bez blokování hlavního workflow
+   */
+  _handleCrashDialogsAsync() {
+    // Spusť na pozadí s 5-sekundovým zpožděním
+    setTimeout(async () => {
+      try {
+        await this._detectAndCloseCrashDialogs();
+      } catch (err) {
+        // Tichá chyba - neblokuje hlavní proces
+        Log.debug('[FB]', `Crash dialog detection error: ${err.message}`);
+      }
+    }, 5000);
+  }
+
+  /**
+   * Detekuje a zavírá "Chromium didn't shut down correctly" dialog
+   */
+  async _detectAndCloseCrashDialogs() {
+    if (!this.page || this.page.isClosed()) {
+      return;
+    }
+
+    try {
+      // Hledej crash dialog na stránce
+      const crashDialogSelectors = [
+        'button:contains("Restore")',
+        'button:contains("Cancel")', 
+        '[role="dialog"] button',
+        '.infobar button',
+        '#restore-session-info button'
+      ];
+
+      for (const selector of crashDialogSelectors) {
+        try {
+          // Čekej max 2 sekundy na výskyt dialogu
+          const element = await this.page.waitForSelector(selector, { 
+            timeout: 2000, 
+            visible: true 
+          });
+          
+          if (element) {
+            Log.info('[FB]', 'Detekován Chromium crash dialog, zavírám...');
+            await element.click();
+            await wait.delay(wait.timeout());
+            Log.success('[FB]', 'Chromium crash dialog úspěšně zavřen');
+            return; // Dialog zavřen, ukončit
+          }
+        } catch (err) {
+          // Dialog nebyl nalezen s tímto selektorem, zkus další
+          continue;
+        }
+      }
+
+      // Zkus také obecné zavření dialogů pomocí klávesy Escape
+      await this.page.keyboard.press('Escape');
+      await wait.delay(wait.timeout());
+
+    } catch (err) {
+      // Tichá chyba - crash dialog detection není kritická funkce
+      Log.debug('[FB]', `Crash dialog detection failed: ${err.message}`);
     }
   }
 
