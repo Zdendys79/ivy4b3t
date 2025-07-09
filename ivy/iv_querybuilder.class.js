@@ -82,6 +82,10 @@ export class QueryBuilder {
     return await this.safeExecute('actions.logAction', [accountId, actionCode, referenceId, text]);
   }
 
+  async logUserAction(accountId, actionCode, referenceId, text) {
+    return await this.logAction(accountId, actionCode, referenceId, text);
+  }
+
   async updateActionPlan(userId, actionCode, minutes) {
     return await this.safeExecute('actions.updatePlan', [minutes, userId, actionCode]);
   }
@@ -226,7 +230,7 @@ export class QueryBuilder {
   }
 
   async updateGroupNextSeen(groupId, minutes) {
-    return await this.safeExecute('groups.updateNextSeen', [groupId, minutes]);
+    return await this.safeExecute('groups.updateNextSeen', [minutes, groupId]);
   }
 
   // =========================================================

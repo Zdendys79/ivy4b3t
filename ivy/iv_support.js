@@ -294,7 +294,7 @@ export async function updatePostStats(group, user, actionCode) {
 
     // Nastav další možný čas použití skupiny
     if (group && typeof db.updateGroupNextSeen === 'function') {
-      const nextSeenMinutes = 120 + Math.random() * 360; // 2-8 hodin
+      const nextSeenMinutes = Math.round(120 + Math.random() * 360); // 2-8 hodin
       await db.updateGroupNextSeen(group.id, nextSeenMinutes);
     }
 

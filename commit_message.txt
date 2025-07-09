@@ -1,9 +1,10 @@
-fix: Remove extra closing brace causing syntax error in iv_worker.js
+fix: Add missing logUserAction function and fix decimal minutes issue
 
-- Fix syntax error on line 794 by removing extra closing brace
-- Error was preventing application startup with "Unexpected token '}'"
-- Function closeBrowser now has correct brace structure
-- Application can now start successfully
+- Add logUserAction alias in QueryBuilder for iv_support.js compatibility
+- Fix decimal minutes in updateGroupNextSeen by rounding Math.random() result
+- Fix parameter order in updateGroupNextSeen from [groupId, minutes] to [minutes, groupId]
+- Rename system_log table to log_system to match SQL queries
+- Prevent excessive decimal places in database time calculations
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
