@@ -123,7 +123,7 @@ export class InteractiveDebugger {
   async waitForUserInput(timeoutSeconds = 30) {
     // Kontrola, zda máme TTY pro interaktivní vstup
     if (!process.stdin.isTTY) {
-      Log.warn('[DEBUGGER]', '🚫 No TTY available for interactive input - auto-continuing after timeout');
+      await Log.warn('[DEBUGGER]', '🚫 No TTY available for interactive input - auto-continuing after timeout');
       await new Promise(resolve => setTimeout(resolve, timeoutSeconds * 1000));
       return 'timeout';
     }

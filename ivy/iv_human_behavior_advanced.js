@@ -349,7 +349,7 @@ export class AdvancedHumanBehavior {
     
     // Kontrola na NaN
     if (isNaN(finalDelay)) {
-      Log.warn(`[${this.userId}]`, `⚠️ calculateCharDelay vrátil NaN, používám fallback 100ms`);
+      await Log.warn(`[${this.userId}]`, `⚠️ calculateCharDelay vrátil NaN, používám fallback 100ms`);
       return 100;
     }
     

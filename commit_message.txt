@@ -1,10 +1,10 @@
-fix: Fix db.updateUserWorktime import error and improve debugger TTY handling
+fix: Add missing await to Log.warn calls to fix debugger pause issue
 
-- Fix incorrect db import in iv_fb.class.js - use proper db from iv_sql.js
-- Add TTY check in interactive debugger to handle non-terminal environments
-- Improve timeout logging in debugger with clearer messages
-- Fix "db.updateUserWorktime is not a function" error in FB login process
-- Add proper waiting behavior when no TTY is available for user input
+- Add await to Log.warn calls in iv_fb.class.js that were triggering debugger
+- Fix Log.warn in iv_human_behavior_advanced.js calculateCharDelay function
+- Fix Log.warn in iv_interactive_debugger.js waitForUserInput function
+- Resolve issue where debugger would not pause properly due to missing await
+- Ensure all async Log.warn calls wait for debugger interaction before continuing
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

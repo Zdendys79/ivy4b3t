@@ -393,7 +393,7 @@ export class FBBot {
         await db.updateUserWorktime(user.id, 3);
         Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +3 minuty pro rotaci účtů`);
       } catch (err) {
-        Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
+        await Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
       }
       
       return 'still_loged';
@@ -433,7 +433,7 @@ export class FBBot {
           await db.updateUserWorktime(user.id, 3);
           Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +3 minuty pro rotaci účtů`);
         } catch (err) {
-          Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
+          await Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
         }
         
         return 'now_loged';
@@ -801,7 +801,7 @@ export class FBBot {
         return true;
       }
 
-      Log.warn('[FB]', 'Žádný z přednastavených textů nebyl nalezen, spouštím diagnostiku...');
+      await Log.warn('[FB]', 'Žádný z přednastavených textů nebyl nalezen, spouštím diagnostiku...');
       await this.debugPostCreationElements();
       throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
@@ -851,7 +851,7 @@ export class FBBot {
         Log.info('[FB]', 'Pokus o vložení přes schránku...');
         const success = await this.pasteTextViaClipboard(text);
         if (!success) {
-          Log.warn('[FB]', 'Vkládání přes schránku selhalo, přepínám na psaní po písmenech');
+          await Log.warn('[FB]', 'Vkládání přes schránku selhalo, přepínám na psaní po písmenech');
           await this._typeLikeHuman(text);
         } else {
           Log.success('[FB]', 'Text úspěšně vložen přes schránku');
