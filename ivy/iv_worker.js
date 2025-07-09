@@ -791,7 +791,6 @@ async function cleanupBrowser(browser, browserClosed) {
     // Odstraň browser z aktivních instances
     activeBrowsers.delete(browser);
   }
-  }
 }
 
 /**

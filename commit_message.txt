@@ -1,11 +1,9 @@
-docs: Update AI memory with critical commit and database rules
+fix: Remove extra closing brace causing syntax error in iv_worker.js
 
-- Add automatic commit triggers for any source code, config, or installation changes
-- Emphasize zero tolerance for manual git commands - ONLY use ./commit.sh
-- Add critical database development rules for MariaDB structure changes
-- Require updates to CREATE scripts, installation scripts, and SQL queries
-- Mandate testing of complete database installation before commits
-- Enforce automatic commits for all database modifications
+- Fix syntax error on line 794 by removing extra closing brace
+- Error was preventing application startup with "Unexpected token '}'"
+- Function closeBrowser now has correct brace structure
+- Application can now start successfully
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
