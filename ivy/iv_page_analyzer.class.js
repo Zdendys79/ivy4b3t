@@ -25,8 +25,8 @@ export class PageAnalyzer {
     const {
       includePostingCapability = false,
       includeGroupAnalysis = false,
-      cacheResults = true,
-      forceRefresh = false
+      cacheResults = false,  // Vypnuto - FB stránky jsou dynamické
+      forceRefresh = true    // Vždy aktuální stav
     } = options;
 
     try {

@@ -625,7 +625,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
       try {
         const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
           includeGroupAnalysis: true,
-          forceRefresh: false
+          forceRefresh: true  // Vždy aktuální stav, ne cache
         });
 
         // Kontrola výsledku analýzy
@@ -770,10 +770,24 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
 
         // Status OK
         if (analysis.status === 'ok') {
-          Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování');
+          // Ověř možnost psaní příspěvku před potvrzením připravenosti
+          Log.info(`[${user.id}]`, '🔍 Ověřuji možnost psaní příspěvku...');
+          
+          const canPost = await fbBot.newThing();
+          if (!canPost) {
+            return {
+              ready: false,
+              reason: 'Element pro psaní příspěvku nenalezen',
+              critical: false,
+              shouldNavigate: false,
+              analysisDetails: analysis
+            };
+          }
+          
+          Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování - element pro psaní nalezen');
           return {
             ready: true,
-            reason: 'Skupina připravena',
+            reason: 'Skupina připravena a možnost psaní ověřena',
             critical: false,
             shouldNavigate: false,
             analysisDetails: analysis
@@ -782,10 +796,24 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
         
         // Status ready (pro zpětnou kompatibilitu)
         if (analysis.status === 'ready') {
-          Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování');
+          // Ověř možnost psaní příspěvku před potvrzením připravenosti
+          Log.info(`[${user.id}]`, '🔍 Ověřuji možnost psaní příspěvku...');
+          
+          const canPost = await fbBot.newThing();
+          if (!canPost) {
+            return {
+              ready: false,
+              reason: 'Element pro psaní příspěvku nenalezen',
+              critical: false,
+              shouldNavigate: false,
+              analysisDetails: analysis
+            };
+          }
+          
+          Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování - element pro psaní nalezen');
           return {
             ready: true,
-            reason: 'Skupina připravena',
+            reason: 'Skupina připravena a možnost psaní ověřena',
             critical: false,
             shouldNavigate: false,
             analysisDetails: analysis

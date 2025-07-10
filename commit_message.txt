@@ -1,14 +1,13 @@
-fix: Ensure consistent data structure across PageAnalyzer consumers
+feat: Add post element verification to UTIO readiness and disable analyzer cache
 
-- Fix ErrorReportBuilder to use navigation.elements instead of non-existent buttons
-- Add bodyText to basic analysis for ErrorReportBuilder compatibility  
-- Fix complexity analysis logging to read metrics.elements instead of elementCount
-- Fix navigation analysis logging to read hasStandardNavigation instead of linkCount
-- Add debug logging and diagnostic data (readyState, title) to complexity analysis
-- Ensures all PageAnalyzer consumers expect the same data structure
+- Move newThing() post element detection into FB readiness verification for UTIO
+- Verify posting capability before confirming group readiness status
+- Disable PageAnalyzer cache by default (Facebook pages are dynamic)
+- Set forceRefresh=true as default to always get current page state
+- Return detailed error when post element cannot be found
 
-Resolves inconsistencies where different parts of the codebase expected
-different property names from the same analyzer methods.
+This ensures UTIO operations only proceed when posting is actually possible
+and eliminates stale cached results from dynamic Facebook content.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
