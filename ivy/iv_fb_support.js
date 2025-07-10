@@ -738,11 +738,11 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           
           // Kontrola na čekající žádost o členství
           if (errorPattern?.type === 'MEMBERSHIP_PENDING') {
-            await Log.warn(`[${user.id}]`, '⚠️ Žádost o členství čeká na schválení');
+            await Log.warn(`[${user.id}]`, '⚠️ Žádost o členství čeká na schválení - nemohu postovat');
             return {
               ready: false,
               reason: errorPattern.reason,
-              critical: false,
+              critical: true, // ZMĚNA: Členství pending je kritické pro UTIO operace
               shouldNavigate: false,
               membershipPending: true,
               analysisDetails: analysis

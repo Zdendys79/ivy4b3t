@@ -1,14 +1,13 @@
-fix: Use discussion navigation only as last resort fallback
+fix: Treat membership pending as critical error for UTIO operations
 
-- Move discussion section navigation to be the final fallback strategy
-- Only attempt "Diskuze" click when all other posting element search strategies fail
-- Simplify clickDiscus() to just look for "Diskuze" text without over-complexity
-- Revert isSellGroup() to simple detection to avoid false positives
-- Retry posting element search after successful discussion navigation
-- Conservative approach prevents unnecessary navigation in normal groups
+- Change MEMBERSHIP_PENDING from non-critical warning to critical error
+- Prevent continuation to UTIO process when membership approval is pending
+- Update error message to clarify posting is impossible when membership pending
+- Stop "Pokračuji přes varování" behavior for pending membership cases
 
-This ensures posting elements are found in sell groups requiring discussion 
-section while avoiding false positives in regular groups.
+This resolves the issue where robot would continue to UTIO after successful 
+"Přidat se ke skupině" click but still couldn't post due to pending approval.
+Now robot will properly abort and try different group instead.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
