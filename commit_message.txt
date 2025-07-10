@@ -1,11 +1,10 @@
-fix: Remove duplicate getUserWithAvailableActions method causing wrong SQL query
+fix: Move test files to ivy/ folder for VM synchronization
 
-- Remove duplicate implementation at line 364 that was overriding the correct one
-- Keep only the correct implementation at line 32 that calls users.getWithAvailableActions  
-- Add test files for VM testing (test.js, test.sh)
+- Move test.js and test.sh from root to ivy/ folder
+- Fix import paths in test.js to work from ivy/ directory
+- This ensures test files are copied to VM during synchronization
 
-This resolves the issue where users.getByHostname was called instead of 
-users.getWithAvailableActions, causing wrong user selection logic.
+VM only syncs ivy/ folder contents, so test files must be there.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
