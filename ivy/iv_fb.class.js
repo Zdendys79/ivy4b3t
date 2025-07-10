@@ -1884,61 +1884,67 @@ export class FBBot {
   }
 
   /**
-   * Detekuje a zavírá "Chromium didn't shut down correctly" dialog
+   * Detekuje a zavírá "Chromium didn't shut down correctly" dialog.
+   * Tento dialog je často v Shadow DOM, takže vyžaduje speciální přístup.
    */
   async _detectAndCloseCrashDialogs() {
-    if (!this.page || this.page.isClosed()) {
+    if (!this.context) {
+      Log.debug('[FB]', 'Browser context not available for crash dialog detection.');
+      return;
+    }
+    const browser = this.context.browser();
+    if (!browser) {
+      Log.debug('[FB]', 'Browser instance not available for crash dialog detection.');
       return;
     }
 
     try {
-      // Hledej crash dialog na stránce
-      const crashDialogSelectors = [
-        'button:contains("Restore")',
-        'button:contains("Cancel")', 
-        '[role="dialog"] button',
-        '.infobar button',
-        '#restore-session-info button'
-      ];
+      const pages = await browser.pages();
+      Log.debug(`[FB] Checking ${pages.length} pages for crash dialogs.`);
 
-      for (const selector of crashDialogSelectors) {
+      for (const page of pages) {
+        if (page.isClosed()) {
+          continue;
+        }
+
         try {
-          // Čekej max 2 sekundy na výskyt dialogu
-          const element = await this.page.waitForSelector(selector, { 
-            timeout: 2000, 
-            visible: true 
+          const clicked = await page.evaluate(() => {
+            // Selektor pro kontejner infobaru
+            const infoBarContainer = document.querySelector('info-bar-container');
+            if (infoBarContainer && infoBarContainer.shadowRoot) {
+              // Selektor pro zavírací tlačítko uvnitř Shadow DOM
+              const closeButton = infoBarContainer.shadowRoot.querySelector('#close');
+              if (closeButton) {
+                closeButton.click();
+                return true;
+              }
+            }
+            return false;
           });
-          
-          if (element) {
-            Log.info('[FB]', 'Detekován Chromium crash dialog, zavírám...');
-            await element.click();
-            await wait.delay(wait.timeout());
-            Log.success('[FB]', 'Chromium crash dialog úspěšně zavřen');
+
+          if (clicked) {
+            Log.info('[FB]', 'Detekován a zavřen Chromium crash dialog (infobar).');
             
-            // Záznam do systémového logu
             try {
               await db.logSystemEvent(
                 'CRASH_DIALOG',
                 'WARN',
-                'Chromium crash dialog detected and closed',
-                { selector: selector, url: this.page.url() }
+                'Chromium crash dialog detected and closed via Shadow DOM.',
+                { url: page.url() }
               );
             } catch (err) {
               Log.debug('[FB]', `System log error: ${err.message}`);
             }
             
-            return; // Dialog zavřen, ukončit
+            // Po úspěšném zavření můžeme skončit, protože se zavře na všech stránkách najednou.
+            await wait.delay(1000); // Krátká pauza pro projevení změny
+            return;
           }
         } catch (err) {
-          // Dialog nebyl nalezen s tímto selektorem, zkus další
-          continue;
+          // Tichá chyba - stránka mohla být zavřena, nebo evaluate selhalo. Pokračuj na další.
+          Log.debug('[FB]', `Error checking page for crash dialog: ${err.message}`);
         }
       }
-
-      // Zkus také obecné zavření dialogů pomocí klávesy Escape
-      await this.page.keyboard.press('Escape');
-      await wait.delay(wait.timeout());
-
     } catch (err) {
       // Tichá chyba - crash dialog detection není kritická funkce
       Log.debug('[FB]', `Crash dialog detection failed: ${err.message}`);

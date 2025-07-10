@@ -1,13 +1,11 @@
-fix: Adjust page complexity criteria for modern Facebook pages
+Oprava: Vylepšení detekce a zavírání crash dialogu prohlížeče
 
-- Reduce image requirement from >10 to >3 (Facebook uses SVG icons instead of img tags)
-- Reduce link requirement from >50 to >10 (SPA navigation uses fewer direct links)
-- Keep element count >500 and script count >20 unchanged
-- Prevents false "abnormal page structure" warnings on normal Facebook pages
+Původní implementace prohledávala pouze DOM aktuální stránky,
+což nebylo schopné detekovat infobar o nesprávném ukončení,
+který je vkládán prohlížečem a je umístěn v Shadow DOM.
 
-Modern Facebook uses different DOM patterns than the original criteria expected,
-causing valid pages to be flagged as potentially problematic.
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+Nová verze:
+- Prochází všechny otevřené stránky v kontextu prohlížeče.
+- Používá `page.evaluate()` pro přístup do Shadow DOM každé stránky.
+- Cíleně hledá a kliká na zavírací tlačítko infobaru.
+- Přidává robustnější logování pro ladění.
