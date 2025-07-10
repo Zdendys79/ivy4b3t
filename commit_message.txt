@@ -1,10 +1,24 @@
-fix: Add missing markQuoteAsUsed function and implement fail-fast error handling
+feat: Implement per-user group blocking system with exponential escalation
 
-- Add markQuoteAsUsed function that logs user-specific quote usage to action_log
-- Fix updateQuoteNextSeen to set 30-day global cooldown for quotes
-- Implement fail-fast behavior for function-not-found errors in database layer
-- Re-throw 'is not a function' and 'Query not found' errors instead of hiding them
-- Ensure all non-existent functions are properly reported without defensive programming
+- Add hostname protection against account ban cascades (40-60 min blocks)
+- Implement per-user group blocking with exponential escalation formula
+- Add user_groups table extensions for blocking tracking
+- Create escalation system: 5 * 2^(n-1) days, max 180 days (6 months)
+- Add automatic detection of "Vaše žádost o členství se vyřizuje"
+- Fix UTIO post creation by adding proper dialog opening sequence
+- Integrate blocking system into group selection logic
+- Add comprehensive logging and system event tracking
+- Implement cleanup for expired blocks and monitoring functions
+
+Technical changes:
+- Add hostname_protection table and queries
+- Add user_group_blocking table extensions and queries  
+- Add hostname_block_handler.js for ban cascade prevention
+- Add user_group_escalation.js with exponential blocking formula
+- Modify worker.js to check hostname blocks before user selection
+- Modify support.pasteMsg() to properly open post dialog before pasting
+- Integrate detectMembershipRequest() into group opening workflow
+- Add QueryBuilder methods for both blocking systems
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

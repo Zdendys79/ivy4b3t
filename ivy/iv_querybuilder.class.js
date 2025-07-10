@@ -543,6 +543,66 @@ export class QueryBuilder {
   }
 
   // =========================================================
+  // HOSTNAME PROTECTION - Ochrana proti lavině banů
+  // =========================================================
+
+  async isHostnameBlocked(hostname) {
+    const result = await this.safeQueryFirst('hostname_protection.checkBlocked', [hostname]);
+    return result || null;
+  }
+
+  async blockHostname(hostname, userId, reason, minutes = 60) {
+    const blockedUntil = new Date(Date.now() + minutes * 60 * 1000);
+    const blockedUntilStr = blockedUntil.toISOString().slice(0, 19).replace('T', ' ');
+    
+    return await this.safeExecute('hostname_protection.insertBlock', [
+      hostname, 
+      blockedUntilStr, 
+      reason, 
+      userId
+    ]);
+  }
+
+  async unblockHostname(hostname) {
+    return await this.safeExecute('hostname_protection.removeBlock', [hostname]);
+  }
+
+  async getActiveHostnameBlocks() {
+    return await this.safeQueryAll('hostname_protection.getActiveBlocks');
+  }
+
+  async cleanExpiredHostnameBlocks() {
+    return await this.safeExecute('hostname_protection.removeExpiredBlocks');
+  }
+
+  // =========================================================
+  // USER-GROUP BLOCKING - Per-user group blocking systém
+  // =========================================================
+
+  async isUserGroupBlocked(userId, groupId) {
+    const result = await this.safeQueryFirst('user_group_blocking.isUserGroupBlocked', [userId, groupId]);
+    return result || null;
+  }
+
+  async blockUserGroup(userId, groupId, blockedUntil, reason) {
+    return await this.safeExecute('user_group_blocking.blockUserGroup', [
+      blockedUntil, reason, userId, groupId
+    ]);
+  }
+
+  async getAvailableGroupsForUserBlocking(userId, groupType) {
+    return await this.safeQueryAll('user_group_blocking.getAvailableGroupsForUser', [userId, groupType]);
+  }
+
+  async getUserGroupBlockStats(userId) {
+    return await this.safeQueryFirst('user_group_blocking.getUserGroupBlockStats', [userId]);
+  }
+
+  async cleanExpiredUserGroupBlocks() {
+    return await this.safeExecute('user_group_blocking.unblockExpiredUserGroups');
+  }
+
+  // =========================================================
   // SYSTEM LOG METHODS - Systémový log
   // =========================================================
 

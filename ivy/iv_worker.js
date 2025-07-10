@@ -26,6 +26,7 @@ import { getRandomAction } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
 import { IvMath } from './iv_math.class.js';
+import { handleNewAccountBlock, detectAccountBlock } from './hostname_block_handler.js';
 
 import * as wait from './iv_wait.js';
 import * as support from './iv_support.js';
@@ -77,8 +78,39 @@ export async function tick() {
       return;
     }
 
-    // 🎯 KROK 2: VÝBĚR UŽIVATELE (pouze pokud není UI příkaz)
-    Log.debug('[WORKER]', '🔍 Krok 2: Hledám dostupného uživatele s akcemi...');
+    // 🎯 KROK 2: KONTROLA HOSTNAME OCHRANY
+    Log.debug('[WORKER]', '🔍 Krok 2a: Kontrola hostname ochrany proti lavině banů...');
+    
+    const hostname = os.hostname();
+    const hostnameBlock = await db.isHostnameBlocked(hostname);
+    
+    if (hostnameBlock) {
+      await Log.warn('[WORKER]', `🚫 Hostname ${hostname} je zablokován do ${hostnameBlock.blocked_until}`);
+      await Log.warn('[WORKER]', `🔒 Důvod: ${hostnameBlock.blocked_reason}`);
+      await Log.warn('[WORKER]', `⏱️ Zbývá: ${hostnameBlock.remaining_minutes} minut`);
+      
+      // Systémový log
+      await db.logSystemEvent(
+        'HOSTNAME_PROTECTION',
+        'WARN',
+        `Hostname ${hostname} is blocked - preventing account access`,
+        {
+          blocked_until: hostnameBlock.blocked_until,
+          blocked_reason: hostnameBlock.blocked_reason,
+          blocked_user_id: hostnameBlock.blocked_user_id,
+          remaining_minutes: hostnameBlock.remaining_minutes
+        }
+      );
+      
+      // Čekat s heartbeat
+      await waitWithHeartbeat(5); // 5 minut
+      return;
+    }
+
+    Log.debug('[WORKER]', '✅ Hostname ochrana OK - pokračuji ve výběru uživatele');
+
+    // 🎯 KROK 2b: VÝBĚR UŽIVATELE (pouze pokud není UI příkaz)
+    Log.debug('[WORKER]', '🔍 Krok 2b: Hledám dostupného uživatele s akcemi...');
 
     const user = await db.getUser();
     if (!user) {
@@ -179,6 +211,22 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
         await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
       } else {
         Log.success(`[${user.id}]`, `Akce ${actionCode} úspěšně dokončena`);
+      }
+
+      // 🚨 HOSTNAME OCHRANA: Kontrola, zda nebyl účet mezitím zablokován
+      if (fbBot) {
+        const blockInfo = await detectAccountBlock(fbBot, user);
+        if (blockInfo && blockInfo.locked) {
+          await Log.error(`[${user.id}]`, `🚨 DETEKOVÁN NOVÝ BAN: ${blockInfo.reason}`);
+          
+          // Zablokovat účet v databázi
+          await db.lockAccountWithReason(user.id, blockInfo.reason, blockInfo.type, os.hostname());
+          
+          // Zablokovat hostname
+          await handleNewAccountBlock(user, blockInfo.reason, blockInfo.type);
+          
+          throw new Error(`Account blocked during operation: ${blockInfo.reason}`);
+        }
       }
 
       // Pro post_utio akce zkontroluj, zda ještě nebylo dosaženo 1/3 limitu
@@ -630,6 +678,10 @@ async function initializeRequiredServices(user, context, requirements, existingF
 
       if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
         await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
+        
+        // 🚨 HOSTNAME OCHRANA: Zablokovat hostname při neúspěšném přihlášení
+        await handleNewAccountBlock(user, 'Neúspěšné přihlášení', 'LOGIN_FAILED');
+        
         throw new Error('FB login failed');
       }
 

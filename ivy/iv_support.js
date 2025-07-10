@@ -241,8 +241,33 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     // Vložení zprávy do FBu
     Log.info(`[${user.id}]`, '📝 Vkládám zprávu do FB...');
 
+    // Dodatečná stabilizace po návratu z UTIO
+    Log.info(`[${user.id}]`, '⏱️ Dodatečná stabilizace před otevřením dialogu...');
+    await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
+
+    // 1. Najdi a klikni na pole pro psaní příspěvku ve skupině
+    if (!await fbBot.newThing()) {
+      await Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku ve skupině');
+      return false;
+    }
+
+    if (!await fbBot.clickNewThing()) {
+      await Log.error(`[${user.id}]`, 'Nepodařilo se kliknout na pole pro psaní příspěvku');
+      return false;
+    }
+
+    // Pauza po otevření dialogu
+    await wait.delay(2000 + Math.random() * 1000); // 2-3 sekundy
+
+    // 2. Vloži text příspěvku pomocí schránky
     if (!await fbBot.pasteStatement(message[0], true)) { // true = použij schránku pro UTIO
       await Log.error(`[${user.id}]`, 'Nepodařilo se vložit zprávu do FB');
+      return false;
+    }
+
+    // 3. Odešli příspěvek
+    if (!await fbBot.clickSendButton()) {
+      await Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek');
       return false;
     }
 

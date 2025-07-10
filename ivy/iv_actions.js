@@ -12,6 +12,7 @@ import * as support from './iv_support.js';
 import * as fbSupport from './iv_fb_support.js';
 import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
+import { getAvailableGroupsForUser, detectMembershipRequest } from './user_group_escalation.js';
 
 /**
  * Určuje požadavky konkrétní akce na služby (FB, UTIO)
@@ -234,6 +235,15 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
           if (fbBot.pageAnalyzer) {
             const quickCheck = await fbBot.pageAnalyzer.quickStatusCheck();
 
+            // 🚨 DETEKCE ŽÁDOSTI O ČLENSTVÍ
+            const pageContent = await fbBot.page.content().catch(() => '');
+            const membershipDetected = await detectMembershipRequest(user, selectedGroup, pageContent);
+            
+            if (membershipDetected) {
+              await Log.warn(`[${user.id}]`, `🚫 Skupina ${selectedGroup.nazev} vyžaduje schválení členství - přeskakuji`);
+              continue; // Přejdi na další skupinu
+            }
+
             if (quickCheck.hasErrors) {
               const { waitForUserIntervention } = await import('./iv_wait.js');
               const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
@@ -353,11 +363,22 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
  */
 async function getAvailableGroups(userId, groupType) {
   try {
-    // Použij existující metodu z QueryBuilder (s opačným pořadím parametrů)
-    return await db.getAvailableGroups(groupType.toUpperCase(), userId);
+    // NOVÁ LOGIKA: Použij per-user group blocking systém
+    const groups = await getAvailableGroupsForUser(userId, groupType.toUpperCase());
+    
+    Log.debug(`[${userId}]`, `Per-user blocking: nalezeno ${groups.length} dostupných skupin typu ${groupType}`);
+    
+    return groups;
   } catch (err) {
     await Log.error(`[${userId}] getAvailableGroups`, err);
-    return [];
+    
+    // Fallback na původní metodu při chybě
+    try {
+      return await db.getAvailableGroups(groupType.toUpperCase(), userId);
+    } catch (fallbackErr) {
+      await Log.error(`[${userId}] getAvailableGroups fallback`, fallbackErr);
+      return [];
+    }
   }
 }
 
