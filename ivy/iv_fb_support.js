@@ -8,6 +8,7 @@
 
 import { Log } from './iv_log.class.js';
 import { handleFBError, quickErrorReport, analyzeErrorPatterns } from './iv_fb-error-workflow.js';
+import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';
 
 

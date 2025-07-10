@@ -1,13 +1,9 @@
-feat: Add time-based throttling for automatic Facebook group join
+fix: Add missing db import and reduce interactive debugger verbosity
 
-- Add getUserLastJoinGroup query to check last join_group action
-- Implement 6-hour cooldown period before allowing another join attempt
-- Log join_group actions to action_log table with group ID and description
-- Add temporal blocking with remaining hours display for user feedback
-- Prevent excessive use of "Přidat se ke skupině" button per Facebook policies
-
-Uses existing action_log infrastructure instead of creating new tables.
-Provides clear feedback when action is blocked due to time restrictions.
+- Add missing db import in iv_fb_support.js to resolve "db is not defined" error
+- Reduce interactive debugger output from 11 lines to 2 lines as requested
+- Maintain all functionality while making output more concise
+- Fix prevents crash when checking getUserLastJoinGroup() for time-based throttling
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
