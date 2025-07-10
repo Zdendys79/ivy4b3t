@@ -359,35 +359,9 @@ export class QueryBuilder {
   // =========================================================
 
   /**
-   * Kombinovaná funkce pro získání uživatele s akcemi
+   * REMOVED: Duplicitní metoda getUserWithAvailableActions byla odstraněna
+   * Použije se implementace na řádku 32-34 která správně volá SQL dotaz
    */
-  async getUserWithAvailableActions() {
-
-    try {
-      const user = await this.getUser();
-      if (!user) return null;
-
-      const actions = await this.getUserActions(user.id);
-      if (!actions.length) {
-        await Log.warn('[SQL]', `User ${user.id} selected but has no actions available`);
-        return null;
-      }
-
-      Log.debug('[SQL]', `User ${user.id} has ${actions.length} actions: ${actions.map(a => a.action_code).join(', ')}`);
-
-      return { user, actions };
-
-    } catch (err) {
-      await Log.error('[SQL][DEBUG]', `getUserWithAvailableActions error: ${err.message}`);
-      
-      // Re-throw function-not-found errors to ensure fail-fast behavior
-      if (err.message.includes('is not a function') || err.message.includes('Query not found')) {
-        throw err;
-      }
-      
-      return null;
-    }
-  }
 
   /**
    * Komplexní funkce pro update worktime s logováním

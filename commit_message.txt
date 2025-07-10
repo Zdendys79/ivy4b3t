@@ -1,9 +1,11 @@
-fix: Add hostname parameter and better validation for user selection
+fix: Remove duplicate getUserWithAvailableActions method causing wrong SQL query
 
-- Pass hostname explicitly to getUserWithAvailableActions
-- Add validation for user object properties (id, name, surname)
-- Add debug logging for problematic user objects
-- Prevent undefined user data from causing SQL errors
+- Remove duplicate implementation at line 364 that was overriding the correct one
+- Keep only the correct implementation at line 32 that calls users.getWithAvailableActions  
+- Add test files for VM testing (test.js, test.sh)
+
+This resolves the issue where users.getByHostname was called instead of 
+users.getWithAvailableActions, causing wrong user selection logic.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
