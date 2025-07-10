@@ -1,22 +1,12 @@
-feat: Implement comprehensive group_explore system for FB group analysis
+Oprava: Rozšíření detekce dialogu o obnovení stránek
 
-- Create group_details table for storing discovered group information
-- Add group_explore action to action_definitions with 3-8 minute intervals
-- Implement FBGroupAnalyzer for automatic group data collection
-- Add GroupExploreAction with intelligent browsing behavior
-- Create comprehensive SQL queries for group management and statistics
-- Add QueryBuilder methods for group_details operations
-- Configure posting cooldown (4-8 minutes) between all posting actions
-- Initialize group_explore action for all active users (100 users)
+Předchozí oprava cílila pouze na jeden typ infobaru. Tato změna
+přidává robustnější, víceúrovňovou detekci pro zavírání různých
+variant dialogů, které se mohou objevit po pádu prohlížeče,
+včetně okna "Restore pages?".
 
-Features:
-- Non-invasive group exploration that runs when posting actions unavailable
-- Automatic collection of group name, member count, category, privacy type
-- Smart navigation between related groups via links
-- Activity simulation: scrolling, reading posts, exploring member profiles
-- Database tracking of exploration statistics per user
-- Configurable posting cooldown to prevent suspicious rapid posting
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+- Byla přidána víceúrovňová strategie:
+  1. Původní metoda pro Shadow DOM.
+  2. Hledání obecného zavíracího tlačítka (`aria-label="Close"`).
+  3. Hledání tlačítka "Cancel" pro zrušení akce.
+- Tím se zvyšuje šance na automatické zavření různých typů dialogů.

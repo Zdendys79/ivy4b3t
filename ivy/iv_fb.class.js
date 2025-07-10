@@ -1884,8 +1884,8 @@ export class FBBot {
   }
 
   /**
-   * Detekuje a zavírá "Chromium didn't shut down correctly" dialog.
-   * Tento dialog je často v Shadow DOM, takže vyžaduje speciální přístup.
+   * Detekuje a zavírá "Chromium didn't shut down correctly" a "Restore pages?" dialogy.
+   * Tyto dialogy jsou často v Shadow DOM nebo jako infobary, takže vyžaduje speciální přístup.
    */
   async _detectAndCloseCrashDialogs() {
     if (!this.context) {
@@ -1907,12 +1907,13 @@ export class FBBot {
           continue;
         }
 
+        let dialogClosed = false;
+
+        // --- Strategie 1: Shadow DOM (pro "Chromium didn't shut down correctly") ---
         try {
-          const clicked = await page.evaluate(() => {
-            // Selektor pro kontejner infobaru
+          const clickedInShadowDom = await page.evaluate(() => {
             const infoBarContainer = document.querySelector('info-bar-container');
             if (infoBarContainer && infoBarContainer.shadowRoot) {
-              // Selektor pro zavírací tlačítko uvnitř Shadow DOM
               const closeButton = infoBarContainer.shadowRoot.querySelector('#close');
               if (closeButton) {
                 closeButton.click();
@@ -1922,27 +1923,76 @@ export class FBBot {
             return false;
           });
 
-          if (clicked) {
-            Log.info('[FB]', 'Detekován a zavřen Chromium crash dialog (infobar).');
-            
-            try {
-              await db.logSystemEvent(
-                'CRASH_DIALOG',
-                'WARN',
-                'Chromium crash dialog detected and closed via Shadow DOM.',
-                { url: page.url() }
-              );
-            } catch (err) {
-              Log.debug('[FB]', `System log error: ${err.message}`);
-            }
-            
-            // Po úspěšném zavření můžeme skončit, protože se zavře na všech stránkách najednou.
-            await wait.delay(1000); // Krátká pauza pro projevení změny
-            return;
+          if (clickedInShadowDom) {
+            Log.info('[FB]', 'Detekován a zavřen Chromium crash dialog (infobar via Shadow DOM).');
+            dialogClosed = true;
           }
         } catch (err) {
-          // Tichá chyba - stránka mohla být zavřena, nebo evaluate selhalo. Pokračuj na další.
-          Log.debug('[FB]', `Error checking page for crash dialog: ${err.message}`);
+          Log.debug('[FB]', `Error during Shadow DOM check: ${err.message}`);
+        }
+
+        if (dialogClosed) {
+          try {
+            await db.logSystemEvent('CRASH_DIALOG', 'WARN', 'Chromium crash/restore dialog detected and closed.', { url: page.url() });
+          } catch (dbErr) {
+            Log.debug('[FB]', `System log error: ${dbErr.message}`);
+          }
+          await wait.delay(1000);
+          return; // Assume one dialog per browser instance
+        }
+
+        // --- Strategie 2: Hledání obecného zavíracího tlačítka (pro "Restore pages?") ---
+        try {
+          // Hledáme tlačítko s aria-label="Close" nebo "Zavřít", což je běžné
+          const closeButton = await page.$('button[aria-label="Close"], button[aria-label="Zavřít"]');
+          if (closeButton) {
+            await closeButton.click();
+            Log.info('[FB]', 'Detekován a zavřen dialog pomocí tlačítka s aria-label="Close".');
+            dialogClosed = true;
+          }
+        } catch (err) {
+          Log.debug('[FB]', `Error searching for aria-label="Close" button: ${err.message}`);
+        }
+
+        if (dialogClosed) {
+          try {
+            await db.logSystemEvent('CRASH_DIALOG', 'WARN', 'Chromium crash/restore dialog detected and closed.', { url: page.url() });
+          } catch (dbErr) {
+            Log.debug('[FB]', `System log error: ${dbErr.message}`);
+          }
+          await wait.delay(1000);
+          return;
+        }
+        
+        // --- Strategie 3: Hledání tlačítka "Cancel" ---
+        try {
+            const clickedCancel = await page.evaluate(() => {
+                const buttons = Array.from(document.querySelectorAll('button'));
+                // Hledáme tlačítko s textem "Cancel"
+                const cancelButton = buttons.find(btn => btn.innerText.toLowerCase() === 'cancel');
+                if (cancelButton) {
+                    cancelButton.click();
+                    return true;
+                }
+                return false;
+            });
+
+            if (clickedCancel) {
+                Log.info('[FB]', 'Detekován a zavřen dialog pomocí tlačítka "Cancel".');
+                dialogClosed = true;
+            }
+        } catch (err) {
+            Log.debug('[FB]', `Error searching for "Cancel" button: ${err.message}`);
+        }
+
+        if (dialogClosed) {
+          try {
+            await db.logSystemEvent('CRASH_DIALOG', 'WARN', 'Chromium crash/restore dialog detected and closed.', { url: page.url() });
+          } catch (dbErr) {
+            Log.debug('[FB]', `System log error: ${dbErr.message}`);
+          }
+          await wait.delay(1000);
+          return;
         }
       }
     } catch (err) {
