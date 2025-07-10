@@ -593,3 +593,32 @@ CREATE TABLE IF NOT EXISTS `log_console` (
   KEY `session_id_idx` (`session_id`),
   KEY `hostname_timestamp_idx` (`hostname`,`timestamp`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Captures console logs from the application';
+
+-- Hostname protection table - prevents account ban cascades
+-- When one account gets banned, blocks all accounts from same VM for 40-60 minutes
+CREATE TABLE IF NOT EXISTS `hostname_protection` (
+  `id` int AUTO_INCREMENT PRIMARY KEY,
+  `hostname` varchar(100) NOT NULL,
+  `blocked_until` datetime NOT NULL,
+  `blocked_reason` varchar(255) NOT NULL,
+  `blocked_user_id` smallint(5) unsigned NOT NULL,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `hostname_unique` (`hostname`),
+  KEY `idx_blocked_until` (`blocked_until`),
+  KEY `idx_hostname_time` (`hostname`, `blocked_until`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci 
+COMMENT='Hostname protection against account ban cascades';
+
+-- User-group blocking extensions
+-- Adds per-user group blocking with exponential escalation (5, 10, 20, 40, 80, 160, 180 days max)
+-- Handles "Vaše žádost o členství se vyřizuje" and similar membership request issues
+ALTER TABLE `user_groups` 
+ADD COLUMN IF NOT EXISTS `blocked_until` datetime NULL DEFAULT NULL COMMENT 'Kdy bude skupina opět dostupná pro tohoto uživatele',
+ADD COLUMN IF NOT EXISTS `block_count` tinyint unsigned NOT NULL DEFAULT 0 COMMENT 'Počet opakovaných problémů s touto skupinou',
+ADD COLUMN IF NOT EXISTS `last_block_reason` varchar(255) NULL DEFAULT NULL COMMENT 'Důvod posledního zablokování',
+ADD COLUMN IF NOT EXISTS `last_block_date` datetime NULL DEFAULT NULL COMMENT 'Datum posledního zablokování';
+
+-- Add indexes for user-group blocking if they don't exist
+ALTER TABLE `user_groups` 
+ADD INDEX IF NOT EXISTS `idx_ug_blocked_until` (`blocked_until`),
+ADD INDEX IF NOT EXISTS `idx_ug_user_blocked` (`user_id`, `blocked_until`);

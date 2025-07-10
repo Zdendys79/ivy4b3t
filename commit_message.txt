@@ -1,7 +1,9 @@
-fix: Move hostname_block_handler.js to correct ivy/ directory
+feat: Add blocking tables to installation scripts
 
-- Fix module import error by moving hostname_block_handler.js to ivy/ directory
-- Resolves "Cannot find module" error when starting the application
+- Add hostname_protection table to ivy_create_full.sql
+- Add user_groups extensions for per-user group blocking
+- Create update_blocking_tables.sh script for existing installations
+- Ensure new installations include blocking system tables automatically
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
