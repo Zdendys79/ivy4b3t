@@ -1,9 +1,9 @@
-feat: Add blocking tables to installation scripts
+fix: Remove non-existent 'available' column from user_group_blocking query
 
-- Add hostname_protection table to ivy_create_full.sql
-- Add user_groups extensions for per-user group blocking
-- Create update_blocking_tables.sh script for existing installations
-- Ensure new installations include blocking system tables automatically
+- Fix getAvailableGroupsForUser query in user_group_blocking.js
+- Replace ug.available with ug.type as user_group_type
+- Remove WHERE condition checking non-existent available column
+- Resolves SQL error: Unknown column 'ug.available' in 'SELECT'
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

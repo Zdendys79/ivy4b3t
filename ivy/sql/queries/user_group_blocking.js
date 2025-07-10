@@ -34,12 +34,11 @@ export const USER_GROUP_BLOCKING = {
   // ===== DOSTUPNÉ SKUPINY PRO UŽIVATELE =====
 
   getAvailableGroupsForUser: `
-    SELECT g.*, ug.available as user_available, ug.block_count
+    SELECT g.*, ug.type as user_group_type, ug.block_count
     FROM fb_groups g
     JOIN user_groups ug ON g.id = ug.group_id
     WHERE ug.user_id = ?
       AND g.typ = ?
-      AND ug.available = 1
       AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
       AND (g.next_seen IS NULL OR g.next_seen <= NOW())
     ORDER BY 
