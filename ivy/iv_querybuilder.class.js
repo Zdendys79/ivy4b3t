@@ -634,4 +634,55 @@ export class QueryBuilder {
   async cleanOldSystemLogs(days = 30) {
     return await this.safeExecute('system.cleanOldSystemLogs', [days]);
   }
+
+  // =========================================================
+  // GROUP DETAILS - Správa prozkoumávaných skupin
+  // =========================================================
+
+  async insertGroupDetails(fbGroupId, name, memberCount, description, category, privacyType, discoveredByUserId, notes, isRelevant, postingAllowed, language, activityLevel) {
+    return await this.safeExecute('group_details.insertGroup', [
+      fbGroupId, name, memberCount, description, category, privacyType, 
+      discoveredByUserId, notes, isRelevant, postingAllowed, language, activityLevel
+    ]);
+  }
+
+  async getGroupDetailsByFbId(fbGroupId) {
+    return await this.safeQueryFirst('group_details.getGroupByFbId', [fbGroupId]);
+  }
+
+  async getGroupDetailsById(id) {
+    return await this.safeQueryFirst('group_details.getGroupById', [id]);
+  }
+
+  async getRelevantGroups() {
+    return await this.safeQueryAll('group_details.getRelevantGroups');
+  }
+
+  async getGroupsForExploration(limit = 10) {
+    return await this.safeQueryAll('group_details.getGroupsForExploration', [limit]);
+  }
+
+  async markGroupAsRelevant(fbGroupId, isRelevant, note) {
+    return await this.safeExecute('group_details.markAsRelevant', [isRelevant, note, fbGroupId]);
+  }
+
+  async getGroupExplorationStats() {
+    return await this.safeQueryFirst('group_details.getExplorationStats');
+  }
+
+  async getUserGroupExplorationStats(userId) {
+    return await this.safeQueryFirst('group_details.getUserExplorationStats', [userId]);
+  }
+
+  async getGroupsByCategory(category, limit = 50) {
+    return await this.safeQueryAll('group_details.getGroupsByCategory', [`%${category}%`, limit]);
+  }
+
+  async getRecentlyDiscoveredGroups(days = 7, limit = 50) {
+    return await this.safeQueryAll('group_details.getRecentlyDiscovered', [days, limit]);
+  }
+
+  async cleanOldIrrelevantGroups(days = 30) {
+    return await this.safeExecute('group_details.deleteOldUnrelevant', [days]);
+  }
 }

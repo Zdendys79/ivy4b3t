@@ -32,5 +32,17 @@
     "hesitation_time_max": 8000,
     "review_time_min": 5000,
     "review_time_max": 15000
+  },
+  "posting_cooldown": {
+    "min_seconds": 240,
+    "max_seconds": 480,
+    "description": "Pauza mezi všemi akcemi, které něco vkládají na FB (4-8 minut)",
+    "affected_actions": [
+      "post_utio_g",
+      "post_utio_gv", 
+      "post_utio_p",
+      "quote_post",
+      "comment_post"
+    ]
   }
 }

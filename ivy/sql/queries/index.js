@@ -17,6 +17,7 @@ import { ERROR_REPORTS } from './error-reports.js';
 import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import { HOSTNAME_PROTECTION } from './hostname_protection.js';
 import { USER_GROUP_BLOCKING } from './user_group_blocking.js';
+import { GROUP_DETAILS } from './group_details.js';
 import userLimits from './user_limits.js';
 import actionQuality from './action_quality.js';
 import systemMetrics from './system_metrics.js';
@@ -39,6 +40,7 @@ export const SQL = {
   behavioral_profiles: BEHAVIORAL_PROFILES,
   hostname_protection: HOSTNAME_PROTECTION,
   user_group_blocking: USER_GROUP_BLOCKING,
+  group_details: GROUP_DETAILS,
   user_limits: userLimits,
   action_quality: actionQuality,
   system_metrics: systemMetrics,
