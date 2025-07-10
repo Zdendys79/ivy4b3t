@@ -1,13 +1,14 @@
-fix: Correct page analyzer logging to match returned data structure
+fix: Ensure consistent data structure across PageAnalyzer consumers
 
+- Fix ErrorReportBuilder to use navigation.elements instead of non-existent buttons
+- Add bodyText to basic analysis for ErrorReportBuilder compatibility  
 - Fix complexity analysis logging to read metrics.elements instead of elementCount
 - Fix navigation analysis logging to read hasStandardNavigation instead of linkCount
-- Add debug logging to complexity analysis for better troubleshooting
-- Include document readyState and title in metrics for diagnosis
-- Resolves "elements=0, depth=0, errors=0" false positive issues
+- Add debug logging and diagnostic data (readyState, title) to complexity analysis
+- Ensures all PageAnalyzer consumers expect the same data structure
 
-The analyzer was logging undefined values because it expected different
-property names than what the analysis methods actually returned.
+Resolves inconsistencies where different parts of the codebase expected
+different property names from the same analyzer methods.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

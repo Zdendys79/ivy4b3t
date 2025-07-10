@@ -75,9 +75,9 @@ export class ErrorReportBuilder {
       this.reportData.page_elements_summary = summary;
     }
 
-    // Nalezená tlačítka
-    if (pageAnalysis.navigation && pageAnalysis.navigation.buttons) {
-      this.reportData.detected_buttons = JSON.stringify(pageAnalysis.navigation.buttons);
+    // Navigační elementy (namísto buttons které navigation analysis neposkytuje)
+    if (pageAnalysis.navigation && pageAnalysis.navigation.elements) {
+      this.reportData.detected_navigation = JSON.stringify(pageAnalysis.navigation.elements);
     }
 
     // Texty na stránce

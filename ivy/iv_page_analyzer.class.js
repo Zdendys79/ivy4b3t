@@ -207,12 +207,18 @@ export class PageAnalyzer {
       const title = await this._safeGetPageTitle();
       const isLoggedIn = await this._checkLoginStatus();
       const pageType = this._determinePageType(url);
+      
+      // Přidej základní text analýzu
+      const bodyText = await this.page.evaluate(() => {
+        return document.body ? document.body.innerText.substring(0, 5000) : '';
+      });
 
       return {
         url: url,
         title: title,
         pageType: pageType,
         isLoggedIn: isLoggedIn,
+        bodyText: bodyText,
         loadTime: Date.now()
       };
 
