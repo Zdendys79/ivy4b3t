@@ -648,7 +648,31 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
               warningDetails.some(detail => detail.includes('join') || detail.includes('přidat'))) {
             await Log.warn(`[${user.id}]`, '⚠️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
             
-            // Automatické přidání ke skupině (pouze jednou v pracovním bloku)
+            // Automatické přidání ke skupině (s časovým omezením 6 hodin)
+            Log.info(`[${user.id}]`, '🤖 Kontroluji možnost automatického přidání ke skupině...');
+            
+            // Kontrola časového omezení - lze použít pouze 1x za 6 hodin
+            const lastJoinGroup = await db.getUserLastJoinGroup(user.id);
+            if (lastJoinGroup) {
+              const timeSinceLastJoin = Date.now() - new Date(lastJoinGroup.timestamp).getTime();
+              const sixHoursInMs = 6 * 60 * 60 * 1000;
+              
+              if (timeSinceLastJoin < sixHoursInMs) {
+                const hoursRemaining = Math.ceil((sixHoursInMs - timeSinceLastJoin) / (60 * 60 * 1000));
+                await Log.warn(`[${user.id}]`, `⏰ Nelze použít "Přidat se ke skupině" - lze použít pouze 1x za 6h. Zbývá: ${hoursRemaining}h`);
+                
+                return {
+                  ready: false,
+                  reason: `Časové omezení pro přidání do skupiny (zbývá ${hoursRemaining}h)`,
+                  critical: false,
+                  shouldNavigate: false,
+                  analysisDetails: analysis,
+                  temporaryBlock: true,
+                  blockUntil: new Date(new Date(lastJoinGroup.timestamp).getTime() + sixHoursInMs)
+                };
+              }
+            }
+            
             Log.info(`[${user.id}]`, '🤖 Pokus o automatické přidání ke skupině...');
             
             try {
@@ -667,6 +691,14 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
                 if (buttonsAfter.length === 0) {
                   Log.success('[FB]', `✅ Úspěšně kliknuto na "Přidat se ke skupině" - tlačítko zmizelo`);
                   Log.success(`[${user.id}]`, `✅ Automatické přidání úspěšné: Úspěšně použito tlačítko: "Přidat se ke skupině"`);
+                  
+                  // Zaloguj akci do action_log pro budoucí časové omezení
+                  try {
+                    await db.logAction(user.id, 'join_group', group.fb_id, `Automaticky přidán do skupiny: ${group.nazev}`);
+                    Log.info(`[${user.id}]`, '📝 Akce join_group zalogována pro časové omezení');
+                  } catch (logErr) {
+                    Log.warn(`[${user.id}]`, `⚠️ Nepodařilo se zalogovat join_group akci: ${logErr.message}`);
+                  }
                   
                   // Vrátí ready: true s informací o úspěšném přidání
                   return {

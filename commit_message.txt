@@ -1,11 +1,14 @@
-Oprava: Vylepšení detekce a zavírání crash dialogu prohlížeče
+feat: Add time-based throttling for automatic Facebook group join
 
-Původní implementace prohledávala pouze DOM aktuální stránky,
-což nebylo schopné detekovat infobar o nesprávném ukončení,
-který je vkládán prohlížečem a je umístěn v Shadow DOM.
+- Add getUserLastJoinGroup query to check last join_group action
+- Implement 6-hour cooldown period before allowing another join attempt
+- Log join_group actions to action_log table with group ID and description
+- Add temporal blocking with remaining hours display for user feedback
+- Prevent excessive use of "Přidat se ke skupině" button per Facebook policies
 
-Nová verze:
-- Prochází všechny otevřené stránky v kontextu prohlížeče.
-- Používá `page.evaluate()` pro přístup do Shadow DOM každé stránky.
-- Cíleně hledá a kliká na zavírací tlačítko infobaru.
-- Přidává robustnější logování pro ladění.
+Uses existing action_log infrastructure instead of creating new tables.
+Provides clear feedback when action is blocked due to time restrictions.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

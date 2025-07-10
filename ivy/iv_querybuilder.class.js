@@ -94,6 +94,10 @@ export class QueryBuilder {
     return await this.logAction(accountId, actionCode, referenceId, text);
   }
 
+  async getUserLastJoinGroup(accountId) {
+    return await this.safeQueryFirst('actions.getUserLastJoinGroup', [accountId]);
+  }
+
   async updateActionPlan(userId, actionCode, minutes) {
     return await this.safeExecute('actions.updatePlan', [minutes, userId, actionCode]);
   }

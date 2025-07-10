@@ -123,6 +123,15 @@ export const ACTIONS = {
     LIMIT 1
   `,
 
+  getUserLastJoinGroup: `
+    SELECT timestamp, reference_id as group_id, text
+    FROM action_log
+    WHERE account_id = ?
+      AND action_code = 'join_group'
+    ORDER BY timestamp DESC
+    LIMIT 1
+  `,
+
   getReferenceSleepTime: `
     SELECT COALESCE(
       (SELECT timestamp FROM action_log WHERE account_id = ? AND action_code = 'account_sleep' ORDER BY timestamp DESC LIMIT 1),
