@@ -414,7 +414,7 @@ async function executeUICommand(user, uiCommand) {
         // Pokud má PageAnalyzer, přidej analýzu
         if (fbBot.pageAnalyzer) {
           try {
-            const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+            const analysis = await fbBot.pageAnalyzer.analyzeFullPage();
             reportBuilder.addPageAnalysis(analysis);
           } catch (err) {
             reportBuilder.addNotes(`Analýza selhala: ${err.message}`);
@@ -664,7 +664,7 @@ async function initializeRequiredServices(user, context, requirements, existingF
           // Pokud má PageAnalyzer, přidej analýzu
           if (fbBot.pageAnalyzer) {
             try {
-              const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+              const analysis = await fbBot.pageAnalyzer.analyzeFullPage();
               reportBuilder.addPageAnalysis(analysis);
             } catch (err) {
               reportBuilder.addNotes(`Analýza selhala: ${err.message}`);

@@ -1,13 +1,13 @@
-feat: Add post element verification to UTIO readiness and disable analyzer cache
+feat: Remove PageAnalyzer cache completely for always-fresh results
 
-- Move newThing() post element detection into FB readiness verification for UTIO
-- Verify posting capability before confirming group readiness status
-- Disable PageAnalyzer cache by default (Facebook pages are dynamic)
-- Set forceRefresh=true as default to always get current page state
-- Return detailed error when post element cannot be found
+- Remove all cache logic from PageAnalyzer (cacheResults, forceRefresh parameters)
+- Remove cache-related parameters from all analyzeFullPage() calls
+- Remove clearAnalysisCache() method from FBBot
+- PageAnalyzer now always returns current page state without caching
+- Simplify API by removing cache configuration options
 
-This ensures UTIO operations only proceed when posting is actually possible
-and eliminates stale cached results from dynamic Facebook content.
+Facebook pages are highly dynamic and cached results are never reliable.
+This ensures all analysis results reflect the actual current page state.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

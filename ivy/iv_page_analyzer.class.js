@@ -24,9 +24,7 @@ export class PageAnalyzer {
   async analyzeFullPage(options = {}) {
     const {
       includePostingCapability = false,
-      includeGroupAnalysis = false,
-      cacheResults = false,  // Vypnuto - FB stránky jsou dynamické
-      forceRefresh = true    // Vždy aktuální stav
+      includeGroupAnalysis = false
     } = options;
 
     try {
@@ -35,13 +33,7 @@ export class PageAnalyzer {
       }
 
       const url = this.page.url();
-      const cacheKey = this._generateCacheKey(url, options);
-
-      // Použij cache pokud není vynucené osvěžení
-      if (!forceRefresh && this.analysisCache.has(cacheKey)) {
-        Log.info('[ANALYZER]', 'Používám cached výsledek analýzy');
-        return this.analysisCache.get(cacheKey);
-      }
+      // Cache je vypnutá - Facebook stránky jsou dynamické
 
       Log.info('[ANALYZER]', `Spouštím kompletní analýzu stránky: ${url}`);
 
@@ -81,11 +73,7 @@ export class PageAnalyzer {
         details: this._generateDetailedWarnings(errorAnalysis, groupAnalysis)
       };
 
-      // Cache výsledek
-      if (cacheResults) {
-        this.analysisCache.set(cacheKey, result);
-        this._cleanupCache();
-      }
+      // Cache je vypnutá - vždy aktuální výsledky
 
       this.lastAnalysis = result;
       Log.success('[ANALYZER]', `Analýza dokončena se stavem: ${result.status}`);

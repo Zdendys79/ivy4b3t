@@ -1848,7 +1848,7 @@ export class FBBot {
     return this.isInitialized && this.page && !this.page.isClosed();
   }
 
-  async getCurrentPageAnalysis(forceRefresh = false) {
+  async getCurrentPageAnalysis() {
     if (!this.pageAnalyzer) {
       await Log.warn('[FB]', 'PageAnalyzer není k dispozici');
       return null;
@@ -1857,8 +1857,7 @@ export class FBBot {
     try {
       return await this.pageAnalyzer.analyzeFullPage({
         includePostingCapability: true,
-        includeGroupAnalysis: true,
-        forceRefresh: forceRefresh
+        includeGroupAnalysis: true
       });
     } catch (err) {
       await Log.error('[FB]', `Chyba při získávání analýzy: ${err.message}`);
@@ -1866,13 +1865,7 @@ export class FBBot {
     }
   }
 
-  // NOVÁ METODA - Vyčištění cache analyzeru
-  clearAnalysisCache() {
-    if (this.pageAnalyzer) {
-      this.pageAnalyzer.clearCache();
-      Log.info('[FB]', 'Cache PageAnalyzer vyčištěna');
-    }
-  }
+  // Cache byla odstraněna - PageAnalyzer vždy vrací aktuální data
 
   /**
    * Asynchronní detekce a zavírání Chromium crash dialogů

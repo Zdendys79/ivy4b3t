@@ -270,7 +270,6 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
                 try {
                   const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
                     includeGroupAnalysis: true,
-                    forceRefresh: true
                   });
                   reportBuilder.addPageAnalysis(analysis);
                 } catch (err) {

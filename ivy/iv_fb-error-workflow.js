@@ -104,7 +104,6 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
         fullAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({
           includePostingCapability: true,
           includeGroupAnalysis: Boolean(group),
-          forceRefresh: true
         });
 
         Log.info('[ERROR_ANALYSIS]', 'Detailní analýza dokončena');

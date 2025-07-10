@@ -624,8 +624,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
     if (fbBot.pageAnalyzer) {
       try {
         const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
-          includeGroupAnalysis: true,
-          forceRefresh: true  // Vždy aktuální stav, ne cache
+          includeGroupAnalysis: true
         });
 
         // Kontrola výsledku analýzy
