@@ -772,6 +772,7 @@ async function prepareBrowser(user) {
       '--suppress-message-center-popups',
       '--disable-notifications',
       '--disable-infobars',
+      '--disable-session-crashed-bubble',
       '--start-maximized',
       '--no-sandbox',
       '--disable-setuid-sandbox',

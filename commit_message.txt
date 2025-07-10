@@ -1,15 +1,15 @@
-fix: Add automatic discussion section navigation for sell groups
+Fix: Potlačení dialogu o obnovení stránek a refaktoring
 
-- Enhance newThing() to automatically detect sell groups and navigate to discussion section
-- Expand isSellGroup() detection with multiple keywords (Bazar, Bazos, Inzerát, Marketplace)
-- Add title-based detection for sell groups using page title analysis
-- Improve clickDiscus() with multiple language variants (Diskuze, Discussion, Posts)
-- Add proper error handling and logging for discussion navigation
-- Solve issue where posting elements were not found in sell groups main page
+Tento commit implementuje robustnější řešení pro problém s dialogem
+"Restore pages?", který se objevoval po nesprávném ukončení prohlížeče.
 
-This resolves the debug incident where "Bazar - Liberec + Jablonec n N." group 
-required navigation to discussion section before posting was possible.
+Změny:
+- Do `iv_worker.js` byl přidán spouštěcí argument Chromia
+  `--disable-session-crashed-bubble`. Tento argument zabraňuje
+  zobrazení dialogu přímo na úrovni prohlížeče.
+- Z `iv_fb.class.js` byl odstraněn veškerý kód (`_handleCrashDialogsAsync`
+  a `_detectAndCloseCrashDialogs`), který se snažil tento dialog
+  zavírat až po jeho zobrazení. Tento kód je nyní nadbytečný.
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+Výsledkem je čistší a spolehlivější řešení, které problému předchází,
+místo aby ho reaktivně řešilo.
