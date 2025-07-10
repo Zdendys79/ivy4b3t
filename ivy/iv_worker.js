@@ -112,9 +112,12 @@ export async function tick() {
     // 🎯 KROK 2b: VÝBĚR UŽIVATELE (pouze pokud není UI příkaz)
     Log.debug('[WORKER]', '🔍 Krok 2b: Hledám dostupného uživatele s akcemi...');
 
-    const user = await db.getUserWithAvailableActions();
-    if (!user) {
+    const user = await db.getUserWithAvailableActions(hostname);
+    if (!user || !user.id || !user.name || !user.surname) {
       Log.info('[WORKER]', '❌ Krok 2: Nebyl nalezen žádný uživatel s dostupnými akcemi');
+      if (user) {
+        Log.warn('[WORKER]', `Problémový uživatel: ${JSON.stringify(user)}`);
+      }
       await showAccountLockStats();
 
       // 🎯 KROK 9: ČEKÁNÍ 1-5 MINUT S HEARTBEAT

@@ -1,18 +1,9 @@
-feat: Implement action-plan-based user selection with fair rotation
+fix: Add hostname parameter and better validation for user selection
 
-- Remove dependency on next_worktime column in fb_users
-- User selection now based purely on user_action_plan table
-- Add getUserWithAvailableActions method to QueryBuilder
-- Update worker to use new selection logic
-
-Selection criteria:
-- Exclude users with active account_sleep/account_delay (next_time > NOW())
-- Require at least one available non-sleep/delay action
-- Handle users with missing action plans (treat as available)
-- Order by oldest scheduled action time for fair rotation
-
-This ensures proper user rotation and eliminates the issue where 
-the same user (ID 7) was always selected.
+- Pass hostname explicitly to getUserWithAvailableActions
+- Add validation for user object properties (id, name, surname)
+- Add debug logging for problematic user objects
+- Prevent undefined user data from causing SQL errors
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
