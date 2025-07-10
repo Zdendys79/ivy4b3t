@@ -50,11 +50,11 @@ export class PageAnalyzer {
 
       // Analýza komplexnosti stránky
       const complexityAnalysis = await this._performComplexityAnalysis();
-      Log.info('[ANALYZER]', `Complexity: elements=${complexityAnalysis.elementCount || 0}, depth=${complexityAnalysis.maxDepth || 0}, errors=${complexityAnalysis.errors?.length || 0}`);
+      Log.info('[ANALYZER]', `Complexity: elements=${complexityAnalysis.metrics?.elements || 0}, scripts=${complexityAnalysis.metrics?.scripts || 0}, normal=${complexityAnalysis.isNormal}`);
 
       // Analýza navigace
       const navigationAnalysis = await this._performNavigationAnalysis();
-      Log.info('[ANALYZER]', `Navigation: links=${navigationAnalysis.linkCount || 0}, forms=${navigationAnalysis.formCount || 0}, buttons=${navigationAnalysis.buttonCount || 0}`);
+      Log.info('[ANALYZER]', `Navigation: standard=${navigationAnalysis.hasStandardNavigation}, score=${navigationAnalysis.navigationScore || 0}`);
 
       // Analýza chybových stavů
       const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis);
@@ -308,6 +308,8 @@ export class PageAnalyzer {
 
   async _performComplexityAnalysis() {
     try {
+      Log.debug('[ANALYZER]', 'Spouštím page.evaluate pro complexity analýzu...');
+      
       const metrics = await this.page.evaluate(() => {
         const elementCount = document.querySelectorAll('*').length;
         const imageCount = document.querySelectorAll('img').length;
@@ -323,9 +325,14 @@ export class PageAnalyzer {
           links: linkCount,
           buttons: buttonCount,
           forms: formCount,
-          bodyTextLength: document.body ? document.body.innerText.length : 0
+          bodyTextLength: document.body ? document.body.innerText.length : 0,
+          documentReady: document.readyState,
+          hasBody: !!document.body,
+          title: document.title || 'No title'
         };
       });
+
+      Log.debug('[ANALYZER]', `Raw metrics: ${JSON.stringify(metrics)}`);
 
       // Hodnocení komplexnosti
       const isNormal = metrics.elements > 500 &&

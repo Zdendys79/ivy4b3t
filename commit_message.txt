@@ -1,14 +1,13 @@
-feat: Add robust multi-strategy Facebook post element detection
+fix: Correct page analyzer logging to match returned data structure
 
-- Split newThing() into multiple fallback strategies for better reliability
-- Strategy 1: starts-with() for exact prefix matching (original approach)
-- Strategy 2: contains() for partial text matching (handles ellipsis)
-- Strategy 3: CSS class and attribute-based fallback selectors
-- Each strategy has independent timeout to avoid blocking on slow DOM loading
-- Improves success rate for Facebook post creation across different page states
+- Fix complexity analysis logging to read metrics.elements instead of elementCount
+- Fix navigation analysis logging to read hasStandardNavigation instead of linkCount
+- Add debug logging to complexity analysis for better troubleshooting
+- Include document readyState and title in metrics for diagnosis
+- Resolves "elements=0, depth=0, errors=0" false positive issues
 
-This addresses timing issues where Facebook's dynamic content loading
-causes post creation elements to be temporarily unavailable.
+The analyzer was logging undefined values because it expected different
+property names than what the analysis methods actually returned.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
