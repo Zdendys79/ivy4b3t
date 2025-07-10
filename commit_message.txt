@@ -1,13 +1,12 @@
-feat: Remove PageAnalyzer cache completely for always-fresh results
+fix: Adjust page complexity criteria for modern Facebook pages
 
-- Remove all cache logic from PageAnalyzer (cacheResults, forceRefresh parameters)
-- Remove cache-related parameters from all analyzeFullPage() calls
-- Remove clearAnalysisCache() method from FBBot
-- PageAnalyzer now always returns current page state without caching
-- Simplify API by removing cache configuration options
+- Reduce image requirement from >10 to >3 (Facebook uses SVG icons instead of img tags)
+- Reduce link requirement from >50 to >10 (SPA navigation uses fewer direct links)
+- Keep element count >500 and script count >20 unchanged
+- Prevents false "abnormal page structure" warnings on normal Facebook pages
 
-Facebook pages are highly dynamic and cached results are never reliable.
-This ensures all analysis results reflect the actual current page state.
+Modern Facebook uses different DOM patterns than the original criteria expected,
+causing valid pages to be flagged as potentially problematic.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
