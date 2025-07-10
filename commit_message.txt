@@ -1,12 +1,15 @@
-Oprava: Rozšíření detekce dialogu o obnovení stránek
+fix: Add automatic discussion section navigation for sell groups
 
-Předchozí oprava cílila pouze na jeden typ infobaru. Tato změna
-přidává robustnější, víceúrovňovou detekci pro zavírání různých
-variant dialogů, které se mohou objevit po pádu prohlížeče,
-včetně okna "Restore pages?".
+- Enhance newThing() to automatically detect sell groups and navigate to discussion section
+- Expand isSellGroup() detection with multiple keywords (Bazar, Bazos, Inzerát, Marketplace)
+- Add title-based detection for sell groups using page title analysis
+- Improve clickDiscus() with multiple language variants (Diskuze, Discussion, Posts)
+- Add proper error handling and logging for discussion navigation
+- Solve issue where posting elements were not found in sell groups main page
 
-- Byla přidána víceúrovňová strategie:
-  1. Původní metoda pro Shadow DOM.
-  2. Hledání obecného zavíracího tlačítka (`aria-label="Close"`).
-  3. Hledání tlačítka "Cancel" pro zrušení akce.
-- Tím se zvyšuje šance na automatické zavření různých typů dialogů.
+This resolves the debug incident where "Bazar - Liberec + Jablonec n N." group 
+required navigation to discussion section before posting was possible.
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
