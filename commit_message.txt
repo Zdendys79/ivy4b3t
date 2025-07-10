@@ -1,15 +1,15 @@
-Fix: Potlačení dialogu o obnovení stránek a refaktoring
+fix: Use discussion navigation only as last resort fallback
 
-Tento commit implementuje robustnější řešení pro problém s dialogem
-"Restore pages?", který se objevoval po nesprávném ukončení prohlížeče.
+- Move discussion section navigation to be the final fallback strategy
+- Only attempt "Diskuze" click when all other posting element search strategies fail
+- Simplify clickDiscus() to just look for "Diskuze" text without over-complexity
+- Revert isSellGroup() to simple detection to avoid false positives
+- Retry posting element search after successful discussion navigation
+- Conservative approach prevents unnecessary navigation in normal groups
 
-Změny:
-- Do `iv_worker.js` byl přidán spouštěcí argument Chromia
-  `--disable-session-crashed-bubble`. Tento argument zabraňuje
-  zobrazení dialogu přímo na úrovni prohlížeče.
-- Z `iv_fb.class.js` byl odstraněn veškerý kód (`_handleCrashDialogsAsync`
-  a `_detectAndCloseCrashDialogs`), který se snažil tento dialog
-  zavírat až po jeho zobrazení. Tento kód je nyní nadbytečný.
+This ensures posting elements are found in sell groups requiring discussion 
+section while avoiding false positives in regular groups.
 
-Výsledkem je čistší a spolehlivější řešení, které problému předchází,
-místo aby ho reaktivně řešilo.
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

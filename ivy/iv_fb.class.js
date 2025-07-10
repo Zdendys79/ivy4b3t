@@ -784,20 +784,6 @@ export class FBBot {
     try {
       Log.info('[FB]', `Hledám element pro psaní příspěvku. Texty: ${CONFIG.new_post_texts.join(', ')}`);
       
-      // NOVÉ: Kontrola prodejní skupiny a přechod do diskuze
-      const isSell = await this.isSellGroup();
-      if (isSell) {
-        Log.info('[FB]', '🛒 Detekována prodejní skupina - přecházím do sekce Diskuze...');
-        const discussClicked = await this.clickDiscus();
-        if (discussClicked) {
-          Log.success('[FB]', '✅ Úspěšně přešel do sekce Diskuze');
-          // Krátké čekání na načtení sekce Diskuze
-          await wait.delay(2000, 3000);
-        } else {
-          Log.warn('[FB]', '⚠️ Nepodařilo se přejít do sekce Diskuze, pokračuji standardně...');
-        }
-      }
-      
       // Pokus 1: Přesná shoda s starts-with
       let result = await this.findPostElementWithStrategy('starts-with');
       if (result) {
@@ -826,7 +812,23 @@ export class FBBot {
         return true;
       }
 
-      await Log.warn('[FB]', 'Všechny strategie selhaly, spouštím diagnostiku...');
+      // NOVÝ Pokus 4: Jako poslední možnost - zkus přejít do sekce Diskuze
+      Log.info('[FB]', 'Fallback selhal, zkouším přechod do sekce Diskuze jako poslední možnost...');
+      const discussClicked = await this.clickDiscus();
+      if (discussClicked) {
+        Log.info('[FB]', '✅ Přešel do sekce Diskuze, opakuji hledání pole pro psaní...');
+        await wait.delay(2000, 3000); // Čekání na načtení
+        
+        // Opakuj hledání po přechodu do diskuze
+        result = await this.findPostElementWithStrategy('starts-with');
+        if (result) {
+          this.newThingElement = result.handle;
+          Log.success('[FB]', `Element nalezen po přechodu do diskuze: "${result.text}"`);
+          return true;
+        }
+      }
+
+      await Log.warn('[FB]', 'Všechny strategie včetně diskuze selhaly, spouštím diagnostiku...');
       await this.debugPostCreationElements();
       throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
@@ -1662,77 +1664,26 @@ export class FBBot {
   // Pokračování třídy FBBot
 
   async isSellGroup() {
-    // Rozšířená detekce prodejních skupin podle různých indikátorů
-    const sellIndicators = [
-      "Prodat",
-      "Prodej", 
-      "Bazar",
-      "Bazos",
-      "Inzerát",
-      "Inzeráty",
-      "Prodávat",
-      "Marketplace"
-    ];
-    
-    for (const indicator of sellIndicators) {
-      const found = await this._findByText(indicator, { timeout: 1500 });
-      if (found.length) {
-        Log.info(`[FB] Skupina je prodejní (detekován: "${indicator}").`);
-        return true;
-      }
+    const found = await this._findByText("Prodat", { timeout: 3500 });
+    if (found.length) {
+      Log.info(`[FB] Skupina je prodejní.`);
+      return true;
     }
-    
-    // Kontrola podle názvu skupiny v titulu stránky
-    try {
-      const title = await this.page.title();
-      const sellKeywords = ['bazar', 'prodej', 'bazos', 'inzerát'];
-      const titleLower = title.toLowerCase();
-      
-      for (const keyword of sellKeywords) {
-        if (titleLower.includes(keyword)) {
-          Log.info(`[FB] Skupina je prodejní (název obsahuje: "${keyword}").`);
-          return true;
-        }
-      }
-    } catch (err) {
-      Log.debug('[FB]', `Chyba při kontrole titulu: ${err.message}`);
-    }
-    
     return false;
   }
 
   async clickDiscus() {
     try {
-      // Různé varianty textu pro sekci diskuze
-      const discussionTexts = [
-        "Diskuze",
-        "Discussion", 
-        "Diskuse",
-        "Posts",
-        "Příspěvky"
-      ];
-      
-      Log.info('[FB]', `Hledám tlačítko pro diskuze: ${discussionTexts.join(', ')}`);
-      
-      for (const text of discussionTexts) {
-        try {
-          const elements = await this._findByText(text, { timeout: 2000 });
-          if (elements.length > 0) {
-            Log.info('[FB]', `Nalezen text "${text}", pokouším se kliknout...`);
-            await elements[0].click();
-            await wait.delay(1000, 2000); // Krátké čekání po kliknutí
-            Log.success('[FB]', `✅ Úspěšně kliknuto na "${text}"`);
-            return true;
-          }
-        } catch (clickErr) {
-          Log.debug('[FB]', `Nepodařilo se kliknout na "${text}": ${clickErr.message}`);
-          continue;
-        }
+      Log.info('[FB]', 'Hledám tlačítko "Diskuze"...');
+      const elements = await this._findByText("Diskuze", { timeout: 3000 });
+      if (elements.length > 0) {
+        await elements[0].click();
+        Log.success('[FB]', '✅ Úspěšně kliknuto na "Diskuze"');
+        return true;
       }
-      
-      throw new Error('Žádný z textů pro diskuze nebyl nalezen');
+      throw new Error('Tlačítko "Diskuze" nenalezeno');
     } catch (err) {
-      await Log.error(`[FB] Chyba v clickDiscus: ${err.message}`);
+      Log.debug(`[FB] clickDiscus selhal: ${err.message}`);
       return false;
     }
   }
