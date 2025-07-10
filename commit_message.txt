@@ -1,16 +1,18 @@
-feat: Fix group selection logic and update priority system
+feat: Implement action-plan-based user selection with fair rotation
 
-- Fix getAvailableGroupsForUser query to use LEFT JOIN instead of JOIN
-- Allow selection from all groups of type, not just existing user_groups relationships
-- Update group priorities based on user_counter for both G and GV types:
-  - Priority 1: <100 members
-  - Priority 2: 100-999 members  
-  - Priority 3: 1000+ members
-- Resolves issue with 0 available groups for user actions
+- Remove dependency on next_worktime column in fb_users
+- User selection now based purely on user_action_plan table
+- Add getUserWithAvailableActions method to QueryBuilder
+- Update worker to use new selection logic
 
-Results:
-- GV groups: 279 total (101/74/104 by priority)
-- G groups: 733 total (0/50/683 by priority)
+Selection criteria:
+- Exclude users with active account_sleep/account_delay (next_time > NOW())
+- Require at least one available non-sleep/delay action
+- Handle users with missing action plans (treat as available)
+- Order by oldest scheduled action time for fair rotation
+
+This ensures proper user rotation and eliminates the issue where 
+the same user (ID 7) was always selected.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

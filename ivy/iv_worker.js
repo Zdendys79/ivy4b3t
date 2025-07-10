@@ -112,7 +112,7 @@ export async function tick() {
     // 🎯 KROK 2b: VÝBĚR UŽIVATELE (pouze pokud není UI příkaz)
     Log.debug('[WORKER]', '🔍 Krok 2b: Hledám dostupného uživatele s akcemi...');
 
-    const user = await db.getUser();
+    const user = await db.getUserWithAvailableActions();
     if (!user) {
       Log.info('[WORKER]', '❌ Krok 2: Nebyl nalezen žádný uživatel s dostupnými akcemi');
       await showAccountLockStats();

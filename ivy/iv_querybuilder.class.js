@@ -29,6 +29,10 @@ export class QueryBuilder {
     return await this.safeQueryFirst('users.getByHostname', [host]);
   }
 
+  async getUserWithAvailableActions(host = hostname) {
+    return await this.safeQueryFirst('users.getWithAvailableActions', [host]);
+  }
+
   async getUserById(id) {
     return await this.safeQueryFirst('users.getById', [id]);
   }

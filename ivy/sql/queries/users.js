@@ -70,28 +70,49 @@ export const USERS = {
     FROM fb_users u
     WHERE u.host LIKE ?
       AND u.locked IS NULL
-      AND COALESCE(u.next_worktime, NOW()) <= NOW()
-      AND EXISTS (
+      -- User's sleep/delay periods have expired (if they exist)
+      AND NOT EXISTS (
         SELECT 1
-        FROM user_action_plan uap
-        JOIN action_definitions ad ON uap.action_code = ad.action_code
-        WHERE uap.user_id = u.id
-          AND (uap.next_time IS NULL OR uap.next_time <= NOW())
-          AND ad.active = 1
-          AND NOT (
-            ad.action_code IN ('account_sleep','account_delay')
-            AND EXISTS (
-              SELECT 1
-              FROM user_action_plan uap2
-              JOIN action_definitions ad2 ON uap2.action_code = ad2.action_code
-              WHERE uap2.user_id = u.id
-                AND uap2.action_code NOT IN ('account_sleep','account_delay')
-                AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
-                AND ad2.active = 1
-            )
-          )
+        FROM user_action_plan uap_sleep
+        WHERE uap_sleep.user_id = u.id
+          AND uap_sleep.action_code IN ('account_sleep', 'account_delay')
+          AND uap_sleep.next_time > NOW()
       )
-    ORDER BY COALESCE(u.next_worktime, NOW() - INTERVAL 2 DAY) ASC
+      -- User has at least one available non-sleep/delay action
+      AND (
+        -- User has available regular actions in their action plan
+        EXISTS (
+          SELECT 1
+          FROM user_action_plan uap
+          JOIN action_definitions ad ON uap.action_code = ad.action_code
+          WHERE uap.user_id = u.id
+            AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+            AND ad.active = 1
+            AND ad.action_code NOT IN ('account_sleep','account_delay')
+        )
+        OR
+        -- User has missing action plans for regular actions (treat as available)
+        EXISTS (
+          SELECT 1
+          FROM action_definitions ad
+          WHERE ad.active = 1
+            AND ad.action_code NOT IN ('account_sleep','account_delay')
+            AND NOT EXISTS (
+              SELECT 1 
+              FROM user_action_plan uap 
+              WHERE uap.user_id = u.id AND uap.action_code = ad.action_code
+            )
+        )
+      )
+    ORDER BY (
+      -- Get the oldest scheduled action time for this user
+      SELECT MIN(COALESCE(uap.next_time, '1970-01-01 00:00:00'))
+      FROM user_action_plan uap
+      JOIN action_definitions ad ON uap.action_code = ad.action_code
+      WHERE uap.user_id = u.id
+        AND ad.active = 1
+        AND ad.action_code NOT IN ('account_sleep','account_delay')
+    ) ASC
     LIMIT 1
   `,
 
