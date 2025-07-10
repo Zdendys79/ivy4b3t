@@ -1,9 +1,16 @@
-fix: Remove non-existent 'available' column from user_group_blocking query
+feat: Fix group selection logic and update priority system
 
-- Fix getAvailableGroupsForUser query in user_group_blocking.js
-- Replace ug.available with ug.type as user_group_type
-- Remove WHERE condition checking non-existent available column
-- Resolves SQL error: Unknown column 'ug.available' in 'SELECT'
+- Fix getAvailableGroupsForUser query to use LEFT JOIN instead of JOIN
+- Allow selection from all groups of type, not just existing user_groups relationships
+- Update group priorities based on user_counter for both G and GV types:
+  - Priority 1: <100 members
+  - Priority 2: 100-999 members  
+  - Priority 3: 1000+ members
+- Resolves issue with 0 available groups for user actions
+
+Results:
+- GV groups: 279 total (101/74/104 by priority)
+- G groups: 733 total (0/50/683 by priority)
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

@@ -34,16 +34,18 @@ export const USER_GROUP_BLOCKING = {
   // ===== DOSTUPNÉ SKUPINY PRO UŽIVATELE =====
 
   getAvailableGroupsForUser: `
-    SELECT g.*, ug.type as user_group_type, ug.block_count
+    SELECT g.*, 
+           ug.block_count,
+           ug.blocked_until,
+           ug.last_block_reason
     FROM fb_groups g
-    JOIN user_groups ug ON g.id = ug.group_id
-    WHERE ug.user_id = ?
-      AND g.typ = ?
-      AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
+    LEFT JOIN user_groups ug ON g.id = ug.group_id AND ug.user_id = ?
+    WHERE g.typ = ?
+      AND g.priority > 0
       AND (g.next_seen IS NULL OR g.next_seen <= NOW())
+      AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
     ORDER BY 
-      ug.block_count ASC,  -- Preferuj skupiny s menším počtem problémů
-      g.last_seen ASC      -- Pak podle času posledního použití
+      g.last_seen ASC  -- Preferuj skupiny obsloužené před nejdelším časem
   `,
 
   // ===== UVOLNĚNÍ BLOKACE =====
