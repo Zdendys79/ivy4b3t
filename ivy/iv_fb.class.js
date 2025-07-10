@@ -785,28 +785,105 @@ export class FBBot {
     try {
       Log.info('[FB]', `Hledám element pro psaní příspěvku. Texty: ${CONFIG.new_post_texts.join(', ')}`);
       
-      const promises = CONFIG.new_post_texts.map(text => {
-        const xpath = `//span[starts-with(normalize-space(text()), "${text}")]`;
-        const selector = `xpath/${xpath}`;
-        Log.debug('[FB]', `Hledám text: "${text}" pomocí xpath: ${xpath}`);
-        return this.page.waitForSelector(selector, { timeout: 5000 })
-          .then(handle => ({ handle, text }))
-          .catch(() => null);
-      });
-
-      const result = await Promise.race(promises);
-      if (result && result.handle) {
+      // Pokus 1: Přesná shoda s starts-with
+      let result = await this.findPostElementWithStrategy('starts-with');
+      if (result) {
         this.newThingElement = result.handle;
-        Log.success('[FB]', `Element pro psaní příspěvku nalezen: "${result.text}"`);
+        Log.success('[FB]', `Element nalezen (starts-with): "${result.text}"`);
         return true;
       }
 
-      await Log.warn('[FB]', 'Žádný z přednastavených textů nebyl nalezen, spouštím diagnostiku...');
+      Log.info('[FB]', 'starts-with selhalo, zkouším contains...');
+      
+      // Pokus 2: Částečná shoda s contains
+      result = await this.findPostElementWithStrategy('contains');
+      if (result) {
+        this.newThingElement = result.handle;
+        Log.success('[FB]', `Element nalezen (contains): "${result.text}"`);
+        return true;
+      }
+
+      Log.info('[FB]', 'Obě strategie selhaly, zkouším obecný fallback...');
+      
+      // Pokus 3: Obecný fallback
+      result = await this.findPostElementFallback();
+      if (result) {
+        this.newThingElement = result.handle;
+        Log.success('[FB]', `Element nalezen (fallback): clickable span`);
+        return true;
+      }
+
+      await Log.warn('[FB]', 'Všechny strategie selhaly, spouštím diagnostiku...');
       await this.debugPostCreationElements();
       throw new Error('Žádný z možných textů nebyl nalezen.');
     } catch (err) {
       await Log.error('[FB] newThing()', err);
       return false;
+    }
+  }
+
+  async findPostElementWithStrategy(strategy) {
+    try {
+      Log.debug('[FB]', `Spouštím strategii: ${strategy} pro texty: ${CONFIG.new_post_texts.join(', ')}`);
+      
+      const promises = CONFIG.new_post_texts.map(text => {
+        const xpath = strategy === 'starts-with' 
+          ? `//span[starts-with(normalize-space(text()), "${text}")]`
+          : `//span[contains(normalize-space(text()), "${text}")]`;
+        const selector = `xpath/${xpath}`;
+        
+        return this.page.waitForSelector(selector, { timeout: 3000 })
+          .then(handle => {
+            Log.debug('[FB]', `✓ Nalezen element pro text: "${text}" (${strategy})`);
+            return { handle, text };
+          })
+          .catch(() => {
+            Log.debug('[FB]', `✗ Element nenalezen pro text: "${text}" (${strategy})`);
+            return null;
+          });
+      });
+
+      const validPromises = promises.filter(p => p !== null);
+      if (validPromises.length === 0) {
+        Log.debug('[FB]', `Strategie ${strategy}: žádné platné selektory`);
+        return null;
+      }
+
+      return await Promise.race(validPromises);
+    } catch (err) {
+      Log.debug('[FB]', `Strategie ${strategy} selhala: ${err.message}`);
+      return null;
+    }
+  }
+
+  async findPostElementFallback() {
+    try {
+      Log.info('[FB]', 'Zkouším fallback: hledám klikatelné span elementy...');
+      
+      // Hledáme span elementy které mohou být klikatelné (mají cursor pointer nebo jsou uvnitř klikatelného elementu)
+      const fallbackSelectors = [
+        'xpath=//span[contains(@class, "x1lliihq") and contains(text(), "Napište")]',
+        'xpath=//span[contains(@style, "cursor") and contains(text(), "něco")]',
+        'xpath=//div[contains(@role, "textbox")]//span',
+        'xpath=//div[@data-testid="status-attachment-mentions-input"]//span'
+      ];
+
+      for (const selector of fallbackSelectors) {
+        try {
+          const handle = await this.page.waitForSelector(selector, { timeout: 2000 });
+          if (handle) {
+            Log.info('[FB]', `Fallback nalezl element s selektorem: ${selector}`);
+            return { handle, text: 'fallback' };
+          }
+        } catch (err) {
+          // Pokračuj s dalším selektorem
+        }
+      }
+      
+      return null;
+    } catch (err) {
+      Log.debug('[FB]', `Fallback selhal: ${err.message}`);
+      return null;
     }
   }
 

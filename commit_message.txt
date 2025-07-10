@@ -1,10 +1,14 @@
-fix: Move test files to ivy/ folder for VM synchronization
+feat: Add robust multi-strategy Facebook post element detection
 
-- Move test.js and test.sh from root to ivy/ folder
-- Fix import paths in test.js to work from ivy/ directory
-- This ensures test files are copied to VM during synchronization
+- Split newThing() into multiple fallback strategies for better reliability
+- Strategy 1: starts-with() for exact prefix matching (original approach)
+- Strategy 2: contains() for partial text matching (handles ellipsis)
+- Strategy 3: CSS class and attribute-based fallback selectors
+- Each strategy has independent timeout to avoid blocking on slow DOM loading
+- Improves success rate for Facebook post creation across different page states
 
-VM only syncs ivy/ folder contents, so test files must be there.
+This addresses timing issues where Facebook's dynamic content loading
+causes post creation elements to be temporarily unavailable.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
