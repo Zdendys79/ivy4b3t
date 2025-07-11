@@ -1,15 +1,14 @@
-feat: Add consecutive failure protection with account_delay
+feat: Move invasive action definition to database
 
-- Implement counter for consecutive group failures (max 5)
-- Schedule account_delay (1-4h) after 5 consecutive failures
-- Add system logging for suspicious activity patterns
-- Reset counter on any successful post
-- Count both failed posts and exceptions as failures
-- Terminate action and return to wheel of fortune after limit reached
-- Add detailed monitoring data for failure analysis
+- Add 'invasive' BOOLEAN column to action_definitions table
+- Mark posting actions as invasive in database instead of config.json
+- Update wheel logic to query database for invasive flag
+- Remove affected_actions array from config.json
+- Add SQL migration script for existing installations
+- Improve async handling of invasive action checks
 
-This prevents infinite loops when user encounters multiple problematic groups
-and protects account from potentially dangerous repetitive failed activity.
+This centralizes invasive action configuration in the database where it belongs,
+making it easier to manage and modify without touching config files.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

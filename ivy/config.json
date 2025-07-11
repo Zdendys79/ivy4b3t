@@ -36,13 +36,6 @@
   "posting_cooldown": {
     "min_seconds": 240,
     "max_seconds": 480,
-    "description": "Pauza mezi všemi akcemi, které něco vkládají na FB (4-8 minut)",
-    "affected_actions": [
-      "post_utio_g",
-      "post_utio_gv", 
-      "post_utio_p",
-      "quote_post",
-      "comment_post"
-    ]
+    "description": "Pauza mezi všemi invazními akcemi (4-8 minut). Invazní akce jsou označeny v action_definitions.invasive."
   }
 }

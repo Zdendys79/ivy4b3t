@@ -399,11 +399,13 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
         continue; // Pokračuj s další skupinou
       }
 
-      // Pauza mezi posty
+      // Pauza mezi posty s neinvazivní aktivitou
       if (attempt < maxPosts) {
-        const pauseTime = 30000 + Math.random() * 60000; // 30-90s
-        Log.info(`[${user.id}]`, `⏱️ Pauza ${Math.round(pauseTime / 1000)}s před dalším postem...`);
-        await wait.delay(pauseTime);
+        const pauseTime = 10000 + Math.random() * 80000; // 10-90s
+        Log.info(`[${user.id}]`, `⏱️ Pauza ${Math.round(pauseTime / 1000)}s před dalším postem s neinvazivní aktivitou...`);
+        
+        // Neinvazivní aktivita během pauzy
+        await performNonInvasiveActivity(user, fbBot, pauseTime);
       }
     }
 
@@ -693,5 +695,189 @@ async function groupExplore(user, fbBot) {
   } catch (err) {
     await Log.error(`[${user.id}] groupExplore`, err);
     return false;
+  }
+}
+
+/**
+ * Provádí neinvazivní aktivitu během pauzy mezi posty
+ * @param {Object} user - Uživatelské data
+ * @param {Object} fbBot - FBBot instance
+ * @param {number} totalPauseTime - Celková doba pauzy v ms
+ */
+async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
+  try {
+    Log.info(`[${user.id}]`, '🔍 Zahajuji neinvazivní aktivitu během pauzy...');
+    
+    const activities = [
+      'visit_random_group',
+      'visit_random_profile', 
+      'scroll_feed',
+      'visit_notifications'
+    ];
+    
+    // Vyber náhodnou aktivitu
+    const selectedActivity = activities[Math.floor(Math.random() * activities.length)];
+    
+    // Rozdělíme pauzu: 20-40% na aktivitu, zbytek na čekání
+    const activityTime = Math.floor(totalPauseTime * (0.2 + Math.random() * 0.2)); // 20-40%
+    const remainingTime = totalPauseTime - activityTime;
+    
+    Log.info(`[${user.id}]`, `🎯 Aktivita: ${selectedActivity} (${Math.round(activityTime / 1000)}s), pak čekání ${Math.round(remainingTime / 1000)}s`);
+    
+    switch (selectedActivity) {
+      case 'visit_random_group':
+        await visitRandomGroup(user, fbBot, activityTime);
+        break;
+      case 'visit_random_profile':
+        await visitRandomProfile(user, fbBot, activityTime);
+        break;
+      case 'scroll_feed':
+        await scrollFeed(user, fbBot, activityTime);
+        break;
+      case 'visit_notifications':
+        await visitNotifications(user, fbBot, activityTime);
+        break;
+    }
+    
+    // Zbytek času jen čekáme
+    if (remainingTime > 1000) {
+      Log.info(`[${user.id}]`, `😴 Dokončuji pauzu - zbývá ${Math.round(remainingTime / 1000)}s...`);
+      await wait.delay(remainingTime);
+    }
+    
+    Log.info(`[${user.id}]`, '✅ Neinvazivní aktivita dokončena');
+    
+  } catch (err) {
+    await Log.warn(`[${user.id}]`, `Chyba při neinvazivní aktivitě: ${err.message} - pokračuji klasickou pauzou`);
+    // Fallback na obyčejné čekání
+    await wait.delay(totalPauseTime);
+  }
+}
+
+/**
+ * Navštíví náhodnou skupinu a trochu se v ní rozhlédne
+ */
+async function visitRandomGroup(user, fbBot, timeLimit) {
+  try {
+    // Získej náhodné skupiny z databáze (mix různých typů)
+    const groupTypes = ['G', 'GV', 'P'];
+    const randomType = groupTypes[Math.floor(Math.random() * groupTypes.length)];
+    const groups = await db.safeQueryAll('groups.getAvailableByTypeSimple', [randomType, 3]);
+    if (!groups || groups.length === 0) {
+      throw new Error('Žádné skupiny k dispozici');
+    }
+    
+    const randomGroup = groups[Math.floor(Math.random() * groups.length)];
+    const groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_id}`;
+    
+    Log.info(`[${user.id}]`, `🎯 Navštěvuji skupinu: ${randomGroup.nazev}`);
+    
+    await fbBot.page.goto(groupUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+    await wait.delay(2000, 4000);
+    
+    // Trochu scrolluj
+    const scrollTime = Math.min(timeLimit - 6000, 15000); // Max 15s scrollování
+    if (scrollTime > 2000) {
+      await scrollPageRandomly(fbBot, scrollTime);
+    }
+    
+  } catch (err) {
+    Log.info(`[${user.id}]`, `Nepodařilo se navštívit skupinu: ${err.message}`);
+  }
+}
+
+/**
+ * Navštíví náhodný profil (pokud možno z přátel nebo nedávných interakcí)
+ */
+async function visitRandomProfile(user, fbBot, timeLimit) {
+  try {
+    // Zkus najít odkazy na profily na aktuální stránce
+    const profileLinks = await fbBot.page.$$eval('a[href*="/profile.php"], a[href*="facebook.com/"]:not([href*="/groups/"]):not([href*="/pages/"])', 
+      links => links.slice(0, 5).map(link => link.href).filter(href => 
+        href.includes('/profile.php') || (href.includes('facebook.com/') && !href.includes('/groups/') && !href.includes('/pages/'))
+      )
+    );
+    
+    if (profileLinks.length > 0) {
+      const randomProfile = profileLinks[Math.floor(Math.random() * profileLinks.length)];
+      
+      Log.info(`[${user.id}]`, `👤 Navštěvuji profil...`);
+      
+      await fbBot.page.goto(randomProfile, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      await wait.delay(3000, 6000);
+      
+      // Krátké scrollování
+      const scrollTime = Math.min(timeLimit - 9000, 10000);
+      if (scrollTime > 2000) {
+        await scrollPageRandomly(fbBot, scrollTime);
+      }
+    } else {
+      throw new Error('Žádné profily nenalezeny');
+    }
+    
+  } catch (err) {
+    Log.info(`[${user.id}]`, `Nepodařilo se navštívit profil: ${err.message}`);
+  }
+}
+
+/**
+ * Scrolluje ve feedu
+ */
+async function scrollFeed(user, fbBot, timeLimit) {
+  try {
+    Log.info(`[${user.id}]`, `📰 Scrolluji ve feedu...`);
+    
+    // Jdi na homepage
+    await fbBot.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+    await wait.delay(2000);
+    
+    await scrollPageRandomly(fbBot, timeLimit - 2000);
+    
+  } catch (err) {
+    Log.info(`[${user.id}]`, `Nepodařilo se scrollovat feed: ${err.message}`);
+  }
+}
+
+/**
+ * Navštíví notifikace
+ */
+async function visitNotifications(user, fbBot, timeLimit) {
+  try {
+    Log.info(`[${user.id}]`, `🔔 Kontroluji notifikace...`);
+    
+    await fbBot.page.goto('https://www.facebook.com/notifications', { waitUntil: 'domcontentloaded', timeout: 10000 });
+    await wait.delay(3000, 6000);
+    
+    // Krátké scrollování v notifikacích
+    const scrollTime = Math.min(timeLimit - 9000, 8000);
+    if (scrollTime > 2000) {
+      await scrollPageRandomly(fbBot, scrollTime);
+    }
+    
+  } catch (err) {
+    Log.info(`[${user.id}]`, `Nepodařilo se navštívit notifikace: ${err.message}`);
+  }
+}
+
+/**
+ * Pomocná funkce pro náhodné scrollování
+ */
+async function scrollPageRandomly(fbBot, duration) {
+  try {
+    const endTime = Date.now() + duration;
+    
+    while (Date.now() < endTime) {
+      // Náhodný scroll směrem dolů
+      await fbBot.page.evaluate(() => {
+        const scrollAmount = Math.floor(Math.random() * 400) + 200; // 200-600px
+        window.scrollBy(0, scrollAmount);
+      });
+      
+      // Pauza mezi scrolly
+      await wait.delay(1500, 4000);
+    }
+    
+  } catch (err) {
+    // Ignoruj chyby při scrollování
   }
 }

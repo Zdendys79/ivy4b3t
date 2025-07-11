@@ -12,6 +12,95 @@
 
 import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
+import fs from 'fs/promises';
+
+/**
+ * Načte konfiguraci z config.json
+ */
+async function loadConfig() {
+  try {
+    const configData = await fs.readFile('./config.json', 'utf8');
+    return JSON.parse(configData);
+  } catch (err) {
+    await Log.warn('[WHEEL]', `Nepodařilo se načíst config.json: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * Zkontroluje zda je akce invazní (dle databáze action_definitions)
+ */
+async function isInvasiveAction(actionCode) {
+  try {
+    const actionDef = await db.safeQueryFirst('actions.getDefinitionByCode', [actionCode]);
+    return actionDef?.invasive === 1 || actionDef?.invasive === true;
+  } catch (err) {
+    await Log.warn('[WHEEL]', `Chyba při kontrole invasive pro ${actionCode}: ${err.message}`);
+    // Fallback na statický seznam
+    const invasiveActions = ['post_utio_g', 'post_utio_gv', 'post_utio_p', 'quote_post', 'comment_post'];
+    return invasiveActions.includes(actionCode);
+  }
+}
+
+/**
+ * Zkontroluje zda má uživatel aktivní posting cooldown
+ */
+async function hasPostingCooldown(userId, config) {
+  try {
+    if (!config?.posting_cooldown) {
+      return { hasCD: false, reason: 'Posting cooldown není nakonfigurován' };
+    }
+
+    // Získej posledních několik akcí pro uživatele
+    const recentActions = await db.safeQueryAll('actions.getRecentActions', [userId, 10]);
+    
+    if (!recentActions || recentActions.length === 0) {
+      return { hasCD: false, reason: 'Žádné předchozí akce' };
+    }
+
+    // Najdi poslední invazní akci
+    let lastInvasiveAction = null;
+    for (const action of recentActions) {
+      const isInvasive = await isInvasiveAction(action.action_code);
+      if (isInvasive) {
+        lastInvasiveAction = action;
+        break;
+      }
+    }
+
+    if (!lastInvasiveAction) {
+      return { hasCD: false, reason: 'Žádná předchozí invazní akce' };
+    }
+
+    // Spočítej jak dlouho uplynulo od poslední invazní akce
+    const timeSinceLastAction = Date.now() - new Date(lastInvasiveAction.timestamp).getTime();
+    
+    // Konzistentní cooldown čas (založený na timestamp poslední akce pro deterministický výsledek)
+    const actionTimestamp = new Date(lastInvasiveAction.timestamp).getTime();
+    const seed = (actionTimestamp % 1000) / 1000; // Používej timestamp jako seed pro konzistenci
+    const cooldownTime = (config.posting_cooldown.min_seconds + 
+                         seed * (config.posting_cooldown.max_seconds - config.posting_cooldown.min_seconds)) * 1000;
+
+    const remainingTime = cooldownTime - timeSinceLastAction;
+
+    if (remainingTime > 0) {
+      return {
+        hasCD: true,
+        remainingMs: remainingTime,
+        remainingSeconds: Math.ceil(remainingTime / 1000),
+        lastAction: lastInvasiveAction.action_code,
+        lastActionTime: lastInvasiveAction.timestamp,
+        reason: `Posting cooldown aktivní - zbývá ${Math.ceil(remainingTime / 1000)}s`
+      };
+    }
+
+    return { hasCD: false, reason: 'Posting cooldown vypršel' };
+
+  } catch (err) {
+    await Log.error('[WHEEL]', `Chyba při kontrole posting cooldown: ${err.message}`);
+    return { hasCD: false, reason: `Chyba: ${err.message}` };
+  }
+}
 
 export class Wheel {
   constructor(activities) {
@@ -64,6 +153,16 @@ export async function getRandomAction(availableActions = null, userId = null) {
   }
 
   try {
+    // Načti konfiguraci pro posting cooldown
+    const config = await loadConfig();
+    
+    // Zkontroluj posting cooldown
+    const cooldownStatus = await hasPostingCooldown(userId, config);
+    
+    if (cooldownStatus.hasCD) {
+      Log.info('[WHEEL]', `User ${userId}: ${cooldownStatus.reason}`);
+    }
+
     // Získej akce přímo z databáze s aplikovanými limity
     const actionsWithLimits = await db.getUserActionsWithLimits(userId);
 
@@ -72,15 +171,36 @@ export async function getRandomAction(availableActions = null, userId = null) {
       return null;
     }
 
-    // Sestavíme kolo s effective_weight
-    const wheelItems = actionsWithLimits.map(def => ({
-      code: def.action_code,
-      weight: def.weight,
-      effective_weight: def.effective_weight,
-      min_minutes: def.min_minutes,
-      max_minutes: def.max_minutes,
-      repeatable: def.repeatable
-    }));
+    // Sestavíme kolo s effective_weight a označíme invazní akce z databáze
+    let wheelItems = [];
+    for (const def of actionsWithLimits) {
+      const isInvasive = await isInvasiveAction(def.action_code);
+      wheelItems.push({
+        code: def.action_code,
+        weight: def.weight,
+        effective_weight: def.effective_weight,
+        min_minutes: def.min_minutes,
+        max_minutes: def.max_minutes,
+        repeatable: def.repeatable,
+        is_invasive: isInvasive
+      });
+    }
+
+    // Filtruj invazní akce během posting cooldownu
+    if (cooldownStatus.hasCD) {
+      const originalCount = wheelItems.length;
+      const invasiveCount = wheelItems.filter(item => item.is_invasive).length;
+      
+      // Odstraň invazní akce z kola štěstí
+      wheelItems = wheelItems.map(item => {
+        if (item.is_invasive) {
+          return { ...item, effective_weight: 0 }; // Deaktivuj invazní akce
+        }
+        return item;
+      });
+      
+      Log.info('[WHEEL]', `User ${userId}: Filtrováno ${invasiveCount} invazních akcí kvůli posting cooldown (zbývá ${cooldownStatus.remainingSeconds}s)`);
+    }
 
     const wheel = new Wheel(wheelItems);
     const stats = wheel.getStats();
