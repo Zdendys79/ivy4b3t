@@ -1,14 +1,16 @@
-feat: Move invasive action definition to database
+feat: Implement simple in-memory invasive lock system
 
-- Add 'invasive' BOOLEAN column to action_definitions table
-- Mark posting actions as invasive in database instead of config.json
-- Update wheel logic to query database for invasive flag
-- Remove affected_actions array from config.json
-- Add SQL migration script for existing installations
-- Improve async handling of invasive action checks
+- Add single global invasive lock variable (timestamp only)
+- Remove userId dependency - program works with one user at a time
+- Initialize lock at start of user action cycle
+- Set lock after successful invasive actions (4-8 min cooldown)
+- Filter invasive actions from wheel of fortune during active lock
+- Clear lock only at end of user session cleanup
+- Remove unnecessary expired lock cleanup - expired locks have no effect
+- Simplify logic: just compare current time with lock timestamp
 
-This centralizes invasive action configuration in the database where it belongs,
-making it easier to manage and modify without touching config files.
+This provides efficient posting cooldown without database overhead,
+using simple timestamp comparison in memory.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

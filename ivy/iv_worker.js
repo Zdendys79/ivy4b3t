@@ -22,7 +22,7 @@ import { db } from './iv_sql.js'
 import { FBBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
 import { UIBot } from './iv_ui.class.js';
-import { getRandomAction } from './iv_wheel.js';
+import { getRandomAction, initInvasiveLock, clearInvasiveLock } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
 import { IvMath } from './iv_math.class.js';
@@ -151,6 +151,9 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
   try {
     await db.initUserActionPlan(user.id);
+    
+    // Inicializuj invasive lock pro tohoto uživatele
+    initInvasiveLock();
 
     // 🎯 HLAVNÍ SMYČKA AKCÍ PRO UŽIVATELE
     while (true) {
@@ -710,6 +713,9 @@ async function initializeRequiredServices(user, context, requirements, existingF
  */
 async function cleanupUserSession(user, browser, fbBot, utioBot, browserClosed) {
   Log.info(`[${user.id}]`, 'Krok 8: Cleanup uživatelského sezení...');
+
+  // Vymaž invasive lock
+  clearInvasiveLock();
 
   // Zavři boty
   if (fbBot) {

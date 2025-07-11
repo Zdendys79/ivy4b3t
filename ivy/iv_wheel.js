@@ -14,6 +14,57 @@ import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
 import fs from 'fs/promises';
 
+// Jednoduchá proměnná pro invasive lock (pouze timestamp)
+// Program pracuje vždy jen s jedním uživatelem v jednom okamžiku
+let invasiveLock = null;
+
+/**
+ * Inicializuje invasive lock na začátku práce s uživatelem
+ */
+export function initInvasiveLock() {
+  invasiveLock = null;
+  Log.debug('[WHEEL]', 'Invasive lock inicializován');
+}
+
+/**
+ * Nastaví invasive lock
+ */
+export function setInvasiveLock(cooldownMs) {
+  invasiveLock = Date.now() + cooldownMs;
+  Log.debug('[WHEEL]', `Invasive lock nastaven do ${new Date(invasiveLock).toLocaleTimeString()}`);
+}
+
+/**
+ * Zkontroluje zda je aktivní invasive lock
+ */
+export function hasInvasiveLock() {
+  if (!invasiveLock) {
+    return { hasLock: false, reason: 'Žádný invasive lock' };
+  }
+
+  const now = Date.now();
+  if (now >= invasiveLock) {
+    return { hasLock: false, reason: 'Invasive lock vypršel' };
+  }
+
+  const remainingMs = invasiveLock - now;
+  return {
+    hasLock: true,
+    remainingMs: remainingMs,
+    remainingSeconds: Math.ceil(remainingMs / 1000),
+    lockUntil: invasiveLock,
+    reason: `Invasive lock aktivní - zbývá ${Math.ceil(remainingMs / 1000)}s`
+  };
+}
+
+/**
+ * Vymaže invasive lock na konci práce s uživatelem
+ */
+export function clearInvasiveLock() {
+  invasiveLock = null;
+  Log.debug('[WHEEL]', 'Invasive lock vymazán');
+}
+
 /**
  * Načte konfiguraci z config.json
  */
@@ -42,65 +93,6 @@ async function isInvasiveAction(actionCode) {
   }
 }
 
-/**
- * Zkontroluje zda má uživatel aktivní posting cooldown
- */
-async function hasPostingCooldown(userId, config) {
-  try {
-    if (!config?.posting_cooldown) {
-      return { hasCD: false, reason: 'Posting cooldown není nakonfigurován' };
-    }
-
-    // Získej posledních několik akcí pro uživatele
-    const recentActions = await db.safeQueryAll('actions.getRecentActions', [userId, 10]);
-    
-    if (!recentActions || recentActions.length === 0) {
-      return { hasCD: false, reason: 'Žádné předchozí akce' };
-    }
-
-    // Najdi poslední invazní akci
-    let lastInvasiveAction = null;
-    for (const action of recentActions) {
-      const isInvasive = await isInvasiveAction(action.action_code);
-      if (isInvasive) {
-        lastInvasiveAction = action;
-        break;
-      }
-    }
-
-    if (!lastInvasiveAction) {
-      return { hasCD: false, reason: 'Žádná předchozí invazní akce' };
-    }
-
-    // Spočítej jak dlouho uplynulo od poslední invazní akce
-    const timeSinceLastAction = Date.now() - new Date(lastInvasiveAction.timestamp).getTime();
-    
-    // Konzistentní cooldown čas (založený na timestamp poslední akce pro deterministický výsledek)
-    const actionTimestamp = new Date(lastInvasiveAction.timestamp).getTime();
-    const seed = (actionTimestamp % 1000) / 1000; // Používej timestamp jako seed pro konzistenci
-    const cooldownTime = (config.posting_cooldown.min_seconds + 
-                         seed * (config.posting_cooldown.max_seconds - config.posting_cooldown.min_seconds)) * 1000;
-
-    const remainingTime = cooldownTime - timeSinceLastAction;
-
-    if (remainingTime > 0) {
-      return {
-        hasCD: true,
-        remainingMs: remainingTime,
-        remainingSeconds: Math.ceil(remainingTime / 1000),
-        lastAction: lastInvasiveAction.action_code,
-        lastActionTime: lastInvasiveAction.timestamp,
-        reason: `Posting cooldown aktivní - zbývá ${Math.ceil(remainingTime / 1000)}s`
-      };
-    }
-
-    return { hasCD: false, reason: 'Posting cooldown vypršel' };
-
-  } catch (err) {
-    await Log.error('[WHEEL]', `Chyba při kontrole posting cooldown: ${err.message}`);
-    return { hasCD: false, reason: `Chyba: ${err.message}` };
-  }
-}
 
 export class Wheel {
   constructor(activities) {
@@ -153,14 +145,11 @@ export async function getRandomAction(availableActions = null, userId = null) {
   }
 
   try {
-    // Načti konfiguraci pro posting cooldown
-    const config = await loadConfig();
+    // Zkontroluj invasive lock v paměti
+    const lockStatus = hasInvasiveLock();
     
-    // Zkontroluj posting cooldown
-    const cooldownStatus = await hasPostingCooldown(userId, config);
-    
-    if (cooldownStatus.hasCD) {
-      Log.info('[WHEEL]', `User ${userId}: ${cooldownStatus.reason}`);
+    if (lockStatus.hasLock) {
+      Log.info('[WHEEL]', `User ${userId}: ${lockStatus.reason}`);
     }
 
     // Získej akce přímo z databáze s aplikovanými limity
@@ -186,9 +175,8 @@ export async function getRandomAction(availableActions = null, userId = null) {
       });
     }
 
-    // Filtruj invazní akce během posting cooldownu
-    if (cooldownStatus.hasCD) {
-      const originalCount = wheelItems.length;
+    // Filtruj invazní akce během invasive lock
+    if (lockStatus.hasLock) {
       const invasiveCount = wheelItems.filter(item => item.is_invasive).length;
       
       // Odstraň invazní akce z kola štěstí
@@ -199,7 +187,7 @@ export async function getRandomAction(availableActions = null, userId = null) {
         return item;
       });
       
-      Log.info('[WHEEL]', `User ${userId}: Filtrováno ${invasiveCount} invazních akcí kvůli posting cooldown (zbývá ${cooldownStatus.remainingSeconds}s)`);
+      Log.info('[WHEEL]', `User ${userId}: Filtrováno ${invasiveCount} invazních akcí kvůli invasive lock (zbývá ${lockStatus.remainingSeconds}s)`);
     }
 
     const wheel = new Wheel(wheelItems);

@@ -11,7 +11,9 @@ import * as wait from './iv_wait.js';
 import * as support from './iv_support.js';
 import * as fbSupport from './iv_fb_support.js';
 import { groupExploreAction } from './iv_group_explore_action.js';
+import { setInvasiveLock, initInvasiveLock, clearInvasiveLock } from './iv_wheel.js';
 import { db } from './iv_sql.js'
+import fs from 'fs/promises';
 import { Log } from './iv_log.class.js';
 import { getAvailableGroupsForUser, detectMembershipRequest } from './user_group_escalation.js';
 
@@ -541,6 +543,21 @@ export async function runAction(user, actionCode, context) {
 
     if (result) {
       Log.success(`[${user.id}]`, `✅ Akce ${actionCode} dokončena úspěšně`);
+      
+      // Nastav invasive lock pro invazní akce
+      try {
+        const actionDef = await db.safeQueryFirst('actions.getDefinitionByCode', [actionCode]);
+        if (actionDef?.invasive) {
+          const config = JSON.parse(await fs.readFile('./config.json', 'utf8'));
+          const cooldownMs = (config.posting_cooldown.min_seconds + 
+                            Math.random() * (config.posting_cooldown.max_seconds - config.posting_cooldown.min_seconds)) * 1000;
+          
+          setInvasiveLock(cooldownMs);
+          Log.info(`[${user.id}]`, `🔒 Invasive lock nastaven na ${Math.round(cooldownMs / 1000)}s po úspěšné akci ${actionCode}`);
+        }
+      } catch (err) {
+        await Log.warn(`[${user.id}]`, `Nepodařilo se nastavit invasive lock: ${err.message}`);
+      }
     } else {
       await Log.warn(`[${user.id}]`, `❌ Akce ${actionCode} se nezdařila`);
     }
