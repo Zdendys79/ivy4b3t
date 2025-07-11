@@ -1,15 +1,16 @@
-fix: Prevent analysis loops and handle unavailable groups
+fix: Correct join button detection and prevent false checkpoint alerts
 
-- Add existingAnalysis parameter to verifyFBReadinessForUtio to reuse analysis results
-- Implement markGroupAsUnavailable function using existing user_group_blocking.blockUserGroup SQL
-- Add automatic group blocking on critical errors (24h block with reason)
-- Block unavailable groups in both iv_actions.js and iv_support.js workflows
-- Export markGroupAsUnavailable from iv_sql.js for database operations
-- Log group unavailability and let wheel of fortune handle activity switching
-- Use safeExecute instead of safeQuery for UPDATE operations
+- Fix page analysis order: perform groupAnalysis before errorAnalysis
+- Pass groupAnalysis results to _detectErrorPatterns for proper join button detection
+- Improve join button detection to include SVG elements and aria-label attributes
+- Increase image count threshold to include SVG elements (Facebook uses SVG instead of IMG)
+- Correct isNormal threshold: elements>500, images>10, scripts>20, links>5
+- Prevent false positive "security checkpoint" detection on normal Facebook group pages
+- Use groupAnalysis.hasJoinButton in JOIN_GROUP_REQUIRED pattern detection
 
-Eliminates redundant page analysis calls and prevents infinite loops with
-problematic groups by marking them as unavailable and continuing with other activities.
+This fixes the issue where normal Facebook group pages requiring membership
+were incorrectly flagged as security checkpoints instead of detecting the
+join button properly.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

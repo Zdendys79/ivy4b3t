@@ -48,15 +48,15 @@ export class PageAnalyzer {
       const navigationAnalysis = await this._performNavigationAnalysis();
       Log.info('[ANALYZER]', `Navigation: standard=${navigationAnalysis.hasStandardNavigation}, score=${navigationAnalysis.navigationScore || 0}`);
 
-      // Analýza chybových stavů
-      const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis);
-
-      // Pokročilé analýzy podle potřeby
+      // Pokročilé analýzy podle potřeby - PŘED error analýzou
       const postingAnalysis = includePostingCapability ?
         await this._performPostingAnalysis() : null;
 
       const groupAnalysis = includeGroupAnalysis ?
         await this._performGroupAnalysis() : null;
+
+      // Analýza chybových stavů - PO group analýze
+      const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis, groupAnalysis);
 
       // Sestavení výsledku
       const result = {
@@ -233,7 +233,7 @@ export class PageAnalyzer {
     }
   }
 
-  async _performErrorAnalysis(complexityAnalysis, navigationAnalysis) {
+  async _performErrorAnalysis(complexityAnalysis, navigationAnalysis, groupAnalysis = null) {
     try {
       // Defenzivní kontrola vstupních parametrů
       const safeComplexity = complexityAnalysis || { isNormal: false, metrics: {}, suspiciouslySimple: true };
@@ -256,7 +256,7 @@ export class PageAnalyzer {
       await Log.warn('[ANALYZER]', 'Struktura stránky NENÍ normální. Hledám chybové vzory...');
 
       // KROK 2: Hledání chybových vzorů (pouze pokud struktura není normální)
-      let finalErrorPatterns = await this._detectErrorPatterns();
+      let finalErrorPatterns = await this._detectErrorPatterns(groupAnalysis);
 
       const accountLocked = await this._checkAccountLocked();
       const checkpoint = await this._checkCheckpoint();
@@ -305,7 +305,7 @@ export class PageAnalyzer {
       
       const metrics = await this.page.evaluate(() => {
         const elementCount = document.querySelectorAll('*').length;
-        const imageCount = document.querySelectorAll('img').length;
+        const imageCount = document.querySelectorAll('img, svg').length;
         const scriptCount = document.querySelectorAll('script').length;
         const linkCount = document.querySelectorAll('a').length;
         const buttonCount = document.querySelectorAll('button, input[type="button"], input[type="submit"]').length;
@@ -329,9 +329,9 @@ export class PageAnalyzer {
 
       // Hodnocení komplexnosti (upravené pro moderní Facebook)
       const isNormal = metrics.elements > 500 &&
-        metrics.images > 3 &&          // Facebook používá SVG místo img
+        metrics.images > 10 &&          // Facebook používá hodně SVG ikon
         metrics.scripts > 20 &&
-        metrics.links > 10;             // SPA používá méně přímých odkazů
+        metrics.links > 5;              // SPA používá méně přímých odkazů
 
       const suspiciouslySimple = metrics.elements < 100 &&
         metrics.images < 5 &&
@@ -493,11 +493,20 @@ export class PageAnalyzer {
           warningDetails: []
         };
 
-        // Rychlá detekce join tlačítek - jen jednou projít DOM
-        const joinTexts = ['přidat se ke skupině', 'join group', 'join this group', 'připojit se ke skupině', 'požádat o členství', 'request to join'];
-        const joinButton = Array.from(document.querySelectorAll('*')).find(el => {
-          const text = el.textContent?.toLowerCase() || '';
-          return joinTexts.some(joinText => text.includes(joinText));
+        // Rozšířená detekce join tlačítek - kontroluje text, aria-label i data atributy
+        const joinTexts = [
+          'přidat se ke skupině', 'join group', 'join this group', 'připojit se ke skupině', 
+          'požádat o členství', 'request to join', 'přidat se', 'join',
+          'požádat', 'request', 'členství', 'membership'
+        ];
+        
+        const joinButton = Array.from(document.querySelectorAll('button, a, div[role="button"], span[role="button"]')).find(el => {
+          const text = (el.textContent || '').toLowerCase();
+          const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+          const dataTestId = (el.getAttribute('data-testid') || '').toLowerCase();
+          const allText = `${text} ${ariaLabel} ${dataTestId}`;
+          
+          return joinTexts.some(joinText => allText.includes(joinText));
         });
 
         if (joinButton) {
@@ -613,7 +622,7 @@ export class PageAnalyzer {
     return 'unknown';
   }
 
-  async _detectErrorPatterns() {
+  async _detectErrorPatterns(groupAnalysis = null) {
     const patterns = [
       {
         texts: ['videoselfie', 'video selfie', 'Please take a video selfie'],
@@ -678,16 +687,19 @@ export class PageAnalyzer {
           pageData.bodyText.includes(text.toLowerCase())
         );
 
-        // Speciální logika pro JOIN_GROUP_REQUIRED
+        // Speciální logika pro JOIN_GROUP_REQUIRED - použij data z groupAnalysis
         if (pattern.type === 'JOIN_GROUP_REQUIRED') {
-          if (textFound || pageData.hasJoinButton) {
+          const hasJoinFromGroup = groupAnalysis?.hasJoinButton || false;
+          const hasJoinFromPage = pageData.hasJoinButton;
+          
+          if (textFound || hasJoinFromGroup || hasJoinFromPage) {
             detectedPatterns.push({
               detected: true,
               pattern: pattern,
               reason: pattern.reason,
               type: pattern.type,
-              hasActionButton: pageData.hasJoinButton,
-              additionalInfo: `Počet tlačítek: ${pageData.joinButtonCount}`
+              hasActionButton: hasJoinFromGroup || hasJoinFromPage,
+              additionalInfo: `Join tlačítko: ${hasJoinFromGroup ? 'groupAnalysis' : 'pageData'}`
             });
           }
         } else if (textFound) {
