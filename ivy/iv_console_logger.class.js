@@ -111,6 +111,7 @@ class ConsoleLogger {
     }
 
     async flush() {
+        /*
         // Prevent concurrent flush operations
         if (this.isFlushingInProgress) {
             return;
@@ -141,6 +142,12 @@ class ConsoleLogger {
         }
         
         this.isFlushingInProgress = false;
+        */
+
+        // Clear buffer to prevent memory leaks, DB logging is disabled.
+        if (this.logBuffer.length > 0) {
+            this.logBuffer = [];
+        }
     }
     async ensureDirectories() {
         try {

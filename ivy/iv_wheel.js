@@ -177,17 +177,13 @@ export async function getRandomAction(availableActions = null, userId = null) {
 
     // Filtruj invazní akce během invasive lock
     if (lockStatus.hasLock) {
-      const invasiveCount = wheelItems.filter(item => item.is_invasive).length;
+      const originalItems = [...wheelItems];
+      wheelItems = wheelItems.filter(item => !item.is_invasive);
       
-      // Odstraň invazní akce z kola štěstí
-      wheelItems = wheelItems.map(item => {
-        if (item.is_invasive) {
-          return { ...item, effective_weight: 0 }; // Deaktivuj invazní akce
-        }
-        return item;
-      });
-      
-      Log.info('[WHEEL]', `User ${userId}: Filtrováno ${invasiveCount} invazních akcí kvůli invasive lock (zbývá ${lockStatus.remainingSeconds}s)`);
+      const filteredCount = originalItems.length - wheelItems.length;
+      if (filteredCount > 0) {
+        Log.info('[WHEEL]', `User ${userId}: Odstraněno ${filteredCount} invazních akcí kvůli aktivnímu zámku (zbývá ${lockStatus.remainingSeconds}s)`);
+      }
     }
 
     const wheel = new Wheel(wheelItems);

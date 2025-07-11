@@ -36,9 +36,21 @@ async function main() {
             return;
         }
 
-        // 2. Načtení DB konfigurace
-        const configRaw = await fs.readFile(CONFIG_FILE_PATH, 'utf-8');
-        const dbConfig = JSON.parse(configRaw);
+        // 2. Načtení DB konfigurace z proměnných prostředí (primární) nebo souboru (záložní)
+        let dbConfig;
+        if (process.env.CLAUDE_DB_USER && process.env.CLAUDE_DB_PASS) {
+            console.log('[HOOK] Používám konfiguraci z proměnných prostředí.');
+            dbConfig = {
+                host: process.env.CLAUDE_DB_HOST || 'localhost',
+                user: process.env.CLAUDE_DB_USER,
+                password: process.env.CLAUDE_DB_PASS,
+                database: process.env.CLAUDE_DB_NAME || 'ivy'
+            };
+        } else {
+            console.log('[HOOK] Proměnné prostředí nenalezeny, zkouším soubor sql_config.json.');
+            const configRaw = await fs.readFile(CONFIG_FILE_PATH, 'utf-8');
+            dbConfig = JSON.parse(configRaw);
+        }
 
         // 3. Připojení k databázi
         console.log(`[HOOK] Připojuji se k databázi: ${dbConfig.host}/${dbConfig.database}`);

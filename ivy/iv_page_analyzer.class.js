@@ -13,6 +13,8 @@ export class PageAnalyzer {
     }
     this.page = page;
     this.lastAnalysis = null;
+    this.analysisCache = new Map();
+    this.cacheTimeout = 5000; // 5 sekund
   }
 
 
@@ -24,7 +26,8 @@ export class PageAnalyzer {
   async analyzeFullPage(options = {}) {
     const {
       includePostingCapability = false,
-      includeGroupAnalysis = false
+      includeGroupAnalysis = false,
+      forceRefresh = false // Nová možnost pro vynucení nové analýzy
     } = options;
 
     try {
@@ -33,6 +36,13 @@ export class PageAnalyzer {
       }
 
       const url = this.page.url();
+      const cacheKey = `${url}-${JSON.stringify(options)}`;
+      const cached = this.analysisCache.get(cacheKey);
+
+      if (cached && (Date.now() - cached.timestamp < this.cacheTimeout) && !forceRefresh) {
+        Log.info('[ANALYZER]', `Vracím výsledek z cache pro: ${url}`);
+        return cached.data;
+      }
       
 
       Log.info('[ANALYZER]', `Spouštím kompletní analýzu stránky: ${url}`);
@@ -75,6 +85,8 @@ export class PageAnalyzer {
 
 
       this.lastAnalysis = result;
+      this.analysisCache.set(cacheKey, { timestamp: Date.now(), data: result });
+      this._cleanupCache(); // Udržuj cache čistou
       Log.success('[ANALYZER]', `Analýza dokončena se stavem: ${result.status}`);
 
       return result;

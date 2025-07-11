@@ -1,17 +1,17 @@
-fix: Correct join button detection and prevent false checkpoint alerts
+feat: Optimalizace a oprava provádění akcí
 
-- Fix page analysis order: perform groupAnalysis before errorAnalysis
-- Pass groupAnalysis results to _detectErrorPatterns for proper join button detection
-- Improve join button detection to include SVG elements and aria-label attributes
-- Increase image count threshold to include SVG elements (Facebook uses SVG instead of IMG)
-- Correct isNormal threshold: elements>500, images>10, scripts>20, links>5
-- Prevent false positive "security checkpoint" detection on normal Facebook group pages
-- Use groupAnalysis.hasJoinButton in JOIN_GROUP_REQUIRED pattern detection
+Tento commit řeší dva hlavní problémy: zbytečné opakované analýzy stránek a nedodržování časových zámků mezi invazivními akcemi.
 
-This fixes the issue where normal Facebook group pages requiring membership
-were incorrectly flagged as security checkpoints instead of detecting the
-join button properly.
+- **feat(analyzer): Implementována cache pro analýzu stránek**
+  - Třída `PageAnalyzer` nyní využívá interní cache s 5sekundovým timeoutem.
+  - Zabraňuje opakovanému spouštění kompletní analýzy na stejné URL v krátkém časovém intervalu, což výrazně snižuje zátěž a zrychluje provádění akcí.
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
+- **fix(actions): Opravena logika `invasive_lock` a databáze**
+  - Upraven `iv_wheel.js`, aby při aktivním zámku zcela odfiltroval invazivní akce a zabránil jejich okamžitému opětovnému spuštění.
+  - Do tabulky `action_definitions` byl přidán sloupec `invasive` (BOOLEAN) a příslušné akce byly označeny jako invazivní.
 
-Co-Authored-By: Claude <noreply@anthropic.com>
+- **chore(db): Upraven SQL hook pro použití ENV proměnných**
+  - Skript `ai_mysql_hook.js` nyní primárně používá přihlašovací údaje z proměnných prostředí.
+
+- **refactor(logging): Dočasně zakázáno ukládání konzolových logů do DB**
+  - Zakomentována metoda `flush` v `iv_console_logger.class.js` pro snížení zátěže databáze.
