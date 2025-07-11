@@ -132,6 +132,13 @@ async function performUtioPost(user, fbBot, group, utioBot) {
       await Log.error(`[${user.id}]`, `❌ Předběžné ověření selhalo: ${readinessCheck.reason}`);
 
       if (readinessCheck.critical) {
+        // Označ skupinu jako nedostupnou v user_groups
+        try {
+          await db.markGroupAsUnavailable(user.id, group.id, readinessCheck.reason);
+          Log.info(`[${user.id}]`, `🚫 Skupina ${group.nazev} označena jako nedostupná`);
+        } catch (dbErr) {
+          Log.warn(`[${user.id}]`, `Nepodařilo se označit skupinu jako nedostupnou: ${dbErr.message}`);
+        }
         return false; // Kritická chyba
       }
 

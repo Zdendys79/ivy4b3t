@@ -290,7 +290,8 @@ export class FBBot {
 
       return {
         valid: true,
-        reason: 'Skupina je validní pro postování'
+        reason: 'Skupina je validní pro postování',
+        analysis: groupAnalysis // Předáváme analýzu pro další použití
       };
 
     } catch (err) {
@@ -545,6 +546,7 @@ export class FBBot {
       }
 
       // Pokud je specifikována cílová skupina, ověř ji
+      let groupAnalysis = null;
       if (targetGroup) {
         const groupVerification = await this._verifyTargetGroup(targetGroup);
         if (!groupVerification.valid) {
@@ -554,6 +556,7 @@ export class FBBot {
             details: groupVerification
           };
         }
+        groupAnalysis = groupVerification.analysis; // Zachováme analýzu pro předání
       }
 
       Log.success('[FB]', 'Stránka je připravena pro postování');
@@ -561,6 +564,7 @@ export class FBBot {
         ready: true,
         reason: 'Všechny kontroly prošly úspěšně',
         pageType: postingCheck.pageType,
+        analysis: groupAnalysis, // Předáváme analýzu pro další použití
         details: {
           quickCheck: quickCheck,
           postingCheck: postingCheck

@@ -1,15 +1,15 @@
-refactor: Optimize page analysis to single execution with result reuse
+fix: Prevent analysis loops and handle unavailable groups
 
-- Consolidate DOM queries in group membership detection to single analysis
-- Replace repeated _findByText calls with analysis.group results in join button logic
-- Remove all caching mechanisms - no repeated page visits occur
-- Replace full page analysis in performNonInvasiveActivity with simple element count
-- Change Log.warn to Log.info for normal membership states (join buttons, pending)
-- Add automatic redirect to Facebook homepage when page has insufficient elements
-- Eliminate 5 duplicate analyses down to 1 analysis + result reuse
+- Add existingAnalysis parameter to verifyFBReadinessForUtio to reuse analysis results
+- Implement markGroupAsUnavailable function using existing user_group_blocking.blockUserGroup SQL
+- Add automatic group blocking on critical errors (24h block with reason)
+- Block unavailable groups in both iv_actions.js and iv_support.js workflows
+- Export markGroupAsUnavailable from iv_sql.js for database operations
+- Log group unavailability and let wheel of fortune handle activity switching
+- Use safeExecute instead of safeQuery for UPDATE operations
 
-Performance improvement: Reduces redundant DOM queries and analysis calls
-significantly while maintaining all functionality.
+Eliminates redundant page analysis calls and prevents infinite loops with
+problematic groups by marking them as unavailable and continuing with other activities.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

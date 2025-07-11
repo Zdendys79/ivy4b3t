@@ -583,7 +583,7 @@ export async function analyzeUserErrorHistory(user, days = 7) {
  * Specializované ověření připravenosti FB pro UTIO operace
  * Kontroluje specifické podmínky pro postování přes UTIO
  */
-export async function verifyFBReadinessForUtio(user, group, fbBot) {
+export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnalysis = null) {
   try {
     Log.info(`[${user.id}]`, '🔍 Ověřuji připravenost FB pro UTIO operaci...');
 
@@ -621,12 +621,16 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
       };
     }
 
-    // Detailní analýza stránky skupiny
+    // Detailní analýza stránky skupiny - použij existující analýzu pokud je dostupná
     if (fbBot.pageAnalyzer) {
       try {
-        const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
+        const analysis = existingAnalysis || await fbBot.pageAnalyzer.analyzeFullPage({
           includeGroupAnalysis: true
         });
+        
+        if (existingAnalysis) {
+          Log.debug(`[${user.id}]`, '✅ Používám existující analýzu místo nové');
+        }
 
         // Kontrola výsledku analýzy
         if (analysis.status === 'error') {
