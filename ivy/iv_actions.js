@@ -10,6 +10,7 @@
 import * as wait from './iv_wait.js';
 import * as support from './iv_support.js';
 import * as fbSupport from './iv_fb_support.js';
+import { groupExploreAction } from './iv_group_explore_action.js';
 import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
 import { getAvailableGroupsForUser, detectMembershipRequest } from './user_group_escalation.js';
@@ -34,6 +35,7 @@ export async function getActionRequirements(actionCode) {
     case 'messenger_check':
     case 'messenger_reply':
     case 'quote_post':
+    case 'group_explore':
       requirements.needsFB = true;
       break;
 
@@ -190,6 +192,8 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
     }
 
     let successfulPosts = 0;
+    let consecutiveFailures = 0;
+    const MAX_CONSECUTIVE_FAILURES = 5;
 
     for (let attempt = 1; attempt <= maxPosts; attempt++) {
       Log.info(`[${user.id}]`, `📝 Post ${attempt}/${maxPosts} pro typ ${groupType}`);
@@ -323,17 +327,75 @@ async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
 
         if (postSuccess) {
           successfulPosts++;
+          consecutiveFailures = 0; // Reset při úspěchu
 
           // Aktualizuj statistiky
           await support.updatePostStats(selectedGroup, user, `post_utio_${groupType}`);
 
           Log.success(`[${user.id}]`, `✅ Post ${attempt} úspěšný! Celkem: ${successfulPosts}/${attempt}`);
         } else {
-          await Log.warn(`[${user.id}]`, `❌ Post ${attempt} neúspěšný`);
+          consecutiveFailures++;
+          await Log.warn(`[${user.id}]`, `❌ Post ${attempt} neúspěšný (${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES} po sobě)`);
+          
+          // Kontrola počtu neúspěšných pokusů za sebou
+          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+            await Log.error(`[${user.id}]`, `🚨 SYSTÉM: ${MAX_CONSECUTIVE_FAILURES} neúspěšných skupin za sebou - naplánován account_delay`);
+            
+            // Naordinovat account_delay akci
+            const delayMinutes = 60 + Math.random() * 180; // 1-4 hodiny jako u běžného account_delay
+            await db.updateUserWorktime(user.id, delayMinutes);
+            
+            // Systémový log pro monitoring
+            try {
+              await db.logSystemEvent(
+                `consecutive_group_failures_${groupType}`, 
+                'WARN',
+                `${MAX_CONSECUTIVE_FAILURES} consecutive failures in post_utio_${groupType} action - account_delay scheduled for ${Math.round(delayMinutes)}min`,
+                { groupType: groupType, delayMinutes: Math.round(delayMinutes), maxFailures: MAX_CONSECUTIVE_FAILURES },
+                user.id
+              );
+            } catch (logErr) {
+              await Log.warn(`[${user.id}]`, `Nepodařilo se zalogovat systémovou událost: ${logErr.message}`);
+            }
+            
+            await Log.warn(`[${user.id}]`, `⏳ Account delay nastaven na ${Math.round(delayMinutes)} minut kvůli opakovaným neúspěchům`);
+            
+            // Ukončit celou akci
+            break;
+          }
         }
 
       } catch (groupErr) {
-        await Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
+        consecutiveFailures++;
+        await Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message} (${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES} po sobě)`);
+        
+        // Kontrola počtu neúspěšných pokusů za sebou i u výjimek
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          await Log.error(`[${user.id}]`, `🚨 SYSTÉM: ${MAX_CONSECUTIVE_FAILURES} chyb při skupinách za sebou - naplánován account_delay`);
+          
+          // Naordinovat account_delay akci
+          const delayMinutes = 60 + Math.random() * 180; // 1-4 hodiny
+          await db.updateUserWorktime(user.id, delayMinutes);
+          
+          // Systémový log pro monitoring
+          try {
+            await db.logSystemEvent(
+              `consecutive_group_errors_${groupType}`, 
+              'ERROR',
+              `${MAX_CONSECUTIVE_FAILURES} consecutive errors in post_utio_${groupType} action - account_delay scheduled for ${Math.round(delayMinutes)}min`,
+              { groupType: groupType, delayMinutes: Math.round(delayMinutes), maxFailures: MAX_CONSECUTIVE_FAILURES },
+              user.id
+            );
+          } catch (logErr) {
+            await Log.warn(`[${user.id}]`, `Nepodařilo se zalogovat systémovou událost: ${logErr.message}`);
+          }
+          
+          await Log.warn(`[${user.id}]`, `⏳ Account delay nastaven na ${Math.round(delayMinutes)} minut kvůli opakovaným chybám`);
+          
+          // Ukončit celou akci
+          break;
+        }
+        
         continue; // Pokračuj s další skupinou
       }
 
@@ -457,6 +519,10 @@ export async function runAction(user, actionCode, context) {
 
       case 'messenger_reply':
         result = await messengerReply(user, fbBot);
+        break;
+
+      case 'group_explore':
+        result = await groupExplore(user, fbBot);
         break;
 
       default:
@@ -618,4 +684,14 @@ async function messengerCheck(user, fbBot) {
 async function messengerReply(user, fbBot) {
   await Log.warn(`[${user.id}]`, 'messengerReply není zatím implementováno.');
   return false;
+}
+
+async function groupExplore(user, fbBot) {
+  try {
+    const result = await groupExploreAction.execute(user, fbBot);
+    return result.success;
+  } catch (err) {
+    await Log.error(`[${user.id}] groupExplore`, err);
+    return false;
+  }
 }

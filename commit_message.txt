@@ -1,13 +1,15 @@
-fix: Treat membership pending as critical error for UTIO operations
+feat: Add consecutive failure protection with account_delay
 
-- Change MEMBERSHIP_PENDING from non-critical warning to critical error
-- Prevent continuation to UTIO process when membership approval is pending
-- Update error message to clarify posting is impossible when membership pending
-- Stop "Pokračuji přes varování" behavior for pending membership cases
+- Implement counter for consecutive group failures (max 5)
+- Schedule account_delay (1-4h) after 5 consecutive failures
+- Add system logging for suspicious activity patterns
+- Reset counter on any successful post
+- Count both failed posts and exceptions as failures
+- Terminate action and return to wheel of fortune after limit reached
+- Add detailed monitoring data for failure analysis
 
-This resolves the issue where robot would continue to UTIO after successful 
-"Přidat se ke skupině" click but still couldn't post due to pending approval.
-Now robot will properly abort and try different group instead.
+This prevents infinite loops when user encounters multiple problematic groups
+and protects account from potentially dangerous repetitive failed activity.
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
