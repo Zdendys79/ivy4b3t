@@ -13,8 +13,8 @@ export class PageAnalyzer {
     }
     this.page = page;
     this.lastAnalysis = null;
-    this.analysisCache = new Map();
   }
+
 
   /**
    * Hlavní metoda pro kompletní analýzu stránky
@@ -33,7 +33,7 @@ export class PageAnalyzer {
       }
 
       const url = this.page.url();
-      // Cache je vypnutá - Facebook stránky jsou dynamické
+      
 
       Log.info('[ANALYZER]', `Spouštím kompletní analýzu stránky: ${url}`);
 
@@ -73,7 +73,6 @@ export class PageAnalyzer {
         details: this._generateDetailedWarnings(errorAnalysis, groupAnalysis)
       };
 
-      // Cache je vypnutá - vždy aktuální výsledky
 
       this.lastAnalysis = result;
       Log.success('[ANALYZER]', `Analýza dokončena se stavem: ${result.status}`);
@@ -478,14 +477,15 @@ export class PageAnalyzer {
         };
       }
 
+      // Jednoduchou analýzou získej všechny potřebné informace najednou
       const groupInfo = await this.page.evaluate(() => {
+        const bodyText = document.body.textContent.toLowerCase();
+        
         const info = {
-          isPrivate: false,
-          isPublic: false,
-          isClosed: false,
-          canPost: false,
-          needsApproval: false,
-          isMember: false,
+          isPrivate: bodyText.includes('soukromá skupina') || bodyText.includes('private group'),
+          isPublic: bodyText.includes('veřejná skupina') || bodyText.includes('public group'),
+          isClosed: bodyText.includes('uzavřená skupina') || bodyText.includes('closed group'),
+          isMember: bodyText.includes('člen') || bodyText.includes('member'),
           hasJoinButton: false,
           joinButtonText: '',
           writeFieldAvailable: false,
@@ -493,74 +493,36 @@ export class PageAnalyzer {
           warningDetails: []
         };
 
-        // Detekce typu skupiny a členství
-        const allElements = document.querySelectorAll('*');
-        for (const element of allElements) {
-          const text = element.textContent?.toLowerCase() || '';
-
-          if (text.includes('soukromá skupina') || text.includes('private group')) {
-            info.isPrivate = true;
-          }
-          if (text.includes('veřejná skupina') || text.includes('public group')) {
-            info.isPublic = true;
-          }
-          if (text.includes('uzavřená skupina') || text.includes('closed group')) {
-            info.isClosed = true;
-          }
-          if (text.includes('člen') || text.includes('member')) {
-            info.isMember = true;
-            info.membershipStatus = 'member';
-          }
-        }
-
-        // Detekce tlačítek pro přidání ke skupině
-        const joinButtons = Array.from(document.querySelectorAll('*')).filter(el => {
+        // Rychlá detekce join tlačítek - jen jednou projít DOM
+        const joinTexts = ['přidat se ke skupině', 'join group', 'join this group', 'připojit se ke skupině', 'požádat o členství', 'request to join'];
+        const joinButton = Array.from(document.querySelectorAll('*')).find(el => {
           const text = el.textContent?.toLowerCase() || '';
-          return text.includes('přidat se ke skupině') ||
-                 text.includes('join group') ||
-                 text.includes('join this group') ||
-                 text.includes('připojit se ke skupině') ||
-                 text.includes('požádat o členství') ||
-                 text.includes('request to join');
+          return joinTexts.some(joinText => text.includes(joinText));
         });
 
-        if (joinButtons.length > 0) {
+        if (joinButton) {
           info.hasJoinButton = true;
-          info.joinButtonText = joinButtons[0].textContent.trim();
+          info.joinButtonText = joinButton.textContent.trim();
           info.membershipStatus = 'not_member';
-          info.warningDetails.push(`Detekováno tlačítko: "${info.joinButtonText}"`);
-        }
-
-        // Kontrola možnosti postování
-        const postSelectors = [
-          '[aria-label*="příspěvek"]',
-          '[placeholder*="Co máte na mysli"]',
-          '[placeholder*="What\'s on your mind"]',
-          '[data-testid="status-attachment-mentions-input"]'
-        ];
-
-        const postElements = postSelectors.map(selector => document.querySelector(selector)).filter(Boolean);
-        info.writeFieldAvailable = postElements.length > 0;
-        info.canPost = info.writeFieldAvailable && info.isMember;
-
-        // Detailní důvody proč není možné postovat
-        if (!info.canPost) {
-          if (!info.isMember && !info.hasJoinButton) {
-            info.warningDetails.push('Není člen skupiny a není dostupné tlačítko pro přidání');
-          } else if (!info.isMember) {
-            info.warningDetails.push('Není člen skupiny - je potřeba se přidat');
-          } else if (!info.writeFieldAvailable) {
-            info.warningDetails.push('Pole pro psaní příspěvku není dostupné');
-          }
+        } else if (info.isMember) {
+          info.membershipStatus = 'member';
         }
 
         // Detekce čekající žádosti o členství
-        const bodyText = document.body.textContent.toLowerCase();
         if (bodyText.includes('žádost odeslána') || bodyText.includes('request sent') ||
             bodyText.includes('čeká na schválení') || bodyText.includes('pending approval')) {
-          info.needsApproval = true;
           info.membershipStatus = 'pending';
-          info.warningDetails.push('Žádost o členství čeká na schválení');
+        }
+
+        // Kontrola možnosti postování jen pokud je potřeba
+        if (info.membershipStatus === 'member') {
+          const postSelectors = [
+            '[aria-label*="příspěvek"]',
+            '[placeholder*="Co máte na mysli"]',
+            '[placeholder*="What\'s on your mind"]',
+            '[data-testid="status-attachment-mentions-input"]'
+          ];
+          info.writeFieldAvailable = postSelectors.some(selector => document.querySelector(selector));
         }
 
         return info;
@@ -672,21 +634,6 @@ export class PageAnalyzer {
         texts: ['suspicious activity', 'podezřelá aktivita', 'unusual activity'],
         reason: 'Detekována podezřelá aktivita',
         type: 'SUSPICIOUS_ACTIVITY'
-      },
-      {
-        texts: ['přidat se ke skupině', 'join group', 'join this group', 'připojit se ke skupině'],
-        reason: 'Není člen skupiny - je potřeba se přidat',
-        type: 'JOIN_GROUP_REQUIRED'
-      },
-      {
-        texts: ['žádost o členství', 'membership request', 'pending approval', 'čeká na schválení'],
-        reason: 'Žádost o členství čeká na schválení',
-        type: 'MEMBERSHIP_PENDING'
-      },
-      {
-        texts: ['skupina je uzavřená', 'group is closed', 'private group', 'soukromá skupina'],
-        reason: 'Skupina je uzavřená nebo soukromá',
-        type: 'GROUP_CLOSED'
       },
       {
         texts: ['nemáte oprávnění', 'not authorized', 'access denied', 'přístup zamítnut'],

@@ -647,7 +647,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           // Kontrola na "přidat se ke skupině" tlačítko
           if (errorPattern?.type === 'JOIN_GROUP_REQUIRED' || 
               warningDetails.some(detail => detail.includes('join') || detail.includes('přidat'))) {
-            await Log.warn(`[${user.id}]`, '⚠️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
+            await Log.info(`[${user.id}]`, 'ℹ️ Vyžaduje členství ve skupině - detekováno "přidat se" tlačítko');
             
             // Automatické přidání ke skupině (s časovým omezením 6 hodin)
             Log.info(`[${user.id}]`, '🤖 Kontroluji možnost automatického přidání ke skupině...');
@@ -677,18 +677,20 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
             Log.info(`[${user.id}]`, '🤖 Pokus o automatické přidání ke skupině...');
             
             try {
-              // Hledání pouze správného textu tlačítka
-              const joinButtons = await fbBot._findByText("Přidat se ke skupině", { timeout: 3000 });
-              
-              if (joinButtons.length > 0) {
+              // Použij informace z již provedené analýzy místo opakovaného hledání
+              if (analysis.group?.hasJoinButton) {
+                const buttonText = analysis.group.joinButtonText || "Přidat se ke skupině";
+                const joinButtons = await fbBot._findByText(buttonText, { timeout: 3000 });
+                
+                if (joinButtons.length > 0) {
                 Log.info('[FB]', `✅ Nalezeno tlačítko: "Přidat se ke skupině"`);
                 await joinButtons[0].click();
                 
                 // Čekání na zpracování
                 await wait.delay(5000);
                 
-                // Ověření zda tlačítko zmizelo
-                const buttonsAfter = await fbBot._findByText("Přidat se ke skupině", { timeout: 1000 });
+                // Ověření zda tlačítko zmizelo (použij stejný text jako předtím)
+                const buttonsAfter = await fbBot._findByText(buttonText, { timeout: 1000 });
                 if (buttonsAfter.length === 0) {
                   Log.success('[FB]', `✅ Úspěšně kliknuto na "Přidat se ke skupině" - tlačítko zmizelo`);
                   Log.success(`[${user.id}]`, `✅ Automatické přidání úspěšné: Úspěšně použito tlačítko: "Přidat se ke skupině"`);
@@ -711,12 +713,17 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
                     analysisDetails: analysis
                   };
                 } else {
-                  await Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" stále viditelné po kliknutí');
+                  await Log.info('[FB]', 'ℹ️ Tlačítko "Přidat se ke skupině" stále viditelné po kliknutí');
                   throw new Error('Tlačítko nezmizelo po kliknutí');
                 }
               } else {
-                await Log.warn('[FB]', '⚠️ Tlačítko "Přidat se ke skupině" nenalezeno');
+                await Log.info('[FB]', 'ℹ️ Tlačítko "Přidat se ke skupině" nenalezeno');
                 throw new Error('Tlačítko pro přidání nenalezeno');
+              }
+              } else {
+                // Analýza nedetekovala join tlačítko
+                await Log.info('[FB]', 'ℹ️ Analýza nedetekovala join tlačítko');
+                throw new Error('Join tlačítko nebylo detekováno v analýze');
               }
               
             } catch (joinErr) {
@@ -738,7 +745,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot) {
           
           // Kontrola na čekající žádost o členství
           if (errorPattern?.type === 'MEMBERSHIP_PENDING') {
-            await Log.warn(`[${user.id}]`, '⚠️ Žádost o členství čeká na schválení - nemohu postovat');
+            await Log.info(`[${user.id}]`, 'ℹ️ Žádost o členství čeká na schválení - nemohu postovat');
             return {
               ready: false,
               reason: errorPattern.reason,

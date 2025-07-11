@@ -725,6 +725,18 @@ async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
   try {
     Log.info(`[${user.id}]`, '🔍 Zahajuji neinvazivní aktivitu během pauzy...');
     
+    // Rychlá kontrola zda je stránka úplně načtená (bez kompletní analýzy)
+    try {
+      const elementCount = await fbBot.page.evaluate(() => document.querySelectorAll('*').length);
+      if (elementCount < 100) {
+        Log.info(`[${user.id}]`, `⚠️ Stránka má málo elementů (${elementCount}) - přecházím na výchozí FB`);
+        await fbBot.page.goto('https://www.facebook.com', { waitUntil: 'domcontentloaded' });
+        await fbBot.wait(2000, 4000); // Krátké čekání na načtení
+      }
+    } catch (checkErr) {
+      Log.debug(`[${user.id}]`, `Rychlá kontrola elementů selhala: ${checkErr.message}`);
+    }
+    
     const activities = [
       'visit_random_group',
       'visit_random_profile', 
