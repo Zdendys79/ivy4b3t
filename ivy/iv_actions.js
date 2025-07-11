@@ -754,8 +754,8 @@ async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
     // Vyber náhodnou aktivitu
     const selectedActivity = activities[Math.floor(Math.random() * activities.length)];
     
-    // Rozdělíme pauzu: 20-40% na aktivitu, zbytek na čekání
-    const activityTime = Math.floor(totalPauseTime * (0.2 + Math.random() * 0.2)); // 20-40%
+    // Rozdělíme pauzu: 60-90% na aktivitu, zbytek na čekání
+    const activityTime = Math.floor(totalPauseTime * (0.6 + Math.random() * 0.3));
     const remainingTime = totalPauseTime - activityTime;
     
     Log.info(`[${user.id}]`, `🎯 Aktivita: ${selectedActivity} (${Math.round(activityTime / 1000)}s), pak čekání ${Math.round(remainingTime / 1000)}s`);
@@ -795,24 +795,37 @@ async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
  */
 async function visitRandomGroup(user, fbBot, timeLimit) {
   try {
-    // Získej náhodné skupiny z databáze (mix různých typů)
-    const groupTypes = ['G', 'GV', 'P'];
-    const randomType = groupTypes[Math.floor(Math.random() * groupTypes.length)];
-    const groups = await db.safeQueryAll('groups.getAvailableByTypeSimple', [randomType, 3]);
-    if (!groups || groups.length === 0) {
-      throw new Error('Žádné skupiny k dispozici');
+    let groupUrl = null;
+    let source = 'databáze';
+
+    // Priorita 1: Zkusit získat odkaz z poslední analýzy aktuální stránky
+    if (fbBot.pageAnalyzer && fbBot.pageAnalyzer.lastAnalysis && fbBot.pageAnalyzer.lastAnalysis.links) {
+        const groupLinks = fbBot.pageAnalyzer.lastAnalysis.links.groups;
+        if (groupLinks && groupLinks.length > 0) {
+            groupUrl = groupLinks[Math.floor(Math.random() * groupLinks.length)];
+            source = 'aktuální stránky';
+        }
+    }
+
+    // Priorita 2: Fallback na databázi, pokud se nepodařilo najít odkaz na stránce
+    if (!groupUrl) {
+        const groupTypes = ['G', 'GV', 'P'];
+        const randomType = groupTypes[Math.floor(Math.random() * groupTypes.length)];
+        const groups = await db.safeQueryAll('groups.getAvailableByTypeSimple', [randomType, 3]);
+        if (!groups || groups.length === 0) {
+          throw new Error('Žádné skupiny k dispozici v databázi');
+        }
+        const randomGroup = groups[Math.floor(Math.random() * groups.length)];
+        groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_id}`;
     }
     
-    const randomGroup = groups[Math.floor(Math.random() * groups.length)];
-    const groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_id}`;
+    Log.info(`[${user.id}]`, `🎯 Navštěvuji skupinu (zdroj: ${source}): ${groupUrl}`);
     
-    Log.info(`[${user.id}]`, `🎯 Navštěvuji skupinu: ${randomGroup.nazev}`);
+    await fbBot.page.goto(groupUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await wait.delay(3000, 5000);
     
-    await fbBot.page.goto(groupUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
-    await wait.delay(2000, 4000);
-    
-    // Trochu scrolluj
-    const scrollTime = Math.min(timeLimit - 6000, 15000); // Max 15s scrollování
+    // Trochu scrolluj, aby to vypadalo jako reálná aktivita
+    const scrollTime = Math.min(timeLimit - 8000, 25000); // Max 25s scrollování
     if (scrollTime > 2000) {
       await scrollPageRandomly(fbBot, scrollTime);
     }

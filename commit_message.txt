@@ -1,17 +1,15 @@
-feat: Optimalizace a oprava provádění akcí
+feat(behavior): Vylepšení neinvazivní aktivity a analýzy
 
-Tento commit řeší dva hlavní problémy: zbytečné opakované analýzy stránek a nedodržování časových zámků mezi invazivními akcemi.
+Tento commit se zaměřuje na vylepšení chování bota během neinvazivních aktivit, aby bylo realističtější a méně detekovatelné.
 
-- **feat(analyzer): Implementována cache pro analýzu stránek**
-  - Třída `PageAnalyzer` nyní využívá interní cache s 5sekundovým timeoutem.
-  - Zabraňuje opakovanému spouštění kompletní analýzy na stejné URL v krátkém časovém intervalu, což výrazně snižuje zátěž a zrychluje provádění akcí.
+- **feat(analyzer): Rozšířena analýza o sběr odkazů na skupiny**
+  - `PageAnalyzer` nyní aktivně detekuje a extrahuje odkazy na facebookové skupiny (`/groups/...`) z aktuálně zobrazené stránky.
+  - Tato data jsou k dispozici pro další moduly a umožňují chytřejší navigaci.
 
-- **fix(actions): Opravena logika `invasive_lock` a databáze**
-  - Upraven `iv_wheel.js`, aby při aktivním zámku zcela odfiltroval invazivní akce a zabránil jejich okamžitému opětovnému spuštění.
-  - Do tabulky `action_definitions` byl přidán sloupec `invasive` (BOOLEAN) a příslušné akce byly označeny jako invazivní.
+- **refactor(actions): Změna logiky pro návštěvu náhodných skupin**
+  - Funkce `visitRandomGroup` nyní primárně využívá odkazy nalezené na aktuální stránce. Teprve pokud žádné nenajde, sáhne pro data do databáze.
+  - Výrazně prodloužena doba, kterou bot stráví "prohlížením" stránky po přechodu na ni, aby se lépe simulovalo lidské chování.
 
-- **chore(db): Upraven SQL hook pro použití ENV proměnných**
-  - Skript `ai_mysql_hook.js` nyní primárně používá přihlašovací údaje z proměnných prostředí.
-
-- **refactor(logging): Dočasně zakázáno ukládání konzolových logů do DB**
-  - Zakomentována metoda `flush` v `iv_console_logger.class.js` pro snížení zátěže databáze.
+- **fix(analyzer): Oprava cache pro analýzu stránek**
+  - Zjednodušen klíč pro ukládání do mezipaměti (nyní pouze URL).
+  - Cache nyní ukládá kompletní výsledek analýzy, což zajišťuje, že všechna následná volání pro stejnou URL jsou obsloužena z cache, bez ohledu na původní parametry volán��. Tím se efektivně řeší problém vícenásobných analýz.

@@ -25,9 +25,7 @@ export class PageAnalyzer {
    */
   async analyzeFullPage(options = {}) {
     const {
-      includePostingCapability = false,
-      includeGroupAnalysis = false,
-      forceRefresh = false // Nová možnost pro vynucení nové analýzy
+      forceRefresh = false // Možnost pro vynucení nové analýzy
     } = options;
 
     try {
@@ -36,15 +34,15 @@ export class PageAnalyzer {
       }
 
       const url = this.page.url();
-      const cacheKey = `${url}-${JSON.stringify(options)}`;
+      const cacheKey = url; // Klíč je pouze URL
       const cached = this.analysisCache.get(cacheKey);
 
+      // Pokud existuje platný záznam v cache, vrať ho
       if (cached && (Date.now() - cached.timestamp < this.cacheTimeout) && !forceRefresh) {
         Log.info('[ANALYZER]', `Vracím výsledek z cache pro: ${url}`);
         return cached.data;
       }
       
-
       Log.info('[ANALYZER]', `Spouštím kompletní analýzu stránky: ${url}`);
 
       // Základní analýza stránky
@@ -58,12 +56,9 @@ export class PageAnalyzer {
       const navigationAnalysis = await this._performNavigationAnalysis();
       Log.info('[ANALYZER]', `Navigation: standard=${navigationAnalysis.hasStandardNavigation}, score=${navigationAnalysis.navigationScore || 0}`);
 
-      // Pokročilé analýzy podle potřeby - PŘED error analýzou
-      const postingAnalysis = includePostingCapability ?
-        await this._performPostingAnalysis() : null;
-
-      const groupAnalysis = includeGroupAnalysis ?
-        await this._performGroupAnalysis() : null;
+      // Vždy provedeme všechny pokročilé analýzy, abychom měli kompletní data pro cache
+      const postingAnalysis = await this._performPostingAnalysis();
+      const groupAnalysis = await this._performGroupAnalysis();
 
       // Analýza chybových stavů - PO group analýze
       const errorAnalysis = await this._performErrorAnalysis(complexityAnalysis, navigationAnalysis, groupAnalysis);
@@ -73,6 +68,7 @@ export class PageAnalyzer {
         timestamp: new Date().toISOString(),
         url: url,
         status: this._determineOverallStatus(basicAnalysis, errorAnalysis, complexityAnalysis),
+        links: complexityAnalysis.links, // Přidání odkazů do výsledku
         basic: basicAnalysis,
         errors: errorAnalysis,
         complexity: complexityAnalysis,
@@ -83,8 +79,8 @@ export class PageAnalyzer {
         details: this._generateDetailedWarnings(errorAnalysis, groupAnalysis)
       };
 
-
       this.lastAnalysis = result;
+      // Uložení kompletního výsledku do cache s klíčem URL
       this.analysisCache.set(cacheKey, { timestamp: Date.now(), data: result });
       this._cleanupCache(); // Udržuj cache čistou
       Log.success('[ANALYZER]', `Analýza dokončena se stavem: ${result.status}`);
@@ -315,45 +311,71 @@ export class PageAnalyzer {
     try {
       Log.debug('[ANALYZER]', 'Spouštím page.evaluate pro complexity analýzu...');
       
-      const metrics = await this.page.evaluate(() => {
-        const elementCount = document.querySelectorAll('*').length;
-        const imageCount = document.querySelectorAll('img, svg').length;
-        const scriptCount = document.querySelectorAll('script').length;
-        const linkCount = document.querySelectorAll('a').length;
-        const buttonCount = document.querySelectorAll('button, input[type="button"], input[type="submit"]').length;
-        const formCount = document.querySelectorAll('form').length;
+      const data = await this.page.evaluate(() => {
+        const elements = document.querySelectorAll('*');
+        const allLinks = document.querySelectorAll('a');
+        const currentHostname = window.location.hostname;
+
+        const extractedLinks = {
+            groups: [],
+        };
+
+        allLinks.forEach(link => {
+            const href = link.href;
+            if (!href) return;
+
+            try {
+                const url = new URL(href);
+                // Hledáme odkazy na skupiny na stejné doméně
+                if (url.hostname === currentHostname && href.includes('/groups/')) {
+                    // Jednoduchý filtr pro relevantní odkazy na skupiny
+                    if (href.match(/\/groups\/(\d+|\w+)\/?$/)) {
+                       extractedLinks.groups.push(href);
+                    }
+                }
+            } catch (e) { /* Ignorovat nevalidní URL */ }
+        });
 
         return {
-          elements: elementCount,
-          images: imageCount,
-          scripts: scriptCount,
-          links: linkCount,
-          buttons: buttonCount,
-          forms: formCount,
-          bodyTextLength: document.body ? document.body.innerText.length : 0,
-          documentReady: document.readyState,
-          hasBody: !!document.body,
-          title: document.title || 'No title'
+          metrics: {
+            elements: elements.length,
+            images: document.querySelectorAll('img, svg').length,
+            scripts: document.querySelectorAll('script').length,
+            links: allLinks.length,
+            buttons: document.querySelectorAll('button, input[type="button"], input[type="submit"]').length,
+            forms: document.querySelectorAll('form').length,
+            bodyTextLength: document.body ? document.body.innerText.length : 0,
+            documentReady: document.readyState,
+            hasBody: !!document.body,
+            title: document.title || 'No title'
+          },
+          links: {
+              groups: [...new Set(extractedLinks.groups)] // Odstranění duplicit
+          }
         };
       });
 
-      Log.debug('[ANALYZER]', `Raw metrics: ${JSON.stringify(metrics)}`);
+      Log.debug('[ANALYZER]', `Raw metrics: ${JSON.stringify(data.metrics)}`);
+      if (data.links.groups.length > 0) {
+        Log.info('[ANALYZER]', `Nalezeno ${data.links.groups.length} unikátních odkazů na skupiny.`);
+      }
 
       // Hodnocení komplexnosti (upravené pro moderní Facebook)
-      const isNormal = metrics.elements > 500 &&
-        metrics.images > 10 &&          // Facebook používá hodně SVG ikon
-        metrics.scripts > 20 &&
-        metrics.links > 5;              // SPA používá méně přímých odkazů
+      const isNormal = data.metrics.elements > 500 &&
+        data.metrics.images > 10 &&          // Facebook používá hodně SVG ikon
+        data.metrics.scripts > 20 &&
+        data.metrics.links > 5;              // SPA používá méně přímých odkazů
 
-      const suspiciouslySimple = metrics.elements < 100 &&
-        metrics.images < 5 &&
-        metrics.bodyTextLength < 1000;
+      const suspiciouslySimple = data.metrics.elements < 100 &&
+        data.metrics.images < 5 &&
+        data.metrics.bodyTextLength < 1000;
 
       return {
-        metrics: metrics,
+        metrics: data.metrics,
+        links: data.links, // Předání odkazů dál
         isNormal: isNormal,
         suspiciouslySimple: suspiciouslySimple,
-        complexityScore: this._calculateComplexityScore(metrics)
+        complexityScore: this._calculateComplexityScore(data.metrics)
       };
 
     } catch (err) {
