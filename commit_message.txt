@@ -1,15 +1,23 @@
-feat(behavior): Vylepšení neinvazivní aktivity a analýzy
+refactor(actions): Kompletní přepsání logiky pro post_utio akce
 
-Tento commit se zaměřuje na vylepšení chování bota během neinvazivních aktivit, aby bylo realističtější a méně detekovatelné.
+Tento commit představuje zásadní refaktoring a zjednodušení logiky pro publikování do skupin (`post_utio_g`, `post_utio_gv`). Původní, složitá a těžko udržitelná funkce, která se snažila provést více publikací v jedné smyčce, byla odstraněna.
 
-- **feat(analyzer): Rozšířena analýza o sběr odkazů na skupiny**
-  - `PageAnalyzer` nyní aktivně detekuje a extrahuje odkazy na facebookové skupiny (`/groups/...`) z aktuálně zobrazené stránky.
-  - Tato data jsou k dispozici pro další moduly a umožňují chytřejší navigaci.
+**Hlavní změny:**
 
-- **refactor(actions): Změna logiky pro návštěvu náhodných skupin**
-  - Funkce `visitRandomGroup` nyní primárně využívá odkazy nalezené na aktuální stránce. Teprve pokud žádné nenajde, sáhne pro data do databáze.
-  - Výrazně prodloužena doba, kterou bot stráví "prohlížením" stránky po přechodu na ni, aby se lépe simulovalo lidské chování.
+1.  **Nová funkce `handleSingleUtioPost`:**
+    *   Byla vytvořena nová, čistá funkce, která zpracovává **pouze jednu skupinu** na jedno spuštění akce.
+    *   Tím se výrazně zjednodušuje tok řízení a ladění.
 
-- **fix(analyzer): Oprava cache pro analýzu stránek**
-  - Zjednodušen klíč pro ukládání do mezipaměti (nyní pouze URL).
-  - Cache nyní ukládá kompletní výsledek analýzy, což zajišťuje, že všechna následná volání pro stejnou URL jsou obsloužena z cache, bez ohledu na původní parametry volán��. Tím se efektivně řeší problém vícenásobných analýz.
+2.  **Inteligentní zpracování členství ve skupinách:**
+    *   Před publikováním akce nyní analyzuje stav skupiny.
+    *   Pokud uživatel není členem, akce se pokusí odeslat žádost o připojení.
+    *   Byla zavedena kontrola, aby se zabránilo opakovaným žádostem o členství v krátkém časovém úseku (pomocí nových akcí `join_group_g` a `join_group_gv`).
+    *   Problematické skupiny (nelze publikovat ani se přidat) jsou automaticky přidány na dočasnou černou listinu pro daného uživatele.
+
+3.  **Přesun řízení opakování do `iv_worker.js`:**
+    *   Logika pro opakování akcí a sledování limitů byla plně přesunuta do hlavního cyklu workeru, kam správně patří.
+    *   Byl implementován čítač `consecutive_failures`, který po 5 neúspěšných akcích v řadě automaticky naplánuje `account_delay` a zapíše systémovou chybu.
+
+4.  **Podpůrné změny v DB vrstvě:**
+    *   Do `action_definitions` byly přidány nové typy akcí pro sledování žádostí o členství.
+    *   Do `iv_querybuilder.class.js` a `actions.js` byly přidány nové dotazy a pomocné funkce pro podporu výše uvedené logiky.

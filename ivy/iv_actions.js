@@ -121,337 +121,82 @@ async function verifyActionReadiness(user, fbBot, actionCode, options = {}) {
  * @param {Object} utioBot - UtioBot instance
  * @returns {Promise<boolean>} - True pokud byl post úspěšný
  */
-async function performUtioPost(user, fbBot, group, utioBot) {
+async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
+  const actionCode = `post_utio_${groupType}`;
+  const joinActionCode = `join_group_${groupType}`;
+
+  // Fáze 1: Výběr a analýza skupiny
+  const group = await db.getSingleAvailableGroup(user.id, groupType.toUpperCase());
+  if (!group) {
+    await Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu '${groupType}' pro akci ${actionCode}.`);
+    await db.logSystemEvent('ACTION_ERROR', 'WARN', `No available groups for ${actionCode}`, { userId: user.id, groupType }, user.id);
+    // Zde by se mohla dočasně zablokovat akce v kole štěstí, ale prozatím jen logujeme.
+    return false; // Neúspěch
+  }
+
+  Log.info(`[${user.id}]`, `Vybrána skupina: ${group.nazev} (${group.fb_id})`);
+
   try {
-    Log.info(`[${user.id}]`, '📋 Zahajuji UTIO post proces...');
+    await fbBot.openGroup(group);
+    const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
 
-    // NOVÉ - Předběžné ověření před začátkem operace pomocí FB modulu
-    const readinessCheck = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
+    // Fáze 2: Rozhodovací strom
+    if (analysis.posting?.canInteract) {
+      // Lze publikovat, pokračuj na Fázi 3
+      return await performPublication(user, fbBot, utioBot, group, actionCode);
+    }
 
-    if (!readinessCheck.ready) {
-      await Log.error(`[${user.id}]`, `❌ Předběžné ověření selhalo: ${readinessCheck.reason}`);
-
-      if (readinessCheck.critical) {
-        // Označ skupinu jako nedostupnou v user_groups
-        try {
-          await db.markGroupAsUnavailable(user.id, group.id, readinessCheck.reason);
-          Log.info(`[${user.id}]`, `🚫 Skupina ${group.nazev} označena jako nedostupná`);
-        } catch (dbErr) {
-          Log.warn(`[${user.id}]`, `Nepodařilo se označit skupinu jako nedostupnou: ${dbErr.message}`);
-        }
-        return false; // Kritická chyba
+    // Nelze publikovat, zkusit se přidat
+    if (analysis.group?.hasJoinButton) {
+      const recentJoin = await db.getRecentJoinGroupAction(user.id, joinActionCode);
+      if (recentJoin) {
+        await Log.info(`[${user.id}]`, `Již byla odeslána žádost o členství do skupiny typu '${groupType}' v posledních 8 hodinách. Čeká se.`);
+        return true; // "Úspěch" - čekáme na schválení, nic víc neděláme
       }
 
-      if (readinessCheck.shouldNavigate) {
-        Log.info(`[${user.id}]`, '🔄 Pokusím se opravit navigaci...');
-        const navigated = await fbBot.openGroup(group);
-        if (!navigated) {
-          await Log.error(`[${user.id}]`, 'Oprava navigace selhala');
-          return false;
-        }
+      await Log.info(`[${user.id}]`, `Pokouším se přidat do skupiny ${group.nazev}...`);
+      await fbBot.clickJoinGroupButton();
+      await wait.delay(3000, 5000); // Počkat na reakci stránky
 
-        // Znovu ověř po opravě
-        const recheckResult = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
-        if (!recheckResult.ready) {
-          await Log.error(`[${user.id}]`, `I po opravě není připraveno: ${recheckResult.reason}`);
-          return false;
-        }
+      const afterClickAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+      if (!afterClickAnalysis.group?.hasJoinButton) {
+        await Log.success(`[${user.id}]`, `Úspěšně odeslána žádost o členství ve skupině ${group.nazev}.`);
+        await db.logAction(user.id, joinActionCode, group.id, `Žádost o členství: ${group.nazev}`);
+        return true; // Úspěch
+      } else {
+        await Log.error(`[${user.id}]`, `Nepodařilo se kliknout na "Přidat se" ve skupině ${group.nazev}.`);
+        await db.blockUserGroup(user.id, group.id, 'Failed to click join button', 7);
+        return false; // Neúspěch
       }
     }
 
-    Log.info(`[${user.id}]`, '📤 Získávám zprávu z UTIO...');
-
-    // Volání původní funkce s novým ověřením
-    const message = await support.pasteMsg(user, group, fbBot, utioBot);
-    if (!message) {
-      await Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
-      return false;
-    }
-
-    Log.success(`[${user.id}]`, '✅ UTIO zpráva úspěšně publikována!');
-    return true;
+    // Nelze publikovat a není tam tlačítko "Přidat se"
+    const reason = analysis.details.join(', ') || 'Nespecifikovaný problém s oprávněním.';
+    await Log.warn(`[${user.id}]`, `Skupina ${group.nazev} je problematická: ${reason}`);
+    await db.blockUserGroup(user.id, group.id, reason, 30); // Blokovat na 30 dní
+    return false; // Neúspěch
 
   } catch (err) {
-    await Log.error(`[${user.id}] performUtioPost`, err);
+    await Log.error(`[${user.id}]`, `Kompletní selhání při práci se skupinou ${group.nazev}: ${err.message}`);
+    await db.blockUserGroup(user.id, group.id, err.message, 7); // Blokovat na 7 dní
     return false;
   }
 }
 
-/**
- * Provede opakované UTIO postování do skupin určitého typu
- * @param {Object} user - Uživatelská data
- * @param {Object} fbBot - FBBot instance
- * @param {Object} utioBot - UtioBot instance
- * @param {string} groupType - Typ skupiny ('g', 'gv', 'p')
- * @returns {Promise<number>} Počet úspěšných postů
- */
-async function performRepeatedUtioPost(user, fbBot, utioBot, groupType) {
-  try {
-    Log.info(`[${user.id}]`, `🔁 Začínám opakované UTIO postování pro typ: ${groupType}`);
-
-    // Získej informace o limitech pro tento typ skupiny
-    const limitInfo = await db.getUserCycleLimitInfo(user.id, groupType);
-    const maxPosts = limitInfo.posts_available_this_cycle || 0;
-    
-    Log.info(`[${user.id}]`, `📊 Dostupné posty v tomto cyklu: ${maxPosts} (limit: ${limitInfo.max_posts_per_cycle}, použito: ${limitInfo.current_posts})`);
-    
-    if (maxPosts === 0) {
-      await Log.warn(`[${user.id}]`, `Žádné dostupné posty pro typ ${groupType} - limit vyčerpán`);
-      return 0;
-    }
-
-    let successfulPosts = 0;
-    let consecutiveFailures = 0;
-    const MAX_CONSECUTIVE_FAILURES = 5;
-
-    for (let attempt = 1; attempt <= maxPosts; attempt++) {
-      Log.info(`[${user.id}]`, `📝 Post ${attempt}/${maxPosts} pro typ ${groupType}`);
-
-      // Zkontroluj limit před každým postem
-      const stillCanPost = await db.canUserPostToGroupType(user.id, groupType);
-      if (!stillCanPost) {
-        await Log.warn(`[${user.id}]`, `Limit dosažen během cyklu po ${successfulPosts} úspěšných postech`);
-        break;
-      }
-
-      // Najdi dostupné skupiny tohoto typu
-      const availableGroups = await getAvailableGroups(user.id, groupType);
-      if (!availableGroups.length) {
-        await Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu ${groupType} pro další post`);
-        break;
-      }
-
-      // Vyber náhodnou skupinu
-      const selectedGroup = availableGroups[Math.floor(Math.random() * availableGroups.length)];
-      Log.info(`[${user.id}]`, `🎲 Vybrána skupina: ${selectedGroup.nazev || selectedGroup.name} (${selectedGroup.fb_id})`);
-
-      try {
-        // NOVÉ - Předběžné ověření před otevřením skupiny
-        const preGroupCheck = await fbSupport.verifyFBReadiness(user, fbBot, {
-          requireSpecificGroup: null,
-          requirePostingCapability: false,
-          allowWarnings: true,
-          includeDetailedAnalysis: false
-        });
-
-        if (!preGroupCheck.ready && preGroupCheck.critical) {
-          await Log.error(`[${user.id}]`, `Kritická chyba před otevřením skupiny: ${preGroupCheck.reason}`);
-          break; // Ukonči celý cyklus
-        }
-
-        // Otevři skupinu
-        try {
-          await fbBot.openGroup(selectedGroup);
-          await wait.delay(wait.timeout() * 2);
-
-          // NOVÁ LOGIKA - Kontrola po otevření skupiny
-          if (fbBot.pageAnalyzer) {
-            const quickCheck = await fbBot.pageAnalyzer.quickStatusCheck();
-
-            // 🚨 DETEKCE ŽÁDOSTI O ČLENSTVÍ
-            const pageContent = await fbBot.page.content().catch(() => '');
-            const membershipDetected = await detectMembershipRequest(user, selectedGroup, pageContent);
-            
-            if (membershipDetected) {
-              await Log.warn(`[${user.id}]`, `🚫 Skupina ${selectedGroup.nazev} vyžaduje schválení členství - přeskakuji`);
-              continue; // Přejdi na další skupinu
-            }
-
-            if (quickCheck.hasErrors) {
-              const { waitForUserIntervention } = await import('./iv_wait.js');
-              const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
-
-              await Log.warn(`[${user.id}]`, `🚨 Group error detected: ${selectedGroup.fb_id}`);
-
-              // 60s countdown s možností stisknout 'a'
-              const userWantsAnalysis = await waitForUserIntervention(
-                `Group Error: ${selectedGroup.nazev}`,
-                60
-              );
-
-              if (userWantsAnalysis) {
-                // Hlubší analýza - uložit do tabulky
-                const reportBuilder = new ErrorReportBuilder();
-                reportBuilder.initializeReport(
-                  user,
-                  selectedGroup,
-                  'GROUP_ERROR',
-                  `Error after opening group: ${selectedGroup.nazev}`,
-                  fbBot.page?.url() || 'unknown'
-                );
-
-                try {
-                  const analysis = await fbBot.pageAnalyzer.analyzeFullPage({
-                    includeGroupAnalysis: true,
-                  });
-                  reportBuilder.addPageAnalysis(analysis);
-                } catch (err) {
-                  reportBuilder.addNotes(`Group analýza selhala: ${err.message}`);
-                }
-
-                const reportId = await reportBuilder.saveReport();
-                Log.info(`[${user.id}]`, `📊 Group error report uložen s ID: ${reportId}`);
-              }
-
-              // Program pokračuje i s chybou (podle původní logiky)
-              await Log.warn(`[${user.id}]`, 'Pokračuji přes group error...');
-            }
-          }
-
-        } catch (groupErr) {
-          await Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message}`);
-
-          // Error i při pokusu o otevření skupiny
-          const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
-
-          const reportBuilder = new ErrorReportBuilder();
-          const reportId = await reportBuilder.saveBasicReport(
-            user,
-            'GROUP_OPEN_ERROR',
-            `Failed to open group: ${groupErr.message}`,
-            `group_${selectedGroup.fb_id}`
-          );
-
-          Log.info(`[${user.id}]`, `📊 Basic error report uložen s ID: ${reportId}`);
-
-          continue; // Pokračuj s další skupinou (původní logika)
-        }
-        // NOVÉ - Ověření po otevření skupiny
-        const postGroupCheck = await verifyActionReadiness(user, fbBot, `post_utio_${groupType}`, {
-          targetGroup: selectedGroup
-        });
-
-        if (!postGroupCheck.ready) {
-          await Log.warn(`[${user.id}]`, `Skupina ${selectedGroup.fb_id} není připravena: ${postGroupCheck.reason}`);
-
-          if (postGroupCheck.critical) {
-            continue; // Zkus další skupinu
-          }
-
-          await Log.warn(`[${user.id}]`, 'Pokračuji přes varování...');
-        }
-
-        // Získej zprávu z UTIO a publikuj ji
-        const postSuccess = await performUtioPost(user, fbBot, selectedGroup, utioBot);
-
-        if (postSuccess) {
-          successfulPosts++;
-          consecutiveFailures = 0; // Reset při úspěchu
-
-          // Aktualizuj statistiky
-          await support.updatePostStats(selectedGroup, user, `post_utio_${groupType}`);
-
-          Log.success(`[${user.id}]`, `✅ Post ${attempt} úspěšný! Celkem: ${successfulPosts}/${attempt}`);
-        } else {
-          consecutiveFailures++;
-          await Log.warn(`[${user.id}]`, `❌ Post ${attempt} neúspěšný (${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES} po sobě)`);
-          
-          // Kontrola počtu neúspěšných pokusů za sebou
-          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            await Log.error(`[${user.id}]`, `🚨 SYSTÉM: ${MAX_CONSECUTIVE_FAILURES} neúspěšných skupin za sebou - naplánován account_delay`);
-            
-            // Naordinovat account_delay akci
-            const delayMinutes = 60 + Math.random() * 180; // 1-4 hodiny jako u běžného account_delay
-            await db.updateUserWorktime(user.id, delayMinutes);
-            
-            // Systémový log pro monitoring
-            try {
-              await db.logSystemEvent(
-                `consecutive_group_failures_${groupType}`, 
-                'WARN',
-                `${MAX_CONSECUTIVE_FAILURES} consecutive failures in post_utio_${groupType} action - account_delay scheduled for ${Math.round(delayMinutes)}min`,
-                { groupType: groupType, delayMinutes: Math.round(delayMinutes), maxFailures: MAX_CONSECUTIVE_FAILURES },
-                user.id
-              );
-            } catch (logErr) {
-              await Log.warn(`[${user.id}]`, `Nepodařilo se zalogovat systémovou událost: ${logErr.message}`);
-            }
-            
-            await Log.warn(`[${user.id}]`, `⏳ Account delay nastaven na ${Math.round(delayMinutes)} minut kvůli opakovaným neúspěchům`);
-            
-            // Ukončit celou akci
-            break;
-          }
-        }
-
-      } catch (groupErr) {
-        consecutiveFailures++;
-        await Log.error(`[${user.id}]`, `Chyba při práci se skupinou ${selectedGroup.fb_id}: ${groupErr.message} (${consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES} po sobě)`);
-        
-        // Kontrola počtu neúspěšných pokusů za sebou i u výjimek
-        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          await Log.error(`[${user.id}]`, `🚨 SYSTÉM: ${MAX_CONSECUTIVE_FAILURES} chyb při skupinách za sebou - naplánován account_delay`);
-          
-          // Naordinovat account_delay akci
-          const delayMinutes = 60 + Math.random() * 180; // 1-4 hodiny
-          await db.updateUserWorktime(user.id, delayMinutes);
-          
-          // Systémový log pro monitoring
-          try {
-            await db.logSystemEvent(
-              `consecutive_group_errors_${groupType}`, 
-              'ERROR',
-              `${MAX_CONSECUTIVE_FAILURES} consecutive errors in post_utio_${groupType} action - account_delay scheduled for ${Math.round(delayMinutes)}min`,
-              { groupType: groupType, delayMinutes: Math.round(delayMinutes), maxFailures: MAX_CONSECUTIVE_FAILURES },
-              user.id
-            );
-          } catch (logErr) {
-            await Log.warn(`[${user.id}]`, `Nepodařilo se zalogovat systémovou událost: ${logErr.message}`);
-          }
-          
-          await Log.warn(`[${user.id}]`, `⏳ Account delay nastaven na ${Math.round(delayMinutes)} minut kvůli opakovaným chybám`);
-          
-          // Ukončit celou akci
-          break;
-        }
-        
-        continue; // Pokračuj s další skupinou
-      }
-
-      // Pauza mezi posty s neinvazivní aktivitou
-      if (attempt < maxPosts) {
-        const pauseTime = 10000 + Math.random() * 80000; // 10-90s
-        Log.info(`[${user.id}]`, `⏱️ Pauza ${Math.round(pauseTime / 1000)}s před dalším postem s neinvazivní aktivitou...`);
-        
-        // Neinvazivní aktivita během pauzy
-        await performNonInvasiveActivity(user, fbBot, pauseTime);
-      }
-    }
-
-    Log.info(`[${user.id}]`, `🏁 Cyklus ${groupType} dokončen. Úspěšných postů: ${successfulPosts}`);
-    return successfulPosts;
-
-  } catch (err) {
-    await Log.error(`[${user.id}] performRepeatedUtioPost`, err);
-    return 0;
+async function performPublication(user, fbBot, utioBot, group, actionCode) {
+  Log.info(`[${user.id}]`, `Zahajuji publikaci do skupiny ${group.nazev}...`);
+  
+  // Fáze 3: Publikování
+  const message = await support.pasteMsg(user, group, fbBot, utioBot);
+  if (!message) {
+    await Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
+    return false;
   }
-}
 
-/**
- * Získá dostupné skupiny pro zadaný typ
- * @param {number} userId - ID uživatele
- * @param {string} groupType - Typ skupiny
- * @returns {Promise<Array>} Seznam dostupných skupin
- */
-async function getAvailableGroups(userId, groupType) {
-  try {
-    // NOVÁ LOGIKA: Použij per-user group blocking systém
-    const groups = await getAvailableGroupsForUser(userId, groupType.toUpperCase());
-    
-    Log.debug(`[${userId}]`, `Per-user blocking: nalezeno ${groups.length} dostupných skupin typu ${groupType}`);
-    
-    return groups;
-  } catch (err) {
-    await Log.error(`[${userId}] getAvailableGroups`, err);
-    
-    // Fallback na původní metodu při chybě
-    try {
-      return await db.getAvailableGroups(groupType.toUpperCase(), userId);
-    } catch (fallbackErr) {
-      await Log.error(`[${userId}] getAvailableGroups fallback`, fallbackErr);
-      return [];
-    }
-  }
+  await db.logAction(user.id, actionCode, group.id, `Post do skupiny: ${group.nazev}`);
+  await support.updatePostStats(group, user, actionCode);
+  Log.success(`[${user.id}]`, `✅ Úspěšně publikováno do skupiny ${group.nazev}!`);
+  return true;
 }
 
 /**
@@ -478,15 +223,17 @@ export async function runAction(user, actionCode, context) {
 
     switch (actionCode) {
       case 'post_utio_g':
-        result = await performRepeatedUtioPost(user, fbBot, utioBot, 'g');
+        result = await handleSingleUtioPost(user, fbBot, utioBot, 'g');
         break;
 
       case 'post_utio_gv':
-        result = await performRepeatedUtioPost(user, fbBot, utioBot, 'gv');
+        result = await handleSingleUtioPost(user, fbBot, utioBot, 'gv');
         break;
 
       case 'post_utio_p':
-        result = await performRepeatedUtioPost(user, fbBot, utioBot, 'p');
+        // result = await handleSingleUtioPost(user, fbBot, utioBot, 'p');
+        await Log.warn(`[${user.id}]`, 'Akce post_utio_p není zatím plně implementována s novou logikou.');
+        result = false;
         break;
 
       case 'quote_post':
@@ -549,11 +296,9 @@ export async function runAction(user, actionCode, context) {
     });
 
     if (result) {
-      Log.success(`[${user.id}]`, `✅ Akce ${actionCode} dokončena úspěšně`);
-      
       // Nastav invasive lock pro invazní akce
       try {
-        const actionDef = await db.safeQueryFirst('actions.getDefinitionByCode', [actionCode]);
+        const actionDef = await db.getDefinitionByCode(actionCode);
         if (actionDef?.invasive) {
           const config = JSON.parse(await fs.readFile('./config.json', 'utf8'));
           const cooldownMs = (config.posting_cooldown.min_seconds + 
@@ -565,8 +310,6 @@ export async function runAction(user, actionCode, context) {
       } catch (err) {
         await Log.warn(`[${user.id}]`, `Nepodařilo se nastavit invasive lock: ${err.message}`);
       }
-    } else {
-      await Log.warn(`[${user.id}]`, `❌ Akce ${actionCode} se nezdařila`);
     }
 
     return result;

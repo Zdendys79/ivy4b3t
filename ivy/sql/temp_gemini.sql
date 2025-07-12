@@ -1,14 +1,4 @@
--- Přidání sloupce invasive do tabulky action_definitions
--- Datum: 2025-07-11
--- Účel: Označení invazních akcí přímo v databázi místo config.json
-
-ALTER TABLE action_definitions 
-ADD COLUMN invasive BOOLEAN NOT NULL DEFAULT FALSE AFTER repeatable;
-
--- Označení invazních akcí podle původního seznamu z config.json
-UPDATE action_definitions 
-SET invasive = TRUE 
-WHERE action_code IN ('post_utio_g', 'post_utio_gv', 'post_utio_p', 'quote_post', 'comment_post');
-
--- Ověření výsledku
-SELECT action_code, invasive, active FROM action_definitions ORDER BY invasive DESC, action_code;
+-- Přidání nových akcí pro sledování žádostí o členství
+INSERT INTO `action_definitions` (`action_code`, `label`, `description`, `weight`, `min_minutes`, `max_minutes`, `active`, `repeatable`, `invasive`) VALUES
+('join_group_g', 'Žádost o členství (G)', 'Automatická žádost o přidání do běžné skupiny.', 0, 1440, 2880, 0, 0, 0),
+('join_group_gv', 'Žádost o členství (GV)', 'Automatická žádost o přidání do GV skupiny.', 0, 1440, 2880, 0, 0, 0);

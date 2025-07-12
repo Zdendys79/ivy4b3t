@@ -132,6 +132,16 @@ export const ACTIONS = {
     LIMIT 1
   `,
 
+  getRecentJoinGroupAction: `
+    SELECT timestamp
+    FROM action_log
+    WHERE account_id = ?
+      AND action_code = ? 
+      AND timestamp >= NOW() - INTERVAL 8 HOUR
+    ORDER BY timestamp DESC
+    LIMIT 1
+  `,
+
   getReferenceSleepTime: `
     SELECT COALESCE(
       (SELECT timestamp FROM action_log WHERE account_id = ? AND action_code = 'account_sleep' ORDER BY timestamp DESC LIMIT 1),

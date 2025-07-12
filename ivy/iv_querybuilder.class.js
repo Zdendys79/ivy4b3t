@@ -685,4 +685,37 @@ export class QueryBuilder {
   async cleanOldIrrelevantGroups(days = 30) {
     return await this.safeExecute('group_details.deleteOldUnrelevant', [days]);
   }
+
+  // =========================================================
+  // REFACTORED METHODS - Nové metody pro refaktorovanou logiku
+  // =========================================================
+
+  async getRecentJoinGroupAction(userId, actionCode) {
+    return this.safeQueryFirst('actions.getRecentJoinGroupAction', [userId, actionCode]);
+  }
+
+  async blockUserGroup(userId, groupId, reason, days) {
+    const blockedUntil = new Date();
+    blockedUntil.setDate(blockedUntil.getDate() + days);
+    // Používáme stávající dotaz, ale s logikou pro výpočet data
+    return await this.safeExecute('user_group_blocking.blockUserGroup', [blockedUntil, reason, userId, groupId]);
+  }
+
+  async getSingleAvailableGroup(userId, groupType) {
+    // Tento dotaz není v user_group_blocking.js, ale je velmi podobný
+    // getAvailableGroupsForUser. Pro jednoduchost ho zde definuji.
+    const query = `
+      SELECT g.*
+      FROM fb_groups g
+      LEFT JOIN user_groups ug ON g.id = ug.group_id AND ug.user_id = ?
+      WHERE g.typ = ?
+        AND g.priority > 0
+        AND (g.next_seen IS NULL OR g.next_seen <= NOW())
+        AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
+      ORDER BY RAND()
+      LIMIT 1
+    `;
+    // Tento dotaz nevolá přes queryPath, ale přímo SQL, proto druhý parametr je pole
+    return await this.safeQueryFirst(query, [userId, groupType]);
+  }
 }

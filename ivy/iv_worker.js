@@ -148,6 +148,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
   let fbBot = null;
   let utioBot = null;
   let actionCount = 0;
+  let consecutive_failures = 0; // Sledování po sobě jdoucích neúspěchů
 
   try {
     await db.initUserActionPlan(user.id);
@@ -157,6 +158,21 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
     // 🎯 HLAVNÍ SMYČKA AKCÍ PRO UŽIVATELE
     while (true) {
+      // Kontrola po sobě jdoucích neúspěchů
+      if (consecutive_failures >= 5) {
+        await Log.error(`[${user.id}]`, `🚨 SYSTÉM: ${consecutive_failures} neúspěšných akcí za sebou - naplánován account_delay`);
+        await runAction(user, 'account_delay', { fbBot: null, utioBot: null });
+        await db.logSystemEvent(
+          'CONSECUTIVE_FAILURES', 
+          'ERROR',
+          `${consecutive_failures} consecutive failures for user ${user.id} - account_delay scheduled.`,
+          { userId: user.id, failures: consecutive_failures },
+          user.id
+        );
+        consecutive_failures = 0; // Reset po penalizaci
+        break; // Ukonči cyklus pro tohoto uživatele
+      }
+
       // 🎯 KROK 3: ZÍSKÁNÍ DOSTUPNÝCH AKCÍ
       const actions = await db.getUserActions(user.id);
       Log.debug(`[${user.id}]`, `Krok 3: Dostupné akce: ${actions.map(a => a.action_code).join(', ') || 'Žádné'}`);
@@ -190,6 +206,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       const picked = await getRandomAction(actions, user.id);
       if (!picked) {
         await Log.warn(`[${user.id}]`, 'Krok 4: Kolo štěstí vrátilo null, pravděpodobně vyčerpané limity');
+        await wait.delay(IvMath.randInterval(10000, 20000)); // Krátká pauza před dalším pokusem
         continue; // Zkus znovu, možná se uvolní jiné akce
       }
 
@@ -215,8 +232,10 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       const success = await runAction(user, actionCode, { fbBot, utioBot });
       if (!success) {
         await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
+        consecutive_failures++;
       } else {
         Log.success(`[${user.id}]`, `Akce ${actionCode} úspěšně dokončena`);
+        consecutive_failures = 0; // Reset při úspěchu
       }
 
       // 🚨 HOSTNAME OCHRANA: Kontrola, zda nebyl účet mezitím zablokován
