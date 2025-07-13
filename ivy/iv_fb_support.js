@@ -37,7 +37,7 @@ export async function findByText(page, text, options = {}) {
     const selector = `xpath/${xpath}`;
 
     await page.waitForSelector(selector, { timeout }).catch(() => {});
-    const elements = await page.$(selector);
+    const elements = await page.$$(selector);
     return elements || [];
 
   } catch (err) {
