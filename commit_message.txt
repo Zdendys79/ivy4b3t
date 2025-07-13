@@ -1,9 +1,9 @@
-fix: Oprava detekce Gitu a zpřesnění diagnostiky
+fix(analyzer): Vylepšení detekce tlačítka "Přidat se ke skupině"
 
-Tato oprava řeší přetrvávající problém s detekcí Git větve a zpřesňuje diagnostické logování pro odhalení chyby s inicializací PageAnalyzeru.
+Tato oprava řeší problém, kdy `PageAnalyzer` chybně vyhodnotil stav stránky jako "ok", i když uživatel nebyl členem skupiny a měl se k ní nejprve přidat.
 
-- **fix(git): Opraveno předávání cesty k repozitáři**
-  - Volání `get_git_info_json` v `iv_support.js` nyní správně předává cestu k repozitáři, což by mělo finálně vyřešit problém s prázdným výstupem ze skriptu.
-
-- **chore(debug): Zpřesněno diagnostické logování**
-  - Starý diagnostický log byl odstraněn a nahrazen novým, který se zapisuje na správném místě (`executeUserActionCycle`) a poskytne nám přesné informace o tom, jaké požadavky jsou generovány pro každou akci.
+- **fix(analyzer): Zpřesněna detekce v `_performGroupAnalysis`**
+  - Byl rozšířen seznam klíčových slov pro detekci tlačítka pro přidání do skupiny.
+  - Byl vylepšen selektor pro prohledávání DOM, aby byl robustnější vůči změnám na Facebooku.
+  - Byla přidána dodatečná podmínka, která vylučuje tlačítka pro "vytvoření" skupiny, aby nedocházelo k falešným pozitivům.
+  - Tím je zajištěno, že analyzátor správně identifikuje stav, kdy je nutné se ke skupině připojit, a zabrání se tak následným chybám při pokusu o publikaci.
