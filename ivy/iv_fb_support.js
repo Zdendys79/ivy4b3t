@@ -29,23 +29,100 @@ export async function findByText(page, text, options = {}) {
 
     const { match = 'exact', timeout = 3000 } = options;
 
-    const textSelector = {
-      exact: `normalize-space(.) = "${text}"`,
-      contains: `contains(normalize-space(.), "${text}")`,
-      startsWith: `starts-with(normalize-space(.), "${text}")`
-    }[match];
+    // JavaScript implementace s timeoutem
+    const startTime = Date.now();
+    let elements = [];
 
-    const xpath = `//*[${textSelector}]`;
-    const selector = `xpath/${xpath}`;
+    while (Date.now() - startTime < timeout) {
+      // Použij JavaScript evaluaci místo XPath
+      elements = await page.evaluate((searchText, matchType) => {
+        const allElements = document.querySelectorAll('*');
+        const matchingElements = [];
 
-    await page.waitForSelector(selector, { timeout });
-    const elements = await page.$(selector);
-    
-    if (elements.length === 0) {
-        throw new Error(`Element s textem "${text}" nebyl nalezen.`);
+        for (const element of allElements) {
+          // Získej text element including child text but excluding script/style
+          const computedStyle = window.getComputedStyle(element);
+          if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+            continue;
+          }
+
+          const textContent = element.textContent || element.innerText || '';
+          const normalizedText = textContent.trim();
+
+          let matches = false;
+          switch (matchType) {
+            case 'exact':
+              matches = normalizedText === searchText;
+              break;
+            case 'contains':
+              matches = normalizedText.includes(searchText);
+              break;
+            case 'startsWith':
+              matches = normalizedText.startsWith(searchText);
+              break;
+          }
+
+          if (matches) {
+            // Vrať informace o elementu které můžeme použít k nalezení
+            matchingElements.push({
+              tagName: element.tagName,
+              className: element.className,
+              id: element.id,
+              textContent: normalizedText,
+              isButton: element.tagName === 'BUTTON' || element.role === 'button' || element.type === 'submit',
+              isClickable: element.onclick !== null || element.tagName === 'BUTTON' || element.tagName === 'A',
+              boundingBox: element.getBoundingClientRect()
+            });
+          }
+        }
+
+        return matchingElements;
+      }, text, match);
+
+      if (elements.length > 0) {
+        break;
+      }
+
+      // Krátká pauza před dalším pokusem
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
-    return elements;
+
+    if (elements.length === 0) {
+      throw new Error(`Element s textem "${text}" nebyl nalezen během ${timeout}ms.`);
+    }
+
+    // Převeď metadata elementů zpět na skutečné Puppeteer handles
+    const puppeteerElements = [];
+    for (const elementInfo of elements) {
+      try {
+        // Najdi element pomocí kombinace tagName, tříd a textu
+        let selector = elementInfo.tagName.toLowerCase();
+        if (elementInfo.id) {
+          selector += `#${elementInfo.id}`;
+        }
+        if (elementInfo.className) {
+          const classes = elementInfo.className.trim().split(/\s+/).filter(c => c);
+          if (classes.length > 0) {
+            selector += '.' + classes.join('.');
+          }
+        }
+
+        // Najdi všechny elementy odpovídající selektoru a filtruj podle textu
+        const candidateElements = await page.$$(selector);
+        for (const candidate of candidateElements) {
+          const candidateText = await page.evaluate(el => (el.textContent || el.innerText || '').trim(), candidate);
+          if (candidateText === elementInfo.textContent) {
+            puppeteerElements.push(candidate);
+            break;
+          }
+        }
+      } catch (err) {
+        // Pokud selector selže, pokračuj na další element
+        continue;
+      }
+    }
+
+    return puppeteerElements;
 
   } catch (err) {
     await Log.warn(`[FB_SUPPORT]', 'findByText selhalo pro "${text}":`, err.message);
@@ -53,6 +130,82 @@ export async function findByText(page, text, options = {}) {
   }
 }
 
+/**
+ * Rychlé vyhledání a kliknutí na text pomocí JavaScript metody.
+ * Podobné fallback metodě, ale s možností specifikace match typu.
+ * @param {Page} page - Puppeteer page instance
+ * @param {string} text - hledaný text
+ * @param {object} options - volby (match: startsWith|exact|contains)
+ * @returns {Promise<boolean>} true pokud bylo kliknutí úspěšné
+ */
+export async function clickByTextJS(page, text, options = {}) {
+  try {
+    if (!page || page.isClosed()) {
+      await Log.warn('[FB_SUPPORT]', 'clickByTextJS selhalo: page není platná nebo je zavřená.');
+      return false;
+    }
+
+    const { match = 'exact' } = options;
+
+    // Přímé JavaScript kliknutí bez čekání na Puppeteer selektory
+    const clickResult = await page.evaluate((searchText, matchType) => {
+      const allElements = document.querySelectorAll('*');
+
+      for (const element of allElements) {
+        // Přeskoč neviditelné elementy
+        const computedStyle = window.getComputedStyle(element);
+        if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+          continue;
+        }
+
+        const textContent = element.textContent || element.innerText || '';
+        const normalizedText = textContent.trim();
+
+        let matches = false;
+        switch (matchType) {
+          case 'exact':
+            matches = normalizedText === searchText;
+            break;
+          case 'contains':
+            matches = normalizedText.includes(searchText);
+            break;
+          case 'startsWith':
+            matches = normalizedText.startsWith(searchText);
+            break;
+        }
+
+        if (matches) {
+          // Pokus o kliknutí
+          try {
+            element.click();
+            return {
+              success: true,
+              text: normalizedText,
+              tagName: element.tagName,
+              className: element.className
+            };
+          } catch (clickErr) {
+            continue; // Zkus další element
+          }
+        }
+      }
+
+      return { success: false };
+    }, text, match);
+
+    if (clickResult.success) {
+      await Log.info('[FB_SUPPORT]', `clickByTextJS úspěšně kliklo na "${clickResult.text}" (${clickResult.tagName})`);
+      return true;
+    } else {
+      await Log.warn('[FB_SUPPORT]', `clickByTextJS nenašlo klikatelný element s textem "${text}"`);
+      return false;
+    }
+
+  } catch (err) {
+    await Log.warn('[FB_SUPPORT]', `clickByTextJS selhalo pro "${text}": ${err.message}`);
+    return false;
+  }
+}
 
 /**
  * Univerzální ověření připravenosti FB stránky s error reporting

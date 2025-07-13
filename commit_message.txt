@@ -1,8 +1,9 @@
-feat(fb): Prioritize "Zveřejnit" button for group posting
+feat(fb): Replace XPath with JavaScript element search methods
 
-- Update submit_texts configuration to prioritize "Zveřejnit" as first option
-- Modify fallbackClick to use dynamic configuration from database
-- Ensure consistent button search priority across all click methods
+- Rewrite findByText to use JavaScript evaluation instead of XPath selectors
+- Add clickByTextJS function for direct JavaScript clicking without Puppeteer constraints
+- Implement three-tier fallback system: findByText → clickByTextJS → fallbackClick
+- Improve element detection reliability and bypass Puppeteer visibility limitations
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

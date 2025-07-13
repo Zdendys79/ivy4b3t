@@ -1108,7 +1108,18 @@ export class FBBot {
         }
       }
 
-      await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko, zkouším fallback...');
+      await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko pomocí findByText, zkouším JavaScript metodu...');
+      
+      // Druhý pokus: JavaScript metoda
+      for (const targetText of submitTexts) {
+        const jsResult = await fbSupport.clickByTextJS(this.page, targetText, { match: 'exact' });
+        if (jsResult) {
+          Log.success(`[FB] Příspěvek úspěšně odeslán pomocí JavaScript metody!`);
+          return true;
+        }
+      }
+      
+      await Log.warn('[FB] JavaScript metoda také selhala, zkouším fallback...');
       return await this.fallbackClick();
 
     } catch (err) {
