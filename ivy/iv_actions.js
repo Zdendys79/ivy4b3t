@@ -307,6 +307,7 @@ export async function runAction(user, actionCode, context, pickedAction) {
       reason: result ? 'Success' : 'Failed'
     });
 
+    Log.debug('[DIAGNOSTIC]', `Picked action object in runAction: ${JSON.stringify(pickedAction)}`);
     if (result && pickedAction.invasive) {
       try {
         const config = JSON.parse(await fs.readFile('./config.json', 'utf8'));

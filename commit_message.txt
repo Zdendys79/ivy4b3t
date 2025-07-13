@@ -1,15 +1,7 @@
-fix: Oprava zpracování `quit` příkazu z debuggeru
+chore(debug): Přidání diagnostiky pro `invasive_lock`
 
-Tato oprava řeší problém, kdy se po stisknutí 'q' v debuggeru objevovaly další chybové hlášky kvůli asynchronnímu "doběhnutí" kódu.
+Tato změna nepřináší opravu, ale přidává klíčové diagnostické logování pro odhalení příčiny, proč se nenastavuje časový zámek mezi invazivními akcemi.
 
-- **refactor(debugger): `pauseOnError` nyní vrací stav**
-  - Funkce `pauseOnError` v `iv_interactive_debugger.js` nyní vrací řetězec `'quit'`, pokud uživatel zvolí tuto možnost.
-
-- **refactor(log): `Log` třída propaguje návratovou hodnotu**
-  - Metody `warnInteractive` a `errorInteractive` nyní vrací hodnotu, kterou obdrží z debuggeru.
-
-- **fix(fb): `isAccountLocked` reaguje na žádost o ukončení**
-  - Metoda `isAccountLocked` v `iv_fb.class.js` nyní kontroluje návratovou hodnotu z `Log.warnInteractive` a pokud detekuje žádost o ukončení, okamžitě přeruší svou další činnost. Tím se zabrání zbytečnému "dobíhání" kódu a zobrazování dalších chyb po stisknutí 'q'.
-
-- **feat(support): Přidána mezera na konec vkládaného textu**
-  - Do funkce `pasteMsg` byla přidána mezera na konec textu, jak bylo požadováno.
+- **chore(debug): Logování objektu akce v `runAction`**
+  - Do `iv_actions.js` byl přidán log, který vypíše celý objekt `pickedAction` těsně před kontrolou, zda má být nastaven `invasive_lock`.
+  - To nám umožní přesně zjistit, zda se vlastnost `invasive` správně předává z "kola štěstí" a proč podmínka pro nastavení zámku selhává.
