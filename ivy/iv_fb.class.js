@@ -346,32 +346,38 @@ export class FBBot {
   }
 
   async acceptCookies() {
-    try {
-      const cookieBtnText = 'Povolit soubory cookie';
-      Log.info(`[FB] Hledám tlačítko pro cookies: "${cookieBtnText}"`);
+    const cookieBtnText = 'Povolit soubory cookie';
+    Log.info(`[FB] Hledám tlačítko pro cookies: "${cookieBtnText}"`);
 
-      // Získání všech potenciálních tlačítek na stránce
+    try {
+      if (!this.page || this.page.isClosed()) {
+        Log.warn('[DIAGNOSTIC][acceptCookies] Stránka není dostupná.');
+        return false;
+      }
+
       const buttons = await this.page.$('div[role="button"], button');
+      Log.debug(`[DIAGNOSTIC][acceptCookies] Nalezeno ${buttons ? buttons.length : 'null'} potenciálních tlačítek.`);
+
+      if (!buttons || buttons.length === 0) {
+        return false;
+      }
       
       for (const button of buttons) {
-        try {
-          const text = await this.page.evaluate(el => el.textContent.trim(), button);
-          if (text === cookieBtnText) {
-            Log.info(`[FB] Nalezeno tlačítko "${cookieBtnText}", provádím klik...`);
-            await button.click();
-            await wait.delay(3000); // Pauza po kliknutí
-            return true;
-          }
-        } catch (e) {
-          // Element mohl zmizet, pokračujeme dál
+        const text = await this.page.evaluate(el => el.textContent.trim(), button).catch(() => '');
+        if (text === cookieBtnText) {
+          Log.info(`[FB] Nalezeno tlačítko "${cookieBtnText}", provádím klik...`);
+          await button.click();
+          await wait.delay(3000);
+          return true;
         }
       }
 
-      Log.warn(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno.`);
+      Log.warn(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno po prohledání ${buttons.length} elementů.`);
       return false;
 
     } catch (err) {
       Log.error(`[FB] Cookie banner error: ${err.message}`);
+      if (err.stack) Log.debug(err.stack);
       return false;
     }
   }

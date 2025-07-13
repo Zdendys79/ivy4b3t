@@ -1,8 +1,11 @@
-refactor(fb): Sjednocení a oprava metody `acceptCookies`
+fix: Oprava ukončovacího cyklu a vylepšení diagnostiky cookies
 
-Tato oprava řeší přetrvávající problém s detekcí a odkliknutím cookie lišty.
+Tato oprava řeší dva přetrvávající problémy: nekonečný restartovací cyklus po stisknutí 'q' v debuggeru a selhání při odklikávání cookie lišty.
 
-- **refactor(fb): Přepsána metoda `acceptCookies`**
-  - Metoda byla kompletně přepsána, aby používala stejný, osvědčený princip prohledávání DOMu, jaký se úspěšně používá pro hledání jiných tlačítek (např. "Zveřejnit").
-  - Místo spoléhání na jeden komplexní XPath dotaz nyní iteruje přes všechny potenciální klikatelné prvky a hledá ten se správným textem.
-  - Tím se výrazně zvyšuje spolehlivost a odstraňuje nekonzistence mezi detekcí problému a jeho řešením.
+- **fix(core): Implementován `isShuttingDown` příznak pro čisté ukončení**
+  - Do hlavní smyčky v `ivy.js` byla přidána kontrola globálního příznaku.
+  - Tento příznak je nastaven na `true` v `gracefulShutdown` handleru, což zajistí, že se hlavní smyčka okamžitě ukončí a nebude docházet ke "závodu" s úklidovým procesem. Tím se zabrání nechtěným restartům.
+
+- **refactor(fb): Přidána robustní diagnostika do `acceptCookies`**
+  - Metoda byla přepsána tak, aby obsahovala podrobné logování každého kroku.
+  - Nyní přesně uvidíme, kolik tlačítek bylo nalezeno a proč případně selhalo porovnání textu, což nám pomůže odhalit finální příčinu problému.

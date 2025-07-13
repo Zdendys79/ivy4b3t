@@ -26,9 +26,12 @@ const versionCode = getVersion();
 // Initialize the console logger
 consoleLogger.init();
 
+let isShuttingDown = false;
+
 Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode}`);
 Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
+
 
 // Záznam do systémového logu o spuštění
 try {
@@ -52,7 +55,7 @@ try {
 }
 
 (async () => {
-  while (true) {
+  while (!isShuttingDown) {
     try {
       await db.heartBeat(0, 0, versionCode);
       const dbVersion = await db.getVersionCode();
@@ -70,6 +73,9 @@ try {
 
 // Graceful shutdown handler
 async function gracefulShutdown(signal) {
+  if (isShuttingDown) return; // Pokud již probíhá, nic nedělej
+  isShuttingDown = true;
+
   Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
   
   try {
