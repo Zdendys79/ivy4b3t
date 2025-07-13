@@ -1,9 +1,9 @@
-fix(fb): Sjednocení a oprava logiky hledání tlačítek
+fix: Oprava detekce stavu stránky a ukončovacího cyklu
 
-Tato oprava řeší přetrvávající `TypeError: is not iterable` tím, že sjednocuje a zpřesňuje způsob, jakým jsou vyhledávány a zpracovávány klikatelné prvky.
+Tato oprava řeší dva kritické problémy: nespolehlivou detekci cookie lišty a nesprávné chování aplikace po interakci s debuggerem.
 
-- **refactor(fb): Zrobustněna metoda `_clickByText`**
-  - Metoda byla přepsána tak, aby nepoužívala problematické "destructuring" přiřazení. Nyní nejprve zkontroluje, zda funkce `findByText` vrátila platné pole s prvky, a teprve poté se pokusí na prvek kliknout.
+- **fix(analyzer): Změněno pořadí kontrol ve `_determineOverallStatus`**
+  - Byla opravena logika, která způsobovala, že stav `not_logged_in` byl vyhodnocen dříve než `cookie_consent_required`. Nyní se nejprve kontrolují stavy vyžadující akci (cookies, reklamy) a až poté stav přihlášení, což zajišťuje správnou detekci.
 
-- **refactor(fb): `acceptCookies` nyní používá `findByText`**
-  - Metoda pro odklikávání cookies byla přepsána, aby používala stejnou, nyní již opravenou a robustní, logiku jako `_clickByText`. Tím je zajištěna konzistence a spolehlivost.
+- **fix(worker): Vylepšeno zpracování výstupu z debuggeru**
+  - Hlavní `catch` blok ve `worker.js` nyní správně reaguje nejen na volbu 'q' (quit), ale i na 's' (stop+report). V obou případech je cyklus `tick()` korektně ukončen, což zabraňuje nechtěným restartům a zacyklení.

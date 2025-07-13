@@ -149,10 +149,12 @@ export async function tick() {
     await executeUserActionCycle(user);
 
   } catch (err) {
-    const quitRequested = await Log.errorInteractive('[WORKER]', err);
-    if (quitRequested === 'quit') {
+    const userChoice = await Log.errorInteractive('[WORKER]', err);
+    // Pokud uživatel zvolil 'q' (quit) nebo 's' (stop), přerušíme cyklus.
+    if (userChoice === 'quit' || userChoice === true) {
       return;
     }
+    // V ostatních případech (continue, timeout) pokračujeme s prodlevou.
     await waitWithHeartbeat(2);
   }
 }
