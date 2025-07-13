@@ -1,7 +1,8 @@
-fix(core): Oprava názvů importů v SQL modulech
+fix(core): Finální oprava importů v SQL modulech
 
-Tato oprava řeší další `SyntaxError`, který bránil spuštění aplikace.
+Tato oprava definitivně řeší všechny `SyntaxError` chyby související s importem SQL modulů, které bránily spuštění aplikace.
 
-- **fix(db): Sjednocení názvů importovaných konstant v `sql/queries/index.js`**
-  - Některé moduly (např. `action_quality.js`) exportovaly své konstanty v `camelCase`, zatímco `index.js` je očekával ve `UPPER_SNAKE_CASE`.
-  - Všechny importy a jejich následné použití byly opraveny, aby odpovídaly skutečným názvům exportů.
+- **fix(db): Sjednocení `default` a pojmenovaných exportů v `sql/queries/index.js`**
+  - Byl proveden kompletní audit všech SQL souborů.
+  - Hlavní index (`index.js`) byl přepsán tak, aby správně importoval moduly bez ohledu na to, zda používají `export default` nebo `export const`.
+  - Tím je zajištěna plná konzistence a odstraněna příčina opakovaných pádů při startu.
