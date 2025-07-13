@@ -13,7 +13,7 @@ import * as fbSupport from './iv_fb_support.js';
 import { groupExploreAction } from './iv_group_explore_action.js';
 import { setInvasiveLock, initInvasiveLock, clearInvasiveLock } from './iv_wheel.js';
 import { db } from './iv_sql.js'
-import fs from 'fs/promises';
+import { getAllConfig } from './iv_config.js';
 import { Log } from './iv_log.class.js';
 import { getAvailableGroupsForUser, detectMembershipRequest } from './user_group_escalation.js';
 
@@ -310,9 +310,10 @@ export async function runAction(user, actionCode, context, pickedAction) {
     Log.debug('[DIAGNOSTIC]', `Picked action object in runAction: ${JSON.stringify(pickedAction)}`);
     if (result && pickedAction.invasive) {
       try {
-        const config = JSON.parse(await fs.readFile('./config.json', 'utf8'));
-        const cooldownMs = (config.posting_cooldown.min_seconds + 
-                          Math.random() * (config.posting_cooldown.max_seconds - config.posting_cooldown.min_seconds)) * 1000;
+        const config = await getAllConfig();
+        const cooldownConfig = config.cfg_posting_cooldown || { min_seconds: 120, max_seconds: 240 };
+        const cooldownMs = (cooldownConfig.min_seconds + 
+                          Math.random() * (cooldownConfig.max_seconds - cooldownConfig.min_seconds)) * 1000;
         
         setInvasiveLock(cooldownMs);
         Log.info(`[${user.id}]`, `🔒 Invasive lock nastaven na ${Math.round(cooldownMs / 1000)}s po úspěšné akci ${actionCode}`);

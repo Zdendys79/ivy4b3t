@@ -254,6 +254,19 @@ export class QueryBuilder {
   }
 
   // =========================================================
+  // VARIABLES - Správa systémových proměnných
+  // =========================================================
+
+  async getVariable(name) {
+    const result = await this.safeQueryFirst('system.getVariable', [name]);
+    return result ? result.value : null;
+  }
+
+  async setVariable(name, value) {
+    return await this.safeExecute('system.setVariable', [name, value]);
+  }
+
+  // =========================================================
   // SYSTEM - Systémové funkce
   // =========================================================
 

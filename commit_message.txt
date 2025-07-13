@@ -1,20 +1,9 @@
-feat(scripts,docs): Přidán main-start.sh a dokumentace o execute permissions
+refactor(config): Centralizace konfigurace do databáze
 
-Vytvoří specializovaný start skript a doplní dokumentaci o spustitelných oprávněních.
-
-- **feat(main-start): Nový script pro main branch only**
-  - Kopie start.sh s názvem main-start.sh
-  - Vždy používá GIT větev "main" bez ohledu na config.json
-  - Ignoruje branch nastavení a vynucuje main branch
-  - Produkční skript pro stabilní prostředí
-
-- **docs(readme): Aktualizovaná dokumentace**
-  - Přidána sekce o spustitelných oprávněních po Git aktualizaci
-  - Instrukce pro chmod +x po pull/rsync na VM
-  - Doplněn main-start.sh do seznamu souborů a tabulek
-  - Vysvětleno že Git neuchovává execute permissions
-
-- **feat(self-restart): Správná self-restart logika**
-  - Self-restart používá main-start.sh místo start.sh
-  - Zachovává konzistenci při automatických aktualizacích
-  - Spustitelná oprávnění nastavena na dev PC
+- Migrace všech nastavení z `config.json` do databázové tabulky `variables`.
+- Vytvořen nový centrální modul `ivy/iv_config.js` pro načítání a cachování konfigurace z databáze.
+- Refaktorovány všechny moduly (`iv_actions`, `iv_fb`, `iv_log`, `iv_wheel`, `git-common.sh`), aby používaly nový konfigurační modul místo přímého čtení `config.json`.
+- Odstraněn zastaralý soubor `config.json` a jednorázový migrační skript.
+- Upraven `iv_sql.js`, aby pro připojení k DB používal výhradně systémové proměnné a byl odstraněn fallback na `sql_config.json`.
+- Zjednodušen `iv_log.class.js` tak, aby logoval všechny úrovně a byl nezávislý na konfiguraci.
+- Upraven `start.sh`, aby vždy používal větev `production`.

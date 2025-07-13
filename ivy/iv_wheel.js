@@ -12,7 +12,6 @@
 
 import { db } from './iv_sql.js'
 import { Log } from './iv_log.class.js';
-import fs from 'fs/promises';
 
 // Jednoduchá proměnná pro invasive lock (pouze timestamp)
 // Program pracuje vždy jen s jedním uživatelem v jednom okamžiku
@@ -63,19 +62,6 @@ export function hasInvasiveLock() {
 export function clearInvasiveLock() {
   invasiveLock = null;
   Log.debug('[WHEEL]', 'Invasive lock vymazán');
-}
-
-/**
- * Načte konfiguraci z config.json
- */
-async function loadConfig() {
-  try {
-    const configData = await fs.readFile('./config.json', 'utf8');
-    return JSON.parse(configData);
-  } catch (err) {
-    await Log.warn('[WHEEL]', `Nepodařilo se načíst config.json: ${err.message}`);
-    return null;
-  }
 }
 
 /**

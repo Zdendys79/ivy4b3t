@@ -1,18 +1,13 @@
 // iv_fb.class.js – Refaktorovaná verze
 
-import path from 'path';
-import fs from 'fs';
-
 import { Log } from './iv_log.class.js';
 import { PageAnalyzer } from './iv_page_analyzer.class.js';
 import { getHumanBehavior } from './iv_human_behavior_advanced.js';
 import { db } from './iv_sql.js';
 import * as fbSupport from './iv_fb_support.js';
+import { getAllConfig } from './iv_config.js';
 
 import * as wait from './iv_wait.js';
-
-const CONFIG_PATH = path.resolve('./config.json');
-const CONFIG = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
 
 export class FBBot {
   constructor(context, userId = null) {
@@ -794,10 +789,12 @@ export class FBBot {
 
   async newThing() {
     try {
-      Log.info('[FB]', `Hledám element pro psaní příspěvku. Texty: ${CONFIG.new_post_texts.join(', ')}`);
+      const config = await getAllConfig();
+      const newPostTexts = config.cfg_new_post_texts || ["Napište něco", "Co se vám honí hlavou"];
+      Log.info('[FB]', `Hledám element pro psaní příspěvku. Texty: ${newPostTexts.join(', ')}`);
       
       // Pokus 1: Přesná shoda s starts-with
-      let result = await this.findPostElementWithStrategy('starts-with');
+      let result = await this.findPostElementWithStrategy('starts-with', newPostTexts);
       if (result) {
         this.newThingElement = result.handle;
         Log.success('[FB]', `Element nalezen (starts-with): "${result.text}"`);
@@ -807,7 +804,7 @@ export class FBBot {
       Log.info('[FB]', 'starts-with selhalo, zkouším contains...');
       
       // Pokus 2: Částečná shoda s contains
-      result = await this.findPostElementWithStrategy('contains');
+      result = await this.findPostElementWithStrategy('contains', newPostTexts);
       if (result) {
         this.newThingElement = result.handle;
         Log.success('[FB]', `Element nalezen (contains): "${result.text}"`);
@@ -849,11 +846,11 @@ export class FBBot {
     }
   }
 
-  async findPostElementWithStrategy(strategy) {
+  async findPostElementWithStrategy(strategy, newPostTexts) {
     try {
-      Log.debug('[FB]', `Spouštím strategii: ${strategy} pro texty: ${CONFIG.new_post_texts.join(', ')}`);
+      Log.debug('[FB]', `Spouštím strategii: ${strategy} pro texty: ${newPostTexts.join(', ')}`);
       
-      const promises = CONFIG.new_post_texts.map(text => {
+      const promises = newPostTexts.map(text => {
         const xpath = strategy === 'starts-with' 
           ? `//span[starts-with(normalize-space(text()), "${text}")]`
           : `//span[contains(normalize-space(text()), "${text}")]`;
@@ -1082,10 +1079,12 @@ export class FBBot {
       await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
 
       // Najdeme tlačítko - jednoduše a lidsky
-      const spans = await this.page.$$('span');
-      Log.info(`[FB] Hledám odeslací tlačítko...`);
+      const spans = await this.page.$('span');
+      const config = await getAllConfig();
+      const submitTexts = config.cfg_submit_texts || ["Přidat", "Zveřejnit"];
+      Log.info(`[FB] Hledám odeslací tlačítko... Texty: ${submitTexts.join(', ')}`);
 
-      for (const targetText of CONFIG.submit_texts) {
+      for (const targetText of submitTexts) {
         for (const span of spans) {
           try {
             const spanInfo = await this.page.evaluate(el => {
@@ -1188,12 +1187,14 @@ export class FBBot {
 
   async findActiveSendButtons() {
     const candidates = [];
+    const config = await getAllConfig();
+    const submitTexts = config.cfg_submit_texts || ["Přidat", "Zveřejnit"];
 
     try {
       Log.info('[FB] Hledám tlačítka pomocí standardních selektorů...');
 
       // Strategie 1: Hledání všech span elementů a filtrování podle textu
-      const allSpans = await this.page.$$('span');
+      const allSpans = await this.page.$('span');
       Log.info(`[FB] Nalezeno ${allSpans.length} span elementů.`);
 
       for (const span of allSpans) {
@@ -1227,7 +1228,7 @@ export class FBBot {
             };
           }, span);
 
-          if (context && this.isTargetText(context.text) && this.isValidCandidate(context)) {
+          if (context && this.isTargetText(context.text, submitTexts) && this.isValidCandidate(context)) {
             candidates.push({ element: span, context, text: context.text });
             Log.info(`[FB] Nalezen kandidát: "${context.text}" (enabled: ${context.enabled}, buttonDisabled: ${context.buttonDisabled})`);
           }
@@ -1237,7 +1238,7 @@ export class FBBot {
       }
 
       // Strategie 2: Hledání buttonů s aria-label
-      const buttons = await this.page.$$('button, div[role="button"]');
+      const buttons = await this.page.$('button, div[role="button"]');
       Log.info(`[FB] Nalezeno ${buttons.length} button elementů.`);
 
       for (const button of buttons) {
@@ -1271,7 +1272,7 @@ export class FBBot {
           }, button);
 
           if (context &&
-            (this.isTargetText(context.ariaLabel) || this.isTargetText(context.innerText)) &&
+            (this.isTargetText(context.ariaLabel, submitTexts) || this.isTargetText(context.innerText, submitTexts)) &&
             this.isValidCandidate(context)) {
             candidates.push({ element: button, context, text: context.ariaLabel || context.innerText });
             Log.info(`[FB] Nalezen button kandidát: "${context.text}" (aria: "${context.ariaLabel}")`);
@@ -1292,7 +1293,7 @@ export class FBBot {
 
       for (const selector of composeSelectors) {
         try {
-          const elements = await this.page.$$(selector);
+          const elements = await this.page.$(selector);
           for (const element of elements) {
             try {
               const context = await this.page.evaluate(el => {
@@ -1317,7 +1318,7 @@ export class FBBot {
                 };
               }, element);
 
-              if (context && this.isTargetText(context.text) && this.isValidCandidate(context)) {
+              if (context && this.isTargetText(context.text, submitTexts) && this.isValidCandidate(context)) {
                 // Kontrola, zda už není v candidates
                 const exists = candidates.some(c => c.text === context.text);
                 if (!exists) {
@@ -1343,10 +1344,10 @@ export class FBBot {
     }
   }
 
-  isTargetText(text) {
+  isTargetText(text, submitTexts) {
     if (!text) return false;
     const normalizedText = text.trim().toLowerCase();
-    const targets = CONFIG.submit_texts.map(t => t.toLowerCase());
+    const targets = submitTexts.map(t => t.toLowerCase());
     return targets.includes(normalizedText);
   }
 

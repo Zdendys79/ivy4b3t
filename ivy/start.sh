@@ -34,12 +34,8 @@ REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
 SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
 TARGET_DIR=${TARGET_DIR:-~/ivy}
 
-# Načti branch z config.json pokud existuje
-if [[ -f "$TARGET_DIR/config.json" ]]; then
-    BRANCH=${BRANCH:-$(jq -r .branch "$TARGET_DIR/config.json" 2>/dev/null || echo "main")}
-else
-    BRANCH=${BRANCH:-main}
-fi
+# Vždy použij branch "production" - ignoruj config.json
+BRANCH="production"
 
 # Limity pro pokusy
 MAX_RETRIES=3

@@ -7,14 +7,33 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 
 import { QueryUtils } from './sql/queries/index.js';
 import { QueryBuilder } from './iv_querybuilder.class.js';
 import { Log } from './iv_log.class.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const sql_setup = JSON.parse(fs.readFileSync('./sql/sql_config.json'));
+let sql_setup;
+
+// Exclusively use environment variables for database connection on this development machine.
+if (process.env.CLAUDE_DB_USER && process.env.CLAUDE_DB_PASS) {
+  // Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
+  sql_setup = {
+    host: process.env.CLAUDE_DB_HOST || 'localhost',
+    user: process.env.CLAUDE_DB_USER,
+    password: process.env.CLAUDE_DB_PASS,
+    database: process.env.CLAUDE_DB_NAME || 'ivy'
+  };
+} else {
+  Log.error('[SQL]', 'CHYBA: Pro připojení k databázi jsou vyžadovány systémové proměnné (CLAUDE_DB_USER, CLAUDE_DB_PASS).');
+  process.exit(1);
+}
+
 
 const pool = mysql.createPool({
   host: sql_setup.host,
