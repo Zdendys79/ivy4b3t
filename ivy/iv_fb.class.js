@@ -1703,6 +1703,26 @@ export class FBBot {
     }
   }
 
+  async handleAcceptExpertInvite() {
+    try {
+      Log.info('[FB]', 'Hledám tlačítko "Přijmout" pro pozvánku experta...');
+      // Hledáme tlačítko "Přijmout" v kontextu, kde se mluví o expertovi.
+      const button = await this.page.waitForSelector("xpath///div[@role='button'][.//span[text()='Přijmout'] and ancestor::div[contains(., 'expertem skupiny')]]", { timeout: 5000 });
+      
+      if (button) {
+        await button.click();
+        await wait.delay(2000, 3000); // Počkat na reakci
+        Log.success('[FB]', '✅ Pozvánka pro experta byla přijata.');
+        return true;
+      }
+      Log.warn('[FB]', 'Tlačítko "Přijmout" pro pozvánku experta nenalezeno.');
+      return false;
+    } catch (err) {
+      Log.error(`[FB] Chyba při přijímání pozvánky experta: ${err.message}`);
+      return false;
+    }
+  }
+
 
   async testXPath(selector) {
     try {

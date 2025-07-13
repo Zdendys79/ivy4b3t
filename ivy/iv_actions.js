@@ -186,6 +186,17 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
 async function performPublication(user, fbBot, utioBot, group, actionCode) {
   Log.info(`[${user.id}]`, `Zahajuji publikaci do skupiny ${group.nazev}...`);
   
+  // Zpracování doplňkových akcí před postováním
+  const analysis = await fbBot.pageAnalyzer.lastAnalysis;
+  if (analysis && analysis.supplementary_actions && analysis.supplementary_actions.length > 0) {
+    for (const action of analysis.supplementary_actions) {
+      if (action.type === 'ACCEPT_EXPERT_INVITE') {
+        await Log.info(`[${user.id}]`, 'Detekována doplňková akce: Přijetí pozvánky experta.');
+        await fbBot.handleAcceptExpertInvite();
+      }
+    }
+  }
+
   // Fáze 3: Publikování
   const message = await support.pasteMsg(user, group, fbBot, utioBot);
   if (!message) {

@@ -1,12 +1,14 @@
-refactor(core): Sjednocení správy prohlížeče a oprava UI příkazů
+feat(actions): Zpracování doplňkové akce "Přijmout pozvánku experta"
 
-Tato oprava řeší zásadní architektonický problém, který způsoboval pád `SingletonLock` při zpracování UI příkazů.
+Tento commit rozšiřuje schopnosti bota o zpracování doplňkových akcí, které nejsou chybou, ale vyžadují interakci před provedením hlavní akce.
 
-- **refactor(ui): Odstraněna správa prohlížeče z `UIBot`**
-  - Třída `UIBot` v `iv_ui.class.js` již nespouští ani nezavírá vlastní instanci prohlížeče. Tím se zabraňuje duplicitnímu spouštění pro stejný profil.
-  - Metoda `processCommand` nyní jako parametr přijímá již existující a inicializovanou instanci `FBBot`.
+- **feat(analyzer): Detekce pozvánky pro experta skupiny**
+  - `PageAnalyzer` nyní v rámci analýzy skupiny detekuje, zda je na stránce přítomna výzva "stát se expertem skupiny".
+  - Pokud ano, přidá do výsledku analýzy novou doplňkovou akci typu `ACCEPT_EXPERT_INVITE`.
 
-- **refactor(worker): Centralizace řízení prohlížeče**
-  - `iv_worker.js` je nyní jediným místem, které je zodpovědné za životní cyklus prohlížeče (`prepareBrowser`, `cleanupBrowser`).
-  - Funkce `executeUICommand` nyní správně vytváří `FBBot` a předává ho do `UIBot`, čímž dodržuje správný tok závislostí.
-  - Byla přidána logika, která po dokončení UI příkazu explicitně čeká na manuální zavření prohlížeče obsluhou.
+- **feat(fb): Přidána metoda `handleAcceptExpertInvite`**
+  - Do `FBBot` byla přidána nová metoda, která cíleně vyhledá a klikne na tlačítko "Přijmout" v kontextu pozvánky pro experta.
+
+- **refactor(actions): Integrace zpracování doplňkových akcí**
+  - Logika v `handleSingleUtioPost` byla rozšířena. Po úvodní analýze zkontroluje, zda existují nějaké doplňkové akce.
+  - Pokud je nalezena akce `ACCEPT_EXPERT_INVITE`, zavolá se příslušná metoda ve `FBBot` a teprve poté se pokračuje v publikování příspěvku.

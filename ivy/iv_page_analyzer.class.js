@@ -524,8 +524,14 @@ export class PageAnalyzer {
           joinButtonText: '',
           writeFieldAvailable: false,
           membershipStatus: 'unknown',
-          warningDetails: []
+          warningDetails: [],
+          supplementary_actions: [] // Nové pole pro doplňkové akce
         };
+
+        // Detekce pozvánky pro experta
+        if (bodyText.includes('stát se expertem skupiny') || bodyText.includes('become a group expert')) {
+            info.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
+        }
 
         // Rozšířená detekce join tlačítek - kontroluje text, aria-label i data atributy
         const joinTexts = [
