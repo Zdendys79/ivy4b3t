@@ -1,11 +1,7 @@
-refactor(worker): Sjednocení životního cyklu prohlížeče
+fix(worker): Oprava `ReferenceError` při zpracování UI příkazu
 
-Tato oprava vrací logiku spouštění a zavírání prohlížeče do původního, stabilního stavu a řeší tak chybu `Failed to launch the browser process!`.
+Tato oprava řeší `ReferenceError: result is not defined`, který způsoboval pád aplikace při nalezení UI příkazu.
 
-- **refactor(worker): Odstraněno spouštění prohlížeče z `executeUICommand`**
-  - Logika pro spuštění prohlížeče (`prepareBrowser`) byla odstraněna z funkce pro zpracování UI příkazů, kam nepatřila.
-
-- **refactor(worker): Centralizováno řízení prohlížeče**
-  - Životní cyklus prohlížeče je nyní opět plně řízen z jednoho místa v hlavní funkci `tick()` a `executeUserActionCycle`.
-  - Instance prohlížeče je nyní správně předávána jako parametr do funkce `executeUICommand`.
-  - Tím se zabraňuje vícenásobnému a nekontrolovanému spouštění prohlížečů pro stejný profil a předchází se chybě `SingletonLock`.
+- **fix(worker): Opraveno předávání parametrů v `tick()`**
+  - Při volání `executeUICommand` a `executeUserActionCycle` byla použita neexistující proměnná `result` místo správné `uiResult`.
+  - Chyba byla opravena, což zajišťuje správné předání instance prohlížeče a kontextu do dalších funkcí.

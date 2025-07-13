@@ -66,12 +66,12 @@ export async function tick() {
       }
 
       // Otevři prohlížeč pro UI uživatele a proveď UI akci
-      const uiContinueWithActions = await executeUICommand(uiUser, uiResult.uiCommand, result.browser, result.context, result.browserClosed);
+      const uiContinueWithActions = await executeUICommand(uiUser, uiResult.uiCommand, uiResult.browser, uiResult.context, uiResult.browserClosed);
 
       if (uiContinueWithActions) {
         // A1: Pokračuj s akcemi na kole štěstí pro tohoto uživatele
         Log.info(`[${uiUser.id}]`, 'A1: Pokračuji s akcemi na kole štěstí po UI příkazu');
-        await executeUserActionCycle(uiUser, result.browser, result.context, result.browserClosed);
+        await executeUserActionCycle(uiUser, uiResult.browser, uiResult.context, uiResult.browserClosed);
       }
       // A2: Pokud byl prohlížeč uzavřen, funkce už skončila v executeUICommand
 
