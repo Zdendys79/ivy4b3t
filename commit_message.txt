@@ -1,12 +1,7 @@
-refactor(db): Obnovení modulárního systému pro SQL dotazy
+fix(db): Oprava předávání `undefined` hodnot do databáze
 
-Tato oprava vrací změnu, která narušovala zavedený modulární systém pro správu SQL dotazů, a implementuje správné řešení.
+Tato oprava řeší pád aplikace `Bind parameters must not contain undefined`, který nastával při ukládání detailů o skupině.
 
-- **revert(db): Vrácena úprava `executeQuery` v `iv_sql.js`**
-  - Funkce byla vrácena do původního stavu, kdy akceptuje pouze cesty k dotazům (např. `groups.my_query`), nikoliv surový SQL text. Tím je zajištěna konzistence a bezpečnost.
-
-- **feat(db): Přidán nový dotaz `getSingleAvailableGroup`**
-  - Do souboru `ivy/sql/queries/groups.js` byl přidán nový, správně umístěný dotaz pro výběr jedné náhodné dostupné skupiny.
-
-- **refactor(db): Upraven `QueryBuilder` pro správné volání**
-  - Funkce `getSingleAvailableGroup` v `iv_querybuilder.class.js` byla upravena tak, aby volala nový dotaz jeho jménem, v souladu s architekturou projektu.
+- **fix(db): Ošetření `undefined` hodnot v `saveGroupExplorationDetails`**
+  - Ve funkci `saveGroupExplorationDetails` v `iv_querybuilder.class.js` byla přidána kontrola, která zajišťuje, že jakákoliv `undefined` hodnota z analýzy je před odesláním do databáze převedena na `null`.
+  - Tím se zabrání chybě databázového ovladače a zajistí se správné ukládání dat.

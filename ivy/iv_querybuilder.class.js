@@ -722,15 +722,15 @@ export class QueryBuilder {
 
     return this.safeExecute('group_details.insertGroup', [
       fbGroupId,
-      analysis.basic.title.split('|')[0].trim(),
+      analysis.basic.title.split('|')[0].trim() || null,
       groupData.member_count || 0,
       groupData.description || null,
       groupData.category || null,
       groupData.privacy_type || null,
       userId,
       groupData.notes || null,
-      groupData.is_relevant,
-      groupData.posting_allowed,
+      groupData.is_relevant === undefined ? null : groupData.is_relevant,
+      groupData.posting_allowed === undefined ? null : groupData.posting_allowed,
       groupData.language || null,
       groupData.activity_level || null
     ]);
