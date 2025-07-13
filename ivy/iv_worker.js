@@ -66,12 +66,12 @@ export async function tick() {
       }
 
       // Otevři prohlížeč pro UI uživatele a proveď UI akci
-      const uiContinueWithActions = await executeUICommand(uiUser, uiResult.uiCommand);
+      const uiContinueWithActions = await executeUICommand(uiUser, uiResult.uiCommand, result.browser, result.context, result.browserClosed);
 
       if (uiContinueWithActions) {
         // A1: Pokračuj s akcemi na kole štěstí pro tohoto uživatele
         Log.info(`[${uiUser.id}]`, 'A1: Pokračuji s akcemi na kole štěstí po UI příkazu');
-        await executeUserActionCycle(uiUser, uiResult.browser, uiResult.context, uiResult.browserClosed);
+        await executeUserActionCycle(uiUser, result.browser, result.context, result.browserClosed);
       }
       // A2: Pokud byl prohlížeč uzavřen, funkce už skončila v executeUICommand
 
@@ -401,18 +401,11 @@ async function checkUICommandsAndHeartbeat(currentUser) {
 /**
  * VARIANTA A: Provedení UI příkazu před výběrem uživatele
  */
-async function executeUICommand(user, uiCommand) {
-  let browser = null;
-  let context = null;
-  let browserClosed = false;
+async function executeUICommand(user, uiCommand, browser, context, browserClosed) {
   let fbBot = null;
 
   try {
-    Log.info(`[${user.id}]`, `Otevírám prohlížeč pro UI příkaz: ${uiCommand.command}`);
-
-    // Otevři prohlížeč s profilem uživatele
-    ({ browser, context, browserClosed } = await prepareBrowser(user));
-    await support.closeBlankTabs(context);
+    Log.info(`[${user.id}]`, `Zpracovávám UI příkaz: ${uiCommand.command}`);
 
     // Inicializuj pouze FB (UI příkazy obvykle potřebují jen FB)
     fbBot = new FBBot(context, user.id);
@@ -425,95 +418,25 @@ async function executeUICommand(user, uiCommand) {
       setDebugContext(user, fbBot.page);
     }
 
-    const fbStatus = await fbBot.openFB(user);
-
-    // NOVÁ LOGIKA - Error detection po otevření FB
-    if (!fbStatus || fbStatus === 'account_locked') {
-      const { waitForUserIntervention } = await import('./iv_wait.js');
-      const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
-
-      await Log.warn(`[${user.id}]`, `🚨 Problem with FB: ${fbStatus}`);
-
-      // 60s countdown s možností stisknout 'a'
-      const userWantsAnalysis = await waitForUserIntervention(
-        `FB Error: ${fbStatus}`,
-        60
-      );
-
-      if (userWantsAnalysis) {
-        // Hlubší analýza - uložit do tabulky
-        const reportBuilder = new ErrorReportBuilder();
-        reportBuilder.initializeReport(
-          user,
-          null,
-          'ACCOUNT_LOCKED',
-          `FB status: ${fbStatus}`,
-          fbBot.page?.url() || 'unknown'
-        );
-
-        // Pokud má PageAnalyzer, přidej analýzu
-        if (fbBot.pageAnalyzer) {
-          try {
-            const analysis = await fbBot.pageAnalyzer.analyzeFullPage();
-            reportBuilder.addPageAnalysis(analysis);
-          } catch (err) {
-            reportBuilder.addNotes(`Analýza selhala: ${err.message}`);
-          }
-        }
-
-        const reportId = await reportBuilder.saveReport();
-        Log.info(`[${user.id}]`, `📊 Error report uložen s ID: ${reportId}`);
-      }
-
-      // Program pokračuje dál (s chybou nebo bez)
-      throw new Error('FB login failed for UI command');
+    const fbOpenSuccess = await fbBot.openFB(user);
+    if (!fbOpenSuccess) {
+      throw new Error('Failed to open Facebook page.');
     }
 
-    if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
-      throw new Error('FB login failed for UI command');
-    }
-
-    Log.success(`[${user.id}]`, 'FB úspěšně otevřen pro UI příkaz');
-
-    // Proveď UI příkaz s timeoutem 5 minut
     const uiBot = new UIBot();
     let uiSuccess = false;
-
     try {
-      // UI akce s timeoutem
-      const uiPromise = uiBot.processCommand(uiCommand);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('UI command timeout')), 5 * 60 * 1000)
-      );
-
-      uiSuccess = await Promise.race([uiPromise, timeoutPromise]);
-
-      if (uiSuccess) {
-        Log.success(`[${user.id}]`, `UI příkaz ${uiCommand.command} dokončen, pokračuji s akcemi`);
-      } else {
-        await Log.warn(`[${user.id}]`, `UI příkaz ${uiCommand.command} selhal`);
-      }
+      uiSuccess = await uiBot.processCommand(uiCommand, fbBot);
     } finally {
       await uiBot.close();
     }
 
-    // A1: Po UI příkazu pokračuj s akcemi na kole štěstí (timeout 5 minut)
-    return !browserClosed; // Pokračuj pouze pokud se prohlížeč nezavřel
+    return uiSuccess;
 
   } catch (err) {
     await Log.error(`[${user.id}] executeUICommand`, err);
-
-    // A2: Pokud byl prohlížeč uzavřen nebo chyba, cleanup a restart
-    if (fbBot) {
-      try { await fbBot.close(); } catch (e) { }
-    }
-
-    await cleanupBrowser(browser, browserClosed);
-    return false; // Neporačuj s akcemi
+    return false;
   }
-
-  // Ponech prohlížeč otevřený pro následující akce
-  // browser, context, fbBot zůstávají aktivní
 }
 
 /**

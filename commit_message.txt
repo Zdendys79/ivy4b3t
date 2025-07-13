@@ -1,10 +1,11 @@
-refactor(worker): Sjednocení a oprava logiky pro mazání SingletonLock
+refactor(worker): Sjednocení životního cyklu prohlížeče
 
-Tato oprava vrací předchozí duplicitní kód a správně upravuje již existující logiku pro řešení problému se souborem `SingletonLock`.
+Tato oprava vrací logiku spouštění a zavírání prohlížeče do původního, stabilního stavu a řeší tak chybu `Failed to launch the browser process!`.
 
-- **revert(worker): Odstraněn duplicitní kód pro mazání zámku**
-  - Zrušena předchozí změna, která zbytečně přidávala novou, téměř identickou logiku.
+- **refactor(worker): Odstraněno spouštění prohlížeče z `executeUICommand`**
+  - Logika pro spuštění prohlížeče (`prepareBrowser`) byla odstraněna z funkce pro zpracování UI příkazů, kam nepatřila.
 
-- **fix(worker): Opravena původní logika pro mazání `SingletonLock`**
-  - Již existující `try...catch` blok byl upraven tak, aby nejprve ověřil existenci souboru `SingletonLock` pomocí `fs.existsSync()` a teprve poté se ho pokusil smazat.
-  - Tímto se předchází zbytečným chybám a sjednocuje se chování na správný, robustní postup.
+- **refactor(worker): Centralizováno řízení prohlížeče**
+  - Životní cyklus prohlížeče je nyní opět plně řízen z jednoho místa v hlavní funkci `tick()` a `executeUserActionCycle`.
+  - Instance prohlížeče je nyní správně předávána jako parametr do funkce `executeUICommand`.
+  - Tím se zabraňuje vícenásobnému a nekontrolovanému spouštění prohlížečů pro stejný profil a předchází se chybě `SingletonLock`.
