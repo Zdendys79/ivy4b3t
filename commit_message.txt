@@ -1,7 +1,8 @@
-fix(behavior): Ošetření `NaN` chyby při simulaci psaní
+fix(worker): Oprava logiky pro nastavování cooldownu akcí
 
-Tato oprava řeší `TimeoutNaNWarning`, který mohl nastat, pokud v behaviorálním profilu uživatele chyběly některé hodnoty pro výpočet časování.
+Tato oprava řeší kritickou chybu, která způsobovala opakované spouštění neopakovatelných akcí (např. `quote_post`), protože pro ně nebyl správně nastaven časovač.
 
-- **fix(behavior): Přidány fallback hodnoty do výpočtů prodlev**
-  - Ve funkcích `calculateCharDelay` a `interWordPause` v `iv_human_behavior_advanced.js` byly přidány pojistky (`|| defaultValue`).
-  - Tím je zajištěno, že i pokud z databáze přijde hodnota `NULL` (např. pro `avg_typing_speed` nebo `impatience_level`), výpočet prodlevy neselže a nepředá `NaN` do `setTimeout`.
+- **refactor(worker): Implementována správná logika pro cooldown**
+  - Kód v `iv_worker.js` byl přepsán tak, aby primárně respektoval příznak `repeatable` načtený z definice akce.
+  - Pokud je akce označena jako neopakovatelná (`repeatable: false`), je pro ni po provedení **vždy** nastaven časovač dalšího spuštění.
+  - Speciální logika pro opakování v rámci jednoho cyklu (pro `post_utio_*`) se nyní uplatňuje pouze na akce, které jsou explicitně označeny jako opakovatelné.

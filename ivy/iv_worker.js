@@ -272,17 +272,23 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
         }
       }
 
-      // Pro post_utio akce zkontroluj, zda ještě nebylo dosaženo 1/3 limitu
-      const shouldRepeat = await db.shouldRepeatUtioAction(user.id, actionCode);
-      
-      if (shouldRepeat) {
-        // Nenastavuj čas do budoucna - nech akci dostupnou pro okamžité opakování
-        Log.info(`[${user.id}]`, `Akce ${actionCode} zůstává dostupná pro opakování (nevyčerpán 1/3 limit)`);
+      // Zjisti, zda se má akce opakovat, nebo se má nastavit cooldown
+      if (picked.repeatable) {
+        const shouldRepeatNow = await db.shouldRepeatUtioAction(user.id, actionCode);
+        if (shouldRepeatNow) {
+          // Speciální případ pro UTIO akce, které se mají opakovat v rámci jednoho cyklu
+          Log.info(`[${user.id}]`, `Akce ${actionCode} zůstává dostupná pro okamžité opakování (nevyčerpán 1/3 limit)`);
+        } else {
+          // Opakovatelná akce, která zrovna teď nemá pokračovat (např. vyčerpán cyklus)
+          const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;
+          await db.updateActionPlan(user.id, actionCode, randMin);
+          Log.info(`[${user.id}]`, `Opakovatelná akce ${actionCode} nastavena na další cyklus za ${randMin} minut`);
+        }
       } else {
-        // Standardní chování - nastav čas pro další spuštění
+        // Standardní, neopakovatelná akce - vždy nastavit cooldown
         const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;
         await db.updateActionPlan(user.id, actionCode, randMin);
-        Log.info(`[${user.id}]`, `Akce ${actionCode} nastavena na opakování za ${randMin} minut`);
+        Log.info(`[${user.id}]`, `Neopakovatelná akce ${actionCode} nastavena na další spuštění za ${randMin} minut`);
       }
 
       actionCount++;
