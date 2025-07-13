@@ -1121,14 +1121,19 @@ export class FBBot {
     Log.info('[FB] Spouštím fallback klikání...');
 
     try {
-      // Jednoduchý fallback - najdi všechny span elementy a klikni na první "Přidat"
+      const config = await getAllConfig();
+      const submitTexts = config.cfg_submit_texts || ["Zveřejnit", "Přidat"];
+      
+      // Najdi všechny span elementy
       const spans = await this.page.$$('span');
 
+      // Projdi všechny span elementy
       for (const span of spans) {
         try {
           const text = await this.page.evaluate(el => el.textContent.trim(), span);
 
-          if (text === 'Přidat' || text === 'Zveřejnit') {
+          // Kontroluj podle prioritního seznamu
+          if (submitTexts.includes(text)) {
             Log.info(`[FB] Fallback našel: "${text}"`);
 
             // Zkusíme kliknout

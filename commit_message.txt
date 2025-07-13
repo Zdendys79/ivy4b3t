@@ -1,8 +1,8 @@
-fix(fb): Improve send button debugging and fix missing import
+feat(fb): Prioritize "Zveřejnit" button for group posting
 
-- Add better error handling and logging for clickSendButton failures
-- Fix missing hasInvasiveLock import causing ReferenceError in worker
-- Add detailed logging when button click fails or button doesn't disappear
+- Update submit_texts configuration to prioritize "Zveřejnit" as first option
+- Modify fallbackClick to use dynamic configuration from database
+- Ensure consistent button search priority across all click methods
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
