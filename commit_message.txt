@@ -1,8 +1,8 @@
-fix(core): Finální oprava importů v SQL modulech
+fix(db): Oprava chyby při volání surových SQL dotazů
 
-Tato oprava definitivně řeší všechny `SyntaxError` chyby související s importem SQL modulů, které bránily spuštění aplikace.
+Tato oprava řeší pád aplikace způsobený nesprávným voláním `safeQueryFirst` s přímým SQL textem místo názvu dotazu.
 
-- **fix(db): Sjednocení `default` a pojmenovaných exportů v `sql/queries/index.js`**
-  - Byl proveden kompletní audit všech SQL souborů.
-  - Hlavní index (`index.js`) byl přepsán tak, aby správně importoval moduly bez ohledu na to, zda používají `export default` nebo `export const`.
-  - Tím je zajištěna plná konzistence a odstraněna příčina opakovaných pádů při startu.
+- **refactor(db): Vylepšena funkce `executeQuery` v `iv_sql.js`**
+  - Funkce nyní inteligentně detekuje, zda je jí předán název dotazu (cesta) nebo surový SQL řetězec.
+  - Díky tomu je možné bezpečně volat `safeQueryFirst` a `safeQueryAll` i s dynamicky generovanými dotazy, které nejsou v `queries/index.js`.
+  - Tím se opravuje chyba `Query not found` a zároveň se zvyšuje flexibilita databázové vrstvy.
