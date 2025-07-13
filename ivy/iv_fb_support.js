@@ -12,7 +12,7 @@ import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';
 
 /**
- * Vyhledá elementy podle textu.
+ * Vyhledá interaktivní elementy (tlačítka, odkazy) podle textu.
  * @param {Page} page - Puppeteer page instance
  * @param {string} text - hledaný text
  * @param {object} options - volby (match: startsWith|exact|contains, timeout)
@@ -25,20 +25,19 @@ export async function findByText(page, text, options = {}) {
       return [];
     }
 
-    const { match = 'startsWith', timeout = 2000 } = options;
+    const { match = 'exact', timeout = 3000 } = options;
 
-    let xpath;
-    if (match === 'startsWith') {
-      xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-    } else if (match === 'exact') {
-      xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-    } else {
-      xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
-    }
+    // Univerzální XPath, který hledá klikatelné prvky obsahující daný text
+    const textSelector = {
+      exact: `normalize-space(.) = "${text}"`,
+      contains: `contains(normalize-space(.), "${text}")`,
+      startsWith: `starts-with(normalize-space(.), "${text}")`
+    }[match];
 
+    const xpath = `//(button | //div[@role='button'] | //a[@role='button'])[${textSelector}]`;
     const selector = `xpath/${xpath}`;
 
-    // Sjednodušená a robustnější logika
+    // Počkáme na element a pak vrátíme všechny, které odpovídají
     await page.waitForSelector(selector, { timeout }).catch(() => {});
     const elements = await page.$(selector);
     return elements || [];

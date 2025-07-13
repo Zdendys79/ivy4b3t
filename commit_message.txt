@@ -1,9 +1,9 @@
-fix: Oprava detekce cookie banneru a stabilizace `findByText`
+refactor(fb): Sjednocení a vylepšení `findByText`
 
-Tato oprava řeší problém, kdy systém nedokázal najít a odkliknout cookie lištu, a zároveň opravuje nestabilitu v pomocné funkci.
+Tato oprava řeší nekonzistenci mezi detekcí a interakcí s prvky na stránce.
 
-- **fix(support): Zrobustněna funkce `findByText`**
-  - Funkce v `iv_fb_support.js` byla zjednodušena a ošetřena tak, aby za všech okolností vracela pole (i když prázdné), čímž se předchází chybě `TypeError: is not iterable`.
-
-- **fix(fb): Zpřesněna detekce v `acceptCookies`**
-  - Metoda nyní hledá přesný text "Povolit soubory cookie", jak bylo požadováno, a byla zjednodušena pro vyšší spolehlivost.
+- **refactor(support): Vylepšena funkce `findByText`**
+  - Funkce nyní hledá interaktivní prvky (`button`, `div[role="button"]` atd.) místo obecných `<span>` elementů.
+  - Tím se výrazně zvyšuje spolehlivost nalezení klikatelných prvků.
+- **chore(fb): Sjednoceno použití `findByText`**
+  - Všechny části kódu, které hledají prvky podle textu, nyní používají tuto jednu, robustní, sdílenou funkci. Tím je zajištěno konzistentní chování.
