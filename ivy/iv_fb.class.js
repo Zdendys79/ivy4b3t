@@ -1867,9 +1867,10 @@ export class FBBot {
 
   /**
    * Zavře FB stránku a vyčistí zdroje
+   * @param {boolean} closeBrowser - Pokud true, zavře celý prohlížeč místo jen záložky
    * @returns {Promise<boolean>} True pokud bylo úspěšné
    */
-  async close() {
+  async close(closeBrowser = false) {
     try {
       if (!this.isInitialized) {
         Log.info('[FB]', 'FBBot není inicializován, close není potřeba');
@@ -1880,6 +1881,17 @@ export class FBBot {
         Log.info('[FB]', 'Zavírám FB stránku...');
         await this.page.close();
         Log.success('[FB]', 'FB stránka zavřena');
+      }
+      
+      // Pokud je požadováno zavření celého prohlížeče
+      if (closeBrowser && this.context && this.context.browser) {
+        try {
+          Log.info('[FB]', 'Zavírám celý prohlížeč...');
+          await this.context.browser().close();
+          Log.success('[FB]', 'Prohlížeč úspěšně zavřen');
+        } catch (browserCloseErr) {
+          Log.warn('[FB]', `Chyba při zavírání prohlížeče: ${browserCloseErr.message}`);
+        }
       }
 
       this.page = null;

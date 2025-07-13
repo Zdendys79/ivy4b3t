@@ -707,7 +707,14 @@ async function initializeRequiredServices(user, context, requirements, existingF
   } catch (err) {
     // Cleanup při chybě
     if (fbBot && fbBot !== existingFbBot) {
-      try { await fbBot.close(); } catch (e) { }
+      try { 
+        // Při FB login selhání zavři celý prohlížeč
+        const shouldCloseBrowser = err.message && (
+          err.message.includes('FB login failed') || 
+          err.message.includes('Account blocked during login')
+        );
+        await fbBot.close(shouldCloseBrowser); 
+      } catch (e) { }
     }
     if (utioBot && utioBot !== existingUtioBot) {
       try { await utioBot.close(); } catch (e) { }
@@ -753,12 +760,12 @@ async function cleanupUserSession(user, browser, fbBot, utioBot, browserClosed) 
 // ==========================================
 
 async function pauseOnError(browser, browserClosed) {
-  await Log.warn('[WORKER]', 'Nastal error – čekám na uzavření prohlížeče nebo 10 minut.');
   if (browserClosed) {
-    await wait.delay(10 * 60 * 1000);
-    return;
+    await Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
+    return; // Okamžitě pokračuj když je prohlížeč zavřený
   }
 
+  await Log.warn('[WORKER]', 'Nastal error – čekám na uzavření prohlížeče nebo 10 minut.');
   await Promise.race([
     new Promise(resolve => browser.once('disconnected', resolve)),
     new Promise(resolve => setTimeout(resolve, 10 * 60 * 1000))

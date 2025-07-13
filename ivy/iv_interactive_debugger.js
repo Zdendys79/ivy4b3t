@@ -60,8 +60,15 @@ export class InteractiveDebugger {
 
     // Prevent multiple concurrent debugger sessions
     if (this.isActive) {
-      Log.info('[DEBUGGER]', `⏸️ Debugger already active, skipping: ${message}`);
-      return false; // Continue without pausing
+      // Pro kritické errory ukončí předchozí session a zpracuj nový error
+      if (errorLevel === 'ERROR') {
+        Log.info('[DEBUGGER]', `⏸️ Debugger already active, interrupting for critical error: ${message}`);
+        this.isActive = false; // Uvolni lock
+        // Pokračuj se zpracováním kritického erroru
+      } else {
+        Log.info('[DEBUGGER]', `⏸️ Debugger already active, skipping: ${message}`);
+        return false; // Continue without pausing
+      }
     }
 
     this.isActive = true;

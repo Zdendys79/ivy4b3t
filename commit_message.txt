@@ -1,12 +1,13 @@
-fix(fb): Oprava cookie detekce a blokování účtů při login selhání
+fix(system): Oprava čekání 10 minut při FB selhání + debugger vylepšení
 
-Odstraňuje neexistující cookie detekci a přidává automatické blokování při FB login problémech.
+Řeší problém s nekonečným čekáním při FB login selhání a zlepšuje zpracování errorů.
 
-- **fix(fb): Odebrána detekce neexistujícího "Povolit soubory cookie"**
-  - acceptCookies() nyní hledá pouze "Odmítnout volitelné soubory cookie"
-  - Eliminuje zbytečné warning hlášky o nenalezených tlačítkách
-- **feat(worker): Automatické blokování účtů při login selhání**
-  - Přidána detekce blokace před vyhozením "FB login failed" erroru
-  - Dočasné blokování účtů při opakovaném selhání FB přihlášení
-  - Prevence opakovaného výběru problematických účtů pomocí LOGIN_FAILURE typu
-  - Speciální zpracování "Account blocked during login" errorů
+- **fix(worker): Oprava pauseOnError logiky při zavřeném prohlížeči**
+  - Při browserClosed=true okamžitě pokračuje místo čekání 10 minut
+  - Eliminuje zbytečné prodlevy při FB login selháních
+- **feat(fb): Rozšířena close() metoda o možnost zavření celého prohlížeče**
+  - Přidán parametr closeBrowser pro zavření celého prohlížeče místo jen záložky
+  - Při FB login selhání se automaticky zavře celý prohlížeč (browserClosed=true)
+- **fix(debugger): Vylepšené zpracování kritických errorů**
+  - Kritické errory přeruší aktivní debugger session místo přeskočení
+  - Zabrání ignorování důležitých errorů kvůli aktivnímu debuggeru
