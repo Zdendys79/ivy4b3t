@@ -1,9 +1,11 @@
-revert: Odstranění svévolně přidaného UI příkazu
+feat(fb): Implementace zpracování vícestránkového souhlasu s reklamami
 
-Tento commit vrací předchozí změny, které nesprávně a v rozporu se zavedenou architekturou přidávaly nový UI příkaz `LOGIN_USER`.
+Tato změna přidává robustní metodu pro automatické proklikání vícestránkového procesu pro udělení souhlasu se zpracováním dat pro reklamy, který se může objevit po přihlášení.
 
-- **revert(ui): Odstraněn kód pro `LOGIN_USER` z `iv_ui.class.js`**
-  - Veškerá logika spojená s tímto chybně navrženým příkazem byla odstraněna.
-  - Systém se vrací k používání existujícího a správně fungujícího příkazu `call_user`, který zajišťuje požadované chování (přihlášení a čekání na interakci).
+- **feat(fb): Přidána nová metoda `resolveAdConsentFlow`**
+  - V `iv_fb.class.js` byla vytvořena nová, samostatná metoda, která ve smyčce detekuje a odklikává jednotlivé kroky procesu souhlasu.
+  - Metoda používá `Promise.race` pro efektivní hledání různých typů tlačítek ("Další", "Přijmout" atd.) a je vybavena pojistkou proti zacyklení.
 
-Tato změna opravuje mé předchozí chybné rozhodnutí a navrací systém do konzistentního stavu.
+- **refactor(fb): Integrována nová metoda do přihlašovacího procesu**
+  - Nová metoda je nyní volána v rámci funkce `openFB` ihned po načtení hlavní stránky, čímž zajišťuje, že zbytek skriptu pokračuje až po vyřešení této obrazovky.
+  - Původní dočasná detekční funkce byla odstraněna.

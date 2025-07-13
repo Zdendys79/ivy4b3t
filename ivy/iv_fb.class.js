@@ -345,10 +345,10 @@ export class FBBot {
     try {
       await this.bringToFront();
       await this.page.goto('https://FB.com', { waitUntil: 'domcontentloaded' });
-      await wait.delay(10000, false);
+      await wait.delay(5000, false); // Dáme stránce čas na případné přesměrování
 
-      // NOVÉ: Ošetření obrazovky pro souhlas s reklamami
-      await this.handleAdConsentScreen();
+      // NOVÉ: Zpracování vícestránkového souhlasu s reklamami
+      await this.resolveAdConsentFlow();
 
       // Inicializuj analyzer po načtení stránky
       this.initializeAnalyzer();
@@ -460,35 +460,58 @@ export class FBBot {
       } else {
         Log.info(`[FB] Cookie banner nenalezen.`);
       }
-    } catch (err) {
-      console.warn(`[FB] Cookie banner error: ${err}`);
+    console.warn(`[FB] Cookie banner error: ${err}`);
     }
   }
 
-  async handleAdConsentScreen() {
-    try {
-      Log.info('[FB]', 'Kontroluji obrazovku souhlasu s reklamami...');
-      const consentText = 'Zkontrolujte, jestli můžeme vaše data zpracovávat pro účely reklamy';
-      const [consentElement] = await this._findByText(consentText, { timeout: 3000, match: 'contains' });
+  /**
+   * Řeší vícestránkový proces souhlasu se zpracováním dat pro reklamy.
+   * @returns {Promise<boolean>} True pokud byl proces úspěšně dokončen.
+   */
+  async resolveAdConsentFlow() {
+    Log.info('[FB]', 'Kontroluji obrazovku souhlasu s reklamami...');
+    let inConsentFlow = true;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 5; // Pojistka proti nekonečné smyčce
 
-      if (consentElement) {
-        Log.warn('[FB]', 'Detekována obrazovka souhlasu s reklamami. Pokouším se ji odkliknout.');
-        // Zde by byla logika pro kliknutí na "Další", "Přijmout" atd.
-        // Prozatím jen logujeme a čekáme, abychom viděli, co se stane.
-        // V budoucnu zde bude implementována plná logika.
-        await Log.info('[FB]', 'Logika pro odkliknutí zatím není implementována, ale obrazovka byla detekována.');
-        // Příklad, jak by to mohlo vypadat:
-        // await this._clickByText('Další');
-        // await wait.delay(2000);
-        // await this._clickByText('Přijmout vše');
-        return true;
+    while (inConsentFlow && attempts < MAX_ATTEMPTS) {
+      attempts++;
+      try {
+        // Hledáme klíčový text, abychom věděli, že jsme stále v procesu
+        const consentElement = await this.page.waitForSelector("xpath///span[contains(., 'Zkontrolujte nastavení reklam') or contains(., 'Review how we use data for ads') or contains(., 'Zkontrolujte, jestli můžeme')]", { timeout: 5000 });
+        if (!consentElement) {
+          inConsentFlow = false;
+          continue;
+        }
+
+        Log.info(`[FB][AdConsent] Pokus ${attempts}/${MAX_ATTEMPTS}: Nalezena obrazovka souhlasu.`);
+
+        // Hledáme jakékoliv akční tlačítko
+        const actionButton = await Promise.race([
+          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Další') or contains(., 'Next')]]"),
+          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Přijmout') or contains(., 'Accept')]]"),
+          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Povolit vše') or contains(., 'Allow all')]]"),
+          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Uložit') or contains(., 'Save')]]"),
+          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Potvrdit') or contains(., 'Confirm')]]")
+        ]);
+
+        if (actionButton) {
+          const buttonText = await this.page.evaluate(el => el.textContent, actionButton);
+          Log.info(`[FB][AdConsent] Klikám na tlačítko: "${buttonText}"`);
+          await actionButton.click();
+          await this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
+          await wait.delay(2000, 3000); // Počkat na stabilizaci stránky
+        } else {
+          Log.warn('[FB][AdConsent] Nenalezeno žádné pokračovací tlačítko, proces končí.');
+          inConsentFlow = false;
+        }
+      } catch (error) {
+        // Pokud nenajdeme žádný prvek, předpokládáme, že proces skončil
+        Log.info('[FB][AdConsent] Proces souhlasu s reklamami pravděpodobně dokončen.');
+        inConsentFlow = false;
       }
-      Log.info('[FB]', 'Obrazovka souhlasu s reklamami nenalezena.');
-      return false;
-    } catch (err) {
-      Log.warn(`[FB] Chyba při ošetřování obrazovky souhlasu s reklamami: ${err.message}`);
-      return false;
     }
+    return true;
   }
 
   /**
