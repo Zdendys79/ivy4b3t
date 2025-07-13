@@ -79,9 +79,18 @@ async function gracefulShutdown(signal) {
   Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
   
   try {
-    // Záznam do systémového logu o ukončení
+    // Importuj worker pro přístup k browser shutdown
+    const worker = await import('./iv_worker.js');
+    
+    // Zavři všechny aktivní browser instances
+    await worker.shutdownAllBrowsers();
+    
+    // Flush pending logs before exit
+    await consoleLogger.flush();
+    
+    // Záznam do systémového logu o ukončení - PŘED zavřením DB
     try {
-      await db.logSystemEvent(
+      const logResult = await db.logSystemEvent(
         'SHUTDOWN',
         'INFO',
         `Ivy client shutting down on ${hostname} (signal: ${signal})`,
@@ -92,20 +101,18 @@ async function gracefulShutdown(signal) {
           shutdown_type: 'graceful'
         }
       );
+      
+      if (logResult) {
+        Log.debug('[IVY]', 'Shutdown event successfully logged to log_system');
+      } else {
+        Log.debug('[IVY]', 'Shutdown event logging returned false');
+      }
+      
     } catch (err) {
       Log.debug('[IVY]', `System log shutdown error: ${err.message}`);
     }
     
-    // Importuj worker pro přístup k browser shutdown
-    const worker = await import('./iv_worker.js');
-    
-    // Zavři všechny aktivní browser instances
-    await worker.shutdownAllBrowsers();
-    
-    // Flush pending logs before exit
-    await consoleLogger.flush();
-    
-    // Zavři databázové spojení
+    // Zavři databázové spojení AŽ PO logování
     await closeDB();
     
     Log.info('[IVY] Graceful shutdown dokončen');

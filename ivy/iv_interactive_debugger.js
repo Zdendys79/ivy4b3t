@@ -64,6 +64,13 @@ export class InteractiveDebugger {
       if (errorLevel === 'ERROR') {
         Log.info('[DEBUGGER]', `⏸️ Debugger already active, interrupting for critical error: ${message}`);
         this.isActive = false; // Uvolni lock
+        
+        // Přeruš aktivní waitForUserInput pokud běží
+        if (this.currentInputResolver) {
+          this.currentInputResolver('interrupted');
+          this.currentInputResolver = null;
+        }
+        
         // Pokračuj se zpracováním kritického erroru
       } else {
         Log.info('[DEBUGGER]', `⏸️ Debugger already active, skipping: ${message}`);
@@ -130,6 +137,9 @@ export class InteractiveDebugger {
 
     return new Promise((resolve) => {
       let resolved = false;
+      
+      // Ulož resolver pro možné přerušení
+      this.currentInputResolver = resolve;
 
       const cleanup = () => {
         if (timeout) clearTimeout(timeout);
@@ -139,6 +149,9 @@ export class InteractiveDebugger {
         process.stdin.removeListener('data', onData);
         process.stdin.removeListener('SIGINT', onSigint);
         process.stdin.pause();
+        
+        // Vyčisti resolver
+        this.currentInputResolver = null;
       };
 
       const onData = (key) => {

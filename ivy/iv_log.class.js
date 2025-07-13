@@ -52,12 +52,19 @@ export class Log {
   }
 
   static async error(prefix, err) {
-    // Pass the original error object to console.error so ConsoleLogger can capture it
-    console.error(err);
+    // Format error with prefix like other log methods
+    const message = err?.message || String(err);
+    if (shouldLog('error')) {
+      console.error(`${now()} ${prefix} ${icons.error}`, message);
+      
+      // Show stack trace in debug mode only
+      if (shouldLog('debug') && err?.stack) {
+        console.error(err.stack);
+      }
+    }
     
     // The rest of the logic for triggerDebugger remains, as it expects a message string
     const type = err?.name || typeof err;
-    const message = err?.message || String(err);
     const stack = err?.stack ? '\n' + err.stack : '';
     await this.triggerDebugger('ERROR', `${prefix}: ${message}`, { type, stack, prefix });
   }

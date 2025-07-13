@@ -1,13 +1,15 @@
-fix(system): Oprava čekání 10 minut při FB selhání + debugger vylepšení
+fix(logging): Oprava formátování errorů a shutdown logování
 
-Řeší problém s nekonečným čekáním při FB login selhání a zlepšuje zpracování errorů.
+Řeší problémy s neformátovanými error výpisy a neukládáním shutdown logů do databáze.
 
-- **fix(worker): Oprava pauseOnError logiky při zavřeném prohlížeči**
-  - Při browserClosed=true okamžitě pokračuje místo čekání 10 minut
-  - Eliminuje zbytečné prodlevy při FB login selháních
-- **feat(fb): Rozšířena close() metoda o možnost zavření celého prohlížeče**
-  - Přidán parametr closeBrowser pro zavření celého prohlížeče místo jen záložky
-  - Při FB login selhání se automaticky zavře celý prohlížeč (browserClosed=true)
-- **fix(debugger): Vylepšené zpracování kritických errorů**
-  - Kritické errory přeruší aktivní debugger session místo přeskočení
-  - Zabrání ignorování důležitých errorů kvůli aktivnímu debuggeru
+- **fix(log): Oprava formátování error zpráv s prefix**
+  - Log.error() nyní zobrazuje formátované zprávy místo raw stack trace
+  - Stack trace se zobrazuje pouze v debug módu
+  - Konzistentní formátování se všemi ostatními log metodami
+- **fix(shutdown): Oprava logování shutdown eventu do log_system**
+  - Přesunuto logování PŘED zavření databázového spojení
+  - Eliminuje problém s neukládáním shutdown záznamů
+  - Přidáno debug logování pro ověření úspěšnosti
+- **feat(debugger): Vylepšené přerušování aktivních session**
+  - Kritické errory nyní správně přeruší aktivní waitForUserInput
+  - Přidán tracking currentInputResolver pro čisté přerušení
