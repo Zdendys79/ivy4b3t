@@ -1,9 +1,7 @@
-fix(analyzer): Oprava `await` ve funkci `page.evaluate`
+fix(core): Oprava cesty k modulu v importu
 
-Tato oprava řeší `SyntaxError: Unexpected reserved word`, který bránil spuštění aplikace.
+Tato oprava řeší chybu `ERR_MODULE_NOT_FOUND`, která bránila spuštění aplikace.
 
-- **fix(analyzer): Opravena definice `_performGroupAnalysis`**
-  - Metoda byla označena jako `async`, což umožňuje správné použití `await` uvnitř ní.
-- **refactor(analyzer): Přesunuta logika hledání tlačítka mimo `evaluate`**
-  - Volání `fbSupport.findByText` bylo přesunuto mimo blok `page.evaluate`, protože `evaluate` běží v kontextu prohlížeče a nemá přístup k Node.js funkcím.
-  - Tím je zajištěna správná funkčnost detekce tlačítka "Přidat se ke skupině".
+- **fix(analyzer): Opravena relativní cesta v `iv_page_analyzer.class.js`**
+  - Chybná importní cesta `../iv_fb_support.js` byla opravena na správnou `./iv_fb_support.js`.
+  - Tím je zajištěno, že Node.js najde a správně načte požadovaný modul.
