@@ -171,6 +171,7 @@ export class AdvancedHumanBehavior {
     ];
     
     const mistakeType = mistakeTypes[Math.floor(Math.random() * mistakeTypes.length)];
+    const backspaceDelay = profile.backspace_delay || 200; // Fallback
     
     switch (mistakeType) {
       case 'adjacent_key':
@@ -179,7 +180,6 @@ export class AdvancedHumanBehavior {
         
         // Rozhodnutí o opravě podle correction_style
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          const backspaceDelay = profile.backspace_delay || 200;
           await wait.delay(backspaceDelay * (0.8 + Math.random() * 0.4), false);
           await page.keyboard.press('Backspace');
           await wait.delay(50 + Math.random() * 100, false);
@@ -191,7 +191,6 @@ export class AdvancedHumanBehavior {
         await page.keyboard.type(correctChar);
         await page.keyboard.type(correctChar);
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          const backspaceDelay = profile.backspace_delay || 200;
           await wait.delay(backspaceDelay, false);
           await page.keyboard.press('Backspace');
         }

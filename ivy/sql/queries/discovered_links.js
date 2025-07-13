@@ -6,9 +6,9 @@
  */
 
 export const DISCOVERED_LINKS = {
-  insertLinks: `
+  insertLink: `
     INSERT IGNORE INTO discovered_group_links (url, discovered_by_user_id)
-    VALUES ?
+    VALUES (?, ?)
   `,
 
   getUnprocessedLinks: `

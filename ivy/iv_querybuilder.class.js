@@ -715,10 +715,19 @@ export class QueryBuilder {
 
   async saveDiscoveredLinks(links, userId) {
     if (!links || links.length === 0) {
-      return;
+      return true; // Není co dělat, považováno za úspěch
     }
-    const values = links.map(link => [link, userId]);
-    return this.safeExecute('discovered_links.insertLinks', [values]);
+    let success = true;
+    for (const link of links) {
+      try {
+        // Voláme nový, jednoduchý dotaz pro každý odkaz
+        await this.safeExecute('discovered_links.insertLink', [link, userId]);
+      } catch (err) {
+        await Log.error(`[DB] Nepodařilo se uložit objevený odkaz ${link}: ${err.message}`);
+        success = false; // Pokud selže i jen jeden, označíme operaci jako neúspěšnou
+      }
+    }
+    return success;
   }
 
   async saveGroupExplorationDetails(analysis, userId) {

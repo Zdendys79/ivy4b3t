@@ -1,7 +1,11 @@
-fix(actions): Oprava pádu po přechodu na stránku skupiny
+fix: Oprava chyb při psaní a ukládání objevených odkazů
 
-Tato oprava řeší chybu `Cannot read properties of null (reading 'analyzeFullPage')`, která nastávala při provádění akcí `post_utio_g` a `post_utio_gv`.
+Tato oprava řeší dva přetrvávající problémy: `TimeoutNaNWarning` při simulaci psaní a chybu SQL syntaxe při ukládání nově objevených odkazů na skupiny.
 
-- **fix(actions): Přidána reinicializace `PageAnalyzer` po `openGroup`**
-  - V metodě `handleSingleUtioPost` je nyní po úspěšném přechodu na stránku skupiny explicitně volána metoda `fbBot.initializeAnalyzer()`.
-  - Tím je zajištěno, že pro nově načtenou stránku vždy existuje platná instance analyzátoru, což zabraňuje pádu aplikace při následném pokusu o analýzu.
+- **fix(behavior): Dokončeno ošetření `null` hodnot v profilu**
+  - Do metody `performTypingMistake` byl přidán fallback pro `backspace_delay`, čímž se finálně řeší příčina `TimeoutNaNWarning`.
+
+- **refactor(db): Změna hromadného vkládání odkazů na jednotlivé**
+  - Hromadné vkládání (`INSERT ... VALUES ?`) způsobovalo chybu syntaxe kvůli nekompatibilitě s databázovým ovladačem nebo wrapperem.
+  - Logika byla přepsána tak, aby procházela odkazy ve smyčce a vkládala je do databáze po jednom pomocí jednoduchého a spolehlivého `INSERT ... VALUES (?, ?)`. Tím se problém zcela obchází s minimálním dopadem na výkon.
+  - Odpovídající SQL dotaz v `discovered_links.js` byl upraven.
