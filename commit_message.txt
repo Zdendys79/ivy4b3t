@@ -1,12 +1,15 @@
-fix(debugger,worker): Finální opravy pro exit code a blokování účtů
+fix(worker): Oprava čekání na zavřený prohlížeč v pauseOnError
 
-Dokončuje řešení problémů s interactive debuggerem a account blockingem.
+Řeší problém kdy worker čeká 10 minut i když je prohlížeč už zavřený.
 
-- **fix(debugger): 'q' key nyní používá exit code 99**
-  - Změna z SIGINT na process.exit(99) pro správnou detekci v start.sh
-  - Umožní start.sh správně detekovat kontrolované ukončení
-  - Zabrání nekonečným restartům po stisknutí 'q'
-- **fix(worker): Zajištění ukončení tick() po account blocking**
-  - Explicitní komentář u return statement pro clarity
-  - Garantuje že po zablokování účtu se tick() ukončí
-  - Předchází pokračování v worker loop s problematickým účtem
+- **fix(browser-state): Sdílený objekt pro browserClosed stav**
+  - Změna z boolean na objekt reference pro sdílení stavu
+  - prepareBrowser() vrací objekt s browserClosed property
+  - Umožňuje aktualizace stavu z různých částí aplikace
+- **fix(initializeRequiredServices): Propagace browserClosed stavu**
+  - Přidán browserClosedState parametr do funkce
+  - Při zavření prohlížeče v FB botu se nastaví browserClosed = true
+  - Eliminuje čekání 10 minut když je prohlížeč už zavřený
+- **fix(pauseOnError): Správná detekce zavřeného prohlížeče**
+  - Kontroluje browserClosed.browserClosed místo boolean hodnoty
+  - Okamžité pokračování když je prohlížeč skutečně zavřený

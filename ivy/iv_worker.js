@@ -185,7 +185,7 @@ export async function tick() {
 /**
  * KROK 3-8: Celý cyklus akcí pro uživatele
  */
-async function executeUserActionCycle(user, existingBrowser = null, existingContext = null, existingBrowserClosed = false) {
+async function executeUserActionCycle(user, existingBrowser = null, existingContext = null, existingBrowserClosed = null) {
   let browser = existingBrowser;
   let context = existingContext;
   let browserClosed = existingBrowserClosed;
@@ -271,7 +271,10 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // 🎯 KROK 5: OTEVŘENÍ PROHLÍŽEČE A POTŘEBNÝCH ZÁLOŽEK (jen při první akci)
       if (!browser) {
         Log.info(`[${user.id}]`, 'Krok 5: Otevírám prohlížeč...');
-        ({ browser, context, browserClosed } = await prepareBrowser(user));
+        const browserState = await prepareBrowser(user);
+        browser = browserState.browser;
+        context = browserState.context;
+        browserClosed = browserState.browserClosed;
         await support.closeBlankTabs(context);
       }
 
@@ -279,7 +282,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       const requirements = await getActionRequirements(actionCode);
       Log.debug(`[DIAGNOSTIC] Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
       ({ fbBot, utioBot } = await initializeRequiredServices(
-        user, context, requirements, fbBot, utioBot
+        user, context, requirements, fbBot, utioBot, browserClosed
       ));
 
       // 🎯 KROK 6: PROVEDENÍ AKCE
@@ -355,7 +358,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Kontrola, zda se prohlížeč nezavřel
-      if (browserClosed) {
+      if (browserClosed.browserClosed) {
         await Log.warn(`[${user.id}]`, 'Prohlížeč se zavřel, ukončuji cyklus');
         break;
       }
@@ -371,10 +374,10 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
   } catch (err) {
     await Log.error(`[${user.id}] executeUserActionCycle`, err);
-    await pauseOnError(browser, browserClosed);
+    await pauseOnError(browser, browserClosed.browserClosed);
   } finally {
     // 🎯 KROK 8: ZAVŘENÍ PROHLÍŽEČE A CLEANUP
-    await cleanupUserSession(user, browser, fbBot, utioBot, browserClosed);
+    await cleanupUserSession(user, browser, fbBot, utioBot, browserClosed.browserClosed);
   }
 }
 
@@ -615,7 +618,7 @@ async function waitWithHeartbeat(waitMinutes = null) {
 /**
  * Inicializuje služby podle potřeby (postupně, ne vše najednou)
  */
-async function initializeRequiredServices(user, context, requirements, existingFbBot, existingUtioBot) {
+async function initializeRequiredServices(user, context, requirements, existingFbBot, existingUtioBot, browserClosedState) {
   let fbBot = existingFbBot;
   let utioBot = existingUtioBot;
 
@@ -713,7 +716,12 @@ async function initializeRequiredServices(user, context, requirements, existingF
           err.message.includes('FB login failed') || 
           err.message.includes('Account blocked during login')
         );
-        await fbBot.close(shouldCloseBrowser); 
+        await fbBot.close(shouldCloseBrowser);
+        
+        // Pokud zavíráme celý prohlížeč, nastav browserClosed na true
+        if (shouldCloseBrowser && browserClosedState) {
+          browserClosedState.browserClosed = true;
+        } 
       } catch (e) { }
     }
     if (utioBot && utioBot !== existingUtioBot) {
@@ -806,9 +814,10 @@ async function prepareBrowser(user) {
     ]
   });
 
-  let browserClosed = false;
+  // Vytvoř sdílený stav objektu pro browserClosed
+  const browserState = { browserClosed: false };
   browser.on('disconnected', async () => {
-    browserClosed = true;
+    browserState.browserClosed = true;
     await Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
   });
 
@@ -824,7 +833,7 @@ async function prepareBrowser(user) {
   // Přidej browser do aktivních instances pro graceful shutdown
   activeBrowsers.add(browser);
 
-  return { browser, context, browserClosed };
+  return { browser, context, browserClosed: browserState };
 }
 
 async function cleanupBrowser(browser, browserClosed) {
