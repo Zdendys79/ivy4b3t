@@ -71,9 +71,10 @@ export class FBBot {
   initializeAnalyzer() {
     if (this.page && !this.page.isClosed()) {
       this.pageAnalyzer = new PageAnalyzer(this.page);
-      Log.info('[FB]', 'PageAnalyzer inicializován');
+      Log.debug('[DIAGNOSTIC]', 'PageAnalyzer instance created on FBBot.');
       return true;
     }
+    Log.warn('[DIAGNOSTIC]', 'PageAnalyzer could not be initialized (page not ready).');
     return false;
   }
   async bringToFront() {

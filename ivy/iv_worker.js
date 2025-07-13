@@ -608,6 +608,7 @@ async function initializeRequiredServices(user, context, requirements, existingF
       const isUiContext = requirements.isUiContext || false;
 
       if (!isUiContext) {
+        Log.debug('[DIAGNOSTIC]', 'Initializing PageAnalyzer in worker...');
         fbBot.initializeAnalyzer();
         let analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
         Log.info(`[${user.id}]`, `Počáteční analýza stránky dokončena se stavem: ${analysis.status}`);

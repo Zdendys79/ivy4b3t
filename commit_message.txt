@@ -1,11 +1,10 @@
-fix: Oprava chyb při psaní a ukládání objevených odkazů
+fix: Oprava pádu Gitu a přidání diagnostiky pro PageAnalyzer
 
-Tato oprava řeší dva přetrvávající problémy: `TimeoutNaNWarning` při simulaci psaní a chybu SQL syntaxe při ukládání nově objevených odkazů na skupiny.
+Tato oprava řeší dva problémy: pád při získávání informací z Gitu a přetrvávající problém s chybějící instancí PageAnalyzer.
 
-- **fix(behavior): Dokončeno ošetření `null` hodnot v profilu**
-  - Do metody `performTypingMistake` byl přidán fallback pro `backspace_delay`, čímž se finálně řeší příčina `TimeoutNaNWarning`.
+- **fix(git): Doplněn chybějící export funkce `get_git_info_json`**
+  - V `git-common.sh` byla přidána funkce pro export informací ve formátu JSON, ale chyběl její `export -f`, což způsobovalo chybu "empty output".
 
-- **refactor(db): Změna hromadného vkládání odkazů na jednotlivé**
-  - Hromadné vkládání (`INSERT ... VALUES ?`) způsobovalo chybu syntaxe kvůli nekompatibilitě s databázovým ovladačem nebo wrapperem.
-  - Logika byla přepsána tak, aby procházela odkazy ve smyčce a vkládala je do databáze po jednom pomocí jednoduchého a spolehlivého `INSERT ... VALUES (?, ?)`. Tím se problém zcela obchází s minimálním dopadem na výkon.
-  - Odpovídající SQL dotaz v `discovered_links.js` byl upraven.
+- **chore(debug): Přidáno diagnostické logování pro `PageAnalyzer`**
+  - Do klíčových míst v `iv_worker.js` a `iv_fb.class.js` byly přidány dočasné logovací zprávy.
+  - Cílem je přesně zmapovat životní cyklus instance `PageAnalyzer` a odhalit, proč v některých fázích běhu programu není k dispozici.

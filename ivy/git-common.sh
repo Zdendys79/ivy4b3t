@@ -221,7 +221,7 @@ check_for_updates() {
 
 # Export funkcí pro použití v jiných skriptech
 export -f log_info log_error log_success
-export -f check_git_repo update_git_repo sync_files update_and_sync get_git_info check_for_updates
+export -f check_git_repo update_git_repo sync_files update_and_sync get_git_info get_git_info_json check_for_updates
 
 # Zobrazí nápovědu k modulu
 show_git_common_help() {
