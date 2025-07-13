@@ -677,6 +677,9 @@ export class PageAnalyzer {
       const pageData = await this.page.evaluate(() => {
         const bodyText = document.body.textContent.toLowerCase();
 
+        // Detekce přihlašovacího tlačítka
+        const hasLoginButton = document.querySelector('button[data-testid="royal-login-button"]') !== null;
+
         // Detekce tlačítek pro přidání ke skupině
         const joinButtons = Array.from(document.querySelectorAll('*')).filter(el => {
           const text = el.textContent?.toLowerCase() || '';
@@ -696,6 +699,7 @@ export class PageAnalyzer {
 
         return {
           bodyText: bodyText,
+          hasLoginButton: hasLoginButton,
           hasJoinButton: joinButtons.length > 0,
           hasWriteField: writeFields.length > 0,
           joinButtonCount: joinButtons.length
@@ -703,6 +707,15 @@ export class PageAnalyzer {
       });
 
       const detectedPatterns = [];
+
+      // Speciální detekce pro přihlašovací stránku
+      if (pageData.hasLoginButton) {
+        detectedPatterns.push({
+            detected: true,
+            reason: 'Nalezen přihlašovací formulář v neočekávaném kroku.',
+            type: 'UNEXPECTED_LOGIN_PAGE'
+        });
+      }
 
       for (const pattern of patterns) {
         const textFound = pattern.texts.some(text =>
@@ -987,12 +1000,16 @@ export class PageAnalyzer {
   _calculateErrorSeverity(patterns, accountLocked, checkpoint) {
     if (accountLocked) return 'critical';
     if (checkpoint.detected) return 'high';
+    if (patterns.detected && patterns.type === 'UNEXPECTED_LOGIN_PAGE') return 'critical';
     if (patterns.detected && (patterns.type === 'AD_CONSENT_REQUIRED' || patterns.type === 'COOKIE_CONSENT_REQUIRED')) return 'action_required';
     if (patterns.detected) return 'medium';
     return 'none';
   }
 
   _determineOverallStatus(basic, errors, complexity) {
+    if (errors.patterns.type === 'UNEXPECTED_LOGIN_PAGE') {
+      return 'login_required';
+    }
     if (errors.severity === 'action_required') {
       if (errors.patterns.type === 'AD_CONSENT_REQUIRED') return 'ad_consent_required';
       if (errors.patterns.type === 'COOKIE_CONSENT_REQUIRED') return 'cookie_consent_required';

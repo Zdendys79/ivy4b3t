@@ -240,7 +240,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
       // Inicializace potřebných služeb pro akci
       const requirements = await getActionRequirements(actionCode);
-      Log.debug('[DIAGNOSTIC]', `Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
+      Log.debug(`[DIAGNOSTIC] Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
       ({ fbBot, utioBot } = await initializeRequiredServices(
         user, context, requirements, fbBot, utioBot
       ));

@@ -1,7 +1,6 @@
-feat(fb): Cílené odmítnutí volitelných cookies
+fix: Oprava chyby formátování v diagnostickém logu
 
-Tato změna upravuje způsob, jakým se zpracovává cookie lišta, aby bylo možné cíleně odmítnout volitelné cookies.
+Tato drobná oprava řeší chybně formátovaný výstup v diagnostickém logu.
 
-- **refactor(fb): Upravena metoda `acceptCookies`**
-  - Metoda nyní cíleně hledá a kliká na tlačítko s textem "Odmítnout volitelné soubory cookie" místo původního "Přijmout všechno".
-  - Tím je zajištěno požadované chování pro testovací účely a další ladění.
+- **fix(debug): Opravena syntaxe v `Log.debug`**
+  - V `iv_worker.js` byl opraven chybějící backtick a nadbytečný apostrof v logovací zprávě, která vypisuje požadavky na akci.
