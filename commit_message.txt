@@ -1,8 +1,12 @@
-fix(fb): Pass missing newPostTexts parameter to findPostElementWithStrategy
+refactor: Replace all remaining Puppeteer .$ and .$$ methods with JavaScript
 
-- Fix "Cannot read properties of undefined (reading 'join')" error after clicking Discussion button
-- Add missing newPostTexts parameter when calling findPostElementWithStrategy after discussion navigation
-- This resolves the issue where post creation failed despite finding correct elements
+- Replace .$$('span') calls in fallbackClick and debugPostCreationElements functions
+- Replace .$('button') and element selectors in findActiveSendButtons
+- Replace group and member link selectors in iv_group_explore_action.js
+- Replace post field detection in iv_page_analyzer.class.js  
+- Replace logout link detection in iv_utio.class.js
+- All replacements use JavaScript evaluation with visibility checks for better reliability
+- Maintains same functionality while improving performance and consistency
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

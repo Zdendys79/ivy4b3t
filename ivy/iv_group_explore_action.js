@@ -144,12 +144,32 @@ export class GroupExploreAction {
       await fbBot.page.goto('https://www.facebook.com/search/groups/', { waitUntil: 'networkidle2' });
       await wait.delay(3000, 5000);
       
-      // Klikni na první dostupnou skupinu
-      const groupLinks = await fbBot.page.$('a[href*="/groups/"]');
+      // Klikni na první dostupnou skupinu pomocí JavaScript evaluation
+      const groupLinks = await fbBot.page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('a[href*="/groups/"]'));
+        return links.map((link, index) => ({
+          index,
+          href: link.href,
+          text: link.textContent?.trim() || '',
+          isVisible: link.offsetParent !== null
+        })).filter(link => link.isVisible);
+      });
+      
       if (groupLinks.length > 0) {
-        await groupLinks[0].click();
-        await wait.delay(2000, 4000);
-        return true;
+        const clickResult = await fbBot.page.evaluate((linkIndex) => {
+          const allLinks = document.querySelectorAll('a[href*="/groups/"]');
+          const targetLink = allLinks[linkIndex];
+          if (targetLink && targetLink.offsetParent !== null) {
+            targetLink.click();
+            return true;
+          }
+          return false;
+        }, groupLinks[0].index);
+        
+        if (clickResult) {
+          await wait.delay(2000, 4000);
+          return true;
+        }
       }
 
       return false;
@@ -226,21 +246,41 @@ export class GroupExploreAction {
     try {
       Log.info(`[${user.id}]`, '👥 Prozkoumávám členy skupiny...');
 
-      // Hledání odkazů na členy
-      const memberLinks = await fbBot.page.$$('a[href*="/profile.php"], a[href*="facebook.com/"]:not([href*="/groups/"])');
+      // Hledání odkazů na členy pomocí JavaScript evaluation
+      const memberLinks = await fbBot.page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('a[href*="/profile.php"], a[href*="facebook.com/"]:not([href*="/groups/"])'));
+        return links.map((link, index) => ({
+          index,
+          href: link.href,
+          text: link.textContent?.trim() || '',
+          isVisible: link.offsetParent !== null
+        })).filter(link => link.isVisible);
+      });
       
       if (memberLinks.length > 0) {
         // Klikni na náhodný profil
         const randomIndex = Math.floor(Math.random() * Math.min(memberLinks.length, 5));
-        await memberLinks[randomIndex].click();
+        const selectedLink = memberLinks[randomIndex];
         
-        await wait.delay(3000, 6000); // Čas na "prohlédnutí" profilu
+        const clickResult = await fbBot.page.evaluate((linkIndex) => {
+          const allLinks = document.querySelectorAll('a[href*="/profile.php"], a[href*="facebook.com/"]:not([href*="/groups/"])');
+          const targetLink = allLinks[linkIndex];
+          if (targetLink && targetLink.offsetParent !== null) {
+            targetLink.click();
+            return true;
+          }
+          return false;
+        }, selectedLink.index);
         
-        // Návrat zpět
-        await fbBot.page.goBack();
-        await wait.delay(1000, 2000);
-        
-        Log.info(`[${user.id}]`, '✅ Prozkoumán profil člena');
+        if (clickResult) {
+          await wait.delay(3000, 6000); // Čas na "prohlédnutí" profilu
+          
+          // Návrat zpět
+          await fbBot.page.goBack();
+          await wait.delay(1000, 2000);
+          
+          Log.info(`[${user.id}]`, '✅ Prozkoumán profil člena');
+        }
       }
 
     } catch (err) {

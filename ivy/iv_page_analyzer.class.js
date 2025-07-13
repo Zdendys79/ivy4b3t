@@ -550,7 +550,14 @@ export class PageAnalyzer {
       // Kontrola možnosti postování
       if (groupInfo.membershipStatus === 'member') {
         const postSelectors = ['[aria-label*="příspěvek"]', '[placeholder*="Co máte na mysli"]', '[placeholder*="What\'s on your mind"]', '[data-testid="status-attachment-mentions-input"]'];
-        groupInfo.writeFieldAvailable = (await Promise.all(postSelectors.map(s => this.page.$(s)))).some(el => el !== null);
+        
+        // Use JavaScript evaluation instead of Puppeteer $
+        groupInfo.writeFieldAvailable = await this.page.evaluate((selectors) => {
+          return selectors.some(selector => {
+            const element = document.querySelector(selector);
+            return element !== null && element.offsetParent !== null;
+          });
+        }, postSelectors);
       }
 
       return {

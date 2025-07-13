@@ -219,9 +219,18 @@ export class UtioBot {
 
       await this.bringToFront();
 
-      const logoutLink = await this.page.$('a[href="/site/logout"]');
-      if (logoutLink) {
-        await logoutLink.click();
+      const logoutLinkExists = await this.page.evaluate(() => {
+        const link = document.querySelector('a[href="/site/logout"]');
+        return link !== null && link.offsetParent !== null;
+      });
+      
+      if (logoutLinkExists) {
+        await this.page.evaluate(() => {
+          const link = document.querySelector('a[href="/site/logout"]');
+          if (link && link.offsetParent !== null) {
+            link.click();
+          }
+        });
         await wait.delay(2000);
 
         this.isLoggedIn = false;
@@ -292,8 +301,10 @@ export class UtioBot {
    */
   async _checkIfLoggedIn() {
     try {
-      const logoutLink = await this.page.$('a[href="/site/logout"]');
-      return !!logoutLink;
+      return await this.page.evaluate(() => {
+        const logoutLink = document.querySelector('a[href="/site/logout"]');
+        return logoutLink !== null && logoutLink.offsetParent !== null;
+      });
     } catch (err) {
       Log.debug('[UTIO]', 'Kontrola přihlášení selhala:', err);
       return false;

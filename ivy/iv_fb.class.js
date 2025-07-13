@@ -850,30 +850,26 @@ export class FBBot {
     try {
       Log.debug('[FB]', `Spouštím strategii: ${strategy} pro texty: ${newPostTexts.join(', ')}`);
       
-      const promises = newPostTexts.map(text => {
-        const xpath = strategy === 'starts-with' 
-          ? `//span[starts-with(normalize-space(text()), "${text}")]`
-          : `//span[contains(normalize-space(text()), "${text}")]`;
-        const selector = `xpath/${xpath}`;
+      // JavaScript implementace místo XPath
+      for (const text of newPostTexts) {
+        const matchType = strategy === 'starts-with' ? 'startsWith' : 'contains';
         
-        return this.page.waitForSelector(selector, { timeout: 3000 })
-          .then(handle => {
-            Log.debug('[FB]', `✓ Nalezen element pro text: "${text}" (${strategy})`);
-            return { handle, text };
-          })
-          .catch(() => {
-            Log.debug('[FB]', `✗ Element nenalezen pro text: "${text}" (${strategy})`);
-            return null;
-          });
-      });
-
-      const validPromises = promises.filter(p => p !== null);
-      if (validPromises.length === 0) {
-        Log.debug('[FB]', `Strategie ${strategy}: žádné platné selektory`);
-        return null;
+        // Použij fbSupport.findByText s novými JavaScript metodami
+        const elements = await fbSupport.findByText(this.page, text, { 
+          match: matchType, 
+          timeout: 3000 
+        });
+        
+        if (elements && elements.length > 0) {
+          Log.debug('[FB]', `✓ Nalezen element pro text: "${text}" (${strategy})`);
+          return { handle: elements[0], text };
+        } else {
+          Log.debug('[FB]', `✗ Element nenalezen pro text: "${text}" (${strategy})`);
+        }
       }
-
-      return await Promise.race(validPromises);
+      
+      Log.debug('[FB]', `Strategie ${strategy}: žádné elementy nenalezeny`);
+      return null;
     } catch (err) {
       Log.debug('[FB]', `Strategie ${strategy} selhala: ${err.message}`);
       return null;
@@ -1135,30 +1131,47 @@ export class FBBot {
       const config = await getAllConfig();
       const submitTexts = config.cfg_submit_texts || ["Zveřejnit", "Přidat"];
       
-      // Najdi všechny span elementy
-      const spans = await this.page.$$('span');
+      // Najdi všechny span elementy pomocí JavaScript evaluation
+      const spans = await this.page.evaluate(() => {
+        return Array.from(document.querySelectorAll('span')).map((span, index) => ({
+          index,
+          text: span.textContent?.trim() || '',
+          isVisible: span.offsetParent !== null
+        }));
+      });
 
       // Projdi všechny span elementy
-      for (const span of spans) {
+      for (const spanInfo of spans) {
         try {
-          const text = await this.page.evaluate(el => el.textContent.trim(), span);
-
           // Kontroluj podle prioritního seznamu
-          if (submitTexts.includes(text)) {
-            Log.info(`[FB] Fallback našel: "${text}"`);
+          if (spanInfo.isVisible && submitTexts.includes(spanInfo.text)) {
+            Log.info(`[FB] Fallback našel: "${spanInfo.text}"`);
 
-            // Zkusíme kliknout
-            await span.click();
-            await wait.delay(3000);
+            // Zkusíme kliknout pomocí JavaScript
+            const clickResult = await this.page.evaluate((spanIndex) => {
+              const allSpans = document.querySelectorAll('span');
+              const targetSpan = allSpans[spanIndex];
+              if (targetSpan && targetSpan.offsetParent !== null) {
+                targetSpan.click();
+                return true;
+              }
+              return false;
+            }, spanInfo.index);
 
-            // Kontrola - pokud span zmizelo, pravděpodobně se to povedlo
-            const stillExists = await this.page.evaluate(el => {
-              return document.contains(el);
-            }, span).catch(() => false);
+            if (clickResult) {
+              await wait.delay(3000);
 
-            if (!stillExists) {
-              Log.success('[FB] Fallback kliknutí bylo úspěšné!');
-              return true;
+              // Kontrola - pokud span zmizelo, pravděpodobně se to povedlo
+              const stillExists = await this.page.evaluate((spanIndex) => {
+                const allSpans = document.querySelectorAll('span');
+                const targetSpan = allSpans[spanIndex];
+                return targetSpan && document.contains(targetSpan);
+              }, spanInfo.index).catch(() => false);
+
+              if (!stillExists) {
+                Log.success('[FB] Fallback kliknutí bylo úspěšné!');
+                return true;
+              }
             }
           }
         } catch (spanErr) {
@@ -1183,13 +1196,23 @@ export class FBBot {
     try {
       Log.info('[FB] Hledám tlačítka pomocí standardních selektorů...');
 
-      // Strategie 1: Hledání všech span elementů a filtrování podle textu
-      const allSpans = await this.page.$('span');
+      // Strategie 1: Hledání všech span elementů pomocí JavaScript evaluation
+      const allSpans = await this.page.evaluate(() => {
+        return Array.from(document.querySelectorAll('span')).map((span, index) => ({
+          index,
+          text: span.textContent?.trim() || '',
+          isVisible: span.offsetParent !== null
+        }));
+      });
       Log.info(`[FB] Nalezeno ${allSpans.length} span elementů.`);
 
-      for (const span of allSpans) {
+      for (const spanInfo of allSpans) {
         try {
-          const context = await this.page.evaluate(el => {
+          if (!spanInfo.isVisible) continue;
+
+          const context = await this.page.evaluate((spanIndex) => {
+            const allSpans = document.querySelectorAll('span');
+            const el = allSpans[spanIndex];
             if (!el) return null;
 
             const text = el.textContent.trim();
@@ -1214,12 +1237,13 @@ export class FBBot {
               opacity: parseFloat(style.opacity || 1),
               display: style.display,
               visibility: style.visibility,
-              buttonAriaLabel: button ? button.getAttribute('aria-label') : null
+              buttonAriaLabel: button ? button.getAttribute('aria-label') : null,
+              spanIndex: spanIndex
             };
-          }, span);
+          }, spanInfo.index);
 
           if (context && this.isTargetText(context.text, submitTexts) && this.isValidCandidate(context)) {
-            candidates.push({ element: span, context, text: context.text });
+            candidates.push({ element: null, context, text: context.text, spanIndex: spanInfo.index });
             Log.info(`[FB] Nalezen kandidát: "${context.text}" (enabled: ${context.enabled}, buttonDisabled: ${context.buttonDisabled})`);
           }
         } catch (evalErr) {
@@ -1227,13 +1251,24 @@ export class FBBot {
         }
       }
 
-      // Strategie 2: Hledání buttonů s aria-label
-      const buttons = await this.page.$('button, div[role="button"]');
+      // Strategie 2: Hledání buttonů pomocí JavaScript evaluation
+      const buttons = await this.page.evaluate(() => {
+        return Array.from(document.querySelectorAll('button, div[role="button"]')).map((button, index) => ({
+          index,
+          ariaLabel: button.getAttribute('aria-label') || '',
+          text: button.textContent?.trim() || '',
+          isVisible: button.offsetParent !== null
+        }));
+      });
       Log.info(`[FB] Nalezeno ${buttons.length} button elementů.`);
 
-      for (const button of buttons) {
+      for (const buttonInfo of buttons) {
         try {
-          const context = await this.page.evaluate(el => {
+          if (!buttonInfo.isVisible) continue;
+
+          const context = await this.page.evaluate((buttonIndex) => {
+            const allButtons = document.querySelectorAll('button, div[role="button"]');
+            const el = allButtons[buttonIndex];
             if (!el) return null;
 
             const ariaLabel = el.getAttribute('aria-label') || '';
@@ -1257,14 +1292,15 @@ export class FBBot {
               hasActionText: (ariaLabel + text).includes('k příspěvku') || (ariaLabel + text).includes('příspěvku'),
               opacity: parseFloat(style.opacity || 1),
               display: style.display,
-              visibility: style.visibility
+              visibility: style.visibility,
+              buttonIndex: buttonIndex
             };
-          }, button);
+          }, buttonInfo.index);
 
           if (context &&
             (this.isTargetText(context.ariaLabel, submitTexts) || this.isTargetText(context.innerText, submitTexts)) &&
             this.isValidCandidate(context)) {
-            candidates.push({ element: button, context, text: context.ariaLabel || context.innerText });
+            candidates.push({ element: null, context, text: context.ariaLabel || context.innerText, buttonIndex: buttonInfo.index });
             Log.info(`[FB] Nalezen button kandidát: "${context.text}" (aria: "${context.ariaLabel}")`);
           }
         } catch (evalErr) {
@@ -1283,10 +1319,23 @@ export class FBBot {
 
       for (const selector of composeSelectors) {
         try {
-          const elements = await this.page.$(selector);
-          for (const element of elements) {
+          const elements = await this.page.evaluate((sel) => {
+            return Array.from(document.querySelectorAll(sel)).map((el, index) => ({
+              index,
+              text: el.textContent?.trim() || '',
+              ariaLabel: el.getAttribute('aria-label') || '',
+              isVisible: el.offsetParent !== null
+            }));
+          }, selector);
+          for (const elementInfo of elements) {
             try {
-              const context = await this.page.evaluate(el => {
+              if (!elementInfo.isVisible) continue;
+
+              const context = await this.page.evaluate((sel, elementIndex) => {
+                const allElements = document.querySelectorAll(sel);
+                const el = allElements[elementIndex];
+                if (!el) return null;
+
                 const text = el.textContent.trim();
                 const ariaLabel = el.getAttribute('aria-label') || '';
                 const rect = el.getBoundingClientRect();
@@ -1304,15 +1353,16 @@ export class FBBot {
                   hasActionText: false,
                   opacity: parseFloat(style.opacity || 1),
                   display: style.display,
-                  visibility: style.visibility
+                  visibility: style.visibility,
+                  elementIndex: elementIndex
                 };
-              }, element);
+              }, selector, elementInfo.index);
 
               if (context && this.isTargetText(context.text, submitTexts) && this.isValidCandidate(context)) {
                 // Kontrola, zda už není v candidates
                 const exists = candidates.some(c => c.text === context.text);
                 if (!exists) {
-                  candidates.push({ element, context, text: context.text });
+                  candidates.push({ element: null, context, text: context.text, elementIndex: elementInfo.index, selector });
                   Log.info(`[FB] Nalezen compose kandidát: "${context.text}"`);
                 }
               }
@@ -1752,40 +1802,33 @@ export class FBBot {
     try {
       Log.info('[DEBUG]', 'Spouštím diagnostiku elementů pro vytvoření příspěvku...');
       
-      // Najdi všechny span elementy s klikatelným obsahem
-      const spans = await this.page.$$('span');
-      Log.info('[DEBUG]', `Nalezeno ${spans.length} span elementů na stránce`);
-      
-      const postRelatedTexts = [];
-      for (const span of spans) {
-        try {
-          const spanData = await this.page.evaluate(el => {
-            const text = el.textContent?.trim();
-            const parent = el.parentElement;
-            const clickableParent = el.closest('button, div[role="button"], [tabindex], [onclick]');
-            
-            // Hledej texty související s psaním příspěvku
-            const postKeywords = ['napište', 'příspěvek', 'sdílet', 'psaní', 'honí hlavou', 'myslíte', 'skupina'];
-            const isPostRelated = postKeywords.some(keyword => 
-              text?.toLowerCase().includes(keyword.toLowerCase())
-            );
-            
-            return {
-              text: text || '',
-              hasClickableParent: !!clickableParent,
-              parentTag: parent?.tagName,
-              isPostRelated: isPostRelated,
-              visible: el.offsetWidth > 0 && el.offsetHeight > 0
-            };
-          }, span);
+      // Najdi všechny span elementy pomocí JavaScript evaluation
+      const spans = await this.page.evaluate(() => {
+        const postKeywords = ['napište', 'příspěvek', 'sdílet', 'psaní', 'honí hlavou', 'myslíte', 'skupina'];
+        
+        return Array.from(document.querySelectorAll('span')).map((el, index) => {
+          const text = el.textContent?.trim() || '';
+          const parent = el.parentElement;
+          const clickableParent = el.closest('button, div[role="button"], [tabindex], [onclick]');
           
-          if (spanData.isPostRelated && spanData.visible) {
-            postRelatedTexts.push(spanData.text);
-          }
-        } catch (err) {
-          // Element byl odstraněn během zpracování
-        }
-      }
+          const isPostRelated = postKeywords.some(keyword => 
+            text.toLowerCase().includes(keyword.toLowerCase())
+          );
+          
+          return {
+            index,
+            text: text,
+            hasClickableParent: !!clickableParent,
+            parentTag: parent?.tagName,
+            isPostRelated: isPostRelated,
+            visible: el.offsetWidth > 0 && el.offsetHeight > 0
+          };
+        }).filter(spanData => spanData.isPostRelated && spanData.visible);
+      });
+      
+      Log.info('[DEBUG]', `Nalezeno ${spans.length} relevantních span elementů na stránce`);
+      
+      const postRelatedTexts = spans.map(spanData => spanData.text);
       
       Log.info('[DEBUG]', `Nalezeno ${postRelatedTexts.length} textů souvisejících s příspěvky:`);
       postRelatedTexts.forEach(text => {
@@ -1808,13 +1851,24 @@ export class FBBot {
       Log.info('[DEBUG]', 'Testování alternativních selektorů...');
       for (const selector of alternativeSelectors) {
         try {
-          const elements = await this.page.$$(selector);
+          const elements = await this.page.evaluate((sel) => {
+            return Array.from(document.querySelectorAll(sel)).map((el, index) => ({
+              index,
+              text: el.textContent?.trim() || '',
+              ariaLabel: el.getAttribute('aria-label') || '',
+              isVisible: el.offsetParent !== null
+            }));
+          }, selector);
+          
           if (elements.length > 0) {
             Log.info('[DEBUG]', `Selektor "${selector}" našel ${elements.length} elementů`);
             
             // Test prvního elementu
-            const firstElement = elements[0];
-            const elementInfo = await this.page.evaluate(el => {
+            const firstElementInfo = elements[0];
+            const elementInfo = await this.page.evaluate((sel, elementIndex) => {
+              const allElements = document.querySelectorAll(sel);
+              const el = allElements[elementIndex];
+              if (!el) return null;
               const rect = el.getBoundingClientRect();
               return {
                 text: el.textContent?.trim() || '',
@@ -1823,7 +1877,7 @@ export class FBBot {
                 visible: rect.width > 0 && rect.height > 0,
                 tagName: el.tagName
               };
-            }, firstElement);
+            }, selector, firstElementInfo.index);
             
             Log.info('[DEBUG]', `Element info: ${JSON.stringify(elementInfo)}`);
           }
