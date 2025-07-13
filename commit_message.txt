@@ -1,8 +1,13 @@
-refactor(analyzer): Zpřesnění detekce tlačítka "Přidat se ke skupině"
+refactor(core): Sjednocení logiky pro vyhledávání textu na stránce
 
-Tato oprava reaguje na upřesnění, že pro detekci tlačítka pro přidání do skupiny není potřeba hledat více variant textu.
+Tato oprava řeší nekonzistentní a duplicitní kód pro vyhledávání prvků na stránce a centralizuje tuto logiku do jedné sdílené funkce.
 
-- **refactor(analyzer): Zjednodušena detekce v `_performGroupAnalysis`**
-  - Odstraněn široký seznam klíčových slov.
-  - Detekce se nyní zaměřuje na přesnou shodu s textem "Přidat se ke skupině" v obsahu nebo v `aria-label` atributu.
-  - Tím se zvyšuje přesnost a snižuje riziko falešně pozitivních nálezů.
+- **refactor(support): Vytvořena sdílená funkce `findByText`**
+  - Osvědčená metoda `_findByText` byla přesunuta z `FBBot` do `iv_fb_support.js`, přejmenována na `findByText` a upravena tak, aby přijímala `page` jako parametr. Tím je dostupná pro všechny moduly.
+
+- **refactor(fb): `FBBot` nyní používá sdílenou funkci**
+  - Všechna interní volání v `FBBot` byla upravena tak, aby používala novou sdílenou funkci `fbSupport.findByText`.
+
+- **fix(analyzer): `PageAnalyzer` nyní používá sdílenou funkci**
+  - Detekce tlačítka "Přidat se ke skupině" v `PageAnalyzer` byla přepsána. Místo vlastní, nespolehlivé implementace nyní také používá sdílenou a ověřenou funkci `fbSupport.findByText`.
+  - Tím se zajišťuje konzistentní a spolehlivé chování napříč celou aplikací.

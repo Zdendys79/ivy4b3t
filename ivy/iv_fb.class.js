@@ -113,61 +113,6 @@ export class FBBot {
   // 🧩 Vnitřní helpery pro zjednodušení
 
   /**
-   * Vyhledá <span> elementy podle obsahu textu.
-   * @param {string} text - hledaný text
-   * @param {object} options - volby (match: startsWith|exact|contains, timeout)
-   * @returns {Promise<ElementHandle[]>}
-   */
-  async _findByText(text, options = {}) {
-    try {
-      if (!this.page || !this.page.waitForSelector) {
-        await Log.warn('[FB] _findByText selhalo: this.page není platná nebo nepodporuje waitForSelector.');
-        return [];
-      }
-
-      const { match = 'startsWith', timeout = 2000 } = options;
-
-      // Vytvoř XPath stejně jako v _waitForText()
-      let xpath;
-      if (match === 'startsWith') {
-        xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
-      } else if (match === 'exact') {
-        xpath = `//span[normalize-space(string(.)) = "${text}"]`;
-      } else {
-        xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
-      }
-
-      // Použij stejný přístup jako _waitForText() s xpath/ prefix
-      const selector = `xpath/${xpath}`;
-
-      // Najdi všechny odpovídající elementy
-      try {
-        // Počkáme na první element s krátkým timeoutem
-        await this.page.waitForSelector(selector, { timeout });
-
-        // Pak získáme všechny pomocí $$
-        const elements = await this.page.$$(selector);
-
-        return elements || [];
-
-      } catch (timeoutErr) {
-        // Pokud timeout, zkus ještě $$ bez čekání
-        try {
-          const elements = await this.page.$$(selector);
-          return elements || [];
-        } catch (err) {
-          // Žádné elementy nenalezeny
-          return [];
-        }
-      }
-
-    } catch (err) {
-      await Log.warn(`[FB] _findByText selhalo pro "${text}":`, err);
-      return [];
-    }
-  }
-
-  /**
    * Čeká na <span> s textem podle dané strategie (např. startsWith)
    * Vhodné pro použití v Promise.race().
    */
@@ -198,13 +143,13 @@ export class FBBot {
   }
 
   async _checkTexts(text1, text2) {
-    const t1 = await this._findByText(text1);
-    const t2 = await this._findByText(text2);
+    const t1 = await fbSupport.findByText(this.page, text1);
+    const t2 = await fbSupport.findByText(this.page, text2);
     return t1.length && t2.length;
   }
 
   async _clickByText(text, timeout = wait.timeout()) {
-    const [button] = await this._findByText(text, { timeout });
+    const [button] = await fbSupport.findByText(this.page, text, { timeout });
     if (!button) throw new Error(`Tlačítko "${text}" nenalezeno.`);
     await button.click();
     Log.info(`[FB] Kliknuto na "${text}".`);
@@ -760,7 +705,7 @@ export class FBBot {
     ];
 
     for (const indicator of videoselfieIndicators) {
-      const found = await this._findByText(indicator, { timeout: 1500 });
+      const found = await fbSupport.findByText(this.page, indicator, { timeout: 1500 });
       if (found.length > 0) {
         await Log.warn(`[FB] Detekován videoselfie požadavek: "${indicator}"`);
         return true;

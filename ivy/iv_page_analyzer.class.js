@@ -5,6 +5,7 @@
  */
 
 import { Log } from './iv_log.class.js';
+import * as fbSupport from '../iv_fb_support.js';
 
 export class PageAnalyzer {
   constructor(page) {
@@ -534,18 +535,11 @@ export class PageAnalyzer {
         }
 
         // Přesná detekce tlačítka pro přidání se ke skupině.
-        const joinText = 'přidat se ke skupině';
-        
-        const joinButton = Array.from(document.querySelectorAll('div[role="button"], button, a[role="button"]')).find(el => {
-          const text = (el.textContent || '').toLowerCase().trim();
-          const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase().trim();
-          
-          return text === joinText || ariaLabel === joinText;
-        });
+        const joinButton = await fbSupport.findByText(this.page, 'Přidat se ke skupině', { match: 'exact' });
 
-        if (joinButton) {
+        if (joinButton.length > 0) {
           info.hasJoinButton = true;
-          info.joinButtonText = joinButton.textContent.trim();
+          info.joinButtonText = await this.page.evaluate(el => el.textContent.trim(), joinButton[0]);
           info.membershipStatus = 'not_member';
         } else if (info.isMember) {
           info.membershipStatus = 'member';

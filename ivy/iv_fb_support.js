@@ -11,6 +11,49 @@ import { handleFBError, quickErrorReport, analyzeErrorPatterns } from './iv_fb-e
 import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';
 
+/**
+ * Vyhledá elementy podle textu.
+ * @param {Page} page - Puppeteer page instance
+ * @param {string} text - hledaný text
+ * @param {object} options - volby (match: startsWith|exact|contains, timeout)
+ * @returns {Promise<ElementHandle[]>}
+ */
+export async function findByText(page, text, options = {}) {
+  try {
+    if (!page || !page.waitForSelector) {
+      await Log.warn('[FB_SUPPORT]', 'findByText selhalo: page není platná.');
+      return [];
+    }
+
+    const { match = 'startsWith', timeout = 2000 } = options;
+
+    let xpath;
+    if (match === 'startsWith') {
+      xpath = `//span[starts-with(normalize-space(string(.)), "${text}")]`;
+    } else if (match === 'exact') {
+      xpath = `//span[normalize-space(string(.)) = "${text}"]`;
+    } else {
+      xpath = `//span[contains(normalize-space(string(.)), "${text}")]`;
+    }
+
+    const selector = `xpath/${xpath}`;
+
+    try {
+      await page.waitForSelector(selector, { timeout });
+      return await page.$(selector) || [];
+    } catch (timeoutErr) {
+      try {
+        return await page.$(selector) || [];
+      } catch (err) {
+        return [];
+      }
+    }
+  } catch (err) {
+    await Log.warn(`[FB_SUPPORT]', 'findByText selhalo pro "${text}":`, err);
+    return [];
+  }
+}
+
 
 /**
  * Univerzální ověření připravenosti FB stránky s error reporting
