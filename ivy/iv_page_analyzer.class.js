@@ -262,7 +262,7 @@ export class PageAnalyzer {
         };
       }
 
-      await Log.warn('[ANALYZER]', 'Struktura stránky NENÍ normální. Hledám chybové vzory...');
+      await Log.warnInteractive('[ANALYZER]', 'Struktura stránky NENÍ normální. Hledám chybové vzory...');
 
       // KROK 2: Hledání chybových vzorů (pouze pokud struktura není normální)
       const cookieButton = await fbSupport.findByText(this.page, 'Povolit soubory cookie', { match: 'contains' });

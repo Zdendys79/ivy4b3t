@@ -1,14 +1,18 @@
-fix(worker): Oprava account blocking a duplikovaných chyb
+fix(logging): Oprava race condition při debugger zastavení
 
-Řeší problémy s neukládáním account blocking a opakovanými chybovými zprávami.
+Řeší kritický problém kdy debugger zastavuje kód ale async operace pokračují.
 
-- **fix(account-blocking): Přesunutí logiky do executeUserActionCycle**
-  - Account blocking při FB login failed nyní probíhá ve správném catch bloku
-  - Přidána kontrola FB login failed přímo do executeUserActionCycle
-  - Garantuje že se účet zablokuje při každém login selhání
-  - Eliminuje re-výběr stejného problematického účtu
+- **fix(log-synchronization): Odstranění auto-debuggeru z Log.warn/error**
+  - Log.warn() a Log.error() už nespouštějí debugger automaticky
+  - Eliminuje race condition kdy funkce pokračuje i když debugger čeká
+  - Zachovány interaktivní verze Log.warnInteractive() a Log.errorInteractive()
 
-- **fix(duplicate-errors): Prevence opakovaných disconnect zpráv**
-  - Přidán disconnectLogged flag pro omezení duplikovaných zpráv
-  - Browser disconnect event se zaznamená pouze jednou
-  - Snížení spamu v logách po zavření prohlížeče
+- **fix(critical-debugging): Explicitní interaktivní debugging**
+  - PageAnalyzer "struktura stránky není normální" → warnInteractive
+  - FB login "uživatel není přihlášen" → warnInteractive  
+  - Debugging jen tam kde je skutečně potřeba
+
+- **fix(async-consistency): Synchronní chování Log metod**
+  - Normální Log.warn/error jsou synchronní (bez await)
+  - Interaktivní verze zůstávají async s await
+  - Konzistentní chování napříč celou aplikací

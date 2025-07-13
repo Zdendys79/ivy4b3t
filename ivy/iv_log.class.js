@@ -31,12 +31,8 @@ export class Log {
     if (shouldLog('info')) console.log(`${now()} ${prefix} ${icons.info}`, ...msg);
   }
 
-  static async warn(prefix, ...msg) {
+  static warn(prefix, ...msg) {
     if (shouldLog('warn')) console.warn(`${now()} ${prefix} ${icons.warn}`, ...msg);
-    
-    // Trigger interactive debugger for warnings
-    const message = msg.join(' ');
-    await this.triggerDebugger('WARNING', `${prefix}: ${message}`, { prefix, message });
   }
 
   static success(prefix, ...msg) {
@@ -51,7 +47,7 @@ export class Log {
     if (shouldLog('debug')) console.log(`${now()} ${prefix} ${icons.db}`, ...msg);
   }
 
-  static async error(prefix, err) {
+  static error(prefix, err) {
     // Format error with prefix like other log methods
     const message = err?.message || String(err);
     if (shouldLog('error')) {
@@ -62,11 +58,6 @@ export class Log {
         console.error(err.stack);
       }
     }
-    
-    // The rest of the logic for triggerDebugger remains, as it expects a message string
-    const type = err?.name || typeof err;
-    const stack = err?.stack ? '\n' + err.stack : '';
-    await this.triggerDebugger('ERROR', `${prefix}: ${message}`, { type, stack, prefix });
   }
 
   // Interactive debugging methods

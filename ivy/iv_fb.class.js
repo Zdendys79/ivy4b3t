@@ -386,11 +386,11 @@ export class FBBot {
         
         return 'now_loged';
       } else {
-        await Log.warn(`[FB] Uživatel není přihlášen na FB.`);
+        await Log.warnInteractive(`[FB]`, `Uživatel není přihlášen na FB.`);
         return false;
       }
     } catch (err) {
-      await Log.error(`[FB] Chyba při loginu: ${err}`);
+      Log.error(`[FB] Chyba při loginu: ${err}`);
       return false;
     }
   }
