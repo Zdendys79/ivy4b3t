@@ -407,18 +407,19 @@ async function executeUICommand(user, uiCommand, browser, context, browserClosed
   try {
     Log.info(`[${user.id}]`, `Zpracovávám UI příkaz: ${uiCommand.command}`);
 
-    // Inicializuj pouze FB (UI příkazy obvykle potřebují jen FB)
+    // Inicializuj FB bota s existujícím kontextem
     fbBot = new FBBot(context, user.id);
     if (!await fbBot.init()) {
       throw new Error('FB initialization failed for UI command');
     }
-
-    // Set debug context for interactive debugger (always enabled)
+    
+    // Set debug context
     if (fbBot.page) {
       setDebugContext(user, fbBot.page);
     }
 
-    const fbOpenSuccess = await fbBot.openFB(user, false); // false = neanalyzovat stránku
+    // Otevři stránku FB bez analýzy
+    const fbOpenSuccess = await fbBot.openFB(user, false);
     if (!fbOpenSuccess) {
       throw new Error('Failed to open Facebook page.');
     }
@@ -426,12 +427,19 @@ async function executeUICommand(user, uiCommand, browser, context, browserClosed
     const uiBot = new UIBot();
     let uiSuccess = false;
     try {
+      // Předání instance fbBot do processCommand
       uiSuccess = await uiBot.processCommand(uiCommand, fbBot);
     } finally {
       await uiBot.close();
     }
 
-    return uiSuccess;
+    // Počkáme, dokud se prohlížeč nezavře, abychom mohli pokračovat
+    if (browser && browser.isConnected()) {
+        Log.info(`[WORKER] Čekám na manuální zavření prohlížeče po dokončení UI příkazu...`);
+        await new Promise(resolve => browser.once('disconnected', resolve));
+    }
+
+    return false; // Po UI příkazu nikdy nepokračujeme automatickými akcemi
 
   } catch (err) {
     await Log.error(`[${user.id}] executeUICommand`, err);

@@ -1,10 +1,12 @@
-refactor(core): Oddělení analýzy od UI režimu
+refactor(core): Sjednocení správy prohlížeče a oprava UI příkazů
 
-Tato oprava implementuje správnou architektonickou myšlenku, kdy se v režimu UI příkazu neprovádí automatická analýza a oprava stavu stránky.
+Tato oprava řeší zásadní architektonický problém, který způsoboval pád `SingletonLock` při zpracování UI příkazů.
 
-- **refactor(worker): Podmíněné spouštění analýzy**
-  - Logika pro analýzu stránky a následné řešení stavů (cookies, reklamy, přihlášení) v `initializeRequiredServices` je nyní obalena podmínkou, která zajistí, že se provede pouze v běžném pracovním cyklu, nikoliv při zpracování UI příkazu.
-  - Tím je zajištěno, že UI příkaz `call_user` skutečně pouze otevře prohlížeč a přihlásí uživatele, čímž připraví čisté prostředí pro manuální ladění.
+- **refactor(ui): Odstraněna správa prohlížeče z `UIBot`**
+  - Třída `UIBot` v `iv_ui.class.js` již nespouští ani nezavírá vlastní instanci prohlížeče. Tím se zabraňuje duplicitnímu spouštění pro stejný profil.
+  - Metoda `processCommand` nyní jako parametr přijímá již existující a inicializovanou instanci `FBBot`.
 
-- **refactor(fb): Zjednodušení `openFB`**
-  - Metoda `openFB` byla finálně vyčištěna a nyní se stará výhradně o otevření URL adresy. Veškerá rozhodovací logika byla přesunuta do workeru.
+- **refactor(worker): Centralizace řízení prohlížeče**
+  - `iv_worker.js` je nyní jediným místem, které je zodpovědné za životní cyklus prohlížeče (`prepareBrowser`, `cleanupBrowser`).
+  - Funkce `executeUICommand` nyní správně vytváří `FBBot` a předává ho do `UIBot`, čímž dodržuje správný tok závislostí.
+  - Byla přidána logika, která po dokončení UI příkazu explicitně čeká na manuální zavření prohlížeče obsluhou.
