@@ -1,15 +1,14 @@
-fix(worker): Oprava čekání na zavřený prohlížeč v pauseOnError
+fix(worker): Oprava account blocking a duplikovaných chyb
 
-Řeší problém kdy worker čeká 10 minut i když je prohlížeč už zavřený.
+Řeší problémy s neukládáním account blocking a opakovanými chybovými zprávami.
 
-- **fix(browser-state): Sdílený objekt pro browserClosed stav**
-  - Změna z boolean na objekt reference pro sdílení stavu
-  - prepareBrowser() vrací objekt s browserClosed property
-  - Umožňuje aktualizace stavu z různých částí aplikace
-- **fix(initializeRequiredServices): Propagace browserClosed stavu**
-  - Přidán browserClosedState parametr do funkce
-  - Při zavření prohlížeče v FB botu se nastaví browserClosed = true
-  - Eliminuje čekání 10 minut když je prohlížeč už zavřený
-- **fix(pauseOnError): Správná detekce zavřeného prohlížeče**
-  - Kontroluje browserClosed.browserClosed místo boolean hodnoty
-  - Okamžité pokračování když je prohlížeč skutečně zavřený
+- **fix(account-blocking): Přesunutí logiky do executeUserActionCycle**
+  - Account blocking při FB login failed nyní probíhá ve správném catch bloku
+  - Přidána kontrola FB login failed přímo do executeUserActionCycle
+  - Garantuje že se účet zablokuje při každém login selhání
+  - Eliminuje re-výběr stejného problematického účtu
+
+- **fix(duplicate-errors): Prevence opakovaných disconnect zpráv**
+  - Přidán disconnectLogged flag pro omezení duplikovaných zpráv
+  - Browser disconnect event se zaznamená pouze jednou
+  - Snížení spamu v logách po zavření prohlížeče

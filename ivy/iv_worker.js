@@ -374,6 +374,20 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
   } catch (err) {
     await Log.error(`[${user.id}] executeUserActionCycle`, err);
+    
+    // Kontrola a blokování účtu při FB login failure
+    if (err.message && err.message.includes('FB login failed') && user) {
+      await Log.warn('[WORKER]', 'FB login selhal - označuji účet jako problematický a dočasně ho zablokuji');
+      try {
+        await db.lockAccountWithReason(user.id, 'Opakované selhání FB přihlášení', 'LOGIN_FAILURE', os.hostname());
+        await Log.info('[WORKER]', `Účet ${user.id} dočasně zablokován kvůli login problémům`);
+        await waitWithHeartbeat(5);
+        return; // Ukončí funkci a vrátí se do tick()
+      } catch (lockErr) {
+        await Log.error('[WORKER]', `Chyba při blokování účtu: ${lockErr.message}`);
+      }
+    }
+    
     await pauseOnError(browser, browserClosed.browserClosed);
   } finally {
     // 🎯 KROK 8: ZAVŘENÍ PROHLÍŽEČE A CLEANUP
@@ -815,10 +829,13 @@ async function prepareBrowser(user) {
   });
 
   // Vytvoř sdílený stav objektu pro browserClosed
-  const browserState = { browserClosed: false };
+  const browserState = { browserClosed: false, disconnectLogged: false };
   browser.on('disconnected', async () => {
     browserState.browserClosed = true;
-    await Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
+    if (!browserState.disconnectLogged) {
+      browserState.disconnectLogged = true;
+      await Log.warn('[WORKER]', 'Prohlížeč se odpojil.');
+    }
   });
 
   const context = browser.defaultBrowserContext();
