@@ -801,7 +801,7 @@ export class PageAnalyzer {
         // Kontrola existence záložky "Diskuze"
         const discussionTab = Array.from(document.querySelectorAll('span, a, div[role="button"]')).find(el => {
             const text = el.textContent?.trim().toLowerCase();
-            return text === 'diskuze' || text === 'discussion';
+            return text === 'diskuze' || text === 'discussion' || text === 'hlavní' || text === 'featured';
         });
 
         return {

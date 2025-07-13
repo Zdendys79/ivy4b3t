@@ -125,61 +125,68 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
   const actionCode = `post_utio_${groupType}`;
   const joinActionCode = `join_group_${groupType}`;
 
-  // Fáze 1: Výběr a analýza skupiny
   const group = await db.getSingleAvailableGroup(user.id, groupType.toUpperCase());
   if (!group) {
     await Log.warn(`[${user.id}]`, `Žádné dostupné skupiny typu '${groupType}' pro akci ${actionCode}.`);
     await db.logSystemEvent('ACTION_ERROR', 'WARN', `No available groups for ${actionCode}`, { userId: user.id, groupType }, user.id);
-    // Zde by se mohla dočasně zablokovat akce v kole štěstí, ale prozatím jen logujeme.
-    return false; // Neúspěch
+    return false;
   }
 
   Log.info(`[${user.id}]`, `Vybrána skupina: ${group.nazev} (${group.fb_id})`);
 
   try {
     await fbBot.openGroup(group);
-    fbBot.initializeAnalyzer(); // INICIALIZACE ANALYZÁTORU ZDE
+    fbBot.initializeAnalyzer();
     const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
 
-    // Fáze 2: Rozhodovací strom
+    // Rozhodovací strom
     if (analysis.posting?.canInteract) {
-      // Lze publikovat, pokračuj na Fázi 3
       return await performPublication(user, fbBot, utioBot, group, actionCode);
     }
 
-    // Nelze publikovat, zkusit se přidat
     if (analysis.group?.hasJoinButton) {
       const recentJoin = await db.getRecentJoinGroupAction(user.id, joinActionCode);
       if (recentJoin) {
         await Log.info(`[${user.id}]`, `Již byla odeslána žádost o členství do skupiny typu '${groupType}' v posledních 8 hodinách. Čeká se.`);
-        return true; // "Úspěch" - čekáme na schválení, nic víc neděláme
+        return true;
       }
 
       await Log.info(`[${user.id}]`, `Pokouším se přidat do skupiny ${group.nazev}...`);
       await fbBot.clickJoinGroupButton();
-      await wait.delay(3000, 5000); // Počkat na reakci stránky
+      await wait.delay(3000, 5000);
 
       const afterClickAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
       if (!afterClickAnalysis.group?.hasJoinButton) {
         await Log.success(`[${user.id}]`, `Úspěšně odeslána žádost o členství ve skupině ${group.nazev}.`);
         await db.logAction(user.id, joinActionCode, group.id, `Žádost o členství: ${group.nazev}`);
-        return true; // Úspěch
+        return true;
       } else {
         await Log.error(`[${user.id}]`, `Nepodařilo se kliknout na "Přidat se" ve skupině ${group.nazev}.`);
         await db.blockUserGroup(user.id, group.id, 'Failed to click join button', 7);
-        return false; // Neúspěch
+        return false;
       }
     }
+    
+    if (analysis.posting?.actionRequired === 'click_discussion_tab') {
+        await Log.info(`[${user.id}]`, 'Je potřeba přejít do diskuze, zkouším...');
+        const clicked = await fbBot.clickDiscus();
+        if (clicked) {
+            await wait.delay(3000);
+            const re_analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+            if (re_analysis.posting?.canInteract) {
+                return await performPublication(user, fbBot, utioBot, group, actionCode);
+            }
+        }
+    }
 
-    // Nelze publikovat a není tam tlačítko "Přidat se"
-    const reason = analysis.details.join(', ') || 'Nespecifikovaný problém s oprávněním.';
+    const reason = analysis.details?.join(', ') || 'Nespecifikovaný problém s oprávněním.';
     await Log.warn(`[${user.id}]`, `Skupina ${group.nazev} je problematická: ${reason}`);
-    await db.blockUserGroup(user.id, group.id, reason, 30); // Blokovat na 30 dní
-    return false; // Neúspěch
+    await db.blockUserGroup(user.id, group.id, reason, 30);
+    return false;
 
   } catch (err) {
     await Log.error(`[${user.id}]`, `Kompletní selhání při práci se skupinou ${group.nazev}: ${err.message}`);
-    await db.blockUserGroup(user.id, group.id, err.message, 7); // Blokovat na 7 dní
+    await db.blockUserGroup(user.id, group.id, err.message, 7);
     return false;
   }
 }

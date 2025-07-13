@@ -1,5 +1,7 @@
-fix(posting): Improve posting readiness checks and recovery
+fix(logic): Overhaul group interaction logic
 
-- Refactored `verifyFBReadinessForUtio` in `iv_fb_support.js` to actively attempt recovery when the post input field is not found. It now tries to click the "Discussion" tab and re-checks for the input field.
-- Strengthened the check in `pasteMsg` in `iv_support.js` to strictly halt the process if `verifyFBReadinessForUtio` returns `ready: false`, preventing unnecessary calls to UTIO.
-- This prevents the bot from getting stuck and proceeding with UTIO when the Facebook page is not in a state to accept a post.
+- Completely refactored the `handleSingleUtioPost` function in `iv_actions.js` to follow a new, more robust decision tree: analyze first, then act.
+- The system now performs a full page analysis upon entering a group and decides the next step based on the analysis result (e.g., post, join, switch to discussion, or block the group).
+- The `findByText` function in `iv_fb_support.js` was generalized to search for text in any element (`*`), removing the restriction to specific tag types, which makes it more flexible.
+- The `_verifyGroupPosting` method in `iv_page_analyzer.class.js` was enhanced to detect more variants of the "Discussion" tab.
+- This new logic prevents the bot from getting stuck, correctly identifies when a group requires joining, and handles cases where switching to a discussion tab is necessary before posting.

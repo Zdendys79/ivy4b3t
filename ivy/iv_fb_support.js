@@ -27,15 +27,14 @@ export async function findByText(page, text, options = {}) {
 
     const { match = 'exact', timeout = 3000 } = options;
 
-    // Univerzální XPath, který hledá klikatelné prvky obsahující daný text
+    // Univerzální XPath, který hledá v jakémkoliv elementu
     const textSelector = {
       exact: `normalize-space(.) = "${text}"`,
       contains: `contains(normalize-space(.), "${text}")`,
       startsWith: `starts-with(normalize-space(.), "${text}")`
     }[match];
 
-    // Robustní XPath, který hledá jakýkoliv element, který je jedním z klikatelných typů A ZÁROVEŇ splňuje textovou podmínku.
-    const xpath = `//*[self::button or self::div[@role='button'] or self::a[@role='button'] or self::span][${textSelector}]`;
+    const xpath = `//*[${textSelector}]`;
     const selector = `xpath/${xpath}`;
 
     // Počkáme na element a pak vrátíme všechny, které odpovídají
