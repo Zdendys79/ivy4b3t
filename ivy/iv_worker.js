@@ -577,6 +577,8 @@ async function initializeRequiredServices(user, context, requirements, existingF
   let fbBot = existingFbBot;
   let utioBot = existingUtioBot;
 
+  Log.debug('[DIAGNOSTIC]', `Vstup do initializeRequiredServices. Požadavky: ${JSON.stringify(requirements)}, existuje utioBot: ${!!utioBot}`);
+
   try {
     // Inicializuj UTIO pouze pokud je potřeba a ještě není
     if (requirements.needsUtio && (!utioBot || !utioBot.isReady())) {

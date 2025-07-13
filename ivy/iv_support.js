@@ -28,17 +28,17 @@ import path from 'path';
  * @returns {Promise<Object>}
  */
 export async function getGitInfo() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const scriptPath = path.resolve('./git-common.sh');
-    // Voláme novou funkci, která vrací JSON
-    exec(`bash ${scriptPath} get_git_info_json`, (error, stdout, stderr) => {
+    // Správný způsob volání: spustit bash, v něm sourcnout skript a pak zavolat funkci
+    const command = `bash -c "source ${scriptPath} && get_git_info_json"`;
+    
+    exec(command, (error, stdout, stderr) => {
       if (error) {
         Log.error('[GIT]', `Chyba při získávání Git informací: ${stderr}`);
-        // Vracíme defaultní objekt, aby aplikace nespadla
-        return resolve({ branch: 'unknown' });
+        return resolve({ branch: 'unknown' }); // Vracíme defaultní objekt
       }
       try {
-        // Ošetření pro případ, že by stdout byl prázdný
         if (!stdout) {
           throw new Error('Git script returned empty output.');
         }
@@ -47,8 +47,7 @@ export async function getGitInfo() {
       } catch (parseError) {
         Log.error('[GIT]', `Chyba při parsování Git informací: ${parseError.message}`);
         Log.debug('[GIT]', `Raw output from script: ${stdout}`);
-        // Vracíme defaultní objekt, aby aplikace nespadla
-        resolve({ branch: 'unknown' });
+        resolve({ branch: 'unknown' }); // Vracíme defaultní objekt
       }
     });
   });

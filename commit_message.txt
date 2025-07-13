@@ -1,10 +1,9 @@
-fix: Oprava pádu Gitu a přidání diagnostiky pro PageAnalyzer
+fix: Oprava volání Gitu a diagnostika inicializace botů
 
-Tato oprava řeší dva problémy: pád při získávání informací z Gitu a přetrvávající problém s chybějící instancí PageAnalyzer.
+Tato oprava řeší dva problémy: přetrvávající chybu při získávání informací z Gitu a záhadné selhání inicializace UtioBota.
 
-- **fix(git): Doplněn chybějící export funkce `get_git_info_json`**
-  - V `git-common.sh` byla přidána funkce pro export informací ve formátu JSON, ale chyběl její `export -f`, což způsobovalo chybu "empty output".
+- **fix(git): Opraven způsob volání `get_git_info_json`**
+  - Volání ve funkci `getGitInfo` bylo upraveno tak, aby správně `source`nulo `git-common.sh` před spuštěním funkce. Tím je zajištěno, že skript vrátí očekávaný JSON výstup.
 
-- **chore(debug): Přidáno diagnostické logování pro `PageAnalyzer`**
-  - Do klíčových míst v `iv_worker.js` a `iv_fb.class.js` byly přidány dočasné logovací zprávy.
-  - Cílem je přesně zmapovat životní cyklus instance `PageAnalyzer` a odhalit, proč v některých fázích běhu programu není k dispozici.
+- **chore(debug): Přidáno diagnostické logování do `initializeRequiredServices`**
+  - Do začátku funkce bylo přidáno logování, které vypíše vstupní požadavky a stav `utioBot`. To nám pomůže odhalit, proč se v některých případech nespustí jeho inicializace.
