@@ -1,7 +1,7 @@
-fix(core): Zajištění korektního uzavření DB spojení při ukončení
+fix(core): Zajištění `gracefulShutdown` při ukončení z debuggeru
 
-Tato oprava řeší chybu `ECONNRESET`, která nastávala po restartu aplikace.
+Tato oprava řeší problém, kdy ukončení aplikace pomocí klávesy 'q' v interaktivním debuggeru neprovádělo korektní úklid, což vedlo k chybě `SingletonLock` při dalším spuštění.
 
-- **fix(core): Doplněno volání `closeConnection` do `gracefulShutdown`**
-  - Do funkce pro korektní ukončení aplikace v `ivy.js` bylo přidáno explicitní volání pro uzavření databázového poolu.
-  - Tím se zajišťuje, že při ukončení procesu (např. přes `Ctrl+C` nebo `q` v debuggeru) nezůstanou na straně serveru "viset" stará spojení, která způsobovala konflikt při dalším spuštění.
+- **refactor(debugger): Změna `process.exit()` na `process.kill()`**
+  - V `iv_interactive_debugger.js` byla akce pro klávesu 'q' změněna. Místo přímého a nekorektního ukončení procesu pomocí `process.exit()` nyní posílá procesu signál `SIGINT`.
+  - Tím je zajištěno, že se vždy spustí zavedená úklidová funkce `gracefulShutdown` (v `ivy.js`), která se postará o správné uzavření prohlížeče i databázového spojení.

@@ -95,8 +95,9 @@ export class InteractiveDebugger {
         break;
         
       case 'q':
-        Log.info('[DEBUGGER]', '🛑 QUIT program requested by user');
-        process.exit(99); // Special exit code for complete quit
+        Log.info('[DEBUGGER]', '🛑 QUIT program requested by user, initiating graceful shutdown...');
+        process.kill(process.pid, 'SIGINT'); // Send SIGINT to trigger graceful shutdown
+        break;
         
       default:
         Log.info('[DEBUGGER]', '⏱️ Timeout - continuing execution...');
