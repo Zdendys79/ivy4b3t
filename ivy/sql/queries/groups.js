@@ -38,6 +38,18 @@ export const GROUPS = {
 
   // ===== VÝBĚR SKUPIN PRO POSTOVÁNÍ =====
 
+  getSingleAvailableGroup: `
+    SELECT g.*
+    FROM fb_groups g
+    LEFT JOIN user_groups ug ON g.id = ug.group_id AND ug.user_id = ?
+    WHERE g.typ = ?
+      AND g.priority > 0
+      AND (g.next_seen IS NULL OR g.next_seen <= NOW())
+      AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
+    ORDER BY RAND()
+    LIMIT 1
+  `,
+
   getUnusedByType: `
     SELECT fg.*
     FROM fb_groups fg

@@ -1,8 +1,12 @@
-fix(db): Oprava chyby při volání surových SQL dotazů
+refactor(db): Obnovení modulárního systému pro SQL dotazy
 
-Tato oprava řeší pád aplikace způsobený nesprávným voláním `safeQueryFirst` s přímým SQL textem místo názvu dotazu.
+Tato oprava vrací změnu, která narušovala zavedený modulární systém pro správu SQL dotazů, a implementuje správné řešení.
 
-- **refactor(db): Vylepšena funkce `executeQuery` v `iv_sql.js`**
-  - Funkce nyní inteligentně detekuje, zda je jí předán název dotazu (cesta) nebo surový SQL řetězec.
-  - Díky tomu je možné bezpečně volat `safeQueryFirst` a `safeQueryAll` i s dynamicky generovanými dotazy, které nejsou v `queries/index.js`.
-  - Tím se opravuje chyba `Query not found` a zároveň se zvyšuje flexibilita databázové vrstvy.
+- **revert(db): Vrácena úprava `executeQuery` v `iv_sql.js`**
+  - Funkce byla vrácena do původního stavu, kdy akceptuje pouze cesty k dotazům (např. `groups.my_query`), nikoliv surový SQL text. Tím je zajištěna konzistence a bezpečnost.
+
+- **feat(db): Přidán nový dotaz `getSingleAvailableGroup`**
+  - Do souboru `ivy/sql/queries/groups.js` byl přidán nový, správně umístěný dotaz pro výběr jedné náhodné dostupné skupiny.
+
+- **refactor(db): Upraven `QueryBuilder` pro správné volání**
+  - Funkce `getSingleAvailableGroup` v `iv_querybuilder.class.js` byla upravena tak, aby volala nový dotaz jeho jménem, v souladu s architekturou projektu.

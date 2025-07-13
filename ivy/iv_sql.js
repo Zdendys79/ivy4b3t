@@ -48,33 +48,26 @@ function _truncateLog(data, maxLines = 10, maxJsonLength = 500) {
   }
 }
 
-async function executeQuery(queryOrPath, params = []) {
-  // Rozlišení, zda jde o cestu k dotazu nebo o surový SQL dotaz
-  const isPath = !queryOrPath.trim().toUpperCase().startsWith('SELECT') && 
-                 !queryOrPath.trim().toUpperCase().startsWith('INSERT') &&
-                 !queryOrPath.trim().toUpperCase().startsWith('UPDATE') &&
-                 !queryOrPath.trim().toUpperCase().startsWith('DELETE');
-
-  const query = isPath ? QueryUtils.getQuery(queryOrPath) : queryOrPath;
-  const queryIdentifier = isPath ? queryOrPath : 'Raw SQL';
+async function executeQuery(queryPath, params = []) {
+  const query = QueryUtils.getQuery(queryPath);
 
   if (!query) {
-    const error = `Query not found: ${queryIdentifier}`;
+    const error = `Query not found: ${queryPath}`;
     await Log.error('[SQL]', error);
     throw new Error(error);
   }
 
-  Log.debug('[SQL]', `Executing query: ${queryIdentifier} with params: ${_truncateLog(params)}`);
+  Log.debug('[SQL]', `Executing query: ${queryPath} with params: ${_truncateLog(params)}`);
 
   try {
     const [rows] = await pool.execute(query, params);
 
-    Log.debug('[SQL]', `Query ${queryIdentifier} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
+    Log.debug('[SQL]', `Query ${queryPath} successful, affected rows: ${rows.affectedRows || rows.length || 0}`);
 
     return rows;
   } catch (err) {
     const errorDetails = `${err.message}${err.code ? ` (code: ${err.code})` : ''}${err.errno ? ` (errno: ${err.errno})` : ''}`;
-    await Log.error('[SQL]', `Query failed: ${queryIdentifier} - ${errorDetails}`);
+    await Log.error('[SQL]', `Query failed: ${queryPath} - ${errorDetails}`);
     await Log.error('[SQL]', `SQL: ${_truncateLog(query)}`);
     await Log.error('[SQL]', `Params: ${_truncateLog(params)}`);
     await Log.error('[SQL]', `Error: ${err.message}`);
