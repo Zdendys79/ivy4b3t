@@ -134,18 +134,18 @@ export class GroupExploreAction {
         const groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_group_id}`;
         
         Log.info(`[${user.id}]`, `🎯 Naviguji na skupinu: ${randomGroup.name}`);
-        await fbBot.page.goto(groupUrl, { waitUntil: 'networkidle' });
+        await fbBot.page.goto(groupUrl, { waitUntil: 'networkidle2' });
         await wait.delay(2000, 4000);
         return true;
       }
 
       // Fallback - zkus hledat přes FB search
       Log.info(`[${user.id}]`, '🔍 Hledám skupiny přes FB search...');
-      await fbBot.page.goto('https://www.facebook.com/search/groups/', { waitUntil: 'networkidle' });
+      await fbBot.page.goto('https://www.facebook.com/search/groups/', { waitUntil: 'networkidle2' });
       await wait.delay(3000, 5000);
       
       // Klikni na první dostupnou skupinu
-      const groupLinks = await fbBot.page.$$('a[href*="/groups/"]');
+      const groupLinks = await fbBot.page.$('a[href*="/groups/"]');
       if (groupLinks.length > 0) {
         await groupLinks[0].click();
         await wait.delay(2000, 4000);

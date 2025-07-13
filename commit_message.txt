@@ -1,7 +1,9 @@
-chore(debug): Přidání diagnostiky pro `invasive_lock`
+fix: Oprava pádu v `group_explore` a chyba v logu
 
-Tato změna nepřináší opravu, ale přidává klíčové diagnostické logování pro odhalení příčiny, proč se nenastavuje časový zámek mezi invazivními akcemi.
+Tato oprava řeší dva problémy: pád aplikace kvůli neplatné hodnotě v `page.goto` a chybně formátovaný diagnostický log.
 
-- **chore(debug): Logování objektu akce v `runAction`**
-  - Do `iv_actions.js` byl přidán log, který vypíše celý objekt `pickedAction` těsně před kontrolou, zda má být nastaven `invasive_lock`.
-  - To nám umožní přesně zjistit, zda se vlastnost `invasive` správně předává z "kola štěstí" a proč podmínka pro nastavení zámku selhává.
+- **fix(action): Opravena neplatná hodnota `waitUntil: networkidle`**
+  - V akci `group_explore` byla hodnota `networkidle` nahrazena za správnou `networkidle2`, což zabrání pádu při navigaci na stránku.
+
+- **fix(debug): Opravena chyba formátování v diagnostickém logu**
+  - Odstraněn nadbytečný apostrof, který způsoboval chybné formátování logovací zprávy.
