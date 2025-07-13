@@ -27,7 +27,6 @@ export async function findByText(page, text, options = {}) {
 
     const { match = 'exact', timeout = 3000 } = options;
 
-    // Univerzální XPath, který hledá v jakémkoliv elementu
     const textSelector = {
       exact: `normalize-space(.) = "${text}"`,
       contains: `contains(normalize-space(.), "${text}")`,
@@ -37,14 +36,13 @@ export async function findByText(page, text, options = {}) {
     const xpath = `//*[${textSelector}]`;
     const selector = `xpath/${xpath}`;
 
-    // Počkáme na element a pak vrátíme všechny, které odpovídají
     await page.waitForSelector(selector, { timeout }).catch(() => {});
     const elements = await page.$(selector);
     return elements || [];
 
   } catch (err) {
     await Log.warn(`[FB_SUPPORT]', 'findByText selhalo pro "${text}":`, err);
-    return []; // Vždy vrátit pole
+    return [];
   }
 }
 

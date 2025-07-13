@@ -1,7 +1,5 @@
-fix(logic): Overhaul group interaction logic
+revert(fb-support): Simplify findByText to its original robust form
 
-- Completely refactored the `handleSingleUtioPost` function in `iv_actions.js` to follow a new, more robust decision tree: analyze first, then act.
-- The system now performs a full page analysis upon entering a group and decides the next step based on the analysis result (e.g., post, join, switch to discussion, or block the group).
-- The `findByText` function in `iv_fb_support.js` was generalized to search for text in any element (`*`), removing the restriction to specific tag types, which makes it more flexible.
-- The `_verifyGroupPosting` method in `iv_page_analyzer.class.js` was enhanced to detect more variants of the "Discussion" tab.
-- This new logic prevents the bot from getting stuck, correctly identifies when a group requires joining, and handles cases where switching to a discussion tab is necessary before posting.
+- Reverted the `findByText` function to a simpler, more reliable version that searches for text within any element (`*`).
+- This change removes the complex and restrictive element-type filtering (`button`, `div[role=button]`, etc.) that was recently introduced and proved to be less effective.
+- The function now relies solely on XPath text matching (`normalize-space(.)`), which was the original, working approach. This increases the chances of finding the target element regardless of its tag, fixing the issues where "Discussion" or "Join Group" buttons were not found.
