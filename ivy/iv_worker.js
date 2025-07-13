@@ -22,7 +22,7 @@ import { db } from './iv_sql.js'
 import { FBBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
 import { UIBot } from './iv_ui.class.js';
-import { getRandomAction, initInvasiveLock, clearInvasiveLock } from './iv_wheel.js';
+import { getRandomAction, initInvasiveLock, clearInvasiveLock, hasInvasiveLock } from './iv_wheel.js';
 import { runAction, getActionRequirements } from './iv_actions.js';
 import { Log } from './iv_log.class.js';
 import { IvMath } from './iv_math.class.js';

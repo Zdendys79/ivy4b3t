@@ -1087,17 +1087,23 @@ export class FBBot {
           const button = buttons[0]; // Vezmeme první nalezený
           Log.info(`[FB] Našel jsem tlačítko: "${targetText}"`);
           
-          await wait.delay(800 + Math.random() * 1200);
-          await button.click();
-          Log.info(`[FB] Kliknuto na "${targetText}".`);
+          try {
+            await wait.delay(800 + Math.random() * 1200);
+            await button.click();
+            Log.info(`[FB] Kliknuto na "${targetText}".`);
 
-          await wait.delay(10 * wait.timeout(), false);
+            await wait.delay(10 * wait.timeout(), false);
 
-          // Kontrola úspěchu - ověříme, zda tlačítko zmizelo
-          const stillExists = await fbSupport.findByText(this.page, targetText, { match: 'exact', timeout: 1000 });
-          if (stillExists.length === 0) {
-            Log.success(`[FB] Příspěvek úspěšně odeslán!`);
-            return true;
+            // Kontrola úspěchu - ověříme, zda tlačítko zmizelo
+            const stillExists = await fbSupport.findByText(this.page, targetText, { match: 'exact', timeout: 1000 });
+            if (stillExists.length === 0) {
+              Log.success(`[FB] Příspěvek úspěšně odeslán!`);
+              return true;
+            } else {
+              Log.warn(`[FB] Tlačítko "${targetText}" stále existuje po kliknutí, pokračuji na další...`);
+            }
+          } catch (clickErr) {
+            Log.warn(`[FB] Chyba při kliknutí na "${targetText}": ${clickErr.message}`);
           }
         }
       }
