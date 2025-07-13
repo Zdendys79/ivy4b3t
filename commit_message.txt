@@ -1,9 +1,8 @@
-fix(fb): Replace deprecated _findByText with JavaScript findByText
+fix(fb): Pass missing newPostTexts parameter to findPostElementWithStrategy
 
-- Replace all internal _findByText calls with fbSupport.findByText
-- Fix array destructuring assignments to work with new findByText API
-- Ensure cookies, error detection, and all FB operations use new JavaScript methods
-- Improve consistency across all text search operations
+- Fix "Cannot read properties of undefined (reading 'join')" error after clicking Discussion button
+- Add missing newPostTexts parameter when calling findPostElementWithStrategy after discussion navigation
+- This resolves the issue where post creation failed despite finding correct elements
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

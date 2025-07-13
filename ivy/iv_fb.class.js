@@ -829,7 +829,7 @@ export class FBBot {
         await wait.delay(2000, 3000); // Čekání na načtení
         
         // Opakuj hledání po přechodu do diskuze
-        result = await this.findPostElementWithStrategy('starts-with');
+        result = await this.findPostElementWithStrategy('starts-with', newPostTexts);
         if (result) {
           this.newThingElement = result.handle;
           Log.success('[FB]', `Element nalezen po přechodu do diskuze: "${result.text}"`);
