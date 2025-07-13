@@ -1,9 +1,9 @@
-fix: Oprava detekce stavu stránky a ukončovacího cyklu
+fix(analyzer): Oprava volání Node.js funkce z kontextu prohlížeče
 
-Tato oprava řeší dva kritické problémy: nespolehlivou detekci cookie lišty a nesprávné chování aplikace po interakci s debuggerem.
+Tato oprava řeší `SyntaxError: Unexpected reserved word`, který bránil spuštění aplikace.
 
-- **fix(analyzer): Změněno pořadí kontrol ve `_determineOverallStatus`**
-  - Byla opravena logika, která způsobovala, že stav `not_logged_in` byl vyhodnocen dříve než `cookie_consent_required`. Nyní se nejprve kontrolují stavy vyžadující akci (cookies, reklamy) a až poté stav přihlášení, což zajišťuje správnou detekci.
-
-- **fix(worker): Vylepšeno zpracování výstupu z debuggeru**
-  - Hlavní `catch` blok ve `worker.js` nyní správně reaguje nejen na volbu 'q' (quit), ale i na 's' (stop+report). V obou případech je cyklus `tick()` korektně ukončen, což zabraňuje nechtěným restartům a zacyklení.
+- **fix(analyzer): Opravena definice `_performGroupAnalysis`**
+  - Metoda byla označena jako `async`, což umožňuje správné použití `await` uvnitř ní.
+- **refactor(analyzer): Přesunuta logika hledání tlačítka mimo `evaluate`**
+  - Volání `fbSupport.findByText` bylo přesunuto mimo blok `page.evaluate`, protože `evaluate` běží v kontextu prohlížeče a nemá přístup k Node.js funkcím.
+  - Tím je zajištěna správná funkčnost detekce tlačítka "Přidat se ke skupině".
