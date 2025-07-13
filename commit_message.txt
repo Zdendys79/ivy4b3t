@@ -1,11 +1,7 @@
-fix(worker): Oprava parsování Git informací
+fix(actions): Oprava chyby při nastavování invasive_lock
 
-Tato oprava řeší pád aplikace `Unexpected end of JSON input`, který nastával při pokusu o zjištění aktuální Git větve.
+Tato oprava řeší pád aplikace, který nastával po úspěšném dokončení invazivní akce.
 
-- **feat(git): Přidána funkce `get_git_info_json` do `git-common.sh`**
-  - Původní funkce vracela prostý text, který nebylo možné parsovat jako JSON.
-  - Nová funkce vrací informace o repozitáři ve správném JSON formátu.
-
-- **fix(support): Aktualizována funkce `getGitInfo` v `iv_support.js`**
-  - Funkce nyní volá novou `get_git_info_json` a obsahuje robustnější ošetření chyb.
-  - V případě selhání parsování nebo chyby skriptu nyní vrátí výchozí objekt, aby se zabránilo pádu celé aplikace.
+- **fix(db): Doplněna chybějící funkce `getDefinitionByCode` do `QueryBuilderu`**
+  - Funkce, která načítá definici akce z databáze, chyběla v `iv_querybuilder.class.js`, což způsobovalo chybu `is not a function`.
+  - Doplněním této funkce je nyní možné správně ověřit, zda je akce invazivní, a nastavit potřebný `invasive_lock`.

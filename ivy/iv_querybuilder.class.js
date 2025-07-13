@@ -110,6 +110,10 @@ export class QueryBuilder {
     return await this.safeExecute('actions.initPlan', [userId]);
   }
 
+  async getDefinitionByCode(actionCode) {
+    return await this.safeQueryFirst('actions.getDefinitionByCode', [actionCode]);
+  }
+
   // =========================================================
   // LIMITS - Správa limitů a kvót
   // =========================================================
