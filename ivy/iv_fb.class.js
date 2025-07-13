@@ -348,16 +348,26 @@ export class FBBot {
   async acceptCookies() {
     try {
       const cookieBtnText = 'Povolit soubory cookie';
-      const cookieButtons = await fbSupport.findByText(this.page, cookieBtnText, { match: 'exact' });
+      Log.info(`[FB] Hledám tlačítko pro cookies: "${cookieBtnText}"`);
+
+      // Získání všech potenciálních tlačítek na stránce
+      const buttons = await this.page.$('div[role="button"], button');
       
-      if (cookieButtons && cookieButtons.length > 0) {
-        await cookieButtons[0].click();
-        await wait.delay(wait.timeout());
-        Log.info(`[FB] Cookie banner odkliknut tlačítkem: "${cookieBtnText}"`);
-        return true;
+      for (const button of buttons) {
+        try {
+          const text = await this.page.evaluate(el => el.textContent.trim(), button);
+          if (text === cookieBtnText) {
+            Log.info(`[FB] Nalezeno tlačítko "${cookieBtnText}", provádím klik...`);
+            await button.click();
+            await wait.delay(3000); // Pauza po kliknutí
+            return true;
+          }
+        } catch (e) {
+          // Element mohl zmizet, pokračujeme dál
+        }
       }
 
-      Log.info(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno.`);
+      Log.warn(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno.`);
       return false;
 
     } catch (err) {

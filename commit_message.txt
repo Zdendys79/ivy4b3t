@@ -1,11 +1,8 @@
-fix: Oprava XPath a logiky ukončení z debuggeru
+refactor(fb): Sjednocení a oprava metody `acceptCookies`
 
-Tato oprava řeší dva kritické problémy: chybnou syntaxi v XPath dotazu a nesprávné chování aplikace po žádosti o ukončení z debuggeru.
+Tato oprava řeší přetrvávající problém s detekcí a odkliknutím cookie lišty.
 
-- **fix(support): Opravena syntaxe XPath ve `findByText`**
-  - Původní XPath výraz pro hledání více typů elementů byl syntakticky chybný.
-  - Byl nahrazen robustní a platnou variantou `//*[self::button or self::div...]`, která spolehlivě vyhledá požadované interaktivní prvky.
-
-- **fix(worker): Správné zpracování `quit` příkazu z debuggeru**
-  - Hlavní `catch` blok ve funkci `tick()` nyní kontroluje návratovou hodnotu z debuggeru.
-  - Pokud uživatel zvolí 'q' (quit), `tick()` se okamžitě ukončí a nepokračuje na další čekání, čímž se zabrání "závodu" s `gracefulShutdown` handlerem a je zajištěno čisté ukončení aplikace.
+- **refactor(fb): Přepsána metoda `acceptCookies`**
+  - Metoda byla kompletně přepsána, aby používala stejný, osvědčený princip prohledávání DOMu, jaký se úspěšně používá pro hledání jiných tlačítek (např. "Zveřejnit").
+  - Místo spoléhání na jeden komplexní XPath dotaz nyní iteruje přes všechny potenciální klikatelné prvky a hledá ten se správným textem.
+  - Tím se výrazně zvyšuje spolehlivost a odstraňuje nekonzistence mezi detekcí problému a jeho řešením.
