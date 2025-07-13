@@ -1,7 +1,10 @@
-fix(worker): Oprava pádu při startu prohlížeče (SingletonLock)
+refactor(worker): Sjednocení a oprava logiky pro mazání SingletonLock
 
-Tato oprava řeší pád aplikace `Failed to create SingletonLock`, který nastával, pokud předchozí běh programu nebyl správně ukončen.
+Tato oprava vrací předchozí duplicitní kód a správně upravuje již existující logiku pro řešení problému se souborem `SingletonLock`.
 
-- **fix(worker): Přidáno proaktivní mazání `SingletonLock`**
-  - Ve funkci `prepareBrowser` v `iv_worker.js` je nyní před spuštěním prohlížeče kontrolována existence souboru `SingletonLock`.
-  - Pokud soubor existuje, je smazán. Tím se zabrání chybě, která bránila spuštění nové instance prohlížeče a způsobovala pád aplikace.
+- **revert(worker): Odstraněn duplicitní kód pro mazání zámku**
+  - Zrušena předchozí změna, která zbytečně přidávala novou, téměř identickou logiku.
+
+- **fix(worker): Opravena původní logika pro mazání `SingletonLock`**
+  - Již existující `try...catch` blok byl upraven tak, aby nejprve ověřil existenci souboru `SingletonLock` pomocí `fs.existsSync()` a teprve poté se ho pokusil smazat.
+  - Tímto se předchází zbytečným chybám a sjednocuje se chování na správný, robustní postup.

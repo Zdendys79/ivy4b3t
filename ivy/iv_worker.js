@@ -782,12 +782,16 @@ async function prepareBrowser(user) {
   const lockFile = path.join(userDataDir, profileDir, 'SingletonLock');
 
   try {
+    // Nejprve zkontrolujeme, zda soubor existuje, a až pak se ho pokusíme smazat.
     if (fs.existsSync(lockFile)) {
       fs.unlinkSync(lockFile);
       Log.debug('[WORKER]', `Odstraněn existující SingletonLock pro ${profileDir}.`);
     }
   } catch (err) {
-    await Log.warn('[WORKER]', `Chyba při mazání SingletonLock: ${err.message}`);
+    // Chybu logujeme pouze pokud to není "soubor neexistuje", což je v pořádku.
+    if (err.code !== 'ENOENT') {
+      await Log.warn('[WORKER]', `Chyba při mazání SingletonLock: ${err.message}`);
+    }
   }
 
   const browser = await puppeteer.launch({
