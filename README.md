@@ -163,6 +163,7 @@
 | `manage-git.sh`           | Správa git repozitáře a základní operace                       |
 | `update-node-env.sh`      | Samostatný skript pro aktualizaci NVM, Node.js a NPM.          |
 | `commit.ps1`              | PowerShell commit s verzováním a Notepad editorem              |
+| `commit.sh`               | Batch commit skript, pro odesílání commitů na vývojovém PC     |
 | `create_links.bat`        | Vytváření symbolických linků na vývojových PC                  |
 | `pre-commit`              | Git hook – automatizace před commitem                          |
 | `post-commit`             | Git hook – automatizace po commitu                             |

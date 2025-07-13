@@ -34,7 +34,7 @@ At the end of each task (solution), create a draft commit message in English.
 1
 ---
 ### Git Commit Process - ABSOLUTNÍ PRIORITA!
-When user says "commitni" OR when making ANY changes to source code, configuration files, or installation scripts, use ONLY the automated commit script:
+When commit is requested OR when making ANY changes to source code, configuration files, or installation scripts, use ONLY the automated commit script:
 
 ```bash
 # ALWAYS use this exact command - NO EXCEPTIONS!
@@ -57,7 +57,7 @@ When user says "commitni" OR when making ANY changes to source code, configurati
 
 **The script automatically performs these steps:**
 1. **Check for changes** - detects uncommitted changes
-2. **Pull latest** - updates from remote repository  
+2. **Pull latest** - updates from remote repository
 3. **Use commit message file** - reads from provided file parameter
 4. **Add all changes** - stages all modifications
 5. **Create commit** - with hooks running automatically
