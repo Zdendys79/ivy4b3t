@@ -1,6 +1,7 @@
-fix: Oprava chyby formátování v diagnostickém logu
+refactor(analyzer): Zpřesnění detekce přihlašovací stránky
 
-Tato drobná oprava řeší chybně formátovaný výstup v diagnostickém logu.
+Tato oprava vylepšuje způsob, jakým `PageAnalyzer` detekuje neočekávané zobrazení přihlašovací stránky.
 
-- **fix(debug): Opravena syntaxe v `Log.debug`**
-  - V `iv_worker.js` byl opraven chybějící backtick a nadbytečný apostrof v logovací zprávě, která vypisuje požadavky na akci.
+- **refactor(analyzer): Detekce přihlašovacího tlačítka podle textu**
+  - Místo spoléhání na nestabilní `data-testid` atribut nyní analyzátor používá osvědčenou funkci `findByText` pro nalezení tlačítka s přesným textem "Přihlásit se".
+  - Tím se zvyšuje spolehlivost detekce a snižuje riziko selhání při budoucích změnách designu Facebooku.

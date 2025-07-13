@@ -677,39 +677,16 @@ export class PageAnalyzer {
       const pageData = await this.page.evaluate(() => {
         const bodyText = document.body.textContent.toLowerCase();
 
-        // Detekce přihlašovacího tlačítka
-        const hasLoginButton = document.querySelector('button[data-testid="royal-login-button"]') !== null;
-
-        // Detekce tlačítek pro přidání ke skupině
-        const joinButtons = Array.from(document.querySelectorAll('*')).filter(el => {
-          const text = el.textContent?.toLowerCase() || '';
-          return text.includes('přidat se ke skupině') ||
-                 text.includes('join group') ||
-                 text.includes('join this group') ||
-                 text.includes('připojit se ke skupině');
-        });
-
-        // Detekce polí pro psaní
-        const writeFields = document.querySelectorAll([
-          '[placeholder*="Co máte na mysli"]',
-          '[placeholder*="What\'s on your mind"]',
-          '[aria-label*="příspěvek"]',
-          '[data-testid="status-attachment-mentions-input"]'
-        ].join(','));
-
         return {
           bodyText: bodyText,
-          hasLoginButton: hasLoginButton,
-          hasJoinButton: joinButtons.length > 0,
-          hasWriteField: writeFields.length > 0,
-          joinButtonCount: joinButtons.length
         };
       });
 
       const detectedPatterns = [];
 
-      // Speciální detekce pro přihlašovací stránku
-      if (pageData.hasLoginButton) {
+      // Speciální detekce pro přihlašovací stránku pomocí spolehlivější metody
+      const loginButton = await fbSupport.findByText(this.page, 'Přihlásit se', { match: 'exact' });
+      if (loginButton.length > 0) {
         detectedPatterns.push({
             detected: true,
             reason: 'Nalezen přihlašovací formulář v neočekávaném kroku.',
