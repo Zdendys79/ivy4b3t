@@ -103,6 +103,7 @@ When writing answers, contributions, and responses to requests, you ALWAYS and u
 
 ### Task Completion
 At the end of each task (solution), create a draft commit message in English.
+After a commit, no further automatic actions will be taken unless explicitly requested by the user.
 
 ## Project Overview
 

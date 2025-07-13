@@ -20,9 +20,9 @@ const __dirname = path.dirname(__filename);
 
 let sql_setup;
 
-// Exclusively use environment variables for database connection on this development machine.
+// Prioritize environment variables for database connection
 if (process.env.CLAUDE_DB_USER && process.env.CLAUDE_DB_PASS) {
-  // Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
+  Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
   sql_setup = {
     host: process.env.CLAUDE_DB_HOST || 'localhost',
     user: process.env.CLAUDE_DB_USER,
@@ -30,8 +30,14 @@ if (process.env.CLAUDE_DB_USER && process.env.CLAUDE_DB_PASS) {
     database: process.env.CLAUDE_DB_NAME || 'ivy'
   };
 } else {
-  Log.error('[SQL]', 'CHYBA: Pro připojení k databázi jsou vyžadovány systémové proměnné (CLAUDE_DB_USER, CLAUDE_DB_PASS).');
-  process.exit(1);
+  Log.info('[SQL]', 'Systémové proměnné nenalezeny, zkouším sql_config.json.');
+  const configPath = path.join(__dirname, 'sql', 'sql_config.json');
+  if (fs.existsSync(configPath)) {
+    sql_setup = JSON.parse(fs.readFileSync(configPath));
+  } else {
+    Log.error('[SQL]', 'CHYBA: Nebyly nalezeny systémové proměnné ani soubor sql_config.json.');
+    process.exit(1);
+  }
 }
 
 

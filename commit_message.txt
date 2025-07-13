@@ -1,9 +1,6 @@
-refactor(config): Centralizace konfigurace do databáze
+fix(db): Restore flexible database connection logic
 
-- Migrace všech nastavení z `config.json` do databázové tabulky `variables`.
-- Vytvořen nový centrální modul `ivy/iv_config.js` pro načítání a cachování konfigurace z databáze.
-- Refaktorovány všechny moduly (`iv_actions`, `iv_fb`, `iv_log`, `iv_wheel`, `git-common.sh`), aby používaly nový konfigurační modul místo přímého čtení `config.json`.
-- Odstraněn zastaralý soubor `config.json` a jednorázový migrační skript.
-- Upraven `iv_sql.js`, aby pro připojení k DB používal výhradně systémové proměnné a byl odstraněn fallback na `sql_config.json`.
-- Zjednodušen `iv_log.class.js` tak, aby logoval všechny úrovně a byl nezávislý na konfiguraci.
-- Upraven `start.sh`, aby vždy používal větev `production`.
+- Re-implemented the database connection logic in `iv_sql.js` to correctly handle both development and production environments.
+- The system now prioritizes environment variables (`CLAUDE_DB_USER`, `CLAUDE_DB_PASS`) for the connection.
+- If environment variables are not found, it falls back to using the `sql_config.json` file, which is necessary for production VMs.
+- This fixes a critical bug that caused the application to crash in environments without the database environment variables set.
