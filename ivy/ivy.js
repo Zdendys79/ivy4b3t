@@ -61,7 +61,6 @@ try {
         process.exit(1);
       }
       await workerTick();
-      await delay(60000);
     } catch (err) {
       await Log.error('[IVY]', err);
       await delay(60000);
