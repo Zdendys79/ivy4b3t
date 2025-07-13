@@ -347,6 +347,9 @@ export class FBBot {
       await this.page.goto('https://FB.com', { waitUntil: 'domcontentloaded' });
       await wait.delay(10000, false);
 
+      // NOVÉ: Ošetření obrazovky pro souhlas s reklamami
+      await this.handleAdConsentScreen();
+
       // Inicializuj analyzer po načtení stránky
       this.initializeAnalyzer();
 
@@ -459,6 +462,32 @@ export class FBBot {
       }
     } catch (err) {
       console.warn(`[FB] Cookie banner error: ${err}`);
+    }
+  }
+
+  async handleAdConsentScreen() {
+    try {
+      Log.info('[FB]', 'Kontroluji obrazovku souhlasu s reklamami...');
+      const consentText = 'Zkontrolujte, jestli můžeme vaše data zpracovávat pro účely reklamy';
+      const [consentElement] = await this._findByText(consentText, { timeout: 3000, match: 'contains' });
+
+      if (consentElement) {
+        Log.warn('[FB]', 'Detekována obrazovka souhlasu s reklamami. Pokouším se ji odkliknout.');
+        // Zde by byla logika pro kliknutí na "Další", "Přijmout" atd.
+        // Prozatím jen logujeme a čekáme, abychom viděli, co se stane.
+        // V budoucnu zde bude implementována plná logika.
+        await Log.info('[FB]', 'Logika pro odkliknutí zatím není implementována, ale obrazovka byla detekována.');
+        // Příklad, jak by to mohlo vypadat:
+        // await this._clickByText('Další');
+        // await wait.delay(2000);
+        // await this._clickByText('Přijmout vše');
+        return true;
+      }
+      Log.info('[FB]', 'Obrazovka souhlasu s reklamami nenalezena.');
+      return false;
+    } catch (err) {
+      Log.warn(`[FB] Chyba při ošetřování obrazovky souhlasu s reklamami: ${err.message}`);
+      return false;
     }
   }
 

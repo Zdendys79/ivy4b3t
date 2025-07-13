@@ -1,15 +1,11 @@
-refactor(core): Optimalizace a zjednodušení `invasive_lock`
+feat(fb): Detekce obrazovky souhlasu s reklamami
 
-Tato oprava zjednodušuje a zefektivňuje způsob, jakým systém zjišťuje, zda je akce invazivní, a odstraňuje zbytečné dotazy do databáze.
+Tato změna přidává základní detekci pro novou obrazovku "Zkontrolujte, jestli můžeme vaše data zpracovávat pro účely reklamy", která se objevuje po přihlášení a způsobovala pád aplikace.
 
-- **refactor(db): Rozšířen SQL dotaz `getUserActionsWithLimits`**
-  - Dotaz nyní vrací i příznak `invasive` přímo z tabulky `action_definitions`.
+- **feat(fb): Přidána funkce `handleAdConsentScreen`**
+  - Do `iv_fb.class.js` byla přidána nová funkce, která aktivně hledá text specifický pro tuto obrazovku.
+  - Tím se zabrání `TimeoutError` při čekání na standardní prvky domovské stránky.
 
-- **refactor(wheel): Odstraněno zbytečné volání `isInvasiveAction`**
-  - Kolo štěstí (`iv_wheel.js`) nyní získává informaci o invazivnosti akce přímo z dat načtených na začátku, místo aby se znovu dotazovalo databáze pro každou akci.
-  - Celý objekt s detaily akce (včetně `invasive`) je nyní předáván dál.
-
-- **refactor(actions): Odstraněn zbytečný dotaz v `runAction`**
-  - Funkce `runAction` si již nemusí sama zjišťovat, zda je akce invazivní. Tuto informaci dostane v parametru od `iv_worker.js`.
-
-Výsledkem je čistší kód a snížení počtu SQL dotazů při každém výběru akce.
+- **refactor(fb): Integrována detekce do procesu `openFB`**
+  - Nová funkce je volána ihned po načtení hlavní stránky Facebooku, což umožňuje včasnou reakci na tuto novou obrazovku.
+  - I když plná logika pro odklikání zatím není implementována, tato změna zabrání pádu a umožní další analýzu a vývoj.
