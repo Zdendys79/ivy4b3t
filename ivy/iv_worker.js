@@ -782,12 +782,12 @@ async function prepareBrowser(user) {
   const lockFile = path.join(userDataDir, profileDir, 'SingletonLock');
 
   try {
-    fs.unlinkSync(lockFile);
-    Log.debug('[WORKER]', `SingletonLock pro ${profileDir} odstraněn.`);
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      await Log.warn('[WORKER]', `Chyba při mazání SingletonLock: ${err.message}`);
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile);
+      Log.debug('[WORKER]', `Odstraněn existující SingletonLock pro ${profileDir}.`);
     }
+  } catch (err) {
+    await Log.warn('[WORKER]', `Chyba při mazání SingletonLock: ${err.message}`);
   }
 
   const browser = await puppeteer.launch({

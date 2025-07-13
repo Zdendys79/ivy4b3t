@@ -1,6 +1,7 @@
-fix(core): Oprava syntaktické chyby v FBBot
+fix(worker): Oprava pádu při startu prohlížeče (SingletonLock)
 
-Tato oprava řeší `SyntaxError: Missing catch or finally after try`, který bránil spuštění aplikace.
+Tato oprava řeší pád aplikace `Failed to create SingletonLock`, který nastával, pokud předchozí běh programu nebyl správně ukončen.
 
-- **fix(fb): Doplněn chybějící `catch` blok ve funkci `acceptCookies`**
-  - V souboru `iv_fb.class.js` byl nalezen a opraven osamocený `try` blok, který způsoboval pád Node.js při parsování souboru.
+- **fix(worker): Přidáno proaktivní mazání `SingletonLock`**
+  - Ve funkci `prepareBrowser` v `iv_worker.js` je nyní před spuštěním prohlížeče kontrolována existence souboru `SingletonLock`.
+  - Pokud soubor existuje, je smazán. Tím se zabrání chybě, která bránila spuštění nové instance prohlížeče a způsobovala pád aplikace.
