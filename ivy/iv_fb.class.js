@@ -346,11 +346,8 @@ export class FBBot {
       await this.bringToFront();
       await this.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
       await wait.delay(2000, 3000); // Krátká pauza na stabilizaci
-
-      this.initializeAnalyzer();
-      Log.info('[FB]', 'Stránka FB byla úspěšně otevřena a analyzátor inicializován.');
+      Log.info('[FB]', 'Stránka FB byla úspěšně otevřena.');
       return true;
-
     } catch (err) {
       await Log.error('[FB]', `Chyba při otevírání stránky Facebooku: ${err.message}`);
       return false;

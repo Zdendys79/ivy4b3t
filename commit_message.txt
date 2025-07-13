@@ -1,7 +1,10 @@
-fix(worker): Oprava `ReferenceError` při zpracování UI příkazu
+refactor(core): Oddělení analýzy od UI režimu
 
-Tato oprava řeší `ReferenceError: result is not defined`, který způsoboval pád aplikace při nalezení UI příkazu.
+Tato oprava implementuje správnou architektonickou myšlenku, kdy se v režimu UI příkazu neprovádí automatická analýza a oprava stavu stránky.
 
-- **fix(worker): Opraveno předávání parametrů v `tick()`**
-  - Při volání `executeUICommand` a `executeUserActionCycle` byla použita neexistující proměnná `result` místo správné `uiResult`.
-  - Chyba byla opravena, což zajišťuje správné předání instance prohlížeče a kontextu do dalších funkcí.
+- **refactor(worker): Podmíněné spouštění analýzy**
+  - Logika pro analýzu stránky a následné řešení stavů (cookies, reklamy, přihlášení) v `initializeRequiredServices` je nyní obalena podmínkou, která zajistí, že se provede pouze v běžném pracovním cyklu, nikoliv při zpracování UI příkazu.
+  - Tím je zajištěno, že UI příkaz `call_user` skutečně pouze otevře prohlížeč a přihlásí uživatele, čímž připraví čisté prostředí pro manuální ladění.
+
+- **refactor(fb): Zjednodušení `openFB`**
+  - Metoda `openFB` byla finálně vyčištěna a nyní se stará výhradně o otevření URL adresy. Veškerá rozhodovací logika byla přesunuta do workeru.

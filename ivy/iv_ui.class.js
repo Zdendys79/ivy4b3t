@@ -64,7 +64,7 @@ export class UIBot {
       Log.info('[UI]', `Zpracovávám příkaz: ${command.command}`);
 
       // Označit příkaz jako přijatý
-      await db.uICommandAccepted(command.id);
+      await db.uiCommandAccepted(command.id);
 
       switch (command.command) {
         case 'print':
@@ -93,7 +93,7 @@ export class UIBot {
       }
 
       if (result) {
-        await db.uICommandSolved(command.id);
+        await db.uiCommandSolved(command.id);
         Log.success('[UI]', `Příkaz ${command.command} úspěšně dokončen`);
       } else {
         await Log.error('[UI]', `Příkaz ${command.command} se nezdařil`);

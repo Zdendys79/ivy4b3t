@@ -239,7 +239,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Inicializace potřebných služeb pro akci
-      const requirements = await getActionRequirements(actionCode);
+      const requirements = { needsFB: true, isUiContext: true };
       ({ fbBot, utioBot } = await initializeRequiredServices(
         user, context, requirements, fbBot, utioBot
       ));
@@ -418,7 +418,7 @@ async function executeUICommand(user, uiCommand, browser, context, browserClosed
       setDebugContext(user, fbBot.page);
     }
 
-    const fbOpenSuccess = await fbBot.openFB(user);
+    const fbOpenSuccess = await fbBot.openFB(user, false); // false = neanalyzovat stránku
     if (!fbOpenSuccess) {
       throw new Error('Failed to open Facebook page.');
     }
@@ -571,68 +571,67 @@ async function initializeRequiredServices(user, context, requirements, existingF
     // Inicializuj UTIO pouze pokud je potřeba a ještě není
     if (requirements.needsUtio && (!utioBot || !utioBot.isReady())) {
       Log.info(`[${user.id}]`, 'Inicializuji UTIO...');
-
       if (utioBot) await utioBot.close();
-
       utioBot = new UtioBot(context);
       if (!await utioBot.init() || !await utioBot.openUtio(user)) {
         throw new Error('UTIO initialization failed');
       }
-
       Log.success(`[${user.id}]`, 'UTIO úspěšně inicializováno');
     }
 
     // Inicializuj FB pouze pokud je potřeba a ještě není
     if (requirements.needsFB && (!fbBot || !fbBot.isReady())) {
       Log.info(`[${user.id}]`, 'Inicializuji FB...');
-
       if (fbBot) await fbBot.close();
-
       fbBot = new FBBot(context, user.id);
       if (!await fbBot.init() || !await fbBot.openFB(user)) {
         throw new Error('FB page open failed');
       }
-
+      
       // Set debug context for interactive debugger (always enabled)
       if (fbBot.page) {
         setDebugContext(user, fbBot.page);
       }
 
       // --- NOVÁ LOGIKA ZPRACOVÁNÍ STAVU STRÁNKY ---
-      let analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
-      Log.info(`[${user.id}]`, `Počáteční analýza stránky dokončena se stavem: ${analysis.status}`);
+      // Tato logika se nespouští pro UI příkazy, protože ty slouží k manuálnímu ladění
+      const isUiContext = requirements.isUiContext || false;
 
-      // Smyčka pro řešení speciálních stavů (cookies, reklamy)
-      let attempts = 0;
-      while (['cookie_consent_required', 'ad_consent_required'].includes(analysis.status) && attempts < 3) {
-        attempts++;
-        Log.warn(`[${user.id}]`, `Vyžadován mezikrok: ${analysis.status}. Pokus ${attempts}/3.`);
+      if (!isUiContext) {
+        fbBot.initializeAnalyzer();
+        let analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+        Log.info(`[${user.id}]`, `Počáteční analýza stránky dokončena se stavem: ${analysis.status}`);
 
-        if (analysis.status === 'cookie_consent_required') {
-          await fbBot.acceptCookies();
-        } else if (analysis.status === 'ad_consent_required') {
-          await fbBot.resolveAdConsentFlow();
+        // Smyčka pro řešení speciálních stavů (cookies, reklamy)
+        let attempts = 0;
+        while (['cookie_consent_required', 'ad_consent_required'].includes(analysis.status) && attempts < 3) {
+          attempts++;
+          Log.warn(`[${user.id}]`, `Vyžadován mezikrok: ${analysis.status}. Pokus ${attempts}/3.`);
+
+          if (analysis.status === 'cookie_consent_required') {
+            await fbBot.acceptCookies();
+          } else if (analysis.status === 'ad_consent_required') {
+            await fbBot.resolveAdConsentFlow();
+          }
+          
+          await wait.delay(2000, 3000); // Pauza po akci
+          analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+          Log.info(`[${user.id}]`, `Analýza po nápravě dokončena se stavem: ${analysis.status}`);
         }
         
-        await wait.delay(2000, 3000); // Pauza po akci
-        analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
-        Log.info(`[${user.id}]`, `Analýza po nápravě dokončena se stavem: ${analysis.status}`);
+        // Finální kontrola po všech pokusech
+        if (analysis.status !== 'ok' && !analysis.basic.isLoggedIn) {
+           Log.info(`[${user.id}]`, 'Uživatel není přihlášen, pokou��ím se o login...');
+           const loginSuccess = await fbBot.login(user);
+           if (!loginSuccess) {
+              throw new Error('FB login failed after handling special screens.');
+           }
+        } else if (analysis.status === 'ok' && analysis.basic.isLoggedIn) {
+           Log.success(`[${user.id}]`, 'Uživatel je již přihlášen a stránka je v pořádku.');
+        } else if (analysis.status !== 'ok') {
+          throw new Error(`FB initialization failed with final status: ${analysis.status}`);
+        }
       }
-      
-      // Finální kontrola po všech pokusech
-      if (analysis.status !== 'ok' && !analysis.basic.isLoggedIn) {
-         // Pokud nejsme přihlášeni a stránka není OK, zkusíme se přihlásit
-         Log.info(`[${user.id}]`, 'Uživatel není přihlášen, pokouším se o login...');
-         const loginSuccess = await fbBot.login(user);
-         if (!loginSuccess) {
-            throw new Error('FB login failed after handling special screens.');
-         }
-      } else if (analysis.status === 'ok' && analysis.basic.isLoggedIn) {
-         Log.success(`[${user.id}]`, 'Uživatel je již přihlášen a stránka je v pořádku.');
-      } else if (analysis.status !== 'ok') {
-        throw new Error(`FB initialization failed with final status: ${analysis.status}`);
-      }
-
       Log.success(`[${user.id}]`, 'FB úspěšně inicializován');
     }
 
