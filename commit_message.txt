@@ -1,9 +1,9 @@
-fix: Oprava volání Gitu a diagnostika inicializace botů
+fix: Oprava detekce Gitu a zpřesnění diagnostiky
 
-Tato oprava řeší dva problémy: přetrvávající chybu při získávání informací z Gitu a záhadné selhání inicializace UtioBota.
+Tato oprava řeší přetrvávající problém s detekcí Git větve a zpřesňuje diagnostické logování pro odhalení chyby s inicializací PageAnalyzeru.
 
-- **fix(git): Opraven způsob volání `get_git_info_json`**
-  - Volání ve funkci `getGitInfo` bylo upraveno tak, aby správně `source`nulo `git-common.sh` před spuštěním funkce. Tím je zajištěno, že skript vrátí očekávaný JSON výstup.
+- **fix(git): Opraveno předávání cesty k repozitáři**
+  - Volání `get_git_info_json` v `iv_support.js` nyní správně předává cestu k repozitáři, což by mělo finálně vyřešit problém s prázdným výstupem ze skriptu.
 
-- **chore(debug): Přidáno diagnostické logování do `initializeRequiredServices`**
-  - Do začátku funkce bylo přidáno logování, které vypíše vstupní požadavky a stav `utioBot`. To nám pomůže odhalit, proč se v některých případech nespustí jeho inicializace.
+- **chore(debug): Zpřesněno diagnostické logování**
+  - Starý diagnostický log byl odstraněn a nahrazen novým, který se zapisuje na správném místě (`executeUserActionCycle`) a poskytne nám přesné informace o tom, jaké požadavky jsou generovány pro každou akci.

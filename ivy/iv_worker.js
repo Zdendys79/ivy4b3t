@@ -239,7 +239,8 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Inicializace potřebných služeb pro akci
-      const requirements = { needsFB: true, isUiContext: true };
+      const requirements = await getActionRequirements(actionCode);
+      Log.debug(`[DIAGNOSTIC]', 'Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
       ({ fbBot, utioBot } = await initializeRequiredServices(
         user, context, requirements, fbBot, utioBot
       ));
@@ -576,8 +577,6 @@ async function waitWithHeartbeat(waitMinutes = null) {
 async function initializeRequiredServices(user, context, requirements, existingFbBot, existingUtioBot) {
   let fbBot = existingFbBot;
   let utioBot = existingUtioBot;
-
-  Log.debug('[DIAGNOSTIC]', `Vstup do initializeRequiredServices. Požadavky: ${JSON.stringify(requirements)}, existuje utioBot: ${!!utioBot}`);
 
   try {
     // Inicializuj UTIO pouze pokud je potřeba a ještě není

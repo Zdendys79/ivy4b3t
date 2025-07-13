@@ -29,9 +29,10 @@ import path from 'path';
  */
 export async function getGitInfo() {
   return new Promise((resolve) => {
-    const scriptPath = path.resolve('./git-common.sh');
-    // Správný způsob volání: spustit bash, v něm sourcnout skript a pak zavolat funkci
-    const command = `bash -c "source ${scriptPath} && get_git_info_json"`;
+    const repoDir = path.resolve(process.cwd(), '..'); // Předpokládáme, že skript běží z /ivy, takže repo je o úroveň výš
+    const scriptPath = path.resolve(process.cwd(), 'git-common.sh');
+    // Správný způsob volání: spustit bash, v něm sourcnout skript a pak zavolat funkci s cestou k repu
+    const command = `bash -c "source ${scriptPath} && get_git_info_json ${repoDir}"`;
     
     exec(command, (error, stdout, stderr) => {
       if (error) {
