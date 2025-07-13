@@ -38,19 +38,14 @@ export async function findByText(page, text, options = {}) {
 
     const selector = `xpath/${xpath}`;
 
-    try {
-      await page.waitForSelector(selector, { timeout });
-      return await page.$(selector) || [];
-    } catch (timeoutErr) {
-      try {
-        return await page.$(selector) || [];
-      } catch (err) {
-        return [];
-      }
-    }
+    // Sjednodušená a robustnější logika
+    await page.waitForSelector(selector, { timeout }).catch(() => {});
+    const elements = await page.$(selector);
+    return elements || [];
+
   } catch (err) {
     await Log.warn(`[FB_SUPPORT]', 'findByText selhalo pro "${text}":`, err);
-    return [];
+    return []; // Vždy vrátit pole
   }
 }
 

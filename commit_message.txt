@@ -1,13 +1,9 @@
-fix(worker): Oprava chování během `invasive_lock` cooldownu
+fix: Oprava detekce cookie banneru a stabilizace `findByText`
 
-Tato oprava řeší dva problémy: příliš dlouhý `invasive_lock` a nečinnost bota během tohoto cooldownu.
+Tato oprava řeší problém, kdy systém nedokázal najít a odkliknout cookie lištu, a zároveň opravuje nestabilitu v pomocné funkci.
 
-- **fix(config): Upravena délka `invasive_lock`**
-  - Hodnoty v `config.json` pro `posting_cooldown` byly opraveny na správný rozsah 120-240 sekund (2-4 minuty).
+- **fix(support): Zrobustněna funkce `findByText`**
+  - Funkce v `iv_fb_support.js` byla zjednodušena a ošetřena tak, aby za všech okolností vracela pole (i když prázdné), čímž se předchází chybě `TypeError: is not iterable`.
 
-- **feat(worker): Přidána neinvazivní aktivita během cooldownu**
-  - Hlavní cyklus ve `worker.js` byl upraven. Pokud kolo štěstí nevrátí žádnou akci z důvodu aktivního `invasive_lock`, worker nyní nuceně spustí obecnou neinvazivní aktivitu (např. prohlížení po dobu 60s).
-  - Tím je zajištěno, že bot nezůstane nečinný a jeho chování je přirozenější.
-
-- **refactor(actions): Exportována funkce `performNonInvasiveActivity`**
-  - Funkce byla zpřístupněna pro import, aby ji mohl worker používat.
+- **fix(fb): Zpřesněna detekce v `acceptCookies`**
+  - Metoda nyní hledá přesný text "Povolit soubory cookie", jak bylo požadováno, a byla zjednodušena pro vyšší spolehlivost.

@@ -667,7 +667,7 @@ export class PageAnalyzer {
         type: 'AD_CONSENT_REQUIRED'
       },
       {
-        texts: ['Povolit soubory cookie', 'Allow essential and optional cookies'],
+        texts: ['Povolit soubory cookie', 'Allow essential and optional cookies', 'povolit všechny soubory cookie'],
         reason: 'Vyžadován souhlas s cookies',
         type: 'COOKIE_CONSENT_REQUIRED'
       }
