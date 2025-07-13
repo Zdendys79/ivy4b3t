@@ -533,23 +533,14 @@ export class PageAnalyzer {
             info.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
         }
 
-        // Rozšířená detekce join tlač��tek - kontroluje text, aria-label i data atributy
-        const joinTexts = [
-          'přidat se ke skupině', 'join group', 'join this group', 'připojit se ke skupině', 
-          'požádat o členství', 'request to join', 'přidat se', 'join',
-          'požádat', 'request', 'členství', 'membership', 'požádat o připojení'
-        ];
+        // Přesná detekce tlačítka pro přidání se ke skupině.
+        const joinText = 'přidat se ke skupině';
         
         const joinButton = Array.from(document.querySelectorAll('div[role="button"], button, a[role="button"]')).find(el => {
-          const text = (el.textContent || '').toLowerCase();
-          const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
-          const dataTestId = (el.getAttribute('data-testid') || '').toLowerCase();
+          const text = (el.textContent || '').toLowerCase().trim();
+          const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase().trim();
           
-          // Kombinujeme všechny textové zdroje pro robustnější detekci
-          const allText = `${text} ${ariaLabel} ${dataTestId}`;
-          
-          // Hledáme klíčová slova a zároveň kontrolujeme, že se nejedná o tlačítko pro vytvoření skupiny
-          return joinTexts.some(joinText => allText.includes(joinText)) && !allText.includes('vytvořit');
+          return text === joinText || ariaLabel === joinText;
         });
 
         if (joinButton) {

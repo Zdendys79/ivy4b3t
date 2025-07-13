@@ -1,9 +1,8 @@
-fix(analyzer): Vylepšení detekce tlačítka "Přidat se ke skupině"
+refactor(analyzer): Zpřesnění detekce tlačítka "Přidat se ke skupině"
 
-Tato oprava řeší problém, kdy `PageAnalyzer` chybně vyhodnotil stav stránky jako "ok", i když uživatel nebyl členem skupiny a měl se k ní nejprve přidat.
+Tato oprava reaguje na upřesnění, že pro detekci tlačítka pro přidání do skupiny není potřeba hledat více variant textu.
 
-- **fix(analyzer): Zpřesněna detekce v `_performGroupAnalysis`**
-  - Byl rozšířen seznam klíčových slov pro detekci tlačítka pro přidání do skupiny.
-  - Byl vylepšen selektor pro prohledávání DOM, aby byl robustnější vůči změnám na Facebooku.
-  - Byla přidána dodatečná podmínka, která vylučuje tlačítka pro "vytvoření" skupiny, aby nedocházelo k falešným pozitivům.
-  - Tím je zajištěno, že analyzátor správně identifikuje stav, kdy je nutné se ke skupině připojit, a zabrání se tak následným chybám při pokusu o publikaci.
+- **refactor(analyzer): Zjednodušena detekce v `_performGroupAnalysis`**
+  - Odstraněn široký seznam klíčových slov.
+  - Detekce se nyní zaměřuje na přesnou shodu s textem "Přidat se ke skupině" v obsahu nebo v `aria-label` atributu.
+  - Tím se zvyšuje přesnost a snižuje riziko falešně pozitivních nálezů.
