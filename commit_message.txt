@@ -1,12 +1,12 @@
-feat(system): Implementace detekce a logování blokace účtů + oprava quit mechanismu
+fix(fb): Oprava cookie detekce a blokování účtů při login selhání
 
-Přidává automatickou detekci hlášení "Účet máte zablokovaný" a opravuje ukončování aplikace.
+Odstraňuje neexistující cookie detekci a přidává automatické blokování při FB login problémech.
 
-- **feat(fb): Rozšířena detekce blokovaných účtů**
-  - Přidána detekce textu "Účet máte zablokovaný" do _legacyAccountLockCheck()
-  - Automatické logování do system logu při detekci blokace
-  - Podporuje všechny varianty CZ/EN blocking hlášení
-- **fix(worker): Oprava quit mechanismu v interactive debuggeru**
-  - Quit request nyní správně ukončuje s exit kódem 99
-  - start.sh nyní správně detekuje uživatelský quit a nerestartuje
-  - Opraveno ve všech místech kde se zpracovává warnInteractive/errorInteractive
+- **fix(fb): Odebrána detekce neexistujícího "Povolit soubory cookie"**
+  - acceptCookies() nyní hledá pouze "Odmítnout volitelné soubory cookie"
+  - Eliminuje zbytečné warning hlášky o nenalezených tlačítkách
+- **feat(worker): Automatické blokování účtů při login selhání**
+  - Přidána detekce blokace před vyhozením "FB login failed" erroru
+  - Dočasné blokování účtů při opakovaném selhání FB přihlášení
+  - Prevence opakovaného výběru problematických účtů pomocí LOGIN_FAILURE typu
+  - Speciální zpracování "Account blocked during login" errorů

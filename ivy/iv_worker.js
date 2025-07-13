@@ -149,6 +149,28 @@ export async function tick() {
     await executeUserActionCycle(user);
 
   } catch (err) {
+    // Kontrola, zda error souvisí s blokací účtu - pokud ano, účet by už měl být zablokován výše
+    if (err.message && err.message.includes('Account blocked during login')) {
+      // Účet je už zablokován, nepokoušej se o další akce s tímto uživatelem
+      await Log.error('[WORKER]', `Přeskakuji zablokovaný účet: ${err.message}`);
+      await waitWithHeartbeat(5); // Delší pauza pro zablokované účty
+      return;
+    }
+    
+    // Dodatečná kontrola při "FB login failed" - možná nebyla detekována blokace
+    if (err.message && err.message.includes('FB login failed') && user) {
+      await Log.warn('[WORKER]', 'FB login selhal - označuji účet jako problematický a dočasně ho zablokuji');
+      try {
+        // Dočasné zablokování účtu kvůli problémům s přihlášením
+        await db.lockAccountWithReason(user.id, 'Opakované selhání FB přihlášení', 'LOGIN_FAILURE', os.hostname());
+        await Log.info('[WORKER]', `Účet ${user.id} dočasně zablokován kvůli login problémům`);
+        await waitWithHeartbeat(5); // Delší pauza
+        return;
+      } catch (lockErr) {
+        await Log.error('[WORKER]', `Chyba při blokování účtu: ${lockErr.message}`);
+      }
+    }
+    
     const userChoice = await Log.errorInteractive('[WORKER]', err);
     // Pokud uživatel zvolil 'q' (quit) nebo 's' (stop), přerušíme cyklus.
     if (userChoice === 'quit' || userChoice === true) {
@@ -655,6 +677,20 @@ async function initializeRequiredServices(user, context, requirements, existingF
            Log.info(`[${user.id}]`, 'Uživatel není přihlášen, pokou��ím se o login...');
            const loginSuccess = await fbBot.login(user);
            if (!loginSuccess) {
+              // Před vyhozením erroru zkontroluj, zda není účet zablokován
+              const blockInfo = await detectAccountBlock(fbBot, user);
+              if (blockInfo && blockInfo.locked) {
+                await Log.error(`[${user.id}]`, `🚨 DETEKOVÁN BAN BĚHEM LOGIN POKUSU: ${blockInfo.reason}`);
+                
+                // Zablokovat účet v databázi
+                await db.lockAccountWithReason(user.id, blockInfo.reason, blockInfo.type, os.hostname());
+                
+                // Zablokovat hostname
+                await handleNewAccountBlock(user, blockInfo.reason, blockInfo.type);
+                
+                throw new Error(`Account blocked during login: ${blockInfo.reason}`);
+              }
+              
               throw new Error('FB login failed after handling special screens.');
            }
         } else if (analysis.status === 'ok' && analysis.basic.isLoggedIn) {
