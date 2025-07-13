@@ -406,6 +406,7 @@ export const SYSTEM = {
   cleanupOldUserGroups: `
     DELETE FROM user_groups
     WHERE time < NOW() - INTERVAL ? DAY
+      AND (blocked_until IS NULL OR blocked_until <= NOW())
   `,
 
   // ===== CONFIGURATION =====

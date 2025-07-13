@@ -718,4 +718,35 @@ export class QueryBuilder {
     // Tento dotaz nevolá přes queryPath, ale přímo SQL, proto druhý parametr je pole
     return await this.safeQueryFirst(query, [userId, groupType]);
   }
+
+  async saveDiscoveredLinks(links, userId) {
+    if (!links || links.length === 0) {
+      return;
+    }
+    const values = links.map(link => [link, userId]);
+    return this.safeExecute('discovered_links.insertLinks', [values]);
+  }
+
+  async saveGroupExplorationDetails(analysis, userId) {
+    if (!analysis || !analysis.group || !analysis.group.isGroup) {
+      return;
+    }
+    const groupData = analysis.group;
+    const fbGroupId = analysis.url.split('/groups/')[1].split('/')[0];
+
+    return this.safeExecute('group_details.insertGroup', [
+      fbGroupId,
+      analysis.basic.title.split('|')[0].trim(),
+      groupData.member_count || 0,
+      groupData.description || null,
+      groupData.category || null,
+      groupData.privacy_type || null,
+      userId,
+      groupData.notes || null,
+      groupData.is_relevant,
+      groupData.posting_allowed,
+      groupData.language || null,
+      groupData.activity_level || null
+    ]);
+  }
 }

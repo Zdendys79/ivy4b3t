@@ -242,7 +242,6 @@ export async function initializeDatabase() {
 
 export { SQL } from './sql/queries/index.js';
 export { testConnection as testDB, closeConnection as closeDB };
-export { markGroupAsUnavailable };
 
 export async function verifyMsg(groupId, messageHash) {
   Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
@@ -260,26 +259,5 @@ export async function verifyMsg(groupId, messageHash) {
   } catch (err) {
     await Log.error('[SQL]', `verifyMsg error: ${err.message}`);
     return { c: 0 };
-  }
-}
-
-/**
- * Označí skupinu jako nedostupnou pro uživatele
- */
-async function markGroupAsUnavailable(userId, groupId, reason) {
-  try {
-    const blockUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hodin
-    
-    await safeExecute('user_group_blocking.blockUserGroup', [
-      blockUntil, 
-      reason, 
-      userId, 
-      groupId
-    ]);
-    
-    Log.info('[SQL]', `Skupina ${groupId} označena jako nedostupná pro uživatele ${userId}`);
-  } catch (err) {
-    Log.error('[SQL]', `markGroupAsUnavailable error: ${err.message}`);
-    throw err;
   }
 }

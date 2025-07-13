@@ -38,39 +38,6 @@ export const GROUPS = {
 
   // ===== VÝBĚR SKUPIN PRO POSTOVÁNÍ =====
 
-  getAvailableByType: `
-    SELECT
-      fg.*,
-      COALESCE(fg.last_seen, NOW() - INTERVAL 1 HOUR) as last_activity,
-      COALESCE(fg.next_seen, NOW()) as next_available
-    FROM fb_groups fg
-    WHERE fg.typ = ?
-      AND fg.priority > 0
-      AND fg.id NOT IN (
-        SELECT DISTINCT al.reference_id
-        FROM action_log al
-        WHERE al.account_id = ?
-          AND al.action_code LIKE 'post_utio_%'
-          AND al.timestamp >= NOW() - INTERVAL 6 HOUR
-          AND al.reference_id IS NOT NULL
-      )
-      AND COALESCE(fg.next_seen, NOW()) <= NOW()
-      AND COALESCE(fg.last_seen, NOW() - INTERVAL 1 HOUR) <= NOW() - INTERVAL 10 MINUTE
-    ORDER BY
-      COALESCE(fg.last_seen, NOW() - INTERVAL 1 HOUR) ASC,
-      RAND()
-    LIMIT 10
-  `,
-
-  getAvailableByTypeSimple: `
-    SELECT * FROM fb_groups
-    WHERE typ = ?
-      AND priority > 0
-      AND (next_seen IS NULL OR next_seen <= NOW())
-    ORDER BY COALESCE(last_seen, NOW() - INTERVAL 6 HOUR) ASC, RAND()
-    LIMIT ?
-  `,
-
   getUnusedByType: `
     SELECT fg.*
     FROM fb_groups fg
@@ -126,12 +93,6 @@ export const GROUPS = {
   `,
 
   // ===== USER GROUPS (vazební tabulka) =====
-
-  addUserGroupWarning: `
-    INSERT LOW_PRIORITY INTO user_groups (user_id, group_id, note, time)
-    VALUES (?, ?, ?, NOW())
-    ON DUPLICATE KEY UPDATE note = ?, time = NOW()
-  `,
 
   getUserGroupNotes: `
     SELECT ug.*, fg.nazev, fg.typ

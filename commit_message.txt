@@ -1,23 +1,15 @@
-refactor(actions): Kompletní přepsání logiky pro post_utio akce
+feat(collector): Cílené ukládání detailů a sběr odkazů
 
-Tento commit představuje zásadní refaktoring a zjednodušení logiky pro publikování do skupin (`post_utio_g`, `post_utio_gv`). Původní, složitá a těžko udržitelná funkce, která se snažila provést více publikací v jedné smyčce, byla odstraněna.
+Tento commit vylepšuje systém analýzy a sběru dat.
 
-**Hlavní změny:**
+- **feat(analyzer): Podmíněné ukládání detailů o skupinách**
+  - Analýza a ukládání detailních informací do tabulky `group_details` se nyní provádí pouze pro stránky, které jsou skutečně facebookovými skupinami (URL obsahuje `/groups/`).
+  - Tím se zabraňuje zbytečnému ukládání dat z hlavní zdi a jiných nerelevantních stránek.
 
-1.  **Nová funkce `handleSingleUtioPost`:**
-    *   Byla vytvořena nová, čistá funkce, která zpracovává **pouze jednu skupinu** na jedno spuštění akce.
-    *   Tím se výrazně zjednodušuje tok řízení a ladění.
+- **feat(collector): Ukládání objevených odkazů na skupiny**
+  - Byla vytvořena nová tabulka `discovered_group_links`.
+  - Systém nyní při analýze skupiny extrahuje všechny odkazy na další skupiny a ukládá je do této nové tabulky pro budoucí prozkoumání.
+  - To vytváří základ pro automatizované objevování nového obsahu.
 
-2.  **Inteligentní zpracování členství ve skupinách:**
-    *   Před publikováním akce nyní analyzuje stav skupiny.
-    *   Pokud uživatel není členem, akce se pokusí odeslat žádost o připojení.
-    *   Byla zavedena kontrola, aby se zabránilo opakovaným žádostem o členství v krátkém časovém úseku (pomocí nových akcí `join_group_g` a `join_group_gv`).
-    *   Problematické skupiny (nelze publikovat ani se přidat) jsou automaticky přidány na dočasnou černou listinu pro daného uživatele.
-
-3.  **Přesun řízení opakování do `iv_worker.js`:**
-    *   Logika pro opakování akcí a sledování limitů byla plně přesunuta do hlavního cyklu workeru, kam správně patří.
-    *   Byl implementován čítač `consecutive_failures`, který po 5 neúspěšných akcích v řadě automaticky naplánuje `account_delay` a zapíše systémovou chybu.
-
-4.  **Podpůrné změny v DB vrstvě:**
-    *   Do `action_definitions` byly přidány nové typy akcí pro sledování žádostí o členství.
-    *   Do `iv_querybuilder.class.js` a `actions.js` byly přidány nové dotazy a pomocné funkce pro podporu výše uvedené logiky.
+- **chore(db): Přidány nové dotazy a databázové funkce**
+  - Implementována podpora pro práci s novou tabulkou `discovered_group_links`.

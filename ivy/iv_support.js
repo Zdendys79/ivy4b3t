@@ -103,7 +103,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
       if (readinessCheck.critical) {
         // Označ skupinu jako nedostupnou v user_groups
         try {
-          await db.markGroupAsUnavailable(user.id, group.id, readinessCheck.reason);
+          await db.blockUserGroup(user.id, group.id, readinessCheck.reason, 7); // Blokace na 7 dní
           Log.info(`[${user.id}]`, `🚫 Skupina ${group.nazev} označena jako nedostupná`);
         } catch (dbErr) {
           Log.warn(`[${user.id}]`, `Nepodařilo se označit skupinu jako nedostupnou: ${dbErr.message}`);

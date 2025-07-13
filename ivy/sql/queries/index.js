@@ -7,40 +7,15 @@
  */
 
 import { USERS } from './users.js';
-import { ACTIONS } from './actions.js';
-import { GROUPS } from './groups.js';
-import { LIMITS } from './limits.js';
-import { SYSTEM } from './system.js';
-import { LOGS } from './logs.js';
-import { QUOTES } from './quotes.js';
-import { ERROR_REPORTS } from './error-reports.js';
-import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
-import { HOSTNAME_PROTECTION } from './hostname_protection.js';
-import { USER_GROUP_BLOCKING } from './user_group_blocking.js';
-import { GROUP_DETAILS } from './group_details.js';
-import userLimits from './user_limits.js';
-import actionQuality from './action_quality.js';
-import systemMetrics from './system_metrics.js';
-import messageHashes from './message_hashes.js';
+import { DISCOVERED_LINKS } from './discovered_links.js';
 
-/**
- * Hlavní SQL objekt obsahující všechny dotazy
- * Organizované podle funkcionality do kategorií
- * VŠECHNY DOTAZY OVĚŘENY PROTI ivy_create_full.sql
- */
 export const SQL = {
-  users: USERS,
   actions: ACTIONS,
-  groups: GROUPS,
-  limits: LIMITS,
-  system: SYSTEM,
-  logs: LOGS,
-  quotes: QUOTES,
-  error_reports: ERROR_REPORTS,
   behavioral_profiles: BEHAVIORAL_PROFILES,
-  hostname_protection: HOSTNAME_PROTECTION,
-  user_group_blocking: USER_GROUP_BLOCKING,
+  discovered_links: DISCOVERED_LINKS,
+  'error-reports': ERROR_REPORTS,
   group_details: GROUP_DETAILS,
+  groups: GROUPS,
   user_limits: userLimits,
   action_quality: actionQuality,
   system_metrics: systemMetrics,

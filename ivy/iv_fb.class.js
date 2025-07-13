@@ -1506,19 +1506,19 @@ export class FBBot {
 
       // NOVÉ - Analýza skupiny po načtení
       if (this.pageAnalyzer) {
-        const groupAnalysis = await this.pageAnalyzer.analyzeFullPage({
-          includeGroupAnalysis: true,
-          includePostingCapability: true
-        });
+        const analysis = await this.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+        Log.info('[FB]', `Analýza skupiny dokončena - stav: ${analysis.status}`);
 
-        Log.info('[FB]', `Analýza skupiny dokončena - stav: ${groupAnalysis.status}`);
-
-        if (groupAnalysis.group && !groupAnalysis.group.isGroup) {
-          await Log.warn('[FB]', `URL neodpovídá skupině: ${groupAnalysis.group.reason}`);
+        // Uložení detailů o skupině, pokud je to skutečně skupina
+        if (analysis.group?.isGroup) {
+          await db.saveGroupExplorationDetails(analysis, this.userId);
+          Log.info('[FB]', `Uloženy detaily pro skupinu ${group.fb_id}`);
         }
 
-        if (groupAnalysis.posting && !groupAnalysis.posting.canInteract) {
-          await Log.warn('[FB]', 'Ve skupině není možné interagovat');
+        // Uložení objevených odkazů
+        if (analysis.links?.groups?.length > 0) {
+          await db.saveDiscoveredLinks(analysis.links.groups, this.userId);
+          Log.info('[FB]', `Uloženo ${analysis.links.groups.length} nových odkazů na skupiny.`);
         }
       }
 
