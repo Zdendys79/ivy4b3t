@@ -483,7 +483,7 @@ async function groupExplore(user, fbBot) {
  * @param {Object} fbBot - FBBot instance
  * @param {number} totalPauseTime - Celková doba pauzy v ms
  */
-async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
+export async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
   try {
     Log.info(`[${user.id}]`, '🔍 Zahajuji neinvazivní aktivitu během pauzy...');
     

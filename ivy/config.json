@@ -34,8 +34,8 @@
     "review_time_max": 15000
   },
   "posting_cooldown": {
-    "min_seconds": 240,
-    "max_seconds": 480,
-    "description": "Pauza mezi všemi invazními akcemi (4-8 minut). Invazní akce jsou označeny v action_definitions.invasive."
+    "min_seconds": 120,
+    "max_seconds": 240,
+    "description": "Pauza mezi všemi invazními akcemi (2-4 minuty). Invazní akce jsou označeny v action_definitions.invasive."
   }
 }

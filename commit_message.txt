@@ -1,7 +1,13 @@
-fix(wheel): Oprava chybějící `invasive` vlastnosti ve výběru akce
+fix(worker): Oprava chování během `invasive_lock` cooldownu
 
-Tato oprava řeší kritickou chybu, kdy se nenastavoval časový zámek mezi invazivními akcemi, protože informace o jejich invazivnosti se ztrácela.
+Tato oprava řeší dva problémy: příliš dlouhý `invasive_lock` a nečinnost bota během tohoto cooldownu.
 
-- **fix(wheel): Doplněna `invasive` vlastnost do návratového objektu `getRandomAction`**
-  - Funkce `getRandomAction` v `iv_wheel.js` nyní správně vrací kompletní objekt akce, včetně klíčové vlastnosti `invasive`.
-  - Tím je zajištěno, že řídící logika v `runAction` obdrží potřebná data a může po úspěšném provedení invazivní akce správně nastavit `invasive_lock`.
+- **fix(config): Upravena délka `invasive_lock`**
+  - Hodnoty v `config.json` pro `posting_cooldown` byly opraveny na správný rozsah 120-240 sekund (2-4 minuty).
+
+- **feat(worker): Přidána neinvazivní aktivita během cooldownu**
+  - Hlavní cyklus ve `worker.js` byl upraven. Pokud kolo štěstí nevrátí žádnou akci z důvodu aktivního `invasive_lock`, worker nyní nuceně spustí obecnou neinvazivní aktivitu (např. prohlížení po dobu 60s).
+  - Tím je zajištěno, že bot nezůstane nečinný a jeho chování je přirozenější.
+
+- **refactor(actions): Exportována funkce `performNonInvasiveActivity`**
+  - Funkce byla zpřístupněna pro import, aby ji mohl worker používat.

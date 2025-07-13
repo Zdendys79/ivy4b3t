@@ -223,9 +223,20 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // 🎯 KROK 4: LOSOVÁNÍ AKCE NA KOLE ŠTĚSTÍ
       const picked = await getRandomAction(actions, user.id);
       if (!picked) {
-        await Log.warn(`[${user.id}]`, 'Krok 4: Kolo štěstí vrátilo null, pravděpodobně vyčerpané limity');
-        await wait.delay(IvMath.randInterval(10000, 20000)); // Krátká pauza před dalším pokusem
-        continue; // Zkus znovu, možná se uvolní jiné akce
+        await Log.warn(`[${user.id}]`, 'Krok 4: Kolo štěstí vrátilo null.');
+        
+        // Zjistíme, zda je to kvůli invasive lock
+        const lockStatus = hasInvasiveLock();
+        if (lockStatus.hasLock) {
+          Log.info(`[${user.id}]`, `Čekání na invasive lock (${lockStatus.remainingSeconds}s). Provádím neinvazivní aktivitu...`);
+          // Použijeme existující funkci z iv_actions.js, ale musíme ji naimportovat
+          const { performNonInvasiveActivity } = await import('./iv_actions.js');
+          await performNonInvasiveActivity(user, fbBot, 60000); // Prováděj aktivitu po dobu 60s
+        } else {
+          Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce, krátká pauza.');
+          await wait.delay(IvMath.randInterval(10000, 20000));
+        }
+        continue; // Zkus znovu losovat
       }
 
       const actionCode = picked.code;
