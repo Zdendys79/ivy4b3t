@@ -1,12 +1,13 @@
-refactor: Replace all remaining Puppeteer .$ and .$$ methods with JavaScript
+feat: Add automatic buy/sell group detection and optimization
 
-- Replace .$$('span') calls in fallbackClick and debugPostCreationElements functions
-- Replace .$('button') and element selectors in findActiveSendButtons
-- Replace group and member link selectors in iv_group_explore_action.js
-- Replace post field detection in iv_page_analyzer.class.js  
-- Replace logout link detection in iv_utio.class.js
-- All replacements use JavaScript evaluation with visibility checks for better reliability
-- Maintains same functionality while improving performance and consistency
+- Add is_buy_sell_group boolean column to fb_groups table with index
+- Implement automatic detection when clicking Discussion tab enables posting
+- Add SQL queries for updating buy/sell group flag (updateBuySellFlag, updateBuySellFlagByFbId)
+- Add auto-marking logic in iv_actions.js when discussion click enables interaction
+- Implement optimized navigation for buy/sell groups using /buy_sell_discuss URL
+- Add detectAndMarkBuySellGroup function with system logging
+- Update ivy_create_full.sql schema with new column and index
+- Create migration script add_buy_sell_group_column.sql for existing databases
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

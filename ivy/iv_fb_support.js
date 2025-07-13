@@ -804,16 +804,35 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
       };
     }
 
-    // Kontrola zda jsme ve správné skupině
+    // Kontrola zda jsme ve správné skupině a případná optimální navigace
     const expectedGroupUrl = `facebook.com/groups/${group.fb_id}`;
     if (!currentUrl.includes(group.fb_id)) {
-      Log.info(`[${user.id}]`, `🔄 Nejsme ve správné skupině, je potřeba navigace`);
-      return {
-        ready: false,
-        reason: `Nejsme ve skupině ${group.nazev}`,
-        critical: false,
-        shouldNavigate: true
-      };
+      Log.info(`[${user.id}]`, `🔄 Nejsme ve správné skupině, provádím navigaci...`);
+      
+      try {
+        // Pro buy/sell skupiny použij přímý přístup k diskuzi
+        let targetUrl;
+        if (group.is_buy_sell_group) {
+          targetUrl = `https://www.facebook.com/groups/${group.fb_id}/buy_sell_discuss`;
+          Log.info(`[${user.id}]`, `🛒 Používám optimalizovanou navigaci pro prodejní skupinu: ${targetUrl}`);
+        } else {
+          targetUrl = `https://www.facebook.com/groups/${group.fb_id}/`;
+          Log.info(`[${user.id}]`, `📍 Navigace na standardní skupinu: ${targetUrl}`);
+        }
+        
+        await fbBot.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page load
+        
+        Log.success(`[${user.id}]`, `✅ Úspěšně navigováno na skupinu ${group.nazev}`);
+      } catch (navErr) {
+        Log.error(`[${user.id}]`, `❌ Chyba při navigaci na skupinu: ${navErr.message}`);
+        return {
+          ready: false,
+          reason: `Navigace na skupinu ${group.nazev} selhala: ${navErr.message}`,
+          critical: true,
+          shouldNavigate: false
+        };
+      }
     }
 
     // Detailní analýza stránky skupiny - použij existující analýzu pokud je dostupná

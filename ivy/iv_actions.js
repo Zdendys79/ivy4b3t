@@ -13,6 +13,7 @@ import * as fbSupport from './iv_fb_support.js';
 import { groupExploreAction } from './iv_group_explore_action.js';
 import { setInvasiveLock, initInvasiveLock, clearInvasiveLock } from './iv_wheel.js';
 import { db } from './iv_sql.js'
+import { SQL } from './sql/queries/index.js';
 import { getAllConfig } from './iv_config.js';
 import { Log } from './iv_log.class.js';
 import { getAvailableGroupsForUser, detectMembershipRequest } from './user_group_escalation.js';
@@ -174,6 +175,8 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
             await wait.delay(3000);
             const re_analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
             if (re_analysis.posting?.canInteract) {
+                // Detekce prodejní skupiny - pokud se po kliknutí na diskuzi objevila možnost postovat
+                await detectAndMarkBuySellGroup(group);
                 return await performPublication(user, fbBot, utioBot, group, actionCode);
             }
         }
@@ -692,5 +695,39 @@ async function scrollPageRandomly(fbBot, duration) {
     
   } catch (err) {
     // Ignoruj chyby při scrollování
+  }
+}
+
+/**
+ * Detekuje a označí skupinu jako buy/sell pokud se po kliknutí na diskuzi objevila možnost postovat
+ * @param {Object} group - Objekt skupiny z databáze
+ */
+async function detectAndMarkBuySellGroup(group) {
+  try {
+    // Zkontroluj zda skupina už není označena jako buy/sell
+    if (group.is_buy_sell_group) {
+      return; // Už je označená, nepotřebujeme nic dělat
+    }
+
+    // Označ skupinu jako buy/sell
+    await db.query(SQL.groups.updateBuySellFlag, [true, group.id]);
+    
+    await Log.success('[DETECT]', `🛒 Skupina "${group.nazev}" označena jako prodejní (buy/sell) - přímý přístup k diskuzi možný přes /buy_sell_discuss`);
+    
+    // Log do systému pro statistiky
+    await db.logSystemEvent(
+      'BUY_SELL_GROUP_DETECTED', 
+      'INFO',
+      `Auto-detected buy/sell group: ${group.nazev} (ID: ${group.id})`,
+      {
+        group_id: group.id,
+        group_name: group.nazev,
+        fb_id: group.fb_id,
+        detection_method: 'discussion_tab_click'
+      }
+    );
+
+  } catch (err) {
+    await Log.error('[DETECT]', `Chyba při označení buy/sell skupiny ${group.nazev}: ${err.message}`);
   }
 }

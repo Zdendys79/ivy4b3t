@@ -85,7 +85,17 @@ export const GROUPS = {
     WHERE id = ?
   `,
 
-  
+  updateBuySellFlag: `
+    UPDATE fb_groups
+    SET is_buy_sell_group = ?
+    WHERE id = ?
+  `,
+
+  updateBuySellFlagByFbId: `
+    UPDATE fb_groups
+    SET is_buy_sell_group = ?
+    WHERE fb_id = ?
+  `,
 
   resetCooldowns: `
     UPDATE fb_groups

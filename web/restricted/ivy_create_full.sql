@@ -192,7 +192,9 @@ CREATE TABLE
     `region_id` tinyint (3) unsigned NOT NULL DEFAULT 0,
     `district_id` tinyint (3) unsigned NOT NULL DEFAULT 0,
     `sell` tinyint (1) DEFAULT 0,
-    PRIMARY KEY (`id`)
+    `is_buy_sell_group` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Označuje zda je skupina prodejní (buy/sell) pro přímý přístup k diskuzi',
+    PRIMARY KEY (`id`),
+    KEY `idx_is_buy_sell_group` (`is_buy_sell_group`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 -- Facebook users/accounts table
