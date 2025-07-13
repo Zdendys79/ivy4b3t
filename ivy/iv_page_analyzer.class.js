@@ -682,6 +682,11 @@ export class PageAnalyzer {
         texts: ['nemáte oprávnění', 'not authorized', 'access denied', 'přístup zamítnut'],
         reason: 'Nemáte oprávnění pro tuto akci',
         type: 'ACCESS_DENIED'
+      },
+      {
+        texts: ['Zkontrolujte nastavení reklam', 'Review how we use data for ads', 'Zkontrolujte, jestli můžeme'],
+        reason: 'Vyžadován souhlas se zpracováním dat pro reklamy',
+        type: 'AD_CONSENT_REQUIRED'
       }
     ];
 
@@ -999,11 +1004,16 @@ export class PageAnalyzer {
   _calculateErrorSeverity(patterns, accountLocked, checkpoint) {
     if (accountLocked) return 'critical';
     if (checkpoint.detected) return 'high';
+    if (patterns.detected && patterns.type === 'AD_CONSENT_REQUIRED') return 'action_required';
     if (patterns.detected) return 'medium';
     return 'none';
   }
 
   _determineOverallStatus(basic, errors, complexity) {
+    if (errors.severity === 'action_required') {
+      return 'ad_consent_required';
+    }
+
     if (errors.hasErrors) {
       return errors.severity === 'critical' ? 'blocked' : 'warning';
     }

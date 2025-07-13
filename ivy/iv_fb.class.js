@@ -345,36 +345,28 @@ export class FBBot {
     try {
       await this.bringToFront();
       await this.page.goto('https://FB.com', { waitUntil: 'domcontentloaded' });
-      await wait.delay(5000, false); // Dáme stránce čas na případné přesměrování
+      await wait.delay(5000, false);
 
-      // NOVÉ: Zpracování vícestránkového souhlasu s reklamami
-      await this.resolveAdConsentFlow();
-
-      // Inicializuj analyzer po načtení stránky
       this.initializeAnalyzer();
-
       Log.info('[FB]', 'Stránka FB načtena, spouštím analýzu...');
+      const analysis = await this.pageAnalyzer.analyzeFullPage();
+      Log.info('[FB]', `Analýza dokončena - stav: ${analysis.status}`);
 
-      // Proveď kompletní analýzu při otevření
-      if (this.pageAnalyzer) {
-        const analysis = await this.pageAnalyzer.analyzeFullPage({
-          includePostingCapability: true
-        });
-
-        Log.info('[FB]', `Analýza dokončena - stav: ${analysis.status}`);
-
-        // Zkontroluj výsledky analýzy
-        if (analysis.status === 'blocked') {
-          const errorReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
-          await Log.error('[FB]', `Účet je zablokován: ${errorReason}`);
-          return 'account_locked';
+      if (analysis.status === 'ad_consent_required') {
+        Log.warn('[FB]', 'Detekována obrazovka souhlasu s reklamami, pokouším se ji vyřešit...');
+        await this.resolveAdConsentFlow();
+        // Po pokusu o vyřešení znovu analyzujeme
+        const afterConsentAnalysis = await this.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+        if (afterConsentAnalysis.status !== 'ok') {
+          throw new Error(`Nepodařilo se vyřešit obrazovku souhlasu, stav je nyní: ${afterConsentAnalysis.status}`);
         }
-
-        if (analysis.status === 'warning') {
-          const warningReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
-          await Log.warn('[FB]', `Detekován problém: ${warningReason}`);
-          // Pokračuj, ale s varováním
-        }
+      } else if (analysis.status === 'blocked') {
+        const errorReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
+        await Log.error('[FB]', `Účet je zablokován: ${errorReason}`);
+        return 'account_locked';
+      } else if (analysis.status === 'warning') {
+        const warningReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
+        await Log.warn('[FB]', `Detekován problém: ${warningReason}`);
       }
 
     } catch (err) {
@@ -383,15 +375,9 @@ export class FBBot {
     }
 
     // Stávající logika kontroly a přihlášení
-    if (await this.isAccountLocked()) {
-      await Log.error('[FB]', 'Účet je zablokovaný.');
-      return 'account_locked';
-    }
-
     if (await this.isProfileLoaded(user)) {
       Log.info('[FB]', `Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
       
-      // Posun času aktivity o +3 minuty i pro již přihlášené uživatele
       try {
         await db.updateUserWorktime(user.id, 3);
         Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +3 minuty pro rotaci účtů`);

@@ -1,11 +1,14 @@
-feat(fb): Implementace zpracování vícestránkového souhlasu s reklamami
+refactor(fb): Správná detekce a zpracování obrazovky souhlasu
 
-Tato změna přidává robustní metodu pro automatické proklikání vícestránkového procesu pro udělení souhlasu se zpracováním dat pro reklamy, který se může objevit po přihlášení.
+Tato oprava vrací předchozí unáhlenou změnu a implementuje správný, modulární přístup ke zpracování obrazovky pro souhlas s reklamami.
 
-- **feat(fb): Přidána nová metoda `resolveAdConsentFlow`**
-  - V `iv_fb.class.js` byla vytvořena nová, samostatná metoda, která ve smyčce detekuje a odklikává jednotlivé kroky procesu souhlasu.
-  - Metoda používá `Promise.race` pro efektivní hledání různých typů tlačítek ("Další", "Přijmout" atd.) a je vybavena pojistkou proti zacyklení.
+- **revert(fb): Odstraněno přímé volání `resolveAdConsentFlow` z `openFB`**
+  - Tím se zabraňuje zbytečnému spouštění této funkce na každé stránce.
 
-- **refactor(fb): Integrována nová metoda do přihlašovacího procesu**
-  - Nová metoda je nyní volána v rámci funkce `openFB` ihned po načtení hlavní stránky, čímž zajišťuje, že zbytek skriptu pokračuje až po vyřešení této obrazovky.
-  - Původní dočasná detekční funkce byla odstraněna.
+- **feat(analyzer): Rozšířena detekce o `AD_CONSENT_REQUIRED`**
+  - `PageAnalyzer` nyní dokáže specificky identifikovat obrazovku pro souhlas s reklamami a vrátit dedikovaný stav `ad_consent_required`.
+
+- **refactor(fb): Implementována podmíněná logika v `openFB`**
+  - Metoda `openFB` nyní nejprve spustí standardní analýzu.
+  - Teprve pokud analýza vrátí stav `ad_consent_required`, zavolá se cílená metoda `resolveAdConsentFlow` pro vyřešení této konkrétní situace.
+  - Tímto je zajištěn efektivní a správný postup v souladu s architekturou aplikace.
