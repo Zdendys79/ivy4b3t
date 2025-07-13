@@ -149,7 +149,12 @@ export async function tick() {
     await executeUserActionCycle(user);
 
   } catch (err) {
-    await Log.errorInteractive('[WORKER]', err);
+    const quitRequested = await Log.errorInteractive('[WORKER]', err);
+    // Pokud uživatel v debuggeru požádal o ukončení, okamžitě přerušíme další zpracování v ticku
+    // a necháme process.on('SIGINT') handler, aby provedl čistý shutdown.
+    if (quitRequested === 'quit') {
+      return;
+    }
 
     // 🎯 KROK 9: ČEKÁNÍ PO CHYBĚ
     await waitWithHeartbeat(2); // 2 minuty po chybě

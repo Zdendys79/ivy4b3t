@@ -1,9 +1,11 @@
-refactor(fb): Sjednocení a vylepšení `findByText`
+fix: Oprava XPath a logiky ukončení z debuggeru
 
-Tato oprava řeší nekonzistenci mezi detekcí a interakcí s prvky na stránce.
+Tato oprava řeší dva kritické problémy: chybnou syntaxi v XPath dotazu a nesprávné chování aplikace po žádosti o ukončení z debuggeru.
 
-- **refactor(support): Vylepšena funkce `findByText`**
-  - Funkce nyní hledá interaktivní prvky (`button`, `div[role="button"]` atd.) místo obecných `<span>` elementů.
-  - Tím se výrazně zvyšuje spolehlivost nalezení klikatelných prvků.
-- **chore(fb): Sjednoceno použití `findByText`**
-  - Všechny části kódu, které hledají prvky podle textu, nyní používají tuto jednu, robustní, sdílenou funkci. Tím je zajištěno konzistentní chování.
+- **fix(support): Opravena syntaxe XPath ve `findByText`**
+  - Původní XPath výraz pro hledání více typů elementů byl syntakticky chybný.
+  - Byl nahrazen robustní a platnou variantou `//*[self::button or self::div...]`, která spolehlivě vyhledá požadované interaktivní prvky.
+
+- **fix(worker): Správné zpracování `quit` příkazu z debuggeru**
+  - Hlavní `catch` blok ve funkci `tick()` nyní kontroluje návratovou hodnotu z debuggeru.
+  - Pokud uživatel zvolí 'q' (quit), `tick()` se okamžitě ukončí a nepokračuje na další čekání, čímž se zabrání "závodu" s `gracefulShutdown` handlerem a je zajištěno čisté ukončení aplikace.

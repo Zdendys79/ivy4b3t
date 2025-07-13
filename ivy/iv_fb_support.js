@@ -34,7 +34,8 @@ export async function findByText(page, text, options = {}) {
       startsWith: `starts-with(normalize-space(.), "${text}")`
     }[match];
 
-    const xpath = `//(button | //div[@role='button'] | //a[@role='button'])[${textSelector}]`;
+    // Robustní XPath, který hledá jakýkoliv element, který je jedním z klikatelných typů A ZÁROVEŇ splňuje textovou podmínku.
+    const xpath = `//*[self::button or self::div[@role='button'] or self::a[@role='button']][${textSelector}]`;
     const selector = `xpath/${xpath}`;
 
     // Počkáme na element a pak vrátíme všechny, které odpovídají
