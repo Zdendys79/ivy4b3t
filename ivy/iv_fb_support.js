@@ -12,7 +12,6 @@ import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';
 import fs from 'fs/promises';
 import os from 'os';
-import fs from 'fs/promises';
 
 /**
  * Vyhledá interaktivní elementy (tlačítka, odkazy) podle textu.

@@ -1,5 +1,9 @@
-fix(fb): Correct element selection in clickSendButton
+fix(import): Remove duplicate fs import in iv_fb_support.js
 
-- Fixed a critical `TypeError: spans is not iterable` in the `clickSendButton` method.
-- The error was caused by incorrectly using `page.$('span')` (which returns a single element) instead of `page.$$('span')` (which returns an array of elements).
-- This correction ensures that the code can properly iterate over all found `<span>` elements to locate the correct send button, resolving the crash during the posting process.
+- Fixed SyntaxError "Identifier 'fs' has already been declared" by removing duplicate import
+- The fs module was imported twice on lines 13 and 15 causing module loading failure
+- This prevented the application from starting properly
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
