@@ -506,64 +506,51 @@ export class PageAnalyzer {
       const url = this.page.url();
 
       if (!url.includes('/groups/')) {
-        return {
-          isGroup: false,
-          reason: 'Není skupina'
-        };
+        return { isGroup: false, reason: 'Není skupina' };
       }
 
-      // Jednoduchou analýzou získej všechny potřebné informace najednou
-      const groupInfo = await this.page.evaluate(async () => {
+      // Krok 1: Získání syrových dat z prohlížeče
+      const pageData = await this.page.evaluate(() => {
         const bodyText = document.body.textContent.toLowerCase();
-        
-        const info = {
+        return {
           isPrivate: bodyText.includes('soukromá skupina') || bodyText.includes('private group'),
           isPublic: bodyText.includes('veřejná skupina') || bodyText.includes('public group'),
           isClosed: bodyText.includes('uzavřená skupina') || bodyText.includes('closed group'),
           isMember: bodyText.includes('člen') || bodyText.includes('member'),
-          hasJoinButton: false,
-          joinButtonText: '',
-          writeFieldAvailable: false,
-          membershipStatus: 'unknown',
-          warningDetails: [],
-          supplementary_actions: [] // Nové pole pro doplňkové akce
+          isPending: bodyText.includes('žádost odeslána') || bodyText.includes('request sent') || bodyText.includes('čeká na schválení') || bodyText.includes('pending approval'),
+          hasExpertInvite: bodyText.includes('stát se expertem skupiny') || bodyText.includes('become a group expert')
         };
-
-        // Detekce pozvánky pro experta
-        if (bodyText.includes('stát se expertem skupiny') || bodyText.includes('become a group expert')) {
-            info.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
-        }
-
-        // Přesná detekce tlačítka pro přidání se ke skupině.
-        const joinButton = await fbSupport.findByText(this.page, 'Přidat se ke skupině', { match: 'exact' });
-
-        if (joinButton.length > 0) {
-          info.hasJoinButton = true;
-          info.joinButtonText = await this.page.evaluate(el => el.textContent.trim(), joinButton[0]);
-          info.membershipStatus = 'not_member';
-        } else if (info.isMember) {
-          info.membershipStatus = 'member';
-        }
-
-        // Detekce čekající žádosti o členství
-        if (bodyText.includes('žádost odeslána') || bodyText.includes('request sent') ||
-            bodyText.includes('čeká na schválení') || bodyText.includes('pending approval')) {
-          info.membershipStatus = 'pending';
-        }
-
-        // Kontrola možnosti postování jen pokud je potřeba
-        if (info.membershipStatus === 'member') {
-          const postSelectors = [
-            '[aria-label*="příspěvek"]',
-            '[placeholder*="Co máte na mysli"]',
-            '[placeholder*="What\'s on your mind"]',
-            '[data-testid="status-attachment-mentions-input"]'
-          ];
-          info.writeFieldAvailable = postSelectors.some(selector => document.querySelector(selector));
-        }
-
-        return info;
       });
+
+      // Krok 2: Zpracování a detekce v Node.js kontextu
+      const groupInfo = {
+        ...pageData,
+        hasJoinButton: false,
+        joinButtonText: '',
+        membershipStatus: 'unknown',
+        supplementary_actions: []
+      };
+
+      if (groupInfo.hasExpertInvite) {
+        groupInfo.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
+      }
+
+      const joinButton = await fbSupport.findByText(this.page, 'Přidat se ke skupině', { match: 'exact' });
+      if (joinButton.length > 0) {
+        groupInfo.hasJoinButton = true;
+        groupInfo.joinButtonText = await this.page.evaluate(el => el.textContent.trim(), joinButton[0]);
+        groupInfo.membershipStatus = 'not_member';
+      } else if (groupInfo.isMember) {
+        groupInfo.membershipStatus = 'member';
+      } else if (groupInfo.isPending) {
+        groupInfo.membershipStatus = 'pending';
+      }
+      
+      // Kontrola možnosti postování
+      if (groupInfo.membershipStatus === 'member') {
+        const postSelectors = ['[aria-label*="příspěvek"]', '[placeholder*="Co máte na mysli"]', '[placeholder*="What\'s on your mind"]', '[data-testid="status-attachment-mentions-input"]'];
+        groupInfo.writeFieldAvailable = (await Promise.all(postSelectors.map(s => this.page.$(s)))).some(el => el !== null);
+      }
 
       return {
         isGroup: true,
@@ -573,10 +560,7 @@ export class PageAnalyzer {
 
     } catch (err) {
       await Log.error('[ANALYZER]', `Chyba při analýze skupiny: ${err.message}`);
-      return {
-        isGroup: false,
-        reason: `Chyba: ${err.message}`
-      };
+      return { isGroup: false, reason: `Chyba: ${err.message}` };
     }
   }
 

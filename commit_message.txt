@@ -1,7 +1,8 @@
-fix(core): Oprava cesty k modulu v importu
+fix(analyzer): Oprava volání Node.js funkce z kontextu prohlížeče
 
-Tato oprava řeší chybu `ERR_MODULE_NOT_FOUND`, která bránila spuštění aplikace.
+Tato oprava řeší pád `fbSupport is not defined`, který byl způsoben nesprávným voláním Node.js funkce z `page.evaluate`.
 
-- **fix(analyzer): Opravena relativní cesta v `iv_page_analyzer.class.js`**
-  - Chybná importní cesta `../iv_fb_support.js` byla opravena na správnou `./iv_fb_support.js`.
-  - Tím je zajištěno, že Node.js najde a správně načte požadovaný modul.
+- **refactor(analyzer): Oddělena extrakce dat a jejich zpracování**
+  - Metoda `_performGroupAnalysis` byla přepsána tak, aby nejprve v `page.evaluate` pouze extrahovala syrový text a jednoduché příznaky ze stránky.
+  - Následné zpracování těchto dat, včetně volání `fbSupport.findByText` pro nalezení tlačítka, se nyní provádí ve správném Node.js kontextu.
+  - Tím je odstraněna příčina chyby a zajištěna správná funkčnost analýzy.
