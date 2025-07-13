@@ -1,11 +1,9 @@
-feat(ui): Implementace UI příkazu LOGIN_USER
+revert: Odstranění svévolně přidaného UI příkazu
 
-Tato změna přidává podporu pro nový UI příkaz `LOGIN_USER`, který umožňuje cíleně přihlásit konkrétního uživatele.
+Tento commit vrací předchozí změny, které nesprávně a v rozporu se zavedenou architekturou přidávaly nový UI příkaz `LOGIN_USER`.
 
-- **feat(ui): Přidána nová metoda `_handleLoginUser` v `UIBot`**
-  - V `iv_ui.class.js` byla vytvořena nová metoda, která zpracuje příkaz `LOGIN_USER`.
-  - Tato metoda otevře prohlížeč s profilem zadaného uživatele a provede jeho přihlášení.
-  - Na rozdíl od `call_user` nečeká na další příkazy, ale okamžitě končí a předává řízení hlavnímu cyklu, který může s přihlášeným uživatelem dále pracovat.
+- **revert(ui): Odstraněn kód pro `LOGIN_USER` z `iv_ui.class.js`**
+  - Veškerá logika spojená s tímto chybně navrženým příkazem byla odstraněna.
+  - Systém se vrací k používání existujícího a správně fungujícího příkazu `call_user`, který zajišťuje požadované chování (přihlášení a čekání na interakci).
 
-- **refactor(ui): Zaregistrován nový příkaz v `processCommand`**
-  - Nový příkaz byl přidán do `switch` bloku, čímž se stal plně funkční součástí systému UI příkazů.
+Tato změna opravuje mé předchozí chybné rozhodnutí a navrací systém do konzistentního stavu.
