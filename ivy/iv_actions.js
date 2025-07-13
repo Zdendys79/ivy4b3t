@@ -346,6 +346,9 @@ async function navigateToHomepage(user, fbBot) {
 
     await wait.delay(2000 + Math.random() * 3000);
 
+    // Reinicializace analyzátoru pro novou stránku
+    fbBot.initializeAnalyzer();
+
     const newUrl = fbBot.page.url();
     if (!(newUrl === 'https://www.facebook.com/' ||
       newUrl === 'https://www.facebook.com' ||

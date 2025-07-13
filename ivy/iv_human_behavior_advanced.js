@@ -179,7 +179,8 @@ export class AdvancedHumanBehavior {
         
         // Rozhodnutí o opravě podle correction_style
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          await wait.delay(profile.backspace_delay * (0.8 + Math.random() * 0.4), false);
+          const backspaceDelay = profile.backspace_delay || 200;
+          await wait.delay(backspaceDelay * (0.8 + Math.random() * 0.4), false);
           await page.keyboard.press('Backspace');
           await wait.delay(50 + Math.random() * 100, false);
           await page.keyboard.type(correctChar);
@@ -190,7 +191,8 @@ export class AdvancedHumanBehavior {
         await page.keyboard.type(correctChar);
         await page.keyboard.type(correctChar);
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          await wait.delay(profile.backspace_delay, false);
+          const backspaceDelay = profile.backspace_delay || 200;
+          await wait.delay(backspaceDelay, false);
           await page.keyboard.press('Backspace');
         }
         break;

@@ -1,8 +1,10 @@
-fix(core): Oprava pádu v `gracefulShutdown`
+fix: Oprava chyb při psaní a po navigaci
 
-Tato oprava řeší kritickou chybu ve funkci pro korektní ukončení aplikace, která bránila správnému zavření prohlížeče a databázového spojení.
+Tato oprava řeší dva nezávislé problémy: `TimeoutNaNWarning` při simulaci psaní a chybějící `PageAnalyzer` po přechodu na jinou stránku.
 
-- **fix(core): Odstraněno chybné vytváření `QueryBuilder` instance**
-  - V `gracefulShutdown` v `ivy.js` byla odstraněna snaha o vytvoření nové instance `QueryBuilder` bez potřebných parametrů, což způsobovalo pád.
-  - Pro logování se nyní správně používá již existující, globální instance `db`.
-  - Tím je zajištěna stabilita úklidové funkce a spolehlivé zavření všech zdrojů při ukončení aplikace.
+- **fix(behavior): Ošetřena `null` hodnota pro `backspace_delay`**
+  - Do metody `performTypingMistake` byla přidána pojistka, která zabrání chybě `NaN`, pokud je `backspace_delay` v databázi `NULL`.
+
+- **fix(actions): Reinicializace `PageAnalyzer` po navigaci**
+  - Do funkce `navigateToHomepage` byla přidána reinicializace `PageAnalyzer`.
+  - Tím je zajištěno, že po přechodu na novou stránku (např. v rámci akce `quote_post`) je pro následné bezpečnostní kontroly vždy k dispozici platná instance analyzátoru.
