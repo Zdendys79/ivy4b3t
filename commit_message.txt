@@ -1,8 +1,15 @@
-fix(fb): Oprava volání `findByText` v metodě `clickDiscus`
+fix: Oprava zpracování `quit` příkazu z debuggeru
 
-Tato oprava řeší chybu `this._findByText is not a function`, která nastávala při pokusu o nalezení tlačítka "Diskuze".
+Tato oprava řeší problém, kdy se po stisknutí 'q' v debuggeru objevovaly další chybové hlášky kvůli asynchronnímu "doběhnutí" kódu.
 
-- **fix(fb): Aktualizováno volání v `clickDiscus`**
-  - Během předchozího refaktoringu a centralizace funkce `findByText` bylo opomenuto aktualizovat její volání v metodě `clickDiscus`.
-  - Volání bylo opraveno na `fbSupport.findByText`, čímž se obnovila správná funkčnost.
-- **chore(fb): Doplněn chybějící import `iv_fb_support.js`**
+- **refactor(debugger): `pauseOnError` nyní vrací stav**
+  - Funkce `pauseOnError` v `iv_interactive_debugger.js` nyní vrací řetězec `'quit'`, pokud uživatel zvolí tuto možnost.
+
+- **refactor(log): `Log` třída propaguje návratovou hodnotu**
+  - Metody `warnInteractive` a `errorInteractive` nyní vrací hodnotu, kterou obdrží z debuggeru.
+
+- **fix(fb): `isAccountLocked` reaguje na žádost o ukončení**
+  - Metoda `isAccountLocked` v `iv_fb.class.js` nyní kontroluje návratovou hodnotu z `Log.warnInteractive` a pokud detekuje žádost o ukončení, okamžitě přeruší svou další činnost. Tím se zabrání zbytečnému "dobíhání" kódu a zobrazování dalších chyb po stisknutí 'q'.
+
+- **feat(support): Přidána mezera na konec vkládaného textu**
+  - Do funkce `pasteMsg` byla přidána mezera na konec textu, jak bylo požadováno.

@@ -204,7 +204,7 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
         continue;
       }
 
-      const fullMessage = m.join('\n').trim();
+      const fullMessage = m.join('\n').trim() + ' ';
 
       if (!fullMessage || fullMessage.length === 0) {
         await Log.warn(`[${user.id}]`, `Pokus ${cnt + 1}: Prázdná zpráva z UTIO`);

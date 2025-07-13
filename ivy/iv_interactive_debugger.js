@@ -97,6 +97,7 @@ export class InteractiveDebugger {
       case 'q':
         Log.info('[DEBUGGER]', '🛑 QUIT program requested by user, initiating graceful shutdown...');
         process.kill(process.pid, 'SIGINT'); // Send SIGINT to trigger graceful shutdown
+        result = 'quit'; // Return a special value to stop further execution
         break;
         
       default:

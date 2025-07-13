@@ -418,7 +418,8 @@ export class FBBot {
     try {
       // Pokud nemáme analyzer, použij fallback
       if (!this.pageAnalyzer) {
-        await Log.warn('[FB]', 'PageAnalyzer není k dispozici, používám fallback detekci');
+        const quitRequested = await Log.warnInteractive('[FB]', 'PageAnalyzer není k dispozici, používám fallback detekci');
+        if (quitRequested === 'quit') return { locked: false, quit: true }; // Propagate quit request
         return await this._legacyAccountLockCheck();
       }
 

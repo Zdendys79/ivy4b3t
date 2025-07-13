@@ -80,12 +80,19 @@ export class Log {
     }
   }
 
-  static async errorInteractive(prefix, err) {
-    this.error(prefix, err);
+  static async warnInteractive(module, message, context = {}) {
+    this.warn(module, message);
+    const { pauseOnError } = await import('./iv_interactive_debugger.js');
+    return await pauseOnError('WARNING', `${module}: ${message}`, context);
   }
 
-  static async warnInteractive(prefix, ...msg) {
-    this.warn(prefix, ...msg);
-    await this.triggerDebugger('WARNING', `${prefix}: ${msg.join(' ')}`, { prefix, args: msg });
+  static async errorInteractive(module, error, context = {}) {
+    const message = error.message || String(error);
+    this.error(module, message);
+    if (error.stack) {
+      this.debug(error.stack);
+    }
+    const { pauseOnError } = await import('./iv_interactive_debugger.js');
+    return await pauseOnError('ERROR', `${module}: ${message}`, { ...context, stack: error.stack });
   }
 }
