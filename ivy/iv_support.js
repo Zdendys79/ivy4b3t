@@ -281,15 +281,14 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
 
     // 3. Odešli příspěvek
     if (!await fbBot.clickSendButton()) {
-      await Log.error(`[${user.id}]`, 'Nepodařilo se odeslat příspěvek');
-      return false;
+      throw new Error('Nepodařilo se odeslat příspěvek (clickSendButton selhalo)');
     }
 
     Log.success(`[${user.id}]`, '✅ Zpráva úspěšně vložena a publikována!');
     return message;
 
   } catch (err) {
-    await Log.error(`[${user.id}] UTIO`, err);
+    await Log.error(`[${user.id}] pasteMsg`, err);
     return false;
   }
 }

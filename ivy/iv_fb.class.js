@@ -1070,66 +1070,34 @@ export class FBBot {
 
       await this.bringToFront();
 
-      // Lidské chování - přečteme si co jsme napsali (krátká pauza)
       Log.info('[FB] Kontrolujem napsaný text...');
-      await wait.delay(wait.timeout() * 2); // 1-2.4 sekundy
+      await wait.delay(wait.timeout() * 2);
 
-      // Čekáme až FB aktivuje tlačítko
       Log.info('[FB] Čekám než se tlačítko aktivuje...');
-      await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
+      await wait.delay(3000 + Math.random() * 2000);
 
-      // Najdeme tlačítko - jednoduše a lidsky
-      const spans = await this.page.$('span');
       const config = await getAllConfig();
       const submitTexts = config.cfg_submit_texts || ["Přidat", "Zveřejnit"];
       Log.info(`[FB] Hledám odeslací tlačítko... Texty: ${submitTexts.join(', ')}`);
 
       for (const targetText of submitTexts) {
-        for (const span of spans) {
-          try {
-            const spanInfo = await this.page.evaluate(el => {
-              const text = el.textContent.trim();
-              const rect = el.getBoundingClientRect();
-              const button = el.closest('button, div[role="button"], [tabindex]');
+        const buttons = await fbSupport.findByText(this.page, targetText, { match: 'exact' });
+        
+        if (buttons.length > 0) {
+          const button = buttons[0]; // Vezmeme první nalezený
+          Log.info(`[FB] Našel jsem tlačítko: "${targetText}"`);
+          
+          await wait.delay(800 + Math.random() * 1200);
+          await button.click();
+          Log.info(`[FB] Kliknuto na "${targetText}".`);
 
-              return {
-                text,
-                visible: rect.width > 0 && rect.height > 0,
-                hasButton: !!button,
-                isActionText: text.includes('k příspěvku') || text.includes('příspěvku')
-              };
-            }, span);
+          await wait.delay(10 * wait.timeout(), false);
 
-            // Hledáme přesně náš text, bez "k příspěvku"
-            if (spanInfo.text === targetText &&
-              spanInfo.visible &&
-              spanInfo.hasButton &&
-              !spanInfo.isActionText) {
-
-              Log.info(`[FB] Našel jsem tlačítko: "${targetText}"`);
-
-              // Lidské chování - krátké váhání před kliknutím
-              await wait.delay(800 + Math.random() * 1200); // 0.8-2 sekundy
-
-              // Klikneme
-              await span.click();
-              Log.info(`[FB] Kliknuto na "${targetText}".`);
-
-              // Čekáme na odeslání
-              await wait.delay(10 * wait.timeout(), false);
-
-              // Kontrola - pokud tlačítko zmizelo, bylo to úspěšné
-              const stillExists = await this.page.evaluate(el => {
-                return document.contains(el);
-              }, span).catch(() => false);
-
-              if (!stillExists) {
-                Log.success(`[FB] Příspěvek úspěšně odeslán!`);
-                return true;
-              }
-            }
-          } catch (spanErr) {
-            // Element neexistuje, pokračujeme
+          // Kontrola úspěchu - ověříme, zda tlačítko zmizelo
+          const stillExists = await fbSupport.findByText(this.page, targetText, { match: 'exact', timeout: 1000 });
+          if (stillExists.length === 0) {
+            Log.success(`[FB] Příspěvek úspěšně odeslán!`);
+            return true;
           }
         }
       }

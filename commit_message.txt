@@ -1,5 +1,5 @@
-fix(fb): Correct element selection in clickSendButton
+fix(posting): Refactor send button logic and improve error logging
 
-- Fixed a critical `TypeError: spans is not iterable` in the `clickSendButton` method.
-- The error was caused by incorrectly using `page.$('span')` (which returns a single element) instead of `page.$$('span')` (which returns an array of elements).
-- This correction ensures that the code can properly iterate over all found `<span>` elements to locate the correct send button, resolving the crash during the posting process.
+- Completely refactored the `clickSendButton` method in `iv_fb.class.js` to use the robust `findByText` helper function instead of a fragile `page.$$('span')` loop. This ensures it reliably finds the send button across different element types.
+- Improved error logging in `iv_support.js` and `iv_actions.js` to provide more specific messages, distinguishing between a failure to get a message from UTIO and a failure to post it on Facebook.
+- This fixes a critical bug where the bot would fail to send a post and incorrectly report an issue with UTIO.

@@ -208,7 +208,8 @@ async function performPublication(user, fbBot, utioBot, group, actionCode) {
   // Fáze 3: Publikování
   const message = await support.pasteMsg(user, group, fbBot, utioBot);
   if (!message) {
-    await Log.warn(`[${user.id}]`, 'Nepodařilo se získat zprávu z UTIO.');
+    // Logika v pasteMsg už by měla zalogovat specifickou chybu
+    await Log.warn(`[${user.id}]`, 'Publikace selhala (pasteMsg vrátilo false).');
     return false;
   }
 
