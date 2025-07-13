@@ -76,10 +76,7 @@ async function gracefulShutdown(signal) {
   try {
     // Záznam do systémového logu o ukončení
     try {
-      const queryBuilder = await import('./iv_querybuilder.class.js');
-      const dbInstance = new queryBuilder.QueryBuilder();
-      
-      await dbInstance.logSystemEvent(
+      await db.logSystemEvent(
         'SHUTDOWN',
         'INFO',
         `Ivy client shutting down on ${hostname} (signal: ${signal})`,
