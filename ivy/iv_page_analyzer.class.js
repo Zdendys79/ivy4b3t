@@ -638,7 +638,7 @@ export class PageAnalyzer {
   async _detectErrorPatterns(groupAnalysis = null, hasCookieButton = false) {
     const patterns = [
       {
-        texts: ['videoselfie', 'video selfie', 'Please take a video selfie'],
+        texts: ['videoselfie', 'video selfie', 'Please take a video selfie', 'Potvrďte svou totožnost pomocí videoselfie'],
         reason: 'Požadavek na videoselfie',
         type: 'VIDEOSELFIE'
       },

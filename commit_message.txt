@@ -1,6 +1,5 @@
-fix(db): Restore flexible database connection logic
+feat(detection): Add new videoselfie error pattern
 
-- Re-implemented the database connection logic in `iv_sql.js` to correctly handle both development and production environments.
-- The system now prioritizes environment variables (`CLAUDE_DB_USER`, `CLAUDE_DB_PASS`) for the connection.
-- If environment variables are not found, it falls back to using the `sql_config.json` file, which is necessary for production VMs.
-- This fixes a critical bug that caused the application to crash in environments without the database environment variables set.
+- Added the exact string "Potvrďte svou totožnost pomocí videoselfie" to the error detection patterns in `iv_page_analyzer.class.js`.
+- This ensures that when this specific videoselfie request is detected on a page, the system correctly identifies it as a critical error.
+- The existing error handling workflow will then lock the user account with the appropriate reason ("Požadavek na videoselfie") and lock type ("VIDEOSELFIE").
