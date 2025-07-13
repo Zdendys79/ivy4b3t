@@ -513,7 +513,7 @@ export class PageAnalyzer {
       }
 
       // Jednoduchou analýzou získej všechny potřebné informace najednou
-      const groupInfo = await this.page.evaluate(() => {
+      const groupInfo = await this.page.evaluate(async () => {
         const bodyText = document.body.textContent.toLowerCase();
         
         const info = {

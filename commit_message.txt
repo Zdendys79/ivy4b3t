@@ -1,13 +1,9 @@
-refactor(core): Sjednocení logiky pro vyhledávání textu na stránce
+fix(analyzer): Oprava `await` ve funkci `page.evaluate`
 
-Tato oprava řeší nekonzistentní a duplicitní kód pro vyhledávání prvků na stránce a centralizuje tuto logiku do jedné sdílené funkce.
+Tato oprava řeší `SyntaxError: Unexpected reserved word`, který bránil spuštění aplikace.
 
-- **refactor(support): Vytvořena sdílená funkce `findByText`**
-  - Osvědčená metoda `_findByText` byla přesunuta z `FBBot` do `iv_fb_support.js`, přejmenována na `findByText` a upravena tak, aby přijímala `page` jako parametr. Tím je dostupná pro všechny moduly.
-
-- **refactor(fb): `FBBot` nyní používá sdílenou funkci**
-  - Všechna interní volání v `FBBot` byla upravena tak, aby používala novou sdílenou funkci `fbSupport.findByText`.
-
-- **fix(analyzer): `PageAnalyzer` nyní používá sdílenou funkci**
-  - Detekce tlačítka "Přidat se ke skupině" v `PageAnalyzer` byla přepsána. Místo vlastní, nespolehlivé implementace nyní také používá sdílenou a ověřenou funkci `fbSupport.findByText`.
-  - Tím se zajišťuje konzistentní a spolehlivé chování napříč celou aplikací.
+- **fix(analyzer): Opravena definice `_performGroupAnalysis`**
+  - Metoda byla označena jako `async`, což umožňuje správné použití `await` uvnitř ní.
+- **refactor(analyzer): Přesunuta logika hledání tlačítka mimo `evaluate`**
+  - Volání `fbSupport.findByText` bylo přesunuto mimo blok `page.evaluate`, protože `evaluate` běží v kontextu prohlížeče a nemá přístup k Node.js funkcím.
+  - Tím je zajištěna správná funkčnost detekce tlačítka "Přidat se ke skupině".
