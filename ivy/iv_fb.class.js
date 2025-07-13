@@ -1102,8 +1102,8 @@ export class FBBot {
         }
       }
 
-      await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko.');
-      return false;
+      await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko, zkouším fallback...');
+      return await this.fallbackClick();
 
     } catch (err) {
       await Log.error(`[FB] Chyba při odesílání:`, err);

@@ -1,8 +1,9 @@
-fix(import): Remove duplicate fs import in iv_fb_support.js
+fix(fb): Resolve SQL errors and improve send button detection
 
-- Fixed SyntaxError "Identifier 'fs' has already been declared" by removing duplicate import
-- The fs module was imported twice on lines 13 and 15 causing module loading failure
-- This prevented the application from starting properly
+- Remove debug incident calls from iv_fb_support.js causing SQL enum constraint violation
+- Add fallback mechanism to clickSendButton when primary button search fails
+- Expand submit_texts configuration to include more button variants (Post, Publikovat, Hotovo)
+- Fix "Identifier 'fs' has already been declared" import error
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
