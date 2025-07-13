@@ -110,7 +110,7 @@ export class InteractiveDebugger {
         
       case 'q':
         Log.info('[DEBUGGER]', '🛑 QUIT program requested by user, initiating graceful shutdown...');
-        process.kill(process.pid, 'SIGINT'); // Send SIGINT to trigger graceful shutdown
+        process.exit(99); // Exit s kódem 99 pro správnou detekci v start.sh
         result = 'quit'; // Return a special value to stop further execution
         break;
         

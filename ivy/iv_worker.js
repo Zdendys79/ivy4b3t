@@ -165,7 +165,7 @@ export async function tick() {
         await db.lockAccountWithReason(user.id, 'Opakované selhání FB přihlášení', 'LOGIN_FAILURE', os.hostname());
         await Log.info('[WORKER]', `Účet ${user.id} dočasně zablokován kvůli login problémům`);
         await waitWithHeartbeat(5); // Delší pauza
-        return;
+        return; // Ukončí celou tick() funkci
       } catch (lockErr) {
         await Log.error('[WORKER]', `Chyba při blokování účtu: ${lockErr.message}`);
       }

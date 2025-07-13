@@ -1,15 +1,12 @@
-fix(logging): Oprava formátování errorů a shutdown logování
+fix(debugger,worker): Finální opravy pro exit code a blokování účtů
 
-Řeší problémy s neformátovanými error výpisy a neukládáním shutdown logů do databáze.
+Dokončuje řešení problémů s interactive debuggerem a account blockingem.
 
-- **fix(log): Oprava formátování error zpráv s prefix**
-  - Log.error() nyní zobrazuje formátované zprávy místo raw stack trace
-  - Stack trace se zobrazuje pouze v debug módu
-  - Konzistentní formátování se všemi ostatními log metodami
-- **fix(shutdown): Oprava logování shutdown eventu do log_system**
-  - Přesunuto logování PŘED zavření databázového spojení
-  - Eliminuje problém s neukládáním shutdown záznamů
-  - Přidáno debug logování pro ověření úspěšnosti
-- **feat(debugger): Vylepšené přerušování aktivních session**
-  - Kritické errory nyní správně přeruší aktivní waitForUserInput
-  - Přidán tracking currentInputResolver pro čisté přerušení
+- **fix(debugger): 'q' key nyní používá exit code 99**
+  - Změna z SIGINT na process.exit(99) pro správnou detekci v start.sh
+  - Umožní start.sh správně detekovat kontrolované ukončení
+  - Zabrání nekonečným restartům po stisknutí 'q'
+- **fix(worker): Zajištění ukončení tick() po account blocking**
+  - Explicitní komentář u return statement pro clarity
+  - Garantuje že po zablokování účtu se tick() ukončí
+  - Předchází pokračování v worker loop s problematickým účtem
