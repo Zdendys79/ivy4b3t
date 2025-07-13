@@ -87,6 +87,10 @@ export class UIBot {
           result = await this._handleUserGroup(data);
           break;
 
+        case 'LOGIN_USER':
+          result = await this._handleLoginUser(data);
+          break;
+
         default:
           await Log.warn('[UI]', `Neznámý příkaz: ${command.command}`);
           result = false;
@@ -282,6 +286,49 @@ export class UIBot {
 
     } catch (err) {
       await Log.error('[UI] user_group', err);
+      return false;
+    }
+  }
+
+  /**
+   * Zpracuje LOGIN_USER příkaz - pouze přihlásí uživatele
+   * @param {Object} data - Data příkazu {user_id: number}
+   * @returns {Promise<boolean>}
+   * @private
+   */
+  async _handleLoginUser(data) {
+    const userId = data.user_id;
+    if (!userId) {
+      await Log.error('[UI]', 'LOGIN_USER: Chybí user_id');
+      return false;
+    }
+
+    try {
+      Log.info('[UI]', `Přihlašuji uživatele ${userId} na základě UI příkazu...`);
+
+      const user = await db.getUserById(userId);
+      if (!user) {
+        await Log.error('[UI]', `Uživatel ${userId} nenalezen`);
+        return false;
+      }
+
+      // Otevři browser a přihlas uživatele
+      await this._initializeBrowser(userId);
+      const loginResult = await this.fbBot.openFB(user);
+
+      if (loginResult === 'still_loged' || loginResult === 'now_loged') {
+        Log.success('[UI]', `Uživatel ${user.name} ${user.surname} je úspěšně přihlášen.`);
+        // Nečekáme na další příkazy, jen přihlásíme a skončíme.
+        // Prohlížeč zůstane otevřený pro další cyklus workeru.
+        this.browser = null; // Trik, aby se prohlížeč nezavřel v _cleanup
+        return true;
+      } else {
+        await Log.error('[UI]', `Přihlášení uživatele ${userId} selhalo se stavem: ${loginResult}`);
+        return false;
+      }
+
+    } catch (err) {
+      await Log.error('[UI] LOGIN_USER', err);
       return false;
     }
   }

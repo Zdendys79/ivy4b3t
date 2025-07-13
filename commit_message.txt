@@ -1,11 +1,11 @@
-feat(fb): Detekce obrazovky souhlasu s reklamami
+feat(ui): Implementace UI příkazu LOGIN_USER
 
-Tato změna přidává základní detekci pro novou obrazovku "Zkontrolujte, jestli můžeme vaše data zpracovávat pro účely reklamy", která se objevuje po přihlášení a způsobovala pád aplikace.
+Tato změna přidává podporu pro nový UI příkaz `LOGIN_USER`, který umožňuje cíleně přihlásit konkrétního uživatele.
 
-- **feat(fb): Přidána funkce `handleAdConsentScreen`**
-  - Do `iv_fb.class.js` byla přidána nová funkce, která aktivně hledá text specifický pro tuto obrazovku.
-  - Tím se zabrání `TimeoutError` při čekání na standardní prvky domovské stránky.
+- **feat(ui): Přidána nová metoda `_handleLoginUser` v `UIBot`**
+  - V `iv_ui.class.js` byla vytvořena nová metoda, která zpracuje příkaz `LOGIN_USER`.
+  - Tato metoda otevře prohlížeč s profilem zadaného uživatele a provede jeho přihlášení.
+  - Na rozdíl od `call_user` nečeká na další příkazy, ale okamžitě končí a předává řízení hlavnímu cyklu, který může s přihlášeným uživatelem dále pracovat.
 
-- **refactor(fb): Integrována detekce do procesu `openFB`**
-  - Nová funkce je volána ihned po načtení hlavní stránky Facebooku, což umožňuje včasnou reakci na tuto novou obrazovku.
-  - I když plná logika pro odklikání zatím není implementována, tato změna zabrání pádu a umožní další analýzu a vývoj.
+- **refactor(ui): Zaregistrován nový příkaz v `processCommand`**
+  - Nový příkaz byl přidán do `switch` bloku, čímž se stal plně funkční součástí systému UI příkazů.
