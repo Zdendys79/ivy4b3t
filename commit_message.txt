@@ -1,9 +1,10 @@
-fix(analyzer): Oprava volání Node.js funkce z kontextu prohlížeče
+fix(fb): Oprava findByText funkce a přidání podpory pro odmítnutí cookies
 
-Tato oprava řeší `SyntaxError: Unexpected reserved word`, který bránil spuštění aplikace.
+Opravuje kritickou chybu v hledání a klikání na cookie tlačítka.
 
-- **fix(analyzer): Opravena definice `_performGroupAnalysis`**
-  - Metoda byla označena jako `async`, což umožňuje správné použití `await` uvnitř ní.
-- **refactor(analyzer): Přesunuta logika hledání tlačítka mimo `evaluate`**
-  - Volání `fbSupport.findByText` bylo přesunuto mimo blok `page.evaluate`, protože `evaluate` běží v kontextu prohlížeče a nemá přístup k Node.js funkcím.
-  - Tím je zajištěna správná funkčnost detekce tlačítka "Přidat se ke skupině".
+- **fix(fb-support): Opravena chyba v findByText funkci**
+  - Změněno `page.$()` na `page.$$()`  pro vrácení pole místo single elementu
+  - Řeší TypeError při volání `.length` a `[0].click()` na null
+- **feat(fb): Přidána podpora pro "Odmítnout volitelné soubory cookie"**  
+  - acceptCookies() nyní zkusí najít i odmítací tlačítko jako fallback
+  - Zlepšuje úspěšnost odklikávání cookie bannerů na FB

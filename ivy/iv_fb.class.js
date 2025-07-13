@@ -349,10 +349,11 @@ export class FBBot {
 
   async acceptCookies() {
     try {
-      const cookieBtnText = 'Povolit soubory cookie';
-      Log.info(`[FB] Hledám a klikám na tlačítko pro cookies: "${cookieBtnText}"`);
+      // Zkusíme najít tlačítko pro povolení cookies
+      const acceptText = 'Povolit soubory cookie';
+      Log.info(`[FB] Hledám a klikám na tlačítko pro cookies: "${acceptText}"`);
       
-      const cookieButtons = await fbSupport.findByText(this.page, cookieBtnText, { match: 'contains' });
+      let cookieButtons = await fbSupport.findByText(this.page, acceptText, { match: 'contains' });
 
       if (cookieButtons && cookieButtons.length > 0) {
         await cookieButtons[0].click();
@@ -361,7 +362,20 @@ export class FBBot {
         return true;
       }
       
-      Log.warn(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno.`);
+      // Pokud nenalezeno, zkusíme "Odmítnout volitelné soubory cookie"
+      const rejectText = 'Odmítnout volitelné soubory cookie';
+      Log.info(`[FB] Hledám alternativní tlačítko: "${rejectText}"`);
+      
+      cookieButtons = await fbSupport.findByText(this.page, rejectText, { match: 'contains' });
+
+      if (cookieButtons && cookieButtons.length > 0) {
+        await cookieButtons[0].click();
+        await wait.delay(3000);
+        Log.info(`[FB] Cookie banner odmítnut pomocí "Odmítnout volitelné soubory cookie".`);
+        return true;
+      }
+      
+      Log.warn(`[FB] Žádné cookie tlačítko nenalezeno ("${acceptText}" ani "${rejectText}").`);
       return false;
 
     } catch (err) {

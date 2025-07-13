@@ -40,7 +40,7 @@ export async function findByText(page, text, options = {}) {
 
     // Počkáme na element a pak vrátíme všechny, které odpovídají
     await page.waitForSelector(selector, { timeout }).catch(() => {});
-    const elements = await page.$(selector);
+    const elements = await page.$$(selector);
     return elements || [];
 
   } catch (err) {
