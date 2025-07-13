@@ -152,7 +152,8 @@ export async function tick() {
     const userChoice = await Log.errorInteractive('[WORKER]', err);
     // Pokud uživatel zvolil 'q' (quit) nebo 's' (stop), přerušíme cyklus.
     if (userChoice === 'quit' || userChoice === true) {
-      return;
+      Log.info('[WORKER]', 'Ukončuji na požádání uživatele...');
+      process.exit(99); // Exit kód 99 pro detekci v start.sh
     }
     // V ostatních případech (continue, timeout) pokračujeme s prodlevou.
     await waitWithHeartbeat(2);
@@ -264,7 +265,11 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
       const success = await runAction(user, actionCode, { fbBot, utioBot }, picked);
       if (!success) {
-        await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
+        const userChoice = await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
+        if (userChoice === 'quit') {
+          Log.info('[WORKER]', 'Ukončuji na požádání uživatele...');
+          process.exit(99); // Exit kód 99 pro detekci v start.sh
+        }
         consecutive_failures++;
       } else {
         Log.success(`[${user.id}]`, `Akce ${actionCode} úspěšně dokončena`);

@@ -253,10 +253,58 @@ export class FBBot {
 
   async _legacyAccountLockCheck() {
     try {
-      return await this._checkTexts("váš účet jsme uzamkli", "Účet byl zablokován") ? 'account_locked' : false;
+      const blockTexts = [
+        "váš účet jsme uzamkli",
+        "Účet byl zablokován", 
+        "Účet máte zablokovaný",
+        "Account restricted",
+        "temporarily restricted"
+      ];
+      
+      // Kontrola všech variant textu blokace
+      for (const text of blockTexts) {
+        const isBlocked = await this._checkTexts(text, "Account block detected");
+        if (isBlocked) {
+          // Zaloguj detekci do system logu
+          await Log.warn('[FB]', `Detekováno hlášení o zablokování účtu: "${text}"`);
+          await this._logAccountBlockDetection(text);
+          return 'account_locked';
+        }
+      }
+      
+      return false;
     } catch (err) {
       await Log.error('[FB]', `Legacy account lock check failed: ${err}`);
       return false;
+    }
+  }
+
+  async _logAccountBlockDetection(detectedText) {
+    try {
+      // Import db zde pro zabránění circular import
+      const { db } = await import('./iv_sql.js');
+      const os = await import('os');
+      
+      const currentUrl = this.page ? this.page.url() : 'unknown';
+      const pageTitle = this.page ? await this.page.title().catch(() => 'unknown') : 'unknown';
+      
+      // Zaloguj do system logu
+      await db.systemLog(
+        'Account Block Detected',
+        `Detekováno hlášení o zablokování účtu: "${detectedText}"`,
+        {
+          detected_text: detectedText,
+          page_url: currentUrl,
+          page_title: pageTitle,
+          timestamp: new Date().toISOString(),
+          hostname: os.hostname()
+        }
+      );
+      
+      Log.info('[FB]', `Hlášení o blokaci zalogováno do system logu: "${detectedText}"`);
+      
+    } catch (err) {
+      await Log.error('[FB]', `Chyba při logování detekce blokace: ${err.message}`);
     }
   }
 
