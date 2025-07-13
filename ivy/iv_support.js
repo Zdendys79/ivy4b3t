@@ -21,6 +21,7 @@ import { Log } from './iv_log.class.js';
 import * as fbSupport from './iv_fb_support.js';
 
 import { exec } from 'child_process';
+import path from 'path';
 
 /**
  * Získá informace o aktuálním stavu Git repozitáře

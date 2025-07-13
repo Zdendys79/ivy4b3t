@@ -1,15 +1,7 @@
-feat(worker): Implementace rotace uživatelů pro testování
+fix(worker): Oprava chyby `path is not defined`
 
-Tento commit zavádí novou logiku pro výběr uživatelů, která je specifická pro `main` (testovací) větev, aby se zabránilo opakovanému výběru stejného uživatele po chybě.
+Tato oprava řeší `ReferenceError`, který způsoboval pád aplikace při pokusu o zjištění aktuální Git větve.
 
-- **feat(worker): Detekce `main` větve a podmíněný výběr uživatele**
-  - Skript `iv_worker.js` nyní na začátku detekuje aktuální Git větev.
-  - Pokud je na `main` větvi, použije se nový, zjednodušený výběr, který rotuje uživatele na základě nejstaršího času poslední aktivity (`next_worktime`).
-  - V jakékoliv jiné (produkční) větvi zůstává v platnosti původní, sofistikovaná logika výběru uživatele s dostupnou akcí.
-
-- **feat(worker): Automatický posun času v `main` větvi**
-  - Ihned po výběru uživatele v `main` větvi se jeho `next_worktime` v databázi posune o 15 minut. Tím je zajištěno, že při příštím spuštění (i po chybě) bude vybrán další uživatel v pořadí.
-
-- **feat(db): Přidán nový SQL dotaz `getOldestReadyForHost`**
-  - Do `users.js` byl přidán nový dotaz, který implementuje zjednodušenou logiku výběru pro testovací účely.
-  - Byla přidána odpovídající funkce do `QueryBuilderu`.
+- **fix(support): Doplněn chybějící import modulu `path`**
+  - Do souboru `iv_support.js` byl přidán nezbytný `import path from 'path';`.
+  - Tím se opravuje chyba, která bránila správné funkci detekce větve a následné rotaci uživatelů v testovacím prostředí.
