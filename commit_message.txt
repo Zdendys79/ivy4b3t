@@ -1,9 +1,9 @@
-fix: Sjednocení detekce cookies a oprava ukončovacího cyklu
+fix(fb): Sjednocení a oprava logiky hledání tlačítek
 
-Tato oprava řeší dva přetrvávající problémy: nekonzistentní detekci cookie lišty a nesprávné chování po žádosti o ukončení z debuggeru.
+Tato oprava řeší přetrvávající `TypeError: is not iterable` tím, že sjednocuje a zpřesňuje způsob, jakým jsou vyhledávány a zpracovávány klikatelné prvky.
 
-- **refactor(analyzer): Sjednocena logika detekce a akce pro cookies**
-  - `PageAnalyzer` nyní používá stejnou robustní `findByText` metodu pro detekci cookie lišty, jakou používá `FBBot` pro kliknutí na ni. Tím se odstraňuje nekonzistence, která způsobovala zacyklení.
+- **refactor(fb): Zrobustněna metoda `_clickByText`**
+  - Metoda byla přepsána tak, aby nepoužívala problematické "destructuring" přiřazení. Nyní nejprve zkontroluje, zda funkce `findByText` vrátila platné pole s prvky, a teprve poté se pokusí na prvek kliknout.
 
-- **fix(worker): Opravena reakce na `quit` z debuggeru**
-  - `catch` blok v hlavním `tick()` cyklu nyní správně detekuje, kdy uživatel požádal o ukončení, a okamžitě přeruší další provádění, čímž zabrání nechtěným restartům.
+- **refactor(fb): `acceptCookies` nyní používá `findByText`**
+  - Metoda pro odklikávání cookies byla přepsána, aby používala stejnou, nyní již opravenou a robustní, logiku jako `_clickByText`. Tím je zajištěna konzistence a spolehlivost.

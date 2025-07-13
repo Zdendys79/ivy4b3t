@@ -150,9 +150,11 @@ export class FBBot {
   }
 
   async _clickByText(text, timeout = wait.timeout()) {
-    const [button] = await fbSupport.findByText(this.page, text, { timeout });
-    if (!button) throw new Error(`Tlačítko "${text}" nenalezeno.`);
-    await button.click();
+    const buttons = await fbSupport.findByText(this.page, text, { timeout, match: 'exact' });
+    if (!buttons || buttons.length === 0) {
+      throw new Error(`Tlačítko "${text}" nenalezeno.`);
+    }
+    await buttons[0].click();
     Log.info(`[FB] Kliknuto na "${text}".`);
     return true;
   }
@@ -354,7 +356,7 @@ export class FBBot {
 
       if (cookieButtons && cookieButtons.length > 0) {
         await cookieButtons[0].click();
-        await wait.delay(3000); // Pauza po kliknutí
+        await wait.delay(3000);
         Log.info(`[FB] Cookie banner by měl být odkliknut.`);
         return true;
       }
