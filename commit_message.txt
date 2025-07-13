@@ -1,15 +1,8 @@
-feat(collector): Cílené ukládání detailů a sběr odkazů
+fix(core): Oprava kritické chyby při startu skriptu
 
-Tento commit vylepšuje systém analýzy a sběru dat.
+Tato oprava řeší `ReferenceError`, který způsoboval pád skriptu ihned po spuštění.
 
-- **feat(analyzer): Podmíněné ukládání detailů o skupinách**
-  - Analýza a ukládání detailních informací do tabulky `group_details` se nyní provádí pouze pro stránky, které jsou skutečně facebookovými skupinami (URL obsahuje `/groups/`).
-  - Tím se zabraňuje zbytečnému ukládání dat z hlavní zdi a jiných nerelevantních stránek.
-
-- **feat(collector): Ukládání objevených odkazů na skupiny**
-  - Byla vytvořena nová tabulka `discovered_group_links`.
-  - Systém nyní při analýze skupiny extrahuje všechny odkazy na další skupiny a ukládá je do této nové tabulky pro budoucí prozkoumání.
-  - To vytváří základ pro automatizované objevování nového obsahu.
-
-- **chore(db): Přidány nové dotazy a databázové funkce**
-  - Implementována podpora pro práci s novou tabulkou `discovered_group_links`.
+- **fix(db): Doplněny chybějící importy v `sql/queries/index.js`**
+  - Při předchozích úpravách byly omylem odstraněny importy pro většinu SQL modulů (`ACTIONS`, `GROUPS`, atd.).
+  - Všechny potřebné importy byly obnoveny, což řeší pád aplikace.
+  - Sjednoceny názvy proměnných pro konzistenci.

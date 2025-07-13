@@ -6,20 +6,40 @@
  * Změny: Přidán ERROR_REPORTS modul pro FB error reporting systém
  */
 
-import { USERS } from './users.js';
+import { ACTIONS } from './actions.js';
+import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import { DISCOVERED_LINKS } from './discovered_links.js';
+import { ERROR_REPORTS } from './error-reports.js';
+import { GROUP_DETAILS } from './group_details.js';
+import { GROUPS } from './groups.js';
+import { LIMITS } from './limits.js';
+import { LOGS } from './logs.js';
+import { MESSAGE_HASHES } from './message_hashes.js';
+import { QUOTES } from './quotes.js';
+import { SYSTEM } from './system.js';
+import { USER_GROUP_BLOCKING } from './user_group_blocking.js';
+import { USERS } from './users.js';
+import { ACTION_QUALITY } from './action_quality.js';
+import { SYSTEM_METRICS } from './system_metrics.js';
+
 
 export const SQL = {
   actions: ACTIONS,
+  action_quality: ACTION_QUALITY,
   behavioral_profiles: BEHAVIORAL_PROFILES,
   discovered_links: DISCOVERED_LINKS,
   'error-reports': ERROR_REPORTS,
   group_details: GROUP_DETAILS,
   groups: GROUPS,
-  user_limits: userLimits,
-  action_quality: actionQuality,
-  system_metrics: systemMetrics,
-  message_hashes: messageHashes
+  hostname_protection: HOSTNAME_PROTECTION,
+  limits: LIMITS,
+  logs: LOGS,
+  message_hashes: MESSAGE_HASHES,
+  quotes: QUOTES,
+  system: SYSTEM,
+  system_metrics: SYSTEM_METRICS,
+  user_group_blocking: USER_GROUP_BLOCKING,
+  users: USERS
 };
 
 /**
