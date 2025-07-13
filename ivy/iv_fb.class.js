@@ -1687,14 +1687,28 @@ export class FBBot {
 
   async clickDiscus() {
     try {
-      Log.info('[FB]', 'Hledám tlačítko "Diskuze"...');
-      const elements = await fbSupport.findByText(this.page, "Diskuze", { match: 'exact', timeout: 3000 });
-      if (elements.length > 0) {
-        await elements[0].click();
-        Log.success('[FB]', '✅ Úspěšně kliknuto na "Diskuze"');
-        return true;
+      const discussionTexts = ['Diskuze', 'Discussion', 'Hlavní', 'Featured'];
+      Log.info('[FB]', `Hledám tlačítko pro diskuzi. Varianty: ${discussionTexts.join(', ')}`);
+
+      for (const text of discussionTexts) {
+        try {
+          // Hledáme v odkazech, spanech a divech s rolí tlačítka
+          const elements = await fbSupport.findByText(this.page, text, { 
+            match: 'exact', 
+            timeout: 1500, // Kratší timeout pro každou variantu
+          });
+
+          if (elements.length > 0) {
+            await elements[0].click();
+            Log.success('[FB]', `✅ Úspěšně kliknuto na "${text}"`);
+            return true;
+          }
+        } catch (e) {
+          // Ignorovat chybu, pokud text není nalezen, a pokračovat s další variantou
+        }
       }
-      throw new Error('Tlačítko "Diskuze" nenalezeno');
+      
+      throw new Error('Žádná z variant tlačítka pro diskuzi nebyla nalezena.');
     } catch (err) {
       Log.debug(`[FB] clickDiscus selhal: ${err.message}`);
       return false;

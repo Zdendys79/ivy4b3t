@@ -1,5 +1,6 @@
-feat(detection): Add new videoselfie error pattern
+fix(fb): Improve discussion tab detection
 
-- Added the exact string "Potvrďte svou totožnost pomocí videoselfie" to the error detection patterns in `iv_page_analyzer.class.js`.
-- This ensures that when this specific videoselfie request is detected on a page, the system correctly identifies it as a critical error.
-- The existing error handling workflow will then lock the user account with the appropriate reason ("Požadavek na videoselfie") and lock type ("VIDEOSELFIE").
+- Enhanced the `clickDiscus` method in `iv_fb.class.js` to be more robust.
+- It now searches for multiple text variants ('Diskuze', 'Discussion', 'Hlavní', 'Featured') to handle different group layouts.
+- The underlying `findByText` function in `iv_fb_support.js` was also updated to search within `<span>` elements in addition to buttons and links.
+- This change prevents the bot from getting stuck when the primary "post" field is not immediately visible and a switch to the discussion tab is required.

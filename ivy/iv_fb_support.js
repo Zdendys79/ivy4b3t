@@ -35,12 +35,12 @@ export async function findByText(page, text, options = {}) {
     }[match];
 
     // Robustní XPath, který hledá jakýkoliv element, který je jedním z klikatelných typů A ZÁROVEŇ splňuje textovou podmínku.
-    const xpath = `//*[self::button or self::div[@role='button'] or self::a[@role='button']][${textSelector}]`;
+    const xpath = `//*[self::button or self::div[@role='button'] or self::a[@role='button'] or self::span][${textSelector}]`;
     const selector = `xpath/${xpath}`;
 
     // Počkáme na element a pak vrátíme všechny, které odpovídají
     await page.waitForSelector(selector, { timeout }).catch(() => {});
-    const elements = await page.$$(selector);
+    const elements = await page.$(selector);
     return elements || [];
 
   } catch (err) {
