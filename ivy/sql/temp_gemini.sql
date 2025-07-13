@@ -1,2 +1,4 @@
-INSERT INTO ui_commands (host, command, data, created) 
-VALUES ('Ubuntu-5D', 'user_group', '{"user_id": 35, "group_id": 121}', NOW());
+-- Oprava nadměrné chybovosti u existujících behaviorálních profilů
+UPDATE user_behavioral_profiles
+SET mistake_rate = mistake_rate / 10
+WHERE mistake_rate > 0.01;

@@ -1,7 +1,12 @@
-fix(behavior): Snížení nadměrné chybovosti při simulaci psaní
+refactor(behavior): Oprava nadměrné chybovosti psaní úpravou dat
 
-Tato oprava řeší problém, kdy simulace lidského psaní generovala nepřijatelně vysoký počet překlepů.
+Tato oprava řeší problém s vysokou chybovostí při simulaci psaní správným, systémovým způsobem – úpravou výchozích dat místo "patchování" logiky.
 
-- **fix(behavior): Snížena pravděpodobnost chyby desetinásobně**
-  - V `iv_human_behavior_advanced.js` byla upravena podmínka pro generování chyby.
-  - Hodnota `mistake_rate` načtená z profilu uživatele se nyní dělí deseti, což dramaticky snižuje počet překlepů na realistickou úroveň (cca 1-2 na delší text).
+- **revert(behavior): Odstraněno dělení chybovosti v logice**
+  - Z metody `typeWord` byla odstraněna dočasná úprava, která dělila `mistake_rate` deseti.
+
+- **refactor(behavior): Upravena výchozí chybovost pro nové profily**
+  - V metodě `_createDefaultProfile` byla desetinásobně snížena generovaná hodnota `mistake_rate`, aby noví uživatelé měli od začátku realistickou chybovost.
+
+- **fix(db): Provedena jednorázová oprava existujících profilů**
+  - Byl spuštěn SQL skript, který všem existujícím záznamům v `user_behavioral_profiles` snížil hodnotu `mistake_rate` desetinásobně.

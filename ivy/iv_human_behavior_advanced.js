@@ -134,7 +134,7 @@ export class AdvancedHumanBehavior {
       if (this.currentEmotion?.emotion_type === 'frustrated') mistakeChance *= 2.0;
       
       // Implementace chyby
-      if (Math.random() < (mistakeChance / 10) && /[a-zá-ž]/i.test(char)) {
+      if (Math.random() < mistakeChance && /[a-zá-ž]/i.test(char)) {
         errors++;
         await this.performTypingMistake(page, char, profile);
       } else {
@@ -443,7 +443,7 @@ export class AdvancedHumanBehavior {
       user_id: this.userId,
       avg_typing_speed: 150.0,
       typing_variance: 0.3,
-      mistake_rate: 0.05,
+      mistake_rate: 0.005, // Sníženo z 0.05
       correction_style: 'casual',
       double_key_chance: 0.10,
       backspace_delay: 200,
