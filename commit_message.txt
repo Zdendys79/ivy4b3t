@@ -1,10 +1,7 @@
-fix: Oprava chyb při psaní a po navigaci
+fix(actions): Oprava pádu po přechodu na stránku skupiny
 
-Tato oprava řeší dva nezávislé problémy: `TimeoutNaNWarning` při simulaci psaní a chybějící `PageAnalyzer` po přechodu na jinou stránku.
+Tato oprava řeší chybu `Cannot read properties of null (reading 'analyzeFullPage')`, která nastávala při provádění akcí `post_utio_g` a `post_utio_gv`.
 
-- **fix(behavior): Ošetřena `null` hodnota pro `backspace_delay`**
-  - Do metody `performTypingMistake` byla přidána pojistka, která zabrání chybě `NaN`, pokud je `backspace_delay` v databázi `NULL`.
-
-- **fix(actions): Reinicializace `PageAnalyzer` po navigaci**
-  - Do funkce `navigateToHomepage` byla přidána reinicializace `PageAnalyzer`.
-  - Tím je zajištěno, že po přechodu na novou stránku (např. v rámci akce `quote_post`) je pro následné bezpečnostní kontroly vždy k dispozici platná instance analyzátoru.
+- **fix(actions): Přidána reinicializace `PageAnalyzer` po `openGroup`**
+  - V metodě `handleSingleUtioPost` je nyní po úspěšném přechodu na stránku skupiny explicitně volána metoda `fbBot.initializeAnalyzer()`.
+  - Tím je zajištěno, že pro nově načtenou stránku vždy existuje platná instance analyzátoru, což zabraňuje pádu aplikace při následném pokusu o analýzu.

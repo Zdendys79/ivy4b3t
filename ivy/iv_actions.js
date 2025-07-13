@@ -138,6 +138,7 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
 
   try {
     await fbBot.openGroup(group);
+    fbBot.initializeAnalyzer(); // INICIALIZACE ANALYZÁTORU ZDE
     const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
 
     // Fáze 2: Rozhodovací strom
