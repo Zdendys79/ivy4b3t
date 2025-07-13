@@ -1,7 +1,15 @@
-fix(actions): Oprava chyby při nastavování invasive_lock
+refactor(core): Optimalizace a zjednodušení `invasive_lock`
 
-Tato oprava řeší pád aplikace, který nastával po úspěšném dokončení invazivní akce.
+Tato oprava zjednodušuje a zefektivňuje způsob, jakým systém zjišťuje, zda je akce invazivní, a odstraňuje zbytečné dotazy do databáze.
 
-- **fix(db): Doplněna chybějící funkce `getDefinitionByCode` do `QueryBuilderu`**
-  - Funkce, která načítá definici akce z databáze, chyběla v `iv_querybuilder.class.js`, což způsobovalo chybu `is not a function`.
-  - Doplněním této funkce je nyní možné správně ověřit, zda je akce invazivní, a nastavit potřebný `invasive_lock`.
+- **refactor(db): Rozšířen SQL dotaz `getUserActionsWithLimits`**
+  - Dotaz nyní vrací i příznak `invasive` přímo z tabulky `action_definitions`.
+
+- **refactor(wheel): Odstraněno zbytečné volání `isInvasiveAction`**
+  - Kolo štěstí (`iv_wheel.js`) nyní získává informaci o invazivnosti akce přímo z dat načtených na začátku, místo aby se znovu dotazovalo databáze pro každou akci.
+  - Celý objekt s detaily akce (včetně `invasive`) je nyní předáván dál.
+
+- **refactor(actions): Odstraněn zbytečný dotaz v `runAction`**
+  - Funkce `runAction` si již nemusí sama zjišťovat, zda je akce invazivní. Tuto informaci dostane v parametru od `iv_worker.js`.
+
+Výsledkem je čistší kód a snížení počtu SQL dotazů při každém výběru akce.

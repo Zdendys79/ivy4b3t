@@ -247,7 +247,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // 🎯 KROK 6: PROVEDENÍ AKCE
       Log.info(`[${user.id}]`, `Krok 6: Provádím akci ${actionCode}...`);
 
-      const success = await runAction(user, actionCode, { fbBot, utioBot });
+      const success = await runAction(user, actionCode, { fbBot, utioBot }, picked);
       if (!success) {
         await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
         consecutive_failures++;

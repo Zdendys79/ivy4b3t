@@ -161,19 +161,15 @@ export async function getRandomAction(availableActions = null, userId = null) {
     }
 
     // Sestavíme kolo s effective_weight a označíme invazní akce z databáze
-    let wheelItems = [];
-    for (const def of actionsWithLimits) {
-      const isInvasive = await isInvasiveAction(def.action_code);
-      wheelItems.push({
+    let wheelItems = actionsWithLimits.map(def => ({
         code: def.action_code,
         weight: def.weight,
         effective_weight: def.effective_weight,
         min_minutes: def.min_minutes,
         max_minutes: def.max_minutes,
         repeatable: def.repeatable,
-        is_invasive: isInvasive
-      });
-    }
+        is_invasive: def.invasive === 1 || def.invasive === true
+    }));
 
     // Filtruj invazní akce během invasive lock
     if (lockStatus.hasLock) {

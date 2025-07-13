@@ -172,6 +172,7 @@ export const ACTIONS = {
       ad.min_minutes,
       ad.max_minutes,
       ad.repeatable,
+      ad.invasive,
       ad.weight as effective_weight
     FROM action_definitions ad
     JOIN user_action_plan uap ON ad.action_code = uap.action_code
@@ -198,6 +199,7 @@ export const ACTIONS = {
       ad.min_minutes,
       ad.max_minutes,
       ad.repeatable,
+      ad.invasive,
       CASE
         WHEN ad.action_code LIKE 'post_utio_%' THEN
           CASE

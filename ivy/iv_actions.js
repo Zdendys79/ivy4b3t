@@ -206,7 +206,7 @@ async function performPublication(user, fbBot, utioBot, group, actionCode) {
  * @param {Object} context - Kontext s instancemi botů
  * @returns {Promise<boolean>} True pokud byla akce úspěšná
  */
-export async function runAction(user, actionCode, context) {
+export async function runAction(user, actionCode, context, pickedAction) {
   try {
     Log.info(`[${user.id}]`, `🎬 Spouštím akci: ${actionCode}`);
 
@@ -295,18 +295,14 @@ export async function runAction(user, actionCode, context) {
       reason: result ? 'Success' : 'Failed'
     });
 
-    if (result) {
-      // Nastav invasive lock pro invazní akce
+    if (result && pickedAction.invasive) {
       try {
-        const actionDef = await db.getDefinitionByCode(actionCode);
-        if (actionDef?.invasive) {
-          const config = JSON.parse(await fs.readFile('./config.json', 'utf8'));
-          const cooldownMs = (config.posting_cooldown.min_seconds + 
-                            Math.random() * (config.posting_cooldown.max_seconds - config.posting_cooldown.min_seconds)) * 1000;
-          
-          setInvasiveLock(cooldownMs);
-          Log.info(`[${user.id}]`, `🔒 Invasive lock nastaven na ${Math.round(cooldownMs / 1000)}s po úspěšné akci ${actionCode}`);
-        }
+        const config = JSON.parse(await fs.readFile('./config.json', 'utf8'));
+        const cooldownMs = (config.posting_cooldown.min_seconds + 
+                          Math.random() * (config.posting_cooldown.max_seconds - config.posting_cooldown.min_seconds)) * 1000;
+        
+        setInvasiveLock(cooldownMs);
+        Log.info(`[${user.id}]`, `🔒 Invasive lock nastaven na ${Math.round(cooldownMs / 1000)}s po úspěšné akci ${actionCode}`);
       } catch (err) {
         await Log.warn(`[${user.id}]`, `Nepodařilo se nastavit invasive lock: ${err.message}`);
       }
