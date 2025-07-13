@@ -1,18 +1,18 @@
-fix(logging): Oprava race condition při debugger zastavení
+fix(worker): Sjednocení FB error handling a eliminace "šílených dualit"
 
-Řeší kritický problém kdy debugger zastavuje kód ale async operace pokračují.
+Řeší nekonzistentní chování při různých typech FB chyb.
 
-- **fix(log-synchronization): Odstranění auto-debuggeru z Log.warn/error**
-  - Log.warn() a Log.error() už nespouštějí debugger automaticky
-  - Eliminuje race condition kdy funkce pokračuje i když debugger čeká
-  - Zachovány interaktivní verze Log.warnInteractive() a Log.errorInteractive()
+- **fix(browser-closure): Sjednocení uzavírání prohlížeče**
+  - FB initialization failed nyní také zavírá celý prohlížeč
+  - Všechny FB chyby (login i initialization) mají konzistentní chování
+  - Eliminuje 10minutové čekání u initialization errors
 
-- **fix(critical-debugging): Explicitní interaktivní debugging**
-  - PageAnalyzer "struktura stránky není normální" → warnInteractive
-  - FB login "uživatel není přihlášen" → warnInteractive  
-  - Debugging jen tam kde je skutečně potřeba
+- **fix(account-blocking): Rozšíření account blocking logiky**
+  - Account blocking nyní zahrnuje FB initialization failed chyby
+  - Odstranění duplikované logiky mezi tick() a executeUserActionCycle
+  - Nový lock reason: "Selhání FB inicializace" s typem FB_FAILURE
 
-- **fix(async-consistency): Synchronní chování Log metod**
-  - Normální Log.warn/error jsou synchronní (bez await)
-  - Interaktivní verze zůstávají async s await
-  - Konzistentní chování napříč celou aplikací
+- **fix(error-details): Podrobnější error zprávy**
+  - FB initialization errors nyní obsahují detaily z page analysis
+  - Místo "final status: warning" zobrazuje konkrétní problemy
+  - Lepší diagnostika pro debugging FB problémů

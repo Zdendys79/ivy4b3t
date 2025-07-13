@@ -157,19 +157,7 @@ export async function tick() {
       return;
     }
     
-    // Dodatečná kontrola při "FB login failed" - možná nebyla detekována blokace
-    if (err.message && err.message.includes('FB login failed') && user) {
-      await Log.warn('[WORKER]', 'FB login selhal - označuji účet jako problematický a dočasně ho zablokuji');
-      try {
-        // Dočasné zablokování účtu kvůli problémům s přihlášením
-        await db.lockAccountWithReason(user.id, 'Opakované selhání FB přihlášení', 'LOGIN_FAILURE', os.hostname());
-        await Log.info('[WORKER]', `Účet ${user.id} dočasně zablokován kvůli login problémům`);
-        await waitWithHeartbeat(5); // Delší pauza
-        return; // Ukončí celou tick() funkci
-      } catch (lockErr) {
-        await Log.error('[WORKER]', `Chyba při blokování účtu: ${lockErr.message}`);
-      }
-    }
+    // Poznámka: Account blocking se nyní provádí v executeUserActionCycle catch bloku
     
     const userChoice = await Log.errorInteractive('[WORKER]', err);
     // Pokud uživatel zvolil 'q' (quit) nebo 's' (stop), přerušíme cyklus.
@@ -375,11 +363,11 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
   } catch (err) {
     await Log.error(`[${user.id}] executeUserActionCycle`, err);
     
-    // Kontrola a blokování účtu při FB login failure
-    if (err.message && err.message.includes('FB login failed') && user) {
-      await Log.warn('[WORKER]', 'FB login selhal - označuji účet jako problematický a dočasně ho zablokuji');
+    // Kontrola a blokování účtu při jakémkoli FB selhání
+    if (err.message && (err.message.includes('FB login failed') || err.message.includes('FB initialization failed')) && user) {
+      await Log.warn('[WORKER]', 'FB selhání - označuji účet jako problematický a dočasně ho zablokuji');
       try {
-        await db.lockAccountWithReason(user.id, 'Opakované selhání FB přihlášení', 'LOGIN_FAILURE', os.hostname());
+        await db.lockAccountWithReason(user.id, 'Selhání FB inicializace', 'FB_FAILURE', os.hostname());
         await Log.info('[WORKER]', `Účet ${user.id} dočasně zablokován kvůli login problémům`);
         await waitWithHeartbeat(5);
         return; // Ukončí funkci a vrátí se do tick()
@@ -713,7 +701,14 @@ async function initializeRequiredServices(user, context, requirements, existingF
         } else if (analysis.status === 'ok' && analysis.basic.isLoggedIn) {
            Log.success(`[${user.id}]`, 'Uživatel je již přihlášen a stránka je v pořádku.');
         } else if (analysis.status !== 'ok') {
-          throw new Error(`FB initialization failed with final status: ${analysis.status}`);
+          // Podrobnější error zpráva s detaily z analýzy
+          const details = [];
+          if (analysis.errorPatterns) details.push(`Chyby: ${JSON.stringify(analysis.errorPatterns)}`);
+          if (analysis.basic) details.push(`Základní info: ${JSON.stringify(analysis.basic)}`);
+          if (analysis.navigation) details.push(`Navigace: ${JSON.stringify(analysis.navigation)}`);
+          
+          const detailString = details.length > 0 ? ` | ${details.join(' | ')}` : '';
+          throw new Error(`FB initialization failed - status: ${analysis.status}${detailString}`);
         }
       }
       Log.success(`[${user.id}]`, 'FB úspěšně inicializován');
@@ -725,9 +720,10 @@ async function initializeRequiredServices(user, context, requirements, existingF
     // Cleanup při chybě
     if (fbBot && fbBot !== existingFbBot) {
       try { 
-        // Při FB login selhání zavři celý prohlížeč
+        // Při jakémkoli FB selhání zavři celý prohlížeč
         const shouldCloseBrowser = err.message && (
           err.message.includes('FB login failed') || 
+          err.message.includes('FB initialization failed') ||
           err.message.includes('Account blocked during login')
         );
         await fbBot.close(shouldCloseBrowser);
