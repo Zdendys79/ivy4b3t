@@ -34,6 +34,7 @@
 │   ├── config.json           ← Konfigurace větve, log úrovní, ikon a chování
 │   ├── git-common.sh         ← Společný modul pro Git operace napříč skripty
 │   ├── start.sh              ← Opakovaný spouštěcí skript (git pull + rsync + `node ivy.js`)
+│   ├── main-start.sh         ← Produkční spouštěcí skript (vždy main větev)
 │   ├── update-files.sh       ← Pomocný skript pro aktualizaci souborů bez spuštění
 │   ├── loginuser.js          ← Skript pro správu FB uživatele na webu
 │   ├── cycleusers.js         ← Cyklické přepínání uživatelů na virtuálu
@@ -115,6 +116,7 @@
 | `config.json`              | Hlavní konfigurace: větev, log úrovně, ikony, lidské chování          |
 | `git-common.sh`            | Společný Bash modul pro Git operace používaný více skripty            |
 | `start.sh`                 | Bash skript pro opakované spouštění `ivy.js` s Git aktualizacemi      |
+| `main-start.sh`            | Produkční bash skript (vždy main větev, ignoruje config.json)         |
 | `update-files.sh`          | Pomocný skript pro aktualizaci souborů bez spuštění aplikace          |
 
 ### Složka ivy/sql - databázové dotazy
@@ -370,6 +372,31 @@ const query2 = QueryUtils.getQuery('users.getActiveUser');
    ```bash
    cd ~/ivy && chmod +x start.sh && ./start.sh
    ```
+
+5. **Spuštění v main větvi (doporučeno pro produkci):**
+   ```bash
+   cd ~/ivy && chmod +x main-start.sh && ./main-start.sh
+   ```
+
+### ⚠️ Spustitelná oprávnění po Git aktualizaci
+
+Po každé aktualizaci z Git repozitáře je nutné znovu nastavit spustitelná oprávnění pro skripty na VM:
+
+```bash
+# Základní start skripty
+chmod +x ~/ivy/start.sh
+chmod +x ~/ivy/main-start.sh
+chmod +x ~/ivy/update-files.sh
+
+# Nebo všechny shell skripty najednou:
+chmod +x ~/ivy/*.sh
+```
+
+**Poznámka:** Git neuchovává execute permissions, proto je nutné je nastavit po každém pull/rsync na VM.
+
+---
+
+## 📝 Aktualizace souborů
 
 Pro aktualizaci souborů bez spuštění aplikace:
 ```bash

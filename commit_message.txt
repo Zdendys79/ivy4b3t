@@ -1,18 +1,20 @@
-fix(worker): Sjednocení FB error handling a eliminace "šílených dualit"
+feat(scripts,docs): Přidán main-start.sh a dokumentace o execute permissions
 
-Řeší nekonzistentní chování při různých typech FB chyb.
+Vytvoří specializovaný start skript a doplní dokumentaci o spustitelných oprávněních.
 
-- **fix(browser-closure): Sjednocení uzavírání prohlížeče**
-  - FB initialization failed nyní také zavírá celý prohlížeč
-  - Všechny FB chyby (login i initialization) mají konzistentní chování
-  - Eliminuje 10minutové čekání u initialization errors
+- **feat(main-start): Nový script pro main branch only**
+  - Kopie start.sh s názvem main-start.sh
+  - Vždy používá GIT větev "main" bez ohledu na config.json
+  - Ignoruje branch nastavení a vynucuje main branch
+  - Produkční skript pro stabilní prostředí
 
-- **fix(account-blocking): Rozšíření account blocking logiky**
-  - Account blocking nyní zahrnuje FB initialization failed chyby
-  - Odstranění duplikované logiky mezi tick() a executeUserActionCycle
-  - Nový lock reason: "Selhání FB inicializace" s typem FB_FAILURE
+- **docs(readme): Aktualizovaná dokumentace**
+  - Přidána sekce o spustitelných oprávněních po Git aktualizaci
+  - Instrukce pro chmod +x po pull/rsync na VM
+  - Doplněn main-start.sh do seznamu souborů a tabulek
+  - Vysvětleno že Git neuchovává execute permissions
 
-- **fix(error-details): Podrobnější error zprávy**
-  - FB initialization errors nyní obsahují detaily z page analysis
-  - Místo "final status: warning" zobrazuje konkrétní problemy
-  - Lepší diagnostika pro debugging FB problémů
+- **feat(self-restart): Správná self-restart logika**
+  - Self-restart používá main-start.sh místo start.sh
+  - Zachovává konzistenci při automatických aktualizacích
+  - Spustitelná oprávnění nastavena na dev PC
