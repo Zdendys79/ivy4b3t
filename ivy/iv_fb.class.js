@@ -344,52 +344,17 @@ export class FBBot {
   async openFB(user) {
     try {
       await this.bringToFront();
-      await this.page.goto('https://FB.com', { waitUntil: 'domcontentloaded' });
-      await wait.delay(5000, false);
+      await this.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
+      await wait.delay(2000, 3000); // Krátká pauza na stabilizaci
 
       this.initializeAnalyzer();
-      Log.info('[FB]', 'Stránka FB načtena, spouštím analýzu...');
-      const analysis = await this.pageAnalyzer.analyzeFullPage();
-      Log.info('[FB]', `Analýza dokončena - stav: ${analysis.status}`);
-
-      if (analysis.status === 'ad_consent_required') {
-        Log.warn('[FB]', 'Detekována obrazovka souhlasu s reklamami, pokouším se ji vyřešit...');
-        await this.resolveAdConsentFlow();
-        // Po pokusu o vyřešení znovu analyzujeme
-        const afterConsentAnalysis = await this.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
-        if (afterConsentAnalysis.status !== 'ok') {
-          throw new Error(`Nepodařilo se vyřešit obrazovku souhlasu, stav je nyní: ${afterConsentAnalysis.status}`);
-        }
-      } else if (analysis.status === 'blocked') {
-        const errorReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
-        await Log.error('[FB]', `Účet je zablokován: ${errorReason}`);
-        return 'account_locked';
-      } else if (analysis.status === 'warning') {
-        const warningReason = analysis.errors?.patterns?.reason || 'Nespecifikovaný problém';
-        await Log.warn('[FB]', `Detekován problém: ${warningReason}`);
-      }
+      Log.info('[FB]', 'Stránka FB byla úspěšně otevřena a analyzátor inicializován.');
+      return true;
 
     } catch (err) {
-      await Log.error('[FB]', `Chyba při načítání stránky: ${err}`);
+      await Log.error('[FB]', `Chyba při otevírání stránky Facebooku: ${err.message}`);
       return false;
     }
-
-    // Stávající logika kontroly a přihlášení
-    if (await this.isProfileLoaded(user)) {
-      Log.info('[FB]', `Uživatel ${user.id} ${user.name} ${user.surname} je stále přihlášen.`);
-      
-      try {
-        await db.updateUserWorktime(user.id, 3);
-        Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +3 minuty pro rotaci účtů`);
-      } catch (err) {
-        await Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
-      }
-      
-      return 'still_loged';
-    }
-
-    Log.info('[FB]', 'Přihlašuji uživatele...');
-    return await this.login(user);
   }
 
   async isProfileLoaded(user) {

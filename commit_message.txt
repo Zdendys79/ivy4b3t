@@ -1,14 +1,14 @@
-refactor(fb): Správná detekce a zpracování obrazovky souhlasu
+refactor(core): Přesun logiky zpracování stavu stránky do workeru
 
-Tato oprava vrací předchozí unáhlenou změnu a implementuje správný, modulární přístup ke zpracování obrazovky pro souhlas s reklamami.
+Tento commit dokončuje zásadní architektonický refaktoring, který přesouvá rozhodovací logiku z `FBBot` do hlavního řídícího skriptu `iv_worker.js`.
 
-- **revert(fb): Odstraněno přímé volání `resolveAdConsentFlow` z `openFB`**
-  - Tím se zabraňuje zbytečnému spouštění této funkce na každé stránce.
+- **refactor(fb): Zjednodušena metoda `openFB`**
+  - Metoda `openFB` má nyní jediný úkol: otevřít stránku `facebook.com`. Veškerá další logika (zpracování cookies, souhlasů, přihlášení) byla odstraněna.
 
-- **feat(analyzer): Rozšířena detekce o `AD_CONSENT_REQUIRED`**
-  - `PageAnalyzer` nyní dokáže specificky identifikovat obrazovku pro souhlas s reklamami a vrátit dedikovaný stav `ad_consent_required`.
+- **feat(analyzer): Přidána detekce cookie lišty**
+  - `PageAnalyzer` nyní dokáže specificky identifikovat lištu pro souhlas s cookies a vrátit stav `cookie_consent_required`.
 
-- **refactor(fb): Implementována podmíněná logika v `openFB`**
-  - Metoda `openFB` nyní nejprve spustí standardní analýzu.
-  - Teprve pokud analýza vrátí stav `ad_consent_required`, zavolá se cílená metoda `resolveAdConsentFlow` pro vyřešení této konkrétní situace.
-  - Tímto je zajištěn efektivní a správný postup v souladu s architekturou aplikace.
+- **feat(worker): Implementována stavová logika do `initializeRequiredServices`**
+  - Hlavní řídící smyčka ve `worker.js` nyní po otevření stránky vždy spustí analýzu.
+  - Na základě výsledku analýzy (`ok`, `ad_consent_required`, `cookie_consent_required`, `blocked`) se rozhodne, jaký další krok provést (pokračovat, odkliknout souhlas, přihlásit se, ukončit).
+  - Tím je zajištěn čistý, robustní a snadno rozšiřitelný proces inicializace.

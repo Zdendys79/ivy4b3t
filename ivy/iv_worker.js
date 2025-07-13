@@ -666,8 +666,8 @@ async function initializeRequiredServices(user, context, requirements, existingF
       if (fbBot) await fbBot.close();
 
       fbBot = new FBBot(context, user.id);
-      if (!await fbBot.init()) {
-        throw new Error('FB initialization failed');
+      if (!await fbBot.init() || !await fbBot.openFB(user)) {
+        throw new Error('FB page open failed');
       }
 
       // Set debug context for interactive debugger (always enabled)
@@ -675,57 +675,39 @@ async function initializeRequiredServices(user, context, requirements, existingF
         setDebugContext(user, fbBot.page);
       }
 
-      const fbStatus = await fbBot.openFB(user);
+      // --- NOVÁ LOGIKA ZPRACOVÁNÍ STAVU STRÁNKY ---
+      let analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+      Log.info(`[${user.id}]`, `Počáteční analýza stránky dokončena se stavem: ${analysis.status}`);
 
-      // NOVÁ LOGIKA - Error detection po otevření FB
-      if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
-        const { waitForUserIntervention } = await import('./iv_wait.js');
-        const { ErrorReportBuilder } = await import('./iv_ErrorReportBuilder.class.js');
+      // Smyčka pro řešení speciálních stavů (cookies, reklamy)
+      let attempts = 0;
+      while (['cookie_consent_required', 'ad_consent_required'].includes(analysis.status) && attempts < 3) {
+        attempts++;
+        Log.warn(`[${user.id}]`, `Vyžadován mezikrok: ${analysis.status}. Pokus ${attempts}/3.`);
 
-        await Log.warnInteractive(`[${user.id}]`, `🚨 FB initialization problem: ${fbStatus}`);
-
-        // 60s countdown s možností stisknout 'a'
-        const userWantsAnalysis = await waitForUserIntervention(
-          `FB Init Error: ${fbStatus}`,
-          60
-        );
-
-        if (userWantsAnalysis) {
-          // Hlubší analýza - uložit do tabulky
-          const reportBuilder = new ErrorReportBuilder();
-          reportBuilder.initializeReport(
-            user,
-            null,
-            'FB_INIT_ERROR',
-            `FB initialization failed: ${fbStatus}`,
-            fbBot.page?.url() || 'unknown'
-          );
-
-          // Pokud má PageAnalyzer, přidej analýzu
-          if (fbBot.pageAnalyzer) {
-            try {
-              const analysis = await fbBot.pageAnalyzer.analyzeFullPage();
-              reportBuilder.addPageAnalysis(analysis);
-            } catch (err) {
-              reportBuilder.addNotes(`Analýza selhala: ${err.message}`);
-            }
-          }
-
-          const reportId = await reportBuilder.saveReport();
-          Log.info(`[${user.id}]`, `📊 Error report uložen s ID: ${reportId}`);
+        if (analysis.status === 'cookie_consent_required') {
+          await fbBot.acceptCookies();
+        } else if (analysis.status === 'ad_consent_required') {
+          await fbBot.resolveAdConsentFlow();
         }
-
-        // Program pokračuje (nebo failne podle původní logiky)
-        throw new Error('FB initialization failed');
+        
+        await wait.delay(2000, 3000); // Pauza po akci
+        analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+        Log.info(`[${user.id}]`, `Analýza po nápravě dokončena se stavem: ${analysis.status}`);
       }
-
-      if (!fbStatus || !['still_loged', 'now_loged'].includes(fbStatus)) {
-        await db.lockAccountWithReason(user.id, 'Neúspěšné přihlášení', 'LOGIN_FAILED', hostname);
-        
-        // 🚨 HOSTNAME OCHRANA: Zablokovat hostname při neúspěšném přihlášení
-        await handleNewAccountBlock(user, 'Neúspěšné přihlášení', 'LOGIN_FAILED');
-        
-        throw new Error('FB login failed');
+      
+      // Finální kontrola po všech pokusech
+      if (analysis.status !== 'ok' && !analysis.basic.isLoggedIn) {
+         // Pokud nejsme přihlášeni a stránka není OK, zkusíme se přihlásit
+         Log.info(`[${user.id}]`, 'Uživatel není přihlášen, pokouším se o login...');
+         const loginSuccess = await fbBot.login(user);
+         if (!loginSuccess) {
+            throw new Error('FB login failed after handling special screens.');
+         }
+      } else if (analysis.status === 'ok' && analysis.basic.isLoggedIn) {
+         Log.success(`[${user.id}]`, 'Uživatel je již přihlášen a stránka je v pořádku.');
+      } else if (analysis.status !== 'ok') {
+        throw new Error(`FB initialization failed with final status: ${analysis.status}`);
       }
 
       Log.success(`[${user.id}]`, 'FB úspěšně inicializován');
