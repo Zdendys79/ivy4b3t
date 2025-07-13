@@ -1,5 +1,5 @@
-revert(fb-support): Simplify findByText to its original robust form
+fix(fb): Correct element selection in clickSendButton
 
-- Reverted the `findByText` function to a simpler, more reliable version that searches for text within any element (`*`).
-- This change removes the complex and restrictive element-type filtering (`button`, `div[role=button]`, etc.) that was recently introduced and proved to be less effective.
-- The function now relies solely on XPath text matching (`normalize-space(.)`), which was the original, working approach. This increases the chances of finding the target element regardless of its tag, fixing the issues where "Discussion" or "Join Group" buttons were not found.
+- Fixed a critical `TypeError: spans is not iterable` in the `clickSendButton` method.
+- The error was caused by incorrectly using `page.$('span')` (which returns a single element) instead of `page.$$('span')` (which returns an array of elements).
+- This correction ensures that the code can properly iterate over all found `<span>` elements to locate the correct send button, resolving the crash during the posting process.
