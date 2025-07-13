@@ -642,7 +642,7 @@ export class PageAnalyzer {
         type: 'VIDEOSELFIE'
       },
       {
-        texts: ['váš účet jsme uzamkli', 'Account restricted', 'temporarily restricted'],
+        texts: ['váš účet jsme uzamkli', 'Account restricted', 'temporarily restricted', 'Účet máte zablokovaný'],
         reason: 'Účet je zablokován',
         type: 'ACCOUNT_LOCKED'
       },

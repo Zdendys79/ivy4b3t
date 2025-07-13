@@ -1,7 +1,7 @@
-refactor(analyzer): Zpřesnění detekce přihlašovací stránky
+feat(analyzer): Rozšíření detekce zablokovaného účtu
 
-Tato oprava vylepšuje způsob, jakým `PageAnalyzer` detekuje neočekávané zobrazení přihlašovací stránky.
+Tato změna vylepšuje schopnost systému detekovat zablokování účtu.
 
-- **refactor(analyzer): Detekce přihlašovacího tlačítka podle textu**
-  - Místo spoléhání na nestabilní `data-testid` atribut nyní analyzátor používá osvědčenou funkci `findByText` pro nalezení tlačítka s přesným textem "Přihlásit se".
-  - Tím se zvyšuje spolehlivost detekce a snižuje riziko selhání při budoucích změnách designu Facebooku.
+- **feat(analyzer): Přidán nový textový vzor pro detekci**
+  - Do `PageAnalyzer` byl přidán text "Účet máte zablokovaný" jako další indikátor zablokovaného účtu.
+  - Tím se zvyšuje spolehlivost detekce tohoto kritického stavu.
