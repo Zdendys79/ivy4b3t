@@ -411,7 +411,8 @@ export class FBBot {
       } else {
         Log.info(`[FB] Cookie banner nenalezen.`);
       }
-    console.warn(`[FB] Cookie banner error: ${err}`);
+    } catch (err) {
+      console.warn(`[FB] Cookie banner error: ${err}`);
     }
   }
 

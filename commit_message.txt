@@ -1,14 +1,6 @@
-refactor(core): Přesun logiky zpracování stavu stránky do workeru
+fix(core): Oprava syntaktické chyby v FBBot
 
-Tento commit dokončuje zásadní architektonický refaktoring, který přesouvá rozhodovací logiku z `FBBot` do hlavního řídícího skriptu `iv_worker.js`.
+Tato oprava řeší `SyntaxError: Missing catch or finally after try`, který bránil spuštění aplikace.
 
-- **refactor(fb): Zjednodušena metoda `openFB`**
-  - Metoda `openFB` má nyní jediný úkol: otevřít stránku `facebook.com`. Veškerá další logika (zpracování cookies, souhlasů, přihlášení) byla odstraněna.
-
-- **feat(analyzer): Přidána detekce cookie lišty**
-  - `PageAnalyzer` nyní dokáže specificky identifikovat lištu pro souhlas s cookies a vrátit stav `cookie_consent_required`.
-
-- **feat(worker): Implementována stavová logika do `initializeRequiredServices`**
-  - Hlavní řídící smyčka ve `worker.js` nyní po otevření stránky vždy spustí analýzu.
-  - Na základě výsledku analýzy (`ok`, `ad_consent_required`, `cookie_consent_required`, `blocked`) se rozhodne, jaký další krok provést (pokračovat, odkliknout souhlas, přihlásit se, ukončit).
-  - Tím je zajištěn čistý, robustní a snadno rozšiřitelný proces inicializace.
+- **fix(fb): Doplněn chybějící `catch` blok ve funkci `acceptCookies`**
+  - V souboru `iv_fb.class.js` byl nalezen a opraven osamocený `try` blok, který způsoboval pád Node.js při parsování souboru.
