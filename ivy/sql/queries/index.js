@@ -14,18 +14,19 @@ import { GROUP_DETAILS } from './group_details.js';
 import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 import { LOGS } from './logs.js';
-import { MESSAGE_HASHES } from './message_hashes.js';
+import { messageHashes } from './message_hashes.js';
 import { QUOTES } from './quotes.js';
 import { SYSTEM } from './system.js';
 import { USER_GROUP_BLOCKING } from './user_group_blocking.js';
 import { USERS } from './users.js';
-import { ACTION_QUALITY } from './action_quality.js';
-import { SYSTEM_METRICS } from './system_metrics.js';
+import { actionQuality } from './action_quality.js';
+import { systemMetrics } from './system_metrics.js';
+import { HOSTNAME_PROTECTION } from './hostname_protection.js';
 
 
 export const SQL = {
   actions: ACTIONS,
-  action_quality: ACTION_QUALITY,
+  action_quality: actionQuality,
   behavioral_profiles: BEHAVIORAL_PROFILES,
   discovered_links: DISCOVERED_LINKS,
   'error-reports': ERROR_REPORTS,
@@ -34,10 +35,10 @@ export const SQL = {
   hostname_protection: HOSTNAME_PROTECTION,
   limits: LIMITS,
   logs: LOGS,
-  message_hashes: MESSAGE_HASHES,
+  message_hashes: messageHashes,
   quotes: QUOTES,
   system: SYSTEM,
-  system_metrics: SYSTEM_METRICS,
+  system_metrics: systemMetrics,
   user_group_blocking: USER_GROUP_BLOCKING,
   users: USERS
 };

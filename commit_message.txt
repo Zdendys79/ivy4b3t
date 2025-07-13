@@ -1,8 +1,7 @@
-fix(core): Oprava kritické chyby při startu skriptu
+fix(core): Oprava názvů importů v SQL modulech
 
-Tato oprava řeší `ReferenceError`, který způsoboval pád skriptu ihned po spuštění.
+Tato oprava řeší další `SyntaxError`, který bránil spuštění aplikace.
 
-- **fix(db): Doplněny chybějící importy v `sql/queries/index.js`**
-  - Při předchozích úpravách byly omylem odstraněny importy pro většinu SQL modulů (`ACTIONS`, `GROUPS`, atd.).
-  - Všechny potřebné importy byly obnoveny, což řeší pád aplikace.
-  - Sjednoceny názvy proměnných pro konzistenci.
+- **fix(db): Sjednocení názvů importovaných konstant v `sql/queries/index.js`**
+  - Některé moduly (např. `action_quality.js`) exportovaly své konstanty v `camelCase`, zatímco `index.js` je očekával ve `UPPER_SNAKE_CASE`.
+  - Všechny importy a jejich následné použití byly opraveny, aby odpovídaly skutečným názvům exportů.
