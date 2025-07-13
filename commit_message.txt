@@ -1,9 +1,9 @@
-feat(fb): Replace XPath with JavaScript element search methods
+fix(fb): Replace deprecated _findByText with JavaScript findByText
 
-- Rewrite findByText to use JavaScript evaluation instead of XPath selectors
-- Add clickByTextJS function for direct JavaScript clicking without Puppeteer constraints
-- Implement three-tier fallback system: findByText → clickByTextJS → fallbackClick
-- Improve element detection reliability and bypass Puppeteer visibility limitations
+- Replace all internal _findByText calls with fbSupport.findByText
+- Fix array destructuring assignments to work with new findByText API
+- Ensure cookies, error detection, and all FB operations use new JavaScript methods
+- Improve consistency across all text search operations
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

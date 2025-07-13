@@ -1459,15 +1459,15 @@ export class FBBot {
     const t1 = "Výchozí okruh uživatelů";
     const t2 = "Přátelé";
     try {
-      const [rangeSelect] = await this._findByText(t1, { timeout: 2000 });
-      if (rangeSelect) {
-        const friends = await this._findByText(t2, { timeout: 2000 });
+      const rangeSelect = await fbSupport.findByText(this.page, t1, { timeout: 2000 });
+      if (rangeSelect.length > 0) {
+        const friends = await fbSupport.findByText(this.page, t2, { timeout: 2000 });
         if (friends.length) {
           await friends[friends.length - 2].click();
-          const [done] = await this._findByText("Hotovo", { timeout: wait.timeout() });
-          if (!done) throw `Tlačítko "Hotovo" nenalezeno.`;
+          const done = await fbSupport.findByText(this.page, "Hotovo", { timeout: wait.timeout() });
+          if (!done || done.length === 0) throw `Tlačítko "Hotovo" nenalezeno.`;
           await wait.delay(3 * wait.timeout());
-          await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done);
+          await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done[0]);
           await wait.delay(15 * wait.timeout());
           Log.info(`[FB] Výchozí okruh uživatelů nastaven.`);
         } else {
@@ -1535,9 +1535,9 @@ export class FBBot {
     const labels = ["členů", "sledujících"];
     for (let label of labels) {
       try {
-        const [counter] = await this._findByText(label, { timeout: 3500 });
-        if (counter) {
-          const value = await this.page.evaluate(el => el.textContent, counter);
+        const counter = await fbSupport.findByText(this.page, label, { timeout: 3500 });
+        if (counter && counter.length > 0) {
+          const value = await this.page.evaluate(el => el.textContent, counter[0]);
           return await this.getCounterValue(value);
         }
       } catch (err) {
@@ -1574,7 +1574,7 @@ export class FBBot {
   async clickLike() {
     if (Math.random() < 0.1) { // 10% šance
       try {
-        const likes = await this._findByText("To se mi líbí", { timeout: wait.timeout() });
+        const likes = await fbSupport.findByText(this.page, "To se mi líbí", { timeout: wait.timeout() });
         if (!likes.length) throw `Tlačítko "To se mi líbí" nenalezeno.`;
         const randomLike = likes[Math.floor(Math.random() * likes.length)];
         await randomLike.click();
@@ -1598,7 +1598,7 @@ export class FBBot {
   }
 
   async stillSendButton() {
-    const found = await this._findByText("Zveřejnit", { timeout: wait.timeout() });
+    const found = await fbSupport.findByText(this.page, "Zveřejnit", { timeout: wait.timeout() });
     if (found.length) {
       Log.info(`[FB] Tlačítko "Zveřejnit" stále nalezeno!`);
       return true;
@@ -1619,7 +1619,7 @@ export class FBBot {
   }
 
   async loginFailedEn() {
-    const found = await this._findByText("Forgot Account?", { timeout: 1500 });
+    const found = await fbSupport.findByText(this.page, "Forgot Account?", { timeout: 1500 });
     if (found.length) {
       Log.info(`[FB] Text "Forgot Account?" nalezen.`);
       return true;
@@ -1628,7 +1628,7 @@ export class FBBot {
   }
 
   async loginFailedCs() {
-    const found = await this._findByText("Nepamatujete si svůj účet?", { timeout: 1500 });
+    const found = await fbSupport.findByText(this.page, "Nepamatujete si svůj účet?", { timeout: 1500 });
     if (found.length) {
       Log.info(`[FB] Text "Nepamatujete si svůj účet?" nalezen.`);
       return true;
@@ -1667,7 +1667,7 @@ export class FBBot {
   // Pokračování třídy FBBot
 
   async isSellGroup() {
-    const found = await this._findByText("Prodat", { timeout: 3500 });
+    const found = await fbSupport.findByText(this.page, "Prodat", { timeout: 3500 });
     if (found.length) {
       Log.info(`[FB] Skupina je prodejní.`);
       return true;
@@ -1854,7 +1854,7 @@ export class FBBot {
       if (input.trim().toLowerCase() === 'x') break;
 
       try {
-        const elements = await this._findByText(input.trim(), { timeout: 3000 });
+        const elements = await fbSupport.findByText(this.page, input.trim(), { timeout: 3000 });
         Log.info('[DEBUG]', `Nalezeno ${elements.length} prvků pro "${input.trim()}".`);
 
         for (let i = 0; i < elements.length; i++) {
