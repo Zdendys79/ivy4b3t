@@ -1,11 +1,8 @@
-fix: Oprava ukončovacího cyklu a vylepšení diagnostiky cookies
+fix(fb): Oprava a zrobustnění `acceptCookies` pomocí `page.evaluate`
 
-Tato oprava řeší dva přetrvávající problémy: nekonečný restartovací cyklus po stisknutí 'q' v debuggeru a selhání při odklikávání cookie lišty.
+Tato oprava řeší přetrvávající chybu `buttons is not iterable` při pokusu o odkliknutí cookie lišty.
 
-- **fix(core): Implementován `isShuttingDown` příznak pro čisté ukončení**
-  - Do hlavní smyčky v `ivy.js` byla přidána kontrola globálního příznaku.
-  - Tento příznak je nastaven na `true` v `gracefulShutdown` handleru, což zajistí, že se hlavní smyčka okamžitě ukončí a nebude docházet ke "závodu" s úklidovým procesem. Tím se zabrání nechtěným restartům.
-
-- **refactor(fb): Přidána robustní diagnostika do `acceptCookies`**
-  - Metoda byla přepsána tak, aby obsahovala podrobné logování každého kroku.
-  - Nyní přesně uvidíme, kolik tlačítek bylo nalezeno a proč případně selhalo porovnání textu, což nám pomůže odhalit finální příčinu problému.
+- **refactor(fb): Přepsána metoda `acceptCookies` s využitím `page.evaluate`**
+  - Celá logika pro nalezení a kliknutí na tlačítko byla přesunuta do jednoho `page.evaluate` bloku.
+  - Tím se eliminuje problematické předávání Puppeteer elementů mezi kontextem prohlížeče a Node.js, což bylo zdrojem chyby.
+  - Tento přístup je výrazně robustnější a spolehlivější.
