@@ -168,6 +168,28 @@ get_git_info() {
     echo "Commit Date: $git_commit_date"
 }
 
+# Získá aktuální Git hash a informace o commitu ve formátu JSON
+get_git_info_json() {
+    local repo_dir=${1:-$REPO_DIR}
+
+    cd "$repo_dir" || return 1
+
+    local git_hash=$(git rev-parse HEAD 2>/dev/null)
+    local git_short_hash=$(git rev-parse --short=7 HEAD 2>/dev/null)
+    local git_branch=$(git branch --show-current 2>/dev/null)
+    local git_commit_msg=$(git log -1 --pretty=format:"%s" 2>/dev/null | sed 's/"/\\"/g')
+    local git_commit_date=$(git log -1 --pretty=format:"%ci" 2>/dev/null)
+
+    # Sestavení JSON výstupu
+    printf '{
+      "hash": "%s",
+      "short_hash": "%s",
+      "branch": "%s",
+      "last_commit": "%s",
+      "commit_date": "%s"
+    }' "$git_hash" "$git_short_hash" "$git_branch" "$git_commit_msg" "$git_commit_date"
+}
+
 # Zkontroluje, zda jsou dostupné aktualizace
 check_for_updates() {
     local repo_dir=${1:-$REPO_DIR}

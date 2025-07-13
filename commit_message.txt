@@ -1,7 +1,11 @@
-fix(worker): Oprava chyby `path is not defined`
+fix(worker): Oprava parsování Git informací
 
-Tato oprava řeší `ReferenceError`, který způsoboval pád aplikace při pokusu o zjištění aktuální Git větve.
+Tato oprava řeší pád aplikace `Unexpected end of JSON input`, který nastával při pokusu o zjištění aktuální Git větve.
 
-- **fix(support): Doplněn chybějící import modulu `path`**
-  - Do souboru `iv_support.js` byl přidán nezbytný `import path from 'path';`.
-  - Tím se opravuje chyba, která bránila správné funkci detekce větve a následné rotaci uživatelů v testovacím prostředí.
+- **feat(git): Přidána funkce `get_git_info_json` do `git-common.sh`**
+  - Původní funkce vracela prostý text, který nebylo možné parsovat jako JSON.
+  - Nová funkce vrací informace o repozitáři ve správném JSON formátu.
+
+- **fix(support): Aktualizována funkce `getGitInfo` v `iv_support.js`**
+  - Funkce nyní volá novou `get_git_info_json` a obsahuje robustnější ošetření chyb.
+  - V případě selhání parsování nebo chyby skriptu nyní vrátí výchozí objekt, aby se zabránilo pádu celé aplikace.
