@@ -1,7 +1,7 @@
-fix(core): Zajištění `gracefulShutdown` při ukončení z debuggeru
+fix(behavior): Snížení nadměrné chybovosti při simulaci psaní
 
-Tato oprava řeší problém, kdy ukončení aplikace pomocí klávesy 'q' v interaktivním debuggeru neprovádělo korektní úklid, což vedlo k chybě `SingletonLock` při dalším spuštění.
+Tato oprava řeší problém, kdy simulace lidského psaní generovala nepřijatelně vysoký počet překlepů.
 
-- **refactor(debugger): Změna `process.exit()` na `process.kill()`**
-  - V `iv_interactive_debugger.js` byla akce pro klávesu 'q' změněna. Místo přímého a nekorektního ukončení procesu pomocí `process.exit()` nyní posílá procesu signál `SIGINT`.
-  - Tím je zajištěno, že se vždy spustí zavedená úklidová funkce `gracefulShutdown` (v `ivy.js`), která se postará o správné uzavření prohlížeče i databázového spojení.
+- **fix(behavior): Snížena pravděpodobnost chyby desetinásobně**
+  - V `iv_human_behavior_advanced.js` byla upravena podmínka pro generování chyby.
+  - Hodnota `mistake_rate` načtená z profilu uživatele se nyní dělí deseti, což dramaticky snižuje počet překlepů na realistickou úroveň (cca 1-2 na delší text).

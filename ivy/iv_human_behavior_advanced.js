@@ -134,7 +134,7 @@ export class AdvancedHumanBehavior {
       if (this.currentEmotion?.emotion_type === 'frustrated') mistakeChance *= 2.0;
       
       // Implementace chyby
-      if (Math.random() < mistakeChance && /[a-zá-ž]/i.test(char)) {
+      if (Math.random() < (mistakeChance / 10) && /[a-zá-ž]/i.test(char)) {
         errors++;
         await this.performTypingMistake(page, char, profile);
       } else {
