@@ -1,8 +1,9 @@
-fix(fb): Oprava a zrobustnění `acceptCookies` pomocí `page.evaluate`
+fix: Sjednocení detekce cookies a oprava ukončovacího cyklu
 
-Tato oprava řeší přetrvávající chybu `buttons is not iterable` při pokusu o odkliknutí cookie lišty.
+Tato oprava řeší dva přetrvávající problémy: nekonzistentní detekci cookie lišty a nesprávné chování po žádosti o ukončení z debuggeru.
 
-- **refactor(fb): Přepsána metoda `acceptCookies` s využitím `page.evaluate`**
-  - Celá logika pro nalezení a kliknutí na tlačítko byla přesunuta do jednoho `page.evaluate` bloku.
-  - Tím se eliminuje problematické předávání Puppeteer elementů mezi kontextem prohlížeče a Node.js, což bylo zdrojem chyby.
-  - Tento přístup je výrazně robustnější a spolehlivější.
+- **refactor(analyzer): Sjednocena logika detekce a akce pro cookies**
+  - `PageAnalyzer` nyní používá stejnou robustní `findByText` metodu pro detekci cookie lišty, jakou používá `FBBot` pro kliknutí na ni. Tím se odstraňuje nekonzistence, která způsobovala zacyklení.
+
+- **fix(worker): Opravena reakce na `quit` z debuggeru**
+  - `catch` blok v hlavním `tick()` cyklu nyní správně detekuje, kdy uživatel požádal o ukončení, a okamžitě přeruší další provádění, čímž zabrání nechtěným restartům.

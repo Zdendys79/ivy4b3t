@@ -346,34 +346,24 @@ export class FBBot {
   }
 
   async acceptCookies() {
-    const cookieBtnText = 'Povolit soubory cookie';
-    Log.info(`[FB] Hledám a klikám na tlačítko pro cookies: "${cookieBtnText}"`);
-
     try {
-      const clicked = await this.page.evaluate((textToFind) => {
-        const buttons = document.querySelectorAll('div[role="button"], button');
-        for (const button of buttons) {
-          if (button.textContent && button.textContent.trim() === textToFind) {
-            // Našli jsme tlačítko, klikneme na něj
-            if (typeof button.click === 'function') {
-              button.click();
-              return true; // Vracíme úspěch
-            }
-          }
-        }
-        return false; // Tlačítko nenalezeno
-      }, cookieBtnText);
+      const cookieBtnText = 'Povolit soubory cookie';
+      Log.info(`[FB] Hledám a klikám na tlačítko pro cookies: "${cookieBtnText}"`);
+      
+      const cookieButtons = await fbSupport.findByText(this.page, cookieBtnText, { match: 'contains' });
 
-      if (clicked) {
-        await wait.delay(3000); // Počkat na reakci stránky
+      if (cookieButtons && cookieButtons.length > 0) {
+        await cookieButtons[0].click();
+        await wait.delay(3000); // Pauza po kliknutí
         Log.info(`[FB] Cookie banner by měl být odkliknut.`);
         return true;
-      } else {
-        Log.warn(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno pomocí page.evaluate.`);
-        return false;
       }
+      
+      Log.warn(`[FB] Tlačítko pro cookies "${cookieBtnText}" nenalezeno.`);
+      return false;
+
     } catch (err) {
-      Log.error(`[FB] Chyba v acceptCookies při page.evaluate: ${err.message}`);
+      Log.error(`[FB] Cookie banner error: ${err.message}`);
       return false;
     }
   }

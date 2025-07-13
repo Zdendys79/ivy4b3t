@@ -265,7 +265,8 @@ export class PageAnalyzer {
       await Log.warn('[ANALYZER]', 'Struktura stránky NENÍ normální. Hledám chybové vzory...');
 
       // KROK 2: Hledání chybových vzorů (pouze pokud struktura není normální)
-      let finalErrorPatterns = await this._detectErrorPatterns(groupAnalysis);
+      const cookieButton = await fbSupport.findByText(this.page, 'Povolit soubory cookie', { match: 'contains' });
+      let finalErrorPatterns = await this._detectErrorPatterns(groupAnalysis, cookieButton.length > 0);
 
       const accountLocked = await this._checkAccountLocked();
       const checkpoint = await this._checkCheckpoint();
@@ -634,7 +635,7 @@ export class PageAnalyzer {
     return 'unknown';
   }
 
-  async _detectErrorPatterns(groupAnalysis = null) {
+  async _detectErrorPatterns(groupAnalysis = null, hasCookieButton = false) {
     const patterns = [
       {
         texts: ['videoselfie', 'video selfie', 'Please take a video selfie'],
@@ -657,7 +658,7 @@ export class PageAnalyzer {
         type: 'SUSPICIOUS_ACTIVITY'
       },
       {
-        texts: ['nemáte oprávnění', 'not authorized', 'access denied', 'přístup zamítnut'],
+        texts: ['nemáte opr��vnění', 'not authorized', 'access denied', 'přístup zamítnut'],
         reason: 'Nemáte oprávnění pro tuto akci',
         type: 'ACCESS_DENIED'
       },
@@ -665,26 +666,27 @@ export class PageAnalyzer {
         texts: ['Zkontrolujte nastavení reklam', 'Review how we use data for ads', 'Zkontrolujte, jestli můžeme'],
         reason: 'Vyžadován souhlas se zpracováním dat pro reklamy',
         type: 'AD_CONSENT_REQUIRED'
-      },
-      {
-        texts: ['Povolit soubory cookie', 'Allow essential and optional cookies', 'povolit všechny soubory cookie'],
-        reason: 'Vyžadován souhlas s cookies',
-        type: 'COOKIE_CONSENT_REQUIRED'
       }
     ];
 
     try {
       const pageData = await this.page.evaluate(() => {
         const bodyText = document.body.textContent.toLowerCase();
-
-        return {
-          bodyText: bodyText,
-        };
+        return { bodyText };
       });
 
       const detectedPatterns = [];
 
-      // Speciální detekce pro přihlašovací stránku pomocí spolehlivější metody
+      // Speciální detekce pro cookie banner
+      if (hasCookieButton) {
+        detectedPatterns.push({
+            detected: true,
+            reason: 'Vyžadován souhlas s cookies',
+            type: 'COOKIE_CONSENT_REQUIRED'
+        });
+      }
+
+      // Speciální detekce pro přihlašovací stránku
       const loginButton = await fbSupport.findByText(this.page, 'Přihlásit se', { match: 'exact' });
       if (loginButton.length > 0) {
         detectedPatterns.push({
@@ -698,23 +700,7 @@ export class PageAnalyzer {
         const textFound = pattern.texts.some(text =>
           pageData.bodyText.includes(text.toLowerCase())
         );
-
-        // Speciální logika pro JOIN_GROUP_REQUIRED - použij data z groupAnalysis
-        if (pattern.type === 'JOIN_GROUP_REQUIRED') {
-          const hasJoinFromGroup = groupAnalysis?.hasJoinButton || false;
-          const hasJoinFromPage = pageData.hasJoinButton;
-          
-          if (textFound || hasJoinFromGroup || hasJoinFromPage) {
-            detectedPatterns.push({
-              detected: true,
-              pattern: pattern,
-              reason: pattern.reason,
-              type: pattern.type,
-              hasActionButton: hasJoinFromGroup || hasJoinFromPage,
-              additionalInfo: `Join tlačítko: ${hasJoinFromGroup ? 'groupAnalysis' : 'pageData'}`
-            });
-          }
-        } else if (textFound) {
+        if (textFound) {
           detectedPatterns.push({
             detected: true,
             pattern: pattern,
@@ -724,28 +710,16 @@ export class PageAnalyzer {
         }
       }
 
-      // Pokud není pole pro psaní, ale nejsou ani join tlačítka, pak je to jiný problém
-      if (!pageData.hasWriteField && !pageData.hasJoinButton && pageData.bodyText.includes('group')) {
-        detectedPatterns.push({
-          detected: true,
-          pattern: {
-            reason: 'Pole pro psaní není dostupné v této skupině',
-            type: 'NO_WRITE_FIELD'
-          },
-          reason: 'Pole pro psaní není dostupné v této skupině',
-          type: 'NO_WRITE_FIELD'
-        });
-      }
-
       if (detectedPatterns.length > 0) {
         // Vrátit nejzávažnější problém
         const criticalPattern = detectedPatterns.find(p =>
-          ['ACCOUNT_LOCKED', 'IDENTITY_VERIFICATION', 'VIDEOSELFIE'].includes(p.type)
+          ['ACCOUNT_LOCKED', 'IDENTITY_VERIFICATION', 'VIDEOSELFIE', 'UNEXPECTED_LOGIN_PAGE'].includes(p.type)
         );
+        if (criticalPattern) return criticalPattern;
 
-        if (criticalPattern) {
-          return criticalPattern;
-        }
+        // Vrátit první vyžadující akci
+        const actionPattern = detectedPatterns.find(p => ['AD_CONSENT_REQUIRED', 'COOKIE_CONSENT_REQUIRED'].includes(p.type));
+        if (actionPattern) return actionPattern;
 
         // Vrátit první warning pattern
         return detectedPatterns[0];
