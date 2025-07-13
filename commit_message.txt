@@ -1,8 +1,7 @@
-refactor(core): Odstranění duplicitní pauzy v hlavním cyklu
+fix(wheel): Oprava chybějící `invasive` vlastnosti ve výběru akce
 
-Tato oprava řeší problém, kdy se po dokončení UI příkazu spouštěly dvě čekací smyčky za sebou.
+Tato oprava řeší kritickou chybu, kdy se nenastavoval časový zámek mezi invazivními akcemi, protože informace o jejich invazivnosti se ztrácela.
 
-- **refactor(core): Smazána pevná pauza z `ivy.js`**
-  - Z hlavní `while` smyčky v `ivy.js` byl odstraněn nadbytečný příkaz `await delay(60000)`.
-  - Systém se nyní spoléhá výhradně na inteligentní čekání implementované ve funkci `waitWithHeartbeat` uvnitř `iv_worker.js`, která se spouští pouze tehdy, když není nalezen žádný uživatel k práci.
-  - Tím se odstraňuje duplicitní pauza a zefektivňuje se přechod mezi jednotlivými pracovními cykly.
+- **fix(wheel): Doplněna `invasive` vlastnost do návratového objektu `getRandomAction`**
+  - Funkce `getRandomAction` v `iv_wheel.js` nyní správně vrací kompletní objekt akce, včetně klíčové vlastnosti `invasive`.
+  - Tím je zajištěno, že řídící logika v `runAction` obdrží potřebná data a může po úspěšném provedení invazivní akce správně nastavit `invasive_lock`.

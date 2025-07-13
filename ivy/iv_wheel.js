@@ -214,7 +214,8 @@ export async function getRandomAction(availableActions = null, userId = null) {
       weight: selected.weight,
       min_minutes: selected.min_minutes,
       max_minutes: selected.max_minutes,
-      repeatable: selected.repeatable
+      repeatable: selected.repeatable,
+      invasive: selected.is_invasive
     };
 
   } catch (err) {
