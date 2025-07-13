@@ -156,8 +156,7 @@ export class UIBot {
       return false;
     }
     Log.success('[UI]', `Uživatel ${userId} je nyní aktivní pro manuální správu.`);
-    Log.info('[UI]', `Prohlížeč zůstane otevřený. Zavřete ho manuálně pro pokračování cyklu.`);
-    await this._waitForBrowserClose();
+    await this._waitForBrowserCloseOrNextCommand();
     return true;
   }
 
@@ -180,7 +179,7 @@ export class UIBot {
       }
       await this.fbBot.openGroup(group);
       Log.success('[UI]', `Skupina ${group.nazev} otevřena pro uživatele ${user_id}`);
-      await this._waitForBrowserClose();
+      await this._waitForBrowserCloseOrNextCommand();
       return true;
     } catch (err) {
       await Log.error('[UI] user_group', err);
@@ -188,15 +187,42 @@ export class UIBot {
     }
   }
 
-  async _waitForBrowserClose() {
+  async _waitForBrowserCloseOrNextCommand(timeoutMinutes = 20) {
     if (!this.fbBot || !this.fbBot.page || !this.fbBot.page.browser()) {
-      Log.warn('[UI]', 'Nelze čekat na zavření prohlížeče, instance není dostupná.');
+      Log.warn('[UI]', 'Nelze čekat, instance prohlížeče není dostupná.');
       return;
     }
     const browser = this.fbBot.page.browser();
-    Log.info('[UI]', 'Čekám na manuální zavření prohlížeče...');
-    await new Promise(resolve => browser.once('disconnected', resolve));
-    Log.info('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
+    const checkIntervalMs = 10000; // Kontrola každých 10 sekund
+    const timeoutMs = timeoutMinutes * 60 * 1000;
+    let elapsedTime = 0;
+
+    Log.info('[UI]', `Čekám na manuální zavření prohlížeče nebo další UI příkaz (max ${timeoutMinutes} min)...`);
+
+    while (elapsedTime < timeoutMs && browser.isConnected()) {
+      await wait.delay(checkIntervalMs);
+      elapsedTime += checkIntervalMs;
+
+      // Pravidelný heartbeat pro udržení spojení s DB
+      try {
+        await db.heartBeat(this.currentCommand.user_id || 0, 0, 'UI_WAIT');
+      } catch (e) {
+        Log.warn('[UI]', `Heartbeat během čekání selhal: ${e.message}`);
+      }
+
+      const newCommand = await this.checkForCommand();
+      if (newCommand && newCommand.id !== this.currentCommand?.id) {
+        Log.info('[UI]', 'Nalezen navazující UI příkaz, zpracovávám...');
+        await this.processCommand(newCommand, this.fbBot);
+        return; // Končíme čekání, protože byl zpracován další příkaz
+      }
+    }
+
+    if (!browser.isConnected()) {
+      Log.info('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
+    } else {
+      Log.info('[UI]', 'Timeout čekání na další příkaz nebo zavření prohlížeče.');
+    }
   }
 }
 

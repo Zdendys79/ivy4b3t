@@ -1,14 +1,7 @@
-feat(actions): Zpracování doplňkové akce "Přijmout pozvánku experta"
+fix(core): Zajištění korektního uzavření DB spojení při ukončení
 
-Tento commit rozšiřuje schopnosti bota o zpracování doplňkových akcí, které nejsou chybou, ale vyžadují interakci před provedením hlavní akce.
+Tato oprava řeší chybu `ECONNRESET`, která nastávala po restartu aplikace.
 
-- **feat(analyzer): Detekce pozvánky pro experta skupiny**
-  - `PageAnalyzer` nyní v rámci analýzy skupiny detekuje, zda je na stránce přítomna výzva "stát se expertem skupiny".
-  - Pokud ano, přidá do výsledku analýzy novou doplňkovou akci typu `ACCEPT_EXPERT_INVITE`.
-
-- **feat(fb): Přidána metoda `handleAcceptExpertInvite`**
-  - Do `FBBot` byla přidána nová metoda, která cíleně vyhledá a klikne na tlačítko "Přijmout" v kontextu pozvánky pro experta.
-
-- **refactor(actions): Integrace zpracování doplňkových akcí**
-  - Logika v `handleSingleUtioPost` byla rozšířena. Po úvodní analýze zkontroluje, zda existují nějaké doplňkové akce.
-  - Pokud je nalezena akce `ACCEPT_EXPERT_INVITE`, zavolá se příslušná metoda ve `FBBot` a teprve poté se pokračuje v publikování příspěvku.
+- **fix(core): Doplněno volání `closeConnection` do `gracefulShutdown`**
+  - Do funkce pro korektní ukončení aplikace v `ivy.js` bylo přidáno explicitní volání pro uzavření databázového poolu.
+  - Tím se zajišťuje, že při ukončení procesu (např. přes `Ctrl+C` nebo `q` v debuggeru) nezůstanou na straně serveru "viset" stará spojení, která způsobovala konflikt při dalším spuštění.

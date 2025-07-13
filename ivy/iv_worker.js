@@ -433,13 +433,9 @@ async function executeUICommand(user, uiCommand, browser, context, browserClosed
       await uiBot.close();
     }
 
-    // Počkáme, dokud se prohlížeč nezavře, abychom mohli pokračovat
-    if (browser && browser.isConnected()) {
-        Log.info(`[WORKER] Čekám na manuální zavření prohlížeče po dokončení UI příkazu...`);
-        await new Promise(resolve => browser.once('disconnected', resolve));
-    }
-
-    return false; // Po UI příkazu nikdy nepokračujeme automatickými akcemi
+    // Po UI příkazu nikdy nepokračujeme automatickými akcemi,
+    // takže rovnou vracíme false, aby se spustil nový tick.
+    return false;
 
   } catch (err) {
     await Log.error(`[${user.id}] executeUICommand`, err);

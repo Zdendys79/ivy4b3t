@@ -14,7 +14,7 @@ import os from 'node:os';
 
 // Local modules - named imports (UPDATED)
 import { delay } from './iv_wait.js';
-import { db } from './iv_sql.js'
+import { db, closeConnection as closeDB } from './iv_sql.js'
 import { get as getVersion } from './iv_version.js';
 import { tick as workerTick } from './iv_worker.js';
 import { Log } from './iv_log.class.js';
@@ -102,6 +102,9 @@ async function gracefulShutdown(signal) {
     
     // Flush pending logs before exit
     await consoleLogger.flush();
+    
+    // Zavři databázové spojení
+    await closeDB();
     
     Log.info('[IVY] Graceful shutdown dokončen');
   } catch (err) {
