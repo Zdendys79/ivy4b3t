@@ -1,9 +1,9 @@
-fix: Oprava pádu v `group_explore` a chyba v logu
+refactor(ui): Oprava logiky čekání u UI příkazů
 
-Tato oprava řeší dva problémy: pád aplikace kvůli neplatné hodnotě v `page.goto` a chybně formátovaný diagnostický log.
+Tato oprava řeší zásadní chybu v logice, která mohla způsobit přerušení probíhajícího UI příkazu novým příkazem.
 
-- **fix(action): Opravena neplatná hodnota `waitUntil: networkidle`**
-  - V akci `group_explore` byla hodnota `networkidle` nahrazena za správnou `networkidle2`, což zabrání pádu při navigaci na stránku.
-
-- **fix(debug): Opravena chyba formátování v diagnostickém logu**
-  - Odstraněn nadbytečný apostrof, který způsoboval chybné formátování logovací zprávy.
+- **refactor(ui): Zjednodušena čekací smyčka**
+  - Metoda `_waitForBrowserCloseOrNextCommand` v `iv_ui.class.js` byla přepsána.
+  - Byla odstraněna chybná logika, která aktivně hledala nové UI příkazy.
+  - Nová implementace nyní pouze pasivně čeká na manuální zavření prohlížeče (nebo na timeout) a během čekání posílá heartbeat pro udržení DB spojení.
+  - Tím je zajištěno, že aktivní UI sezení nemůže být přerušeno a bude vždy dokončeno podle záměru obsluhy.

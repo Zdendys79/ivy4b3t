@@ -193,35 +193,36 @@ export class UIBot {
       return;
     }
     const browser = this.fbBot.page.browser();
-    const checkIntervalMs = 10000; // Kontrola každých 10 sekund
+    const checkIntervalMs = 30000; // Kontrola každých 30 sekund
     const timeoutMs = timeoutMinutes * 60 * 1000;
     let elapsedTime = 0;
 
-    Log.info('[UI]', `Čekám na manuální zavření prohlížeče nebo další UI příkaz (max ${timeoutMinutes} min)...`);
+    Log.info('[UI]', `Čekám na manuální zavření prohlížeče (max ${timeoutMinutes} min)...`);
 
-    while (elapsedTime < timeoutMs && browser.isConnected()) {
-      await wait.delay(checkIntervalMs);
-      elapsedTime += checkIntervalMs;
-
-      // Pravidelný heartbeat pro udržení spojení s DB
+    // Spustíme interval, který bude posílat heartbeat
+    const heartbeatInterval = setInterval(() => {
       try {
-        await db.heartBeat(this.currentCommand.user_id || 0, 0, 'UI_WAIT');
+        db.heartBeat(this.currentCommand.user_id || 0, 0, 'UI_WAIT');
       } catch (e) {
         Log.warn('[UI]', `Heartbeat během čekání selhal: ${e.message}`);
       }
+    }, checkIntervalMs);
 
-      const newCommand = await this.checkForCommand();
-      if (newCommand && newCommand.id !== this.currentCommand?.id) {
-        Log.info('[UI]', 'Nalezen navazující UI příkaz, zpracovávám...');
-        await this.processCommand(newCommand, this.fbBot);
-        return; // Končíme čekání, protože byl zpracován další příkaz
+    try {
+      // Čekáme na jednu ze dvou událostí: zavření prohlížeče nebo timeout
+      await Promise.race([
+        new Promise(resolve => browser.once('disconnected', resolve)),
+        new Promise(resolve => setTimeout(resolve, timeoutMs))
+      ]);
+
+      if (!browser.isConnected()) {
+        Log.info('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
+      } else {
+        Log.info('[UI]', 'Timeout čekání na zavření prohlížeče.');
       }
-    }
-
-    if (!browser.isConnected()) {
-      Log.info('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
-    } else {
-      Log.info('[UI]', 'Timeout čekání na další příkaz nebo zavření prohlížeče.');
+    } finally {
+      // Vždy po skončení čekání zrušíme interval pro heartbeat
+      clearInterval(heartbeatInterval);
     }
   }
 }
