@@ -10,6 +10,9 @@ import { Log } from './iv_log.class.js';
 import { handleFBError, quickErrorReport, analyzeErrorPatterns } from './iv_fb-error-workflow.js';
 import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';
+import fs from 'fs/promises';
+import os from 'os';
+import fs from 'fs/promises';
 
 /**
  * Vyhledá interaktivní elementy (tlačítka, odkazy) podle textu.
@@ -20,8 +23,8 @@ import * as wait from './iv_wait.js';
  */
 export async function findByText(page, text, options = {}) {
   try {
-    if (!page || !page.waitForSelector) {
-      await Log.warn('[FB_SUPPORT]', 'findByText selhalo: page není platná.');
+    if (!page || page.isClosed()) {
+      await Log.warn('[FB_SUPPORT]', 'findByText selhalo: page není platná nebo je zavřená.');
       return [];
     }
 
@@ -36,12 +39,50 @@ export async function findByText(page, text, options = {}) {
     const xpath = `//*[${textSelector}]`;
     const selector = `xpath/${xpath}`;
 
-    await page.waitForSelector(selector, { timeout }).catch(() => {});
-    const elements = await page.$$(selector);
-    return elements || [];
+    await page.waitForSelector(selector, { timeout });
+    const elements = await page.$(selector);
+    
+    if (elements.length === 0) {
+        throw new Error(`Element s textem "${text}" nebyl nalezen.`);
+    }
+    
+    return elements;
 
   } catch (err) {
-    await Log.warn(`[FB_SUPPORT]', 'findByText selhalo pro "${text}":`, err);
+    await Log.warn(`[FB_SUPPORT]', 'findByText selhalo pro "${text}":`, err.message);
+    
+    // DIAGNOSTIC STEP - Uložení incidentu do databáze
+    try {
+      if (page && !page.isClosed()) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const incidentId = `${timestamp}_SYSTEM_findByText_FAIL`;
+        
+        const incident = {
+          incident_id: incidentId,
+          user_id: null, // Nemáme zde kontext uživatele
+          error_level: 'DEBUG',
+          error_message: `findByText failed for text: "${text}"`,
+          error_context: JSON.stringify({ error: err.message, options }),
+          page_url: page.url(),
+          page_title: await page.title().catch(() => 'Unknown'),
+          user_agent: await page.evaluate(() => navigator.userAgent).catch(() => 'unknown'),
+          screenshot_data: await page.screenshot({ encoding: 'base64', fullPage: true }),
+          dom_html: await page.content(),
+          console_logs: '[]',
+          user_comment: 'Automated report from findByText failure.',
+          user_analysis_request: 'Analyze why the element was not found.',
+          system_info: JSON.stringify({ hostname: os.hostname() }),
+          stack_trace: err.stack,
+          status: 'NEW'
+        };
+        
+        await db.safeExecute('system.insertDebugIncident', Object.values(incident));
+        await Log.error('[FB_SUPPORT]', `DIAGNOSTIKA: Uložen debug incident do DB. ID: ${incidentId}`);
+      }
+    } catch (debugErr) {
+      await Log.error('[FB_SUPPORT]', `DIAGNOSTIKA: Selhalo uložení debug incidentu do DB: ${debugErr.message}`);
+    }
+    
     return [];
   }
 }

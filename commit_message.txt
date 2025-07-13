@@ -1,5 +1,6 @@
-fix(fb): Correct element selection in clickSendButton
+feat(debug): Add diagnostic incident reporting to findByText
 
-- Fixed a critical `TypeError: spans is not iterable` in the `clickSendButton` method.
-- The error was caused by incorrectly using `page.$('span')` (which returns a single element) instead of `page.$$('span')` (which returns an array of elements).
-- This correction ensures that the code can properly iterate over all found `<span>` elements to locate the correct send button, resolving the crash during the posting process.
+- Implemented a diagnostic mechanism in the `findByText` function in `iv_fb_support.js`.
+- When the function fails to find a requested element, it now automatically captures the full page HTML, a screenshot, and other context.
+- This data is then saved as a new record in the `debug_incidents` database table.
+- This replaces the previous, less practical approach of saving local files and provides a centralized way to analyze UI detection failures.
