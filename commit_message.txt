@@ -1,9 +1,7 @@
-refactor(ui): Oprava logiky čekání u UI příkazů
+feat(fb): Cílené odmítnutí volitelných cookies
 
-Tato oprava řeší zásadní chybu v logice, která mohla způsobit přerušení probíhajícího UI příkazu novým příkazem.
+Tato změna upravuje způsob, jakým se zpracovává cookie lišta, aby bylo možné cíleně odmítnout volitelné cookies.
 
-- **refactor(ui): Zjednodušena čekací smyčka**
-  - Metoda `_waitForBrowserCloseOrNextCommand` v `iv_ui.class.js` byla přepsána.
-  - Byla odstraněna chybná logika, která aktivně hledala nové UI příkazy.
-  - Nová implementace nyní pouze pasivně čeká na manuální zavření prohlížeče (nebo na timeout) a během čekání posílá heartbeat pro udržení DB spojení.
-  - Tím je zajištěno, že aktivní UI sezení nemůže být přerušeno a bude vždy dokončeno podle záměru obsluhy.
+- **refactor(fb): Upravena metoda `acceptCookies`**
+  - Metoda nyní cíleně hledá a kliká na tlačítko s textem "Odmítnout volitelné soubory cookie" místo původního "Přijmout všechno".
+  - Tím je zajištěno požadované chování pro testovací účely a další ladění.
