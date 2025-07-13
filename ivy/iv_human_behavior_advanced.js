@@ -335,14 +335,14 @@ export class AdvancedHumanBehavior {
    * Výpočet zpoždění mezi znaky
    */
   calculateCharDelay(profile, context) {
-    // Fallback pro chybějící typing speed
-    const typingSpeed = profile.avg_typing_speed || 40; // 40 WPM default
+    // Fallback pro chybějící hodnoty
+    const typingSpeed = profile.avg_typing_speed || 150;
+    const variance = profile.typing_variance || 0.3;
+
     const baseWPM = typingSpeed * (0.8 + Math.random() * 0.4);
-    const charsPerSecond = (baseWPM * 5) / 60; // 5 znaků = 1 slovo
+    const charsPerSecond = (baseWPM * 5) / 60;
     const baseDelay = 1000 / charsPerSecond;
     
-    // Variance podle profilu
-    const variance = profile.typing_variance || 0.3;
     const varianceMultiplier = 1 + (Math.random() - 0.5) * variance;
     
     return Math.max(20, baseDelay * varianceMultiplier);
@@ -363,8 +363,9 @@ export class AdvancedHumanBehavior {
     if (context === 'complaint') contextMultiplier = 1.5;
     if (context === 'casual') contextMultiplier = 0.8;
     
-    // Úpravy podle osobnosti
-    const personalityMultiplier = 0.5 + profile.impatience_level;
+    // Úpravy podle osobnosti s fallbackem
+    const impatienceLevel = profile.impatience_level || 0.5;
+    const personalityMultiplier = 0.5 + impatienceLevel;
     
     const finalPause = basePause * contextMultiplier * personalityMultiplier;
     await wait.delay(finalPause, false);

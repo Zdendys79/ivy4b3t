@@ -1,12 +1,7 @@
-refactor(behavior): Oprava nadměrné chybovosti psaní úpravou dat
+fix(behavior): Ošetření `NaN` chyby při simulaci psaní
 
-Tato oprava řeší problém s vysokou chybovostí při simulaci psaní správným, systémovým způsobem – úpravou výchozích dat místo "patchování" logiky.
+Tato oprava řeší `TimeoutNaNWarning`, který mohl nastat, pokud v behaviorálním profilu uživatele chyběly některé hodnoty pro výpočet časování.
 
-- **revert(behavior): Odstraněno dělení chybovosti v logice**
-  - Z metody `typeWord` byla odstraněna dočasná úprava, která dělila `mistake_rate` deseti.
-
-- **refactor(behavior): Upravena výchozí chybovost pro nové profily**
-  - V metodě `_createDefaultProfile` byla desetinásobně snížena generovaná hodnota `mistake_rate`, aby noví uživatelé měli od začátku realistickou chybovost.
-
-- **fix(db): Provedena jednorázová oprava existujících profilů**
-  - Byl spuštěn SQL skript, který všem existujícím záznamům v `user_behavioral_profiles` snížil hodnotu `mistake_rate` desetinásobně.
+- **fix(behavior): Přidány fallback hodnoty do výpočtů prodlev**
+  - Ve funkcích `calculateCharDelay` a `interWordPause` v `iv_human_behavior_advanced.js` byly přidány pojistky (`|| defaultValue`).
+  - Tím je zajištěno, že i pokud z databáze přijde hodnota `NULL` (např. pro `avg_typing_speed` nebo `impatience_level`), výpočet prodlevy neselže a nepředá `NaN` do `setTimeout`.
