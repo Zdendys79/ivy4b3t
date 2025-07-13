@@ -7,6 +7,7 @@ import { Log } from './iv_log.class.js';
 import { PageAnalyzer } from './iv_page_analyzer.class.js';
 import { getHumanBehavior } from './iv_human_behavior_advanced.js';
 import { db } from './iv_sql.js';
+import * as fbSupport from './iv_fb_support.js';
 
 import * as wait from './iv_wait.js';
 
@@ -1626,7 +1627,7 @@ export class FBBot {
   async clickDiscus() {
     try {
       Log.info('[FB]', 'Hledám tlačítko "Diskuze"...');
-      const elements = await this._findByText("Diskuze", { timeout: 3000 });
+      const elements = await fbSupport.findByText(this.page, "Diskuze", { match: 'exact', timeout: 3000 });
       if (elements.length > 0) {
         await elements[0].click();
         Log.success('[FB]', '✅ Úspěšně kliknuto na "Diskuze"');

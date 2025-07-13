@@ -1,8 +1,8 @@
-fix(analyzer): Oprava volání Node.js funkce z kontextu prohlížeče
+fix(fb): Oprava volání `findByText` v metodě `clickDiscus`
 
-Tato oprava řeší pád `fbSupport is not defined`, který byl způsoben nesprávným voláním Node.js funkce z `page.evaluate`.
+Tato oprava řeší chybu `this._findByText is not a function`, která nastávala při pokusu o nalezení tlačítka "Diskuze".
 
-- **refactor(analyzer): Oddělena extrakce dat a jejich zpracování**
-  - Metoda `_performGroupAnalysis` byla přepsána tak, aby nejprve v `page.evaluate` pouze extrahovala syrový text a jednoduché příznaky ze stránky.
-  - Následné zpracování těchto dat, včetně volání `fbSupport.findByText` pro nalezení tlačítka, se nyní provádí ve správném Node.js kontextu.
-  - Tím je odstraněna příčina chyby a zajištěna správná funkčnost analýzy.
+- **fix(fb): Aktualizováno volání v `clickDiscus`**
+  - Během předchozího refaktoringu a centralizace funkce `findByText` bylo opomenuto aktualizovat její volání v metodě `clickDiscus`.
+  - Volání bylo opraveno na `fbSupport.findByText`, čímž se obnovila správná funkčnost.
+- **chore(fb): Doplněn chybějící import `iv_fb_support.js`**
