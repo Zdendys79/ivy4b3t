@@ -46,6 +46,15 @@ export const USERS = {
     ORDER BY COALESCE(next_worktime, NOW() - INTERVAL 2 DAY) ASC
   `,
 
+  getOldestReadyForHost: `
+    SELECT *
+    FROM fb_users
+    WHERE host LIKE ?
+      AND locked IS NULL
+    ORDER BY next_worktime ASC
+    LIMIT 1
+  `,
+
   // ===== SPECIÁLNÍ VÝBĚRY =====
 
   getForStatement: `

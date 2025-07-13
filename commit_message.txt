@@ -1,7 +1,15 @@
-fix(db): Oprava předávání `undefined` hodnot do databáze
+feat(worker): Implementace rotace uživatelů pro testování
 
-Tato oprava řeší pád aplikace `Bind parameters must not contain undefined`, který nastával při ukládání detailů o skupině.
+Tento commit zavádí novou logiku pro výběr uživatelů, která je specifická pro `main` (testovací) větev, aby se zabránilo opakovanému výběru stejného uživatele po chybě.
 
-- **fix(db): Ošetření `undefined` hodnot v `saveGroupExplorationDetails`**
-  - Ve funkci `saveGroupExplorationDetails` v `iv_querybuilder.class.js` byla přidána kontrola, která zajišťuje, že jakákoliv `undefined` hodnota z analýzy je před odesláním do databáze převedena na `null`.
-  - Tím se zabrání chybě databázového ovladače a zajistí se správné ukládání dat.
+- **feat(worker): Detekce `main` větve a podmíněný výběr uživatele**
+  - Skript `iv_worker.js` nyní na začátku detekuje aktuální Git větev.
+  - Pokud je na `main` větvi, použije se nový, zjednodušený výběr, který rotuje uživatele na základě nejstaršího času poslední aktivity (`next_worktime`).
+  - V jakékoliv jiné (produkční) větvi zůstává v platnosti původní, sofistikovaná logika výběru uživatele s dostupnou akcí.
+
+- **feat(worker): Automatický posun času v `main` větvi**
+  - Ihned po výběru uživatele v `main` větvi se jeho `next_worktime` v databázi posune o 15 minut. Tím je zajištěno, že při příštím spuštění (i po chybě) bude vybrán další uživatel v pořadí.
+
+- **feat(db): Přidán nový SQL dotaz `getOldestReadyForHost`**
+  - Do `users.js` byl přidán nový dotaz, který implementuje zjednodušenou logiku výběru pro testovací účely.
+  - Byla přidána odpovídající funkce do `QueryBuilderu`.

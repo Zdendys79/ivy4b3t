@@ -112,7 +112,19 @@ export async function tick() {
     // 🎯 KROK 2b: VÝBĚR UŽIVATELE (pouze pokud není UI příkaz)
     Log.debug('[WORKER]', '🔍 Krok 2b: Hledám dostupného uživatele s akcemi...');
 
-    const user = await db.getUserWithAvailableActions(hostname);
+    // Zjisti aktuální Git větev
+    const gitInfo = await support.getGitInfo();
+    const isMainBranch = gitInfo.branch === 'main';
+
+    let user;
+    if (isMainBranch) {
+      Log.info('[WORKER]', '🌿 MAIN větev detekována - používám rotační výběr uživatele.');
+      user = await db.getOldestReadyUser(hostname);
+    } else {
+      Log.info('[WORKER]', '🚀 Produkční větev - používám standardní výběr uživatele s akcemi.');
+      user = await db.getUserWithAvailableActions(hostname);
+    }
+
     if (!user || !user.id || !user.name || !user.surname) {
       Log.info('[WORKER]', '❌ Krok 2: Nebyl nalezen žádný uživatel s dostupnými akcemi');
       if (user) {
@@ -126,6 +138,12 @@ export async function tick() {
     }
 
     Log.success(`[${user.id}]`, `🚀 Krok 2: Vybrán uživatel ${user.name} ${user.surname}`);
+
+    // V MAIN větvi rovnou posuneme čas, aby se uživatelé střídali
+    if (isMainBranch) {
+        await db.updateUserWorktime(user.id, 15);
+        Log.info(`[${user.id}]`, '🌿 MAIN větev: Čas aktivity uživatele posunut o 15 minut pro zajištění rotace.');
+    }
 
     // 🎯 KROK 3-8: CELÝ UŽIVATELSKÝ CYKLUS
     await executeUserActionCycle(user);

@@ -20,6 +20,31 @@ import { Log } from './iv_log.class.js';
 // that are used conditionally and don't justify individual named imports
 import * as fbSupport from './iv_fb_support.js';
 
+import { exec } from 'child_process';
+
+/**
+ * Získá informace o aktuálním stavu Git repozitáře
+ * @returns {Promise<Object>}
+ */
+export async function getGitInfo() {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.resolve('./git-common.sh');
+    exec(`bash ${scriptPath} get_info`, (error, stdout, stderr) => {
+      if (error) {
+        Log.error('[GIT]', `Chyba při získávání Git informací: ${stderr}`);
+        return reject(new Error(stderr));
+      }
+      try {
+        const info = JSON.parse(stdout);
+        resolve(info);
+      } catch (parseError) {
+        Log.error('[GIT]', `Chyba při parsování Git informací: ${parseError.message}`);
+        reject(parseError);
+      }
+    });
+  });
+}
+
 /**
  * Přidání uživatele do skupiny
  */

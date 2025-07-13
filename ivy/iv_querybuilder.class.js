@@ -33,6 +33,10 @@ export class QueryBuilder {
     return await this.safeQueryFirst('users.getWithAvailableActions', [host]);
   }
 
+  async getOldestReadyUser(host = hostname) {
+    return await this.safeQueryFirst('users.getOldestReadyForHost', [host]);
+  }
+
   async getUserById(id) {
     return await this.safeQueryFirst('users.getById', [id]);
   }
