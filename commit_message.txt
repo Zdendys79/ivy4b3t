@@ -1,6 +1,5 @@
-fix(fb): Improve discussion tab detection
+fix(posting): Improve posting readiness checks and recovery
 
-- Enhanced the `clickDiscus` method in `iv_fb.class.js` to be more robust.
-- It now searches for multiple text variants ('Diskuze', 'Discussion', 'Hlavní', 'Featured') to handle different group layouts.
-- The underlying `findByText` function in `iv_fb_support.js` was also updated to search within `<span>` elements in addition to buttons and links.
-- This change prevents the bot from getting stuck when the primary "post" field is not immediately visible and a switch to the discussion tab is required.
+- Refactored `verifyFBReadinessForUtio` in `iv_fb_support.js` to actively attempt recovery when the post input field is not found. It now tries to click the "Discussion" tab and re-checks for the input field.
+- Strengthened the check in `pasteMsg` in `iv_support.js` to strictly halt the process if `verifyFBReadinessForUtio` returns `ready: false`, preventing unnecessary calls to UTIO.
+- This prevents the bot from getting stuck and proceeding with UTIO when the Facebook page is not in a state to accept a post.

@@ -133,35 +133,8 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
 
     if (!readinessCheck.ready) {
       await Log.error(`[${user.id}]`, `❌ FB není připraven: ${readinessCheck.reason}`);
-
-      if (readinessCheck.critical) {
-        // Označ skupinu jako nedostupnou v user_groups
-        try {
-          await db.blockUserGroup(user.id, group.id, readinessCheck.reason, 7); // Blokace na 7 dní
-          Log.info(`[${user.id}]`, `🚫 Skupina ${group.nazev} označena jako nedostupná`);
-        } catch (dbErr) {
-          Log.warn(`[${user.id}]`, `Nepodařilo se označit skupinu jako nedostupnou: ${dbErr.message}`);
-        }
-        return false; // Kritická chyba - ukončit
-      }
-
-      if (readinessCheck.shouldNavigate) {
-        Log.info(`[${user.id}]`, 'Pokusím se přejít do správné skupiny...');
-        const navigated = await fbBot.openGroup(group);
-        if (!navigated) {
-          await Log.error(`[${user.id}]`, 'Nepodařilo se přejít do skupiny');
-          return false;
-        }
-
-        // Znovu ověř po navigaci
-        const recheckResult = await fbSupport.verifyFBReadinessForUtio(user, group, fbBot);
-        if (!recheckResult.ready) {
-          await Log.error(`[${user.id}]`, `Ani po navigaci není připraveno: ${recheckResult.reason}`);
-          return false;
-        }
-      } else {
-        await Log.warn(`[${user.id}]`, '⚠️ Pokračuji přes varování...');
-      }
+      // Vždy ukončit, pokud FB není připraven
+      return false;
     }
 
     // Kontrola vstupních parametrů

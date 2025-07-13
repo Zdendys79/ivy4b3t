@@ -801,10 +801,21 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
           // Kontrola na nedostupnost pole pro psaní
           if (errorPattern?.type === 'NO_WRITE_FIELD' || 
               warningDetails.some(detail => detail.includes('pole pro psaní'))) {
-            await Log.warn(`[${user.id}]`, '⚠️ Pole pro psaní není dostupné');
+            
+            await Log.warn(`[${user.id}]`, '⚠️ Pole pro psaní není dostupné, zkouším přejít do diskuze...');
+            const clickedDiscus = await fbBot.clickDiscus();
+            if (clickedDiscus) {
+              await wait.delay(3000); // Počkat na načtení
+              const recheck = await fbBot.newThing();
+              if (recheck) {
+                Log.success(`[${user.id}]`, '✅ Pole pro psaní nalezeno po přechodu do diskuze.');
+                return { ready: true, reason: 'Připraveno po přechodu do diskuze' };
+              }
+            }
+            
             return {
               ready: false,
-              reason: errorPattern?.reason || 'Není k dispozici pole pro psaní příspěvku',
+              reason: errorPattern?.reason || 'Není k dispozici pole pro psaní příspěvku (ani po pokusu o diskuzi)',
               critical: false,
               shouldNavigate: false,
               analysisDetails: analysis
