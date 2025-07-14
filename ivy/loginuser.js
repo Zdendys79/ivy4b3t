@@ -13,8 +13,8 @@ import readline from 'readline';
 import puppeteer from 'puppeteer';
 
 import { db } from './iv_sql.js'
-import { FBBot } from './iv_fb.class.js';
-import { Log } from './iv_log.class.js';
+import { FBBot } from './libs/iv_fb.class.js';
+import { Log } from './libs/iv_log.class.js';
 
 import * as wait from './iv_wait.js';
 

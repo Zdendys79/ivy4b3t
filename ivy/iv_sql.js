@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 
 import { QueryUtils } from './sql/queries/index.js';
-import { QueryBuilder } from './iv_querybuilder.class.js';
-import { Log } from './iv_log.class.js';
+import { QueryBuilder } from './libs/iv_querybuilder.class.js';
+import { Log } from './libs/iv_log.class.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

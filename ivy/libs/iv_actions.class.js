@@ -15,7 +15,7 @@ import { setInvasiveLock, initInvasiveLock, clearInvasiveLock } from '../iv_whee
 import { db } from '../iv_sql.js'
 import { SQL } from '../sql/queries/index.js';
 import { getAllConfig } from '../iv_config.js';
-import { Log } from '../iv_log.class.js';
+import { Log } from './iv_log.class.js';
 import { getAvailableGroupsForUser, detectMembershipRequest } from '../user_group_escalation.js';
 
 export class IvActions {

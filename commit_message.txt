@@ -1,3 +1,10 @@
-fix: Correct import path for iv_log.class.js in iv_actions.class.js
+refactor: Move all *.class.js files to libs/ directory and update imports
 
-Fixed module not found error by changing relative import path from './iv_log.class.js' to '../iv_log.class.js'
+- Moved 10 class files from ivy/ root to ivy/libs/ for better organization:
+  * iv_char.class.js, iv_math.class.js, iv_ErrorReportBuilder.class.js
+  * iv_console_logger.class.js, iv_log.class.js, iv_utio.class.js  
+  * iv_querybuilder.class.js, iv_ui.class.js, iv_page_analyzer.class.js
+  * iv_fb.class.js (iv_actions.class.js was already in libs/)
+- Updated import paths in 31 files to reference libs/ directory
+- Fixed relative imports within libs/ to reference sibling files correctly
+- Maintains proper module dependencies and ESM structure

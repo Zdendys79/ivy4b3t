@@ -19,13 +19,13 @@ import os from 'node:os';
 import puppeteer from 'puppeteer';
 
 import { db } from './iv_sql.js'
-import { FBBot } from './iv_fb.class.js';
-import { UtioBot } from './iv_utio.class.js';
-import { UIBot } from './iv_ui.class.js';
+import { FBBot } from './libs/iv_fb.class.js';
+import { UtioBot } from './libs/iv_utio.class.js';
+import { UIBot } from './libs/iv_ui.class.js';
 import { getRandomAction, initInvasiveLock, clearInvasiveLock, hasInvasiveLock } from './iv_wheel.js';
 import { IvActions } from './libs/iv_actions.class.js';
-import { Log } from './iv_log.class.js';
-import { IvMath } from './iv_math.class.js';
+import { Log } from './libs/iv_log.class.js';
+import { IvMath } from './libs/iv_math.class.js';
 import { handleNewAccountBlock, detectAccountBlock } from './hostname_block_handler.js';
 
 import * as wait from './iv_wait.js';

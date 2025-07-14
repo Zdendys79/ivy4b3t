@@ -9,7 +9,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import readline from 'readline';
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 import { db } from './iv_sql.js';
 
 process.stdin.setMaxListeners(20); // Zvýšení limitu pro posluchače kvůli interaktivnímu debuggeru

@@ -6,7 +6,7 @@
  * Sbírá název, počet členů, popis, kategorie a další metadata
  */
 
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';
 

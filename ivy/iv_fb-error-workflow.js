@@ -6,9 +6,9 @@
  * Obsahuje funkce pro detekci chyb, uživatelskou intervenci a vytváření reportů
  */
 
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 import { waitForUserIntervention, advancedUserIntervention } from './iv_wait.js';
-import { ErrorReportBuilder } from './iv_ErrorReportBuilder.class.js';
+import { ErrorReportBuilder } from './libs/iv_ErrorReportBuilder.class.js';
 
 /**
  * Hlavní funkce pro error reporting workflow

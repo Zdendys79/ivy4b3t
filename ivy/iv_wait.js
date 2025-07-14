@@ -7,7 +7,7 @@
  */
 
 import readline from 'readline';
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 
 export function type() { // wait-time between typed chars on keyboard [ms]
     const min = 30;

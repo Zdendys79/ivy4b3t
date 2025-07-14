@@ -13,7 +13,7 @@ import md5 from 'md5';
 // Local modules - named imports (UPDATED)
 import * as wait from './iv_wait.js';
 import { db } from './iv_sql.js';
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 
 // FB support module - namespace import (specific case)
 // Keeping namespace import as iv_fb_support.js contains many specialized functions

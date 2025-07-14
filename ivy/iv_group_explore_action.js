@@ -6,7 +6,7 @@
  * Neinvazivní aktivita, která se opakuje nekonečně pokud nejsou dostupné posting akce
  */
 
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 import { FBGroupAnalyzer } from './iv_fb_group_analyzer.js';
 import { db } from './iv_sql.js';
 import * as wait from './iv_wait.js';

@@ -5,7 +5,7 @@
  */
 
 import { db } from './iv_sql.js';
-import { Log } from './iv_log.class.js';
+import { Log } from './libs/iv_log.class.js';
 import os from 'node:os';
 
 const hostname = os.hostname();

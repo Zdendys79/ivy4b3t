@@ -17,8 +17,8 @@ import { delay } from './iv_wait.js';
 import { db, closeConnection as closeDB } from './iv_sql.js'
 import { get as getVersion } from './iv_version.js';
 import { tick as workerTick } from './iv_worker.js';
-import { Log } from './iv_log.class.js';
-import { consoleLogger } from './iv_console_logger.class.js';
+import { Log } from './libs/iv_log.class.js';
+import { consoleLogger } from './libs/iv_console_logger.class.js';
 
 const hostname = os.hostname();
 const versionCode = getVersion();
@@ -35,7 +35,7 @@ Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
 // Záznam do systémového logu o spuštění
 try {
-  const queryBuilder = await import('./iv_querybuilder.class.js');
+  const queryBuilder = await import('./libs/iv_querybuilder.class.js');
   const dbInstance = new queryBuilder.QueryBuilder();
   
   await dbInstance.logSystemEvent(
