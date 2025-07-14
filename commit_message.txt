@@ -1,10 +1,10 @@
-refactor: Move all *.class.js files to libs/ directory and update imports
+fix: Add comprehensive Chrome flags to disable crash/restore dialogs
 
-- Moved 10 class files from ivy/ root to ivy/libs/ for better organization:
-  * iv_char.class.js, iv_math.class.js, iv_ErrorReportBuilder.class.js
-  * iv_console_logger.class.js, iv_log.class.js, iv_utio.class.js  
-  * iv_querybuilder.class.js, iv_ui.class.js, iv_page_analyzer.class.js
-  * iv_fb.class.js (iv_actions.class.js was already in libs/)
-- Updated import paths in 31 files to reference libs/ directory
-- Fixed relative imports within libs/ to reference sibling files correctly
-- Maintains proper module dependencies and ESM structure
+- Added --hide-crash-restore-bubble to both iv_worker.js and loginuser.js
+- Enhanced --disable-features to include SessionRestore
+- Added additional Chrome flags to prevent dialogs:
+  * --disable-prompt-on-repost
+  * --disable-hang-monitor  
+  * --disable-client-side-phishing-detection
+  * --disable-popup-blocking
+- These flags should prevent the "restore session" and crash dialogs from appearing
