@@ -1,9 +1,5 @@
-fix: Correct all remaining import paths in libs/ directory
+fix: Add error handling and debugging for IvActions initialization
 
-- Fixed iv_fb.class.js: updated 5 imports to use '../' for non-class files
-- Fixed iv_page_analyzer.class.js: updated 2 imports for fbSupport and config
-- Fixed iv_ErrorReportBuilder.class.js: updated 1 import for iv_sql.js
-- Fixed iv_utio.class.js: updated 1 import for iv_wait.js
-- Fixed iv_ui.class.js: updated 2 imports for iv_sql.js and iv_wait.js
-
-All class files in libs/ now correctly import non-class files from parent directory using '../' prefix
+- Added proper error handling for IvActions.init() to catch initialization failures
+- Added debug logging to inspect actions instance and methods before calling getActionRequirements
+- Enhanced error reporting to help diagnose "actions.getActionRequirements is not a function" error

@@ -184,7 +184,10 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
 
   // Inicializace IvActions instance
   const actions = new IvActions();
-  await actions.init();
+  const initResult = await actions.init();
+  if (!initResult) {
+    throw new Error('Nepodařilo se inicializovat IvActions instanci');
+  }
 
   try {
     await db.initUserActionPlan(user.id);
@@ -270,6 +273,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Inicializace potřebných služeb pro akci
+      Log.debug(`[DIAGNOSTIC] actions instance: ${typeof actions}, methods: ${Object.getOwnPropertyNames(Object.getPrototypeOf(actions))}`);
       const requirements = await actions.getActionRequirements(actionCode);
       Log.debug(`[DIAGNOSTIC] Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
       ({ fbBot, utioBot } = await initializeRequiredServices(
