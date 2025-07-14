@@ -1,6 +1,5 @@
-fix: Correct remaining import paths and add fallback for post field detection
+fix: Change text matching from startsWith to contains for post field detection
 
-- Fixed remaining iv_interactive_debugger.js import paths in iv_log.class.js
-- Added fallback to newThing() method to search for "Co se vám honí hlavou" if "Napište něco" not found
-- Reduced timeout for each search from 3s to 2s for faster fallback
-- Maintains simple approach with only two text variants instead of complex strategies
+- Changed match strategy from 'startsWith' to 'contains' for both "Napište něco" and "Co se vám honí hlavou"
+- Facebook elements often have whitespace or other text before the target string
+- This should improve detection success rate for post creation fields

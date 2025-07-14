@@ -794,7 +794,7 @@ export class FBBot {
       Log.info('[FB]', 'Hledám element "Napište něco"');
       
       let elements = await fbSupport.findByText(this.page, "Napište něco", { 
-        match: 'startsWith', 
+        match: 'contains', 
         timeout: 2000
       });
 
@@ -807,7 +807,7 @@ export class FBBot {
       // Fallback: zkusíme "Co se vám honí hlavou"
       Log.info('[FB]', 'Zkouším fallback "Co se vám honí hlavou"');
       elements = await fbSupport.findByText(this.page, "Co se vám honí hlavou", { 
-        match: 'startsWith', 
+        match: 'contains', 
         timeout: 2000
       });
 
