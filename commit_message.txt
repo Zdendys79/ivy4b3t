@@ -1,4 +1,7 @@
-fix: Replace deprecated waitForTimeout with setTimeout in test.js
+fix: Improve element detection to find only clickable elements
 
-- Fix TypeError by replacing page.waitForTimeout with Promise-based setTimeout
-- Ensures compatibility with current Puppeteer version
+- Add console.clear() at startup for cleaner output
+- Filter out non-interactive tags (SCRIPT, STYLE, NOSCRIPT, etc.)
+- Focus on clickable elements: links, buttons, inputs, and elements with click handlers
+- Skip hidden elements (display: none, visibility: hidden, zero width)
+- Use textContent instead of only direct text nodes to capture button/link text

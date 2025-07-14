@@ -80,19 +80,27 @@ async function launchBrowser() {
 
 async function findElementsWithShortText(page) {
   return await page.evaluate(() => {
-    const allElements = document.querySelectorAll('*');
+    // Seznam tagů, které obvykle nejsou interaktivní
+    const excludedTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK', 'BR', 'HR'];
+    
+    // Selektor pro potenciálně klikatelné elementy
+    const clickableSelector = 'a, button, input, select, textarea, [role="button"], [role="link"], [onclick], [tabindex], label, div[class*="clickable"], div[class*="button"], span[class*="button"], div[class*="link"], span[class*="link"]';
+    
+    const allElements = document.querySelectorAll(clickableSelector);
     const results = [];
     
     allElements.forEach((element, index) => {
-      // Získání přímého textu elementu (bez potomků)
-      const text = Array.from(element.childNodes)
-        .filter(node => node.nodeType === Node.TEXT_NODE)
-        .map(node => node.textContent.trim())
-        .join(' ')
-        .trim();
+      // Přeskočit skryté elementy
+      const style = window.getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden' || element.offsetWidth === 0) {
+        return;
+      }
+      
+      // Získání textu elementu včetně potomků
+      const text = element.textContent.trim();
       
       // Filtrování - max 10 slov a neprázdný text
-      if (text && text.split(/\s+/).length <= 10) {
+      if (text && text.split(/\s+/).length <= 10 && !excludedTags.includes(element.tagName)) {
         results.push({
           index: results.length,
           text: text,
@@ -146,6 +154,7 @@ async function highlightElement(page, index) {
 }
 
 async function main() {
+  console.clear();
   console.log('Spouštím prohlížeč s profilem ID 0...');
   const { browser, context } = await launchBrowser();
   
