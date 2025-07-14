@@ -213,16 +213,16 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // 🎯 KROK 3: ZÍSKÁNÍ DOSTUPNÝCH AKCÍ
-      const actions = await db.getUserActions(user.id);
-      Log.debug(`[${user.id}]`, `Krok 3: Dostupné akce: ${actions.map(a => a.action_code).join(', ') || 'Žádné'}`);
+      const availableActions = await db.getUserActions(user.id);
+      Log.debug(`[${user.id}]`, `Krok 3: Dostupné akce: ${availableActions.map(a => a.action_code).join(', ') || 'Žádné'}`);
 
       // 🎯 KROK 7: KONTROLA UKONČUJÍCÍCH AKCÍ
-      const hasNormalActions = actions.some(a => !['account_delay', 'account_sleep'].includes(a.action_code));
+      const hasNormalActions = availableActions.some(a => !['account_delay', 'account_sleep'].includes(a.action_code));
 
       if (!hasNormalActions) {
         Log.info(`[${user.id}]`, 'Krok 7: Kolo štěstí vyprázdněno, vybírám ukončující akci');
 
-        const endingActions = actions.filter(a => ['account_delay', 'account_sleep'].includes(a.action_code));
+        const endingActions = availableActions.filter(a => ['account_delay', 'account_sleep'].includes(a.action_code));
         if (endingActions.length === 0) {
           Log.info(`[${user.id}]`, 'Žádné ukončující akce k dispozici, končím cyklus');
           break;
@@ -236,13 +236,13 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
         break;
       }
 
-      if (!actions.length) {
+      if (!availableActions.length) {
         Log.info(`[${user.id}]`, 'Žádné akce k dispozici, končím cyklus');
         break;
       }
 
       // 🎯 KROK 4: LOSOVÁNÍ AKCE NA KOLE ŠTĚSTÍ
-      const picked = await getRandomAction(actions, user.id);
+      const picked = await getRandomAction(availableActions, user.id);
       if (!picked) {
         await Log.warn(`[${user.id}]`, 'Krok 4: Kolo štěstí vrátilo null.');
         
@@ -273,7 +273,6 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Inicializace potřebných služeb pro akci
-      Log.debug(`[DIAGNOSTIC] actions instance: ${typeof actions}, methods: ${Object.getOwnPropertyNames(Object.getPrototypeOf(actions))}`);
       const requirements = await actions.getActionRequirements(actionCode);
       Log.debug(`[DIAGNOSTIC] Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
       ({ fbBot, utioBot } = await initializeRequiredServices(

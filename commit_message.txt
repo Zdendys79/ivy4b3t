@@ -1,5 +1,6 @@
-fix: Add error handling and debugging for IvActions initialization
+fix: Resolve variable name conflict between actions instance and actions array
 
-- Added proper error handling for IvActions.init() to catch initialization failures
-- Added debug logging to inspect actions instance and methods before calling getActionRequirements
-- Enhanced error reporting to help diagnose "actions.getActionRequirements is not a function" error
+- Renamed database actions array from 'actions' to 'availableActions' to avoid conflict
+- Fixed variable scope issue where IvActions instance was being overwritten by db.getUserActions() result
+- Updated all references to use correct variable names (actions vs availableActions)
+- Removed debug logging after confirming the fix
