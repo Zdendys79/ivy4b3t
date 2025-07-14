@@ -277,12 +277,12 @@ export class PageAnalyzer {
         if (accountLocked) {
           finalErrorPatterns = {
             detected: true,
-            reason: 'Účet je zablokován nebo omezen (obecná detekce)', typee: 'ACCOUNT_LOCKED_GENERIC'
+            reason: 'Účet je zablokován nebo omezen (obecná detekce)', type: 'ACCOUNT_LOCKED_GENERIC'
           };
         } else if (checkpoint.detected) {
           finalErrorPatterns = {
             detected: true,
-            reason: 'Detekován bezpečnostní checkpoint (obecná detekce)', typee: 'CHECKPOINT_GENERIC'
+            reason: 'Detekován bezpečnostní checkpoint (obecná detekce)', type: 'CHECKPOINT_GENERIC'
           };
         }
       }
@@ -648,27 +648,27 @@ export class PageAnalyzer {
     const patterns = [
       {
         texts: ['videoselfie', 'video selfie', 'Please take a video selfie', 'Potvrďte svou totožnost pomocí videoselfie'],
-        reason: 'Požadavek na videoselfie', typee: 'VIDEOSELFIE'
+        reason: 'Požadavek na videoselfie', type: 'VIDEOSELFIE'
       },
       {
         texts: ['váš účet jsme uzamkli', 'Account restricted', 'temporarily restricted', 'Účet máte zablokovaný'],
-        reason: 'Účet je zablokován', typee: 'ACCOUNT_LOCKED'
+        reason: 'Účet je zablokován', type: 'ACCOUNT_LOCKED'
       },
       {
         texts: ['Verify your identity', 'ověření identity', 'identity verification'],
-        reason: 'Požadavek na ověření identity', typee: 'IDENTITY_VERIFICATION'
+        reason: 'Požadavek na ověření identity', type: 'IDENTITY_VERIFICATION'
       },
       {
         texts: ['suspicious activity', 'podezřelá aktivita', 'unusual activity'],
-        reason: 'Detekována podezřelá aktivita', typee: 'SUSPICIOUS_ACTIVITY'
+        reason: 'Detekována podezřelá aktivita', type: 'SUSPICIOUS_ACTIVITY'
       },
       {
         texts: ['nemáte opr��vnění', 'not authorized', 'access denied', 'přístup zamítnut'],
-        reason: 'Nemáte oprávnění pro tuto akci', typee: 'ACCESS_DENIED'
+        reason: 'Nemáte oprávnění pro tuto akci', type: 'ACCESS_DENIED'
       },
       {
         texts: ['Zkontrolujte nastavení reklam', 'Review how we use data for ads', 'Zkontrolujte, jestli můžeme'],
-        reason: 'Vyžadován souhlas se zpracováním dat pro reklamy', typee: 'AD_CONSENT_REQUIRED'
+        reason: 'Vyžadován souhlas se zpracováním dat pro reklamy', type: 'AD_CONSENT_REQUIRED'
       }
     ];
 
@@ -684,7 +684,7 @@ export class PageAnalyzer {
       if (hasCookieButton) {
         detectedPatterns.push({
             detected: true,
-            reason: 'Vyžadován souhlas s cookies', typee: 'COOKIE_CONSENT_REQUIRED'
+            reason: 'Vyžadován souhlas s cookies', type: 'COOKIE_CONSENT_REQUIRED'
         });
       }
 
@@ -693,7 +693,7 @@ export class PageAnalyzer {
       if (loginButton.length > 0) {
         detectedPatterns.push({
             detected: true,
-            reason: 'Nalezen přihlašovací formulář v neočekávaném kroku.', typee: 'UNEXPECTED_LOGIN_PAGE'
+            reason: 'Nalezen přihlašovací formulář v neočekávaném kroku.', type: 'UNEXPECTED_LOGIN_PAGE'
         });
       }
 
@@ -705,7 +705,7 @@ export class PageAnalyzer {
           detectedPatterns.push({
             detected: true,
             pattern: pattern,
-            reason: pattern.reason, typee: pattern.type
+            reason: pattern.reason, type: pattern.type
           });
         }
       }

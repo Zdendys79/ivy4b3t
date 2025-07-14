@@ -1,12 +1,25 @@
-refactor: Rename database columns nazev->name and typ->type in fb_groups table
+refactor: Convert iv_actions.js to class and fix remaining typee->type errors
 
-- Execute ALTER TABLE to rename nazev to name and typ to type
-- Update all SQL queries to use new column names (name, type) 
-- Create automated script to replace all code references (.nazev -> .name, .typ -> .type)
-- Update 18 JavaScript files with new column references
-- Fix web interface to use new column names
-- Prepare for new group type 'E' (Exploration) for newly discovered groups
-- Maintain backward compatibility with existing group types G, GV, P
+- Refactor iv_actions.js to iv_actions.class.js for better testability and OOP design
+- Update all imports and usage in iv_worker.js to use new IvActions class instance
+- Create comprehensive test suite for all implemented wheel of fortune actions:
+  * test_quote_post.js - Timeline quote posting test
+  * test_post_utio_g.js - UTIO articles to G-type groups test  
+  * test_post_utio_gv.js - Scientific articles to GV-type groups test
+  * test_group_explore.js - New FB groups exploration test
+  * test_account_delay.js - Short account pause test
+  * test_account_sleep.js - Long account sleep test
+- Add test_runner.js with support for different test suites (all/critical/non-invasive)
+- Fix remaining typee->type column reference errors in 7 files:
+  * sql/queries/groups.js - Fix g.typee in SQL queries
+  * sql/queries/logs.js - Fix typee in log queries  
+  * iv_page_analyzer.class.js - Fix error object properties
+  * iv_fb.class.js - Fix detection object properties and group.typee
+  * iv_fb-error-workflow.js - Fix screenshot type property
+  * hostname_block_handler.js - Fix error object properties
+  * web/public/assets/js/app.js - Fix function parameter name
+- Update README.md to reflect new class-based architecture
+- Maintain backward compatibility with exported functions for legacy code
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

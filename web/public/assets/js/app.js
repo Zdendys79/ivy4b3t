@@ -301,7 +301,7 @@
             }
         },
 
-        show: function(message, typee, duration) {
+        show: function(message, type, duration) {
             this.init();
 
             type = type || 'info';

@@ -29,7 +29,7 @@
 │   ├── iv_support.js         ← Pomocné funkce – vkládání zpráv, zvýšení limitů, screenshoty
 │   ├── iv_version.js         ← Načítání verze z `package.json`
 │   ├── iv_rhythm.js          ← Plánování akcí podle `action_plan`
-│   ├── iv_actions.js         ← Implementace akcí na základě `action_code`
+│   ├── libs/iv_actions.class.js ← Implementace akcí na základě `action_code` (třída)
 │   ├── iv_log.class.js       ← Centralizované logování s podporou úrovní a ikon
 │   ├── config.json           ← Konfigurace větve, log úrovní, ikon a chování
 │   ├── git-common.sh         ← Společný modul pro Git operace napříč skripty

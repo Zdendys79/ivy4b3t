@@ -23,7 +23,7 @@ import { FBBot } from './iv_fb.class.js';
 import { UtioBot } from './iv_utio.class.js';
 import { UIBot } from './iv_ui.class.js';
 import { getRandomAction, initInvasiveLock, clearInvasiveLock, hasInvasiveLock } from './iv_wheel.js';
-import { runAction, getActionRequirements } from './iv_actions.js';
+import { IvActions } from './libs/iv_actions.class.js';
 import { Log } from './iv_log.class.js';
 import { IvMath } from './iv_math.class.js';
 import { handleNewAccountBlock, detectAccountBlock } from './hostname_block_handler.js';
@@ -182,6 +182,10 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
   let actionCount = 0;
   let consecutive_failures = 0; // Sledování po sobě jdoucích neúspěchů
 
+  // Inicializace IvActions instance
+  const actions = new IvActions();
+  await actions.init();
+
   try {
     await db.initUserActionPlan(user.id);
     
@@ -193,7 +197,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // Kontrola po sobě jdoucích neúspěchů
       if (consecutive_failures >= 5) {
         await Log.error(`[${user.id}]`, `🚨 SYSTÉM: ${consecutive_failures} neúspěšných akcí za sebou - naplánován account_delay`);
-        await runAction(user, 'account_delay', { fbBot: null, utioBot: null });
+        await actions.runAction(user, 'account_delay', { fbBot: null, utioBot: null });
         await db.logSystemEvent(
           'CONSECUTIVE_FAILURES', 
           'ERROR',
@@ -243,9 +247,8 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
         const lockStatus = hasInvasiveLock();
         if (lockStatus.hasLock) {
           Log.info(`[${user.id}]`, `Čekání na invasive lock (${lockStatus.remainingSeconds}s). Provádím neinvazivní aktivitu...`);
-          // Použijeme existující funkci z iv_actions.js, ale musíme ji naimportovat
-          const { performNonInvasiveActivity } = await import('./iv_actions.js');
-          await performNonInvasiveActivity(user, fbBot, 60000); // Prováděj aktivitu po dobu 60s
+          // Použijeme neinvazivní aktivitu z IvActions instance
+          await actions.performNonInvasiveActivity(user, fbBot, 60000); // Prováděj aktivitu po dobu 60s
         } else {
           Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce, krátká pauza.');
           await wait.delay(IvMath.randInterval(10000, 20000));
@@ -267,7 +270,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       }
 
       // Inicializace potřebných služeb pro akci
-      const requirements = await getActionRequirements(actionCode);
+      const requirements = await actions.getActionRequirements(actionCode);
       Log.debug(`[DIAGNOSTIC] Požadavky pro akci ${actionCode}: ${JSON.stringify(requirements)}`);
       ({ fbBot, utioBot } = await initializeRequiredServices(
         user, context, requirements, fbBot, utioBot, browserClosed
@@ -276,7 +279,7 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
       // 🎯 KROK 6: PROVEDENÍ AKCE
       Log.info(`[${user.id}]`, `Krok 6: Provádím akci ${actionCode}...`);
 
-      const success = await runAction(user, actionCode, { fbBot, utioBot }, picked);
+      const success = await actions.runAction(user, actionCode, { fbBot, utioBot }, picked);
       if (!success) {
         const userChoice = await Log.warnInteractive(`[${user.id}]`, `Akce ${actionCode} NEPROVEDENA`);
         if (userChoice === 'quit') {
@@ -387,11 +390,15 @@ async function executeUserActionCycle(user, existingBrowser = null, existingCont
  * Provede ukončující akci (account_delay/account_sleep)
  */
 async function executeEndingAction(user, picked) {
+  // Inicializace IvActions instance
+  const actions = new IvActions();
+  await actions.init();
+
   try {
     Log.info(`[${user.id}]`, `Provádím ukončující akci: ${picked.code}`);
 
     // Ukončující akce nepotřebují prohlížeč
-    const success = await runAction(user, picked.code, { fbBot: null, utioBot: null });
+    const success = await actions.runAction(user, picked.code, { fbBot: null, utioBot: null });
 
     if (success) {
       const randMin = Math.floor(Math.random() * (picked.max_minutes - picked.min_minutes + 1)) + picked.min_minutes;

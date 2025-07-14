@@ -42,7 +42,7 @@ export const GROUPS = {
     SELECT g.*
     FROM fb_groups g
     LEFT JOIN user_groups ug ON g.id = ug.group_id AND ug.user_id = ?
-    WHERE g.typee = ?
+    WHERE g.type = ?
       AND g.priority > 0
       AND (g.next_seen IS NULL OR g.next_seen <= NOW())
       AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
@@ -117,7 +117,7 @@ export const GROUPS = {
   // ===== USER GROUPS (vazební tabulka) =====
 
   getUserGroupNotes: `
-    SELECT ug.*, fg.name, fg.typee
+    SELECT ug.*, fg.name, fg.type
     FROM user_groups ug
     JOIN fb_groups fg ON ug.group_id = fg.id
     WHERE ug.user_id = ?
@@ -133,21 +133,21 @@ export const GROUPS = {
 
   getGroupStats: `
     SELECT
-      fg.typee,
+      fg.type,
       COUNT(*) as total_groups,
       COUNT(CASE WHEN fg.priority > 0 THEN 1 END) as active_groups,
       COUNT(CASE WHEN fg.priority > 0 THEN 1 END) as priority_groups,
       AVG(fg.priority) as avg_priority
     FROM fb_groups fg
-    GROUP BY fg.typee
-    ORDER BY fg.typee
+    GROUP BY fg.type
+    ORDER BY fg.type
   `,
 
   getGroupActivity: `
     SELECT
       fg.id,
       fg.name,
-      fg.typee,
+      fg.type,
       fg.priority,
       fg.last_seen,
       fg.next_seen,
@@ -158,14 +158,14 @@ export const GROUPS = {
       AND al.action_code LIKE 'post_utio_%'
       AND al.timestamp >= NOW() - INTERVAL 24 HOUR
     WHERE fg.priority > 0
-    GROUP BY fg.id, fg.name, fg.typee, fg.priority, fg.last_seen, fg.next_seen
-    ORDER BY posts_last_24h DESC, fg.typee, fg.priority DESC
+    GROUP BY fg.id, fg.name, fg.type, fg.priority, fg.last_seen, fg.next_seen
+    ORDER BY posts_last_24h DESC, fg.type, fg.priority DESC
   `,
 
   getMostUsedGroups: `
     SELECT
       fg.name,
-      fg.typee,
+      fg.type,
       COUNT(al.id) as post_count,
       COUNT(DISTINCT al.account_id) as unique_users,
       MIN(al.timestamp) as first_post,
@@ -174,7 +174,7 @@ export const GROUPS = {
     JOIN action_log al ON fg.id = al.reference_id
     WHERE al.action_code LIKE 'post_utio_%'
       AND al.timestamp >= NOW() - INTERVAL ? DAY
-    GROUP BY fg.id, fg.name, fg.typee
+    GROUP BY fg.id, fg.name, fg.type
     ORDER BY post_count DESC
     LIMIT ?
   `,
@@ -183,7 +183,7 @@ export const GROUPS = {
     SELECT
       fg.id,
       fg.name,
-      fg.typee,
+      fg.type,
       fg.priority,
       COALESCE(recent_posts.post_count, 0) as posts_last_7d
     FROM fb_groups fg
@@ -207,7 +207,7 @@ export const GROUPS = {
     SELECT
       fg.id,
       fg.name,
-      fg.typee,
+      fg.type,
       fg.last_seen,
       fg.next_seen,
       TIMESTAMPDIFF(MINUTE, NOW(), fg.next_seen) as minutes_until_available
@@ -218,13 +218,13 @@ export const GROUPS = {
 
   getReadyGroups: `
     SELECT
-      fg.typee,
+      fg.type,
       COUNT(*) as ready_groups
     FROM fb_groups fg
     WHERE fg.priority > 0
       AND (fg.next_seen IS NULL OR fg.next_seen <= NOW())
-    GROUP BY fg.typee
-    ORDER BY fg.typee
+    GROUP BY fg.type
+    ORDER BY fg.type
   `,
 
   // ===== MAINTENANCE A CLEANUP =====
@@ -274,7 +274,7 @@ export const GROUPS = {
   findProblematicGroups: `
     SELECT
       fg.*,
-      'ISSUE' as issue_typee,
+      'ISSUE' as issue_type,
       CASE
         WHEN fg.fb_id IS NULL THEN 'Missing FB ID'
         WHEN fg.name IS NULL OR fg.name = '' THEN 'Missing name'
@@ -285,12 +285,12 @@ export const GROUPS = {
     WHERE fg.fb_id IS NULL
        OR fg.name IS NULL
        OR fg.name = ''
-    ORDER BY fg.typee, fg.id
+    ORDER BY fg.type, fg.id
   `,
 
   getGroupPerformance: `
     SELECT
-      fg.typee,
+      fg.type,
       fg.name,
       COUNT(al.id) as total_posts,
       COUNT(DISTINCT al.account_id) as unique_users,
@@ -301,7 +301,7 @@ export const GROUPS = {
     JOIN action_log al ON fg.id = al.reference_id
     WHERE al.action_code LIKE 'post_utio_%'
       AND al.timestamp >= NOW() - INTERVAL ? DAY
-    GROUP BY fg.id, fg.typee, fg.name
+    GROUP BY fg.id, fg.type, fg.name
     HAVING total_posts >= ?
     ORDER BY total_posts DESC
   `
