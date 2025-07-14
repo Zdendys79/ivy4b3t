@@ -1,7 +1,7 @@
-fix: Improve element detection to find only clickable elements
+fix: Focus element detection on DIV and SPAN with direct text
 
-- Add console.clear() at startup for cleaner output
-- Filter out non-interactive tags (SCRIPT, STYLE, NOSCRIPT, etc.)
-- Focus on clickable elements: links, buttons, inputs, and elements with click handlers
-- Skip hidden elements (display: none, visibility: hidden, zero width)
-- Use textContent instead of only direct text nodes to capture button/link text
+- Change selector to focus on div, span, a, button, input, label, h1-h6, p elements
+- Return to using only direct text nodes (excluding child element text)
+- Add deduplication to avoid showing same text multiple times
+- Fix variable reference error (text -> directText)
+- Better matches Facebook's UI where most clickable text is in DIV/SPAN

@@ -80,14 +80,10 @@ async function launchBrowser() {
 
 async function findElementsWithShortText(page) {
   return await page.evaluate(() => {
-    // Seznam tagů, které obvykle nejsou interaktivní
-    const excludedTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'META', 'LINK', 'BR', 'HR'];
-    
-    // Selektor pro potenciálně klikatelné elementy
-    const clickableSelector = 'a, button, input, select, textarea, [role="button"], [role="link"], [onclick], [tabindex], label, div[class*="clickable"], div[class*="button"], span[class*="button"], div[class*="link"], span[class*="link"]';
-    
-    const allElements = document.querySelectorAll(clickableSelector);
+    // Zaměřujeme se hlavně na DIV a SPAN elementy
+    const allElements = document.querySelectorAll('div, span, a, button, input, label, h1, h2, h3, h4, h5, h6, p');
     const results = [];
+    const processedTexts = new Set(); // Pro odstranění duplicit
     
     allElements.forEach((element, index) => {
       // Přeskočit skryté elementy
@@ -96,14 +92,19 @@ async function findElementsWithShortText(page) {
         return;
       }
       
-      // Získání textu elementu včetně potomků
-      const text = element.textContent.trim();
+      // Získání pouze přímého textu elementu (bez potomků)
+      const directText = Array.from(element.childNodes)
+        .filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent.trim())
+        .join(' ')
+        .trim();
       
       // Filtrování - max 10 slov a neprázdný text
-      if (text && text.split(/\s+/).length <= 10 && !excludedTags.includes(element.tagName)) {
+      if (directText && directText.split(/\s+/).length <= 10 && !processedTexts.has(directText)) {
+        processedTexts.add(directText);
         results.push({
           index: results.length,
-          text: text,
+          text: directText,
           tagName: element.tagName,
           className: element.className,
           id: element.id,
