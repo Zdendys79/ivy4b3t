@@ -186,7 +186,7 @@ export class IvActions {
       // Zkus kliknout na "Napište něco" element
       Log.info(`[${user.id}]`, `🔍 Pokouším se kliknout na "Napište něco"...`);
       const postClicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
-        matchType: 'exact',
+        matchType: 'startsWith',
         scrollIntoView: false,
         waitAfterClick: true,
         naturalDelay: true

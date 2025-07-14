@@ -1,7 +1,6 @@
-refactor: Remove unnecessary dryRun complexity from posting logic
+fix: Use startsWith match for "Napište něco" element detection
 
-- Remove dryRun parameter from clickElementWithText - was unnecessarily complex
-- Simplify handleSingleUtioPost to directly click "Napište něco" instead of testing first
-- Replace performSimplePublication with performDirectPublication (no duplicate clicking)
-- Streamline logic: click once and proceed with publication if successful
-- Eliminates redundant element testing and clicking phases
+- Change matchType from 'exact' to 'startsWith' for "Napište něco" elements
+- Elements contain "Napište něco" at the beginning but have additional text like user names
+- Update both newThing() and handleSingleUtioPost to use startsWith matching
+- Fixes element detection failure when text contains "Napište něco..." with suffix

@@ -852,7 +852,7 @@ export class FBBot {
       Log.info('[FB]', `Hledám element "${searchText}" (${isHomepage ? 'homepage' : 'skupina'})`);
       
       const elements = await fbSupport.findByText(this.page, searchText, { 
-        match: 'contains', 
+        match: 'startsWith', 
         timeout: 3000
       });
 
