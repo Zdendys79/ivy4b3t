@@ -2,9 +2,9 @@
 import os from 'node:os';
 import fs from 'fs/promises';
 import path from 'path';
-import { db, transaction } from './iv_sql.js';
-import { get as getVersion } from './iv_version.js';
-import { QueryUtils } from './sql/queries/index.js';
+import { db, transaction } from '../iv_sql.js';
+import { get as getVersion } from '../iv_version.js';
+import { QueryUtils } from '../sql/queries/index.js';
 
 class ConsoleLogger {
     constructor() {

@@ -1,10 +1,5 @@
-fix: Add comprehensive Chrome flags to disable crash/restore dialogs
+fix: Correct import paths for non-class files in libs/ directory
 
-- Added --hide-crash-restore-bubble to both iv_worker.js and loginuser.js
-- Enhanced --disable-features to include SessionRestore
-- Added additional Chrome flags to prevent dialogs:
-  * --disable-prompt-on-repost
-  * --disable-hang-monitor  
-  * --disable-client-side-phishing-detection
-  * --disable-popup-blocking
-- These flags should prevent the "restore session" and crash dialogs from appearing
+- Fixed iv_console_logger.class.js imports: iv_sql.js, iv_version.js, sql/queries/index.js
+- Fixed iv_querybuilder.class.js import: sql/queries/index.js
+- All imports from libs/ to parent directory now use correct '../' path prefix

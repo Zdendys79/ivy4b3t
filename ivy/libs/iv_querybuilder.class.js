@@ -8,7 +8,7 @@
 
 import os from 'node:os';
 
-import { SQL } from './sql/queries/index.js';
+import { SQL } from '../sql/queries/index.js';
 import { Log } from './iv_log.class.js';
 
 const hostname = os.hostname();
