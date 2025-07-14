@@ -1,6 +1,6 @@
-fix: Use startsWith match for "Napište něco" element detection
+fix: Remove unnecessary alternative element search when posting element found
 
-- Change matchType from 'exact' to 'startsWith' for "Napište něco" elements
-- Elements contain "Napište něco" at the beginning but have additional text like user names
-- Update both newThing() and handleSingleUtioPost to use startsWith matching
-- Fixes element detection failure when text contains "Napište něco..." with suffix
+- Remove search for "Diskuze" and "Přidat se ke skupině" when "Napište něco" is available
+- Eliminate "pro případ potřeby" fallback logic that runs even when posting works
+- When posting element exists, proceed directly without searching alternatives
+- Fixes overcomplicated flow that searches for irrelevant elements unnecessarily

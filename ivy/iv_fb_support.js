@@ -1072,11 +1072,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
             };
           }
           
-          // Pokud je "Napište něco" k dispozici, najdi i alternativní elementy pro případ potřeby
-          Log.info(`[${user.id}]`, '🔍 Hledám také alternativní elementy pro případ potřeby...');
-          await fbBot.findDiscussionElement();
-          await fbBot.findJoinGroupElement();
-          
+          // Pokud je "Napište něco" k dispozici, nepotřebujeme alternativní elementy
           Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování - element pro psaní nalezen');
           return {
             ready: true,
