@@ -1,5 +1,6 @@
-fix: Change text matching from startsWith to contains for post field detection
+refactor: Remove fallback and search only for "Napište něco"
 
-- Changed match strategy from 'startsWith' to 'contains' for both "Napište něco" and "Co se vám honí hlavou"
-- Facebook elements often have whitespace or other text before the target string
-- This should improve detection success rate for post creation fields
+- Removed fallback search for "Co se vám honí hlavou" 
+- Now searches only for "Napište něco" as originally requested
+- Increased timeout back to 3000ms since there's only one search
+- Simplified logic: find it or fail, no alternatives
