@@ -1,6 +1,10 @@
-fix: Correct buy_sell group navigation and import paths
+refactor: Simplify Facebook posting process and add human-like delays
 
-- Fixed import path for iv_interactive_debugger.js in iv_log.class.js (libs to parent dir)
-- Fixed buy_sell group URL suffix from 'buy_sell_discuss' to 'buy_sell_discussion' in iv_fb_support.js  
-- Updated openGroup() in iv_fb.class.js to use proper URL for buy_sell groups from the start
-- Now buy_sell groups navigate directly to discussion section instead of requiring fallback click
+- Simplified newThing() to only search for "Napište něco" instead of multiple variants
+- Simplified submit button search to only look for "Zveřejnit" instead of multiple options  
+- Added random delays between actions to simulate human behavior:
+  * 0.3-1.1s pause before clicking post field
+  * 1.5-3.5s pause after clicking post field
+  * 2-5s pause before searching submit button
+  * 0.5-2s pause before clicking submit button
+- Removed unnecessary fallback strategies and complex verification loops

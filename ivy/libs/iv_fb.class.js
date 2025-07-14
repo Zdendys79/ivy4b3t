@@ -790,57 +790,20 @@ export class FBBot {
 
   async newThing() {
     try {
-      const config = await getAllConfig();
-      const newPostTexts = config.cfg_new_post_texts || ["Napište něco", "Co se vám honí hlavou"];
-      Log.info('[FB]', `Hledám element pro psaní příspěvku. Texty: ${newPostTexts.join(', ')}`);
+      Log.info('[FB]', 'Hledám element "Napište něco"');
       
-      // Pokus 1: Přesná shoda s starts-with
-      let result = await this.findPostElementWithStrategy('starts-with', newPostTexts);
-      if (result) {
-        this.newThingElement = result.handle;
-        Log.success('[FB]', `Element nalezen (starts-with): "${result.text}"`);
+      const elements = await fbSupport.findByText(this.page, "Napište něco", { 
+        match: 'startsWith', 
+        timeout: 3000
+      });
+
+      if (elements.length > 0) {
+        this.newThingElement = elements[0];
+        Log.success('[FB]', 'Element "Napište něco" nalezen');
         return true;
       }
 
-      Log.info('[FB]', 'starts-with selhalo, zkouším contains...');
-      
-      // Pokus 2: Částečná shoda s contains
-      result = await this.findPostElementWithStrategy('contains', newPostTexts);
-      if (result) {
-        this.newThingElement = result.handle;
-        Log.success('[FB]', `Element nalezen (contains): "${result.text}"`);
-        return true;
-      }
-
-      Log.info('[FB]', 'Obě strategie selhaly, zkouším obecný fallback...');
-      
-      // Pokus 3: Obecný fallback
-      result = await this.findPostElementFallback();
-      if (result) {
-        this.newThingElement = result.handle;
-        Log.success('[FB]', `Element nalezen (fallback): clickable span`);
-        return true;
-      }
-
-      // NOVÝ Pokus 4: Jako poslední možnost - zkus přejít do sekce Diskuze
-      Log.info('[FB]', 'Fallback selhal, zkouším přechod do sekce Diskuze jako poslední možnost...');
-      const discussClicked = await this.clickDiscus();
-      if (discussClicked) {
-        Log.info('[FB]', '✅ Přešel do sekce Diskuze, opakuji hledání pole pro psaní...');
-        await wait.delay(2000, 3000); // Čekání na načtení
-        
-        // Opakuj hledání po přechodu do diskuze
-        result = await this.findPostElementWithStrategy('starts-with', newPostTexts);
-        if (result) {
-          this.newThingElement = result.handle;
-          Log.success('[FB]', `Element nalezen po přechodu do diskuze: "${result.text}"`);
-          return true;
-        }
-      }
-
-      await Log.warn('[FB]', 'Všechny strategie včetně diskuze selhaly, spouštím diagnostiku...');
-      await this.debugPostCreationElements();
-      throw new Error('Žádný z možných textů nebyl nalezen.');
+      throw new Error('Element "Napište něco" nebyl nalezen');
     } catch (err) {
       await Log.error('[FB] newThing()', err);
       return false;
@@ -917,10 +880,11 @@ export class FBBot {
       
       Log.info('[FB]', 'Klikám na element pro psaní příspěvku...');
       await this.bringToFront();
+      await wait.delay(300 + Math.random() * 800); // Náhodná pauza před kliknutím 0.3-1.1s
       await this.newThingElement.click();
       
-      const delay = 3 * wait.timeout();
-      Log.info('[FB]', `Čekám ${delay}ms po kliknutí na pole pro psaní příspěvku...`);
+      const delay = 1500 + Math.random() * 2000; // Náhodná pauza 1.5-3.5s
+      Log.info('[FB]', `Čekám ${Math.round(delay)}ms po kliknutí na pole pro psaní příspěvku...`);
       await wait.delay(delay);
       
       Log.success('[FB]', 'Kliknuto na pole pro psaní příspěvku.');
@@ -1078,39 +1042,21 @@ export class FBBot {
       await wait.delay(wait.timeout() * 2);
 
       Log.info('[FB] Čekám než se tlačítko aktivuje...');
-      await wait.delay(3000 + Math.random() * 2000);
+      await wait.delay(2000 + Math.random() * 3000); // Náhodná pauza 2-5s
 
-      const config = await getAllConfig();
-      const submitTexts = config.cfg_submit_texts || ["Přidat", "Zveřejnit"];
-      Log.info(`[FB] Hledám odeslací tlačítko... Texty: ${submitTexts.join(', ')}`);
+      Log.info('[FB] Hledám tlačítko "Zveřejnit"');
 
-      for (const targetText of submitTexts) {
-        const buttons = await fbSupport.findByText(this.page, targetText, { match: 'exact' });
-        
-        if (buttons.length > 0) {
-          const button = buttons[0]; // Vezmeme první nalezený
-          Log.info(`[FB] Našel jsem tlačítko: "${targetText}"`);
-          
-          try {
-            await wait.delay(800 + Math.random() * 1200);
-            await button.click();
-            Log.info(`[FB] Kliknuto na "${targetText}".`);
-
-            await wait.delay(10 * wait.timeout(), false);
-
-            // Kontrola úspěchu - ověříme, zda tlačítko zmizelo
-            const stillExists = await fbSupport.findByText(this.page, targetText, { match: 'exact', timeout: 1000 });
-            if (stillExists.length === 0) {
-              Log.success(`[FB] Příspěvek úspěšně odeslán!`);
-              return true;
-            } else {
-              Log.warn(`[FB] Tlačítko "${targetText}" stále existuje po kliknutí, pokračuji na další...`);
-            }
-          } catch (clickErr) {
-            Log.warn(`[FB] Chyba při kliknutí na "${targetText}": ${clickErr.message}`);
-          }
-        }
+      const buttons = await fbSupport.findByText(this.page, "Zveřejnit", { match: 'exact', timeout: 3000 });
+      
+      if (buttons.length > 0) {
+        Log.info('[FB] Tlačítko "Zveřejnit" nalezeno');
+        await wait.delay(500 + Math.random() * 1500); // Náhodná pauza před kliknutím 0.5-2s
+        await buttons[0].click();
+        Log.success('[FB] Příspěvek odeslán');
+        return true;
       }
+
+      Log.warn('[FB] Tlačítko "Zveřejnit" nenalezeno');
 
       await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko pomocí findByText, zkouším JavaScript metodu...');
       
