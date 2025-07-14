@@ -23,5 +23,11 @@ export const DISCOVERED_LINKS = {
     SET processed = TRUE
     WHERE id IN (?)
   `,
+
+  markSingleAsProcessed: `
+    UPDATE discovered_group_links
+    SET processed = TRUE
+    WHERE id = ?
+  `,
 };
 

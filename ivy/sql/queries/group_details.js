@@ -66,7 +66,10 @@ export const GROUP_DETAILS = {
     SELECT * FROM group_details
     WHERE is_relevant IS NULL
        OR last_updated < DATE_SUB(NOW(), INTERVAL 7 DAY)
-    ORDER BY RAND()
+    ORDER BY 
+      CASE WHEN name IS NULL THEN 0 ELSE 1 END ASC,  -- Prioritně neanalyzované (name IS NULL)
+      CASE WHEN is_relevant IS NULL THEN 0 ELSE 1 END ASC,  -- Pak nehodnocené
+      RAND()
     LIMIT ?
   `,
 

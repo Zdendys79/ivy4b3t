@@ -680,7 +680,71 @@ export class QueryBuilder {
   }
 
   async getGroupsForExploration(limit = 10) {
+    // Nejdříve zpracuj nové discovered_links
+    await this.processUnprocessedLinks();
     return await this.safeQueryAll('group_details.getGroupsForExploration', [limit]);
+  }
+
+  /**
+   * Zpracuje nezpracované discovered_links a přidá je do group_details
+   */
+  async processUnprocessedLinks() {
+    try {
+      const unprocessedLinks = await this.safeQueryAll('discovered_links.getUnprocessedLinks', [50]);
+      
+      if (unprocessedLinks.length === 0) {
+        return true;
+      }
+
+      Log.info('[DB]', `Zpracovávám ${unprocessedLinks.length} nových discovered_links...`);
+      
+      const processedIds = [];
+      
+      for (const link of unprocessedLinks) {
+        try {
+          const fbId = this.extractFbIdFromUrl(link.url);
+          if (fbId) {
+            // Zkus přidat do group_details (IGNORE pokud už existuje)
+            await this.safeExecute('group_details.insertGroup', [
+              fbId, 
+              null, // name - bude doplněno při analýze
+              null, // member_count
+              null, // description  
+              null, // category
+              null, // privacy_type
+              link.discovered_by_user_id, // discovered_by_user_id
+              null, // notes
+              null, // is_relevant - bude určeno při analýze
+              null, // posting_allowed
+              null, // language
+              null  // activity_level
+            ]);
+            processedIds.push(link.id);
+          }
+        } catch (err) {
+          Log.debug('[DB]', `Skupina ${link.url} už existuje nebo chyba: ${err.message}`);
+          processedIds.push(link.id); // Označit jako zpracované i při chybě
+        }
+      }
+
+      // Označ jako zpracované
+      for (const id of processedIds) {
+        try {
+          await this.safeExecute('discovered_links.markSingleAsProcessed', [id]);
+        } catch (err) {
+          Log.debug('[DB]', `Chyba při označení ${id} jako zpracované: ${err.message}`);
+        }
+      }
+      
+      if (processedIds.length > 0) {
+        Log.info('[DB]', `Zpracováno ${processedIds.length} discovered_links.`);
+      }
+
+      return true;
+    } catch (err) {
+      await Log.error('[DB]', `Chyba při zpracování discovered_links: ${err.message}`);
+      return false;
+    }
   }
 
   async markGroupAsRelevant(fbGroupId, isRelevant, note) {
@@ -726,6 +790,23 @@ export class QueryBuilder {
     return this.safeQueryFirst('groups.getSingleAvailableGroup', [userId, groupType]);
   }
 
+  /**
+   * Extrahuje fb_id z Facebook group URL
+   * @param {string} url - Facebook group URL
+   * @returns {string|null} - Čisté fb_id nebo null
+   */
+  extractFbIdFromUrl(url) {
+    try {
+      // Vzory: https://www.facebook.com/groups/123456789/
+      //        https://facebook.com/groups/groupname/
+      //        /groups/123456789
+      const match = url.match(/\/groups\/([^\/\?#]+)/);
+      return match ? match[1] : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   async saveDiscoveredLinks(links, userId) {
     if (!links || links.length === 0) {
       return true; // Není co dělat, považováno za úspěch
@@ -735,6 +816,25 @@ export class QueryBuilder {
       try {
         // Voláme nový, jednoduchý dotaz pro každý odkaz
         await this.safeExecute('discovered_links.insertLink', [link, userId]);
+        
+        // Pokus o přidání do group_details pokud ještě neexistuje
+        const fbId = this.extractFbIdFromUrl(link);
+        if (fbId) {
+          await this.safeExecute('group_details.insertGroup', [
+            fbId, 
+            null, // name - bude doplněno při analýze
+            null, // member_count
+            null, // description  
+            null, // category
+            null, // privacy_type
+            userId, // discovered_by_user_id
+            null, // notes
+            null, // is_relevant - bude určeno při analýze
+            null, // posting_allowed
+            null, // language
+            null  // activity_level
+          ]);
+        }
       } catch (err) {
         await Log.error(`[DB] Nepodařilo se uložit objevený odkaz ${link}: ${err.message}`);
         success = false; // Pokud selže i jen jeden, označíme operaci jako neúspěšnou

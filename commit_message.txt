@@ -1,9 +1,12 @@
-fix: Add focus restoration before clipboard operations to prevent "Document is not focused" errors
+feat: Prioritize unknown groups in exploration and fix fb_id extraction from URLs
 
-- Add bringToFront() call in pasteTextViaClipboard() before accessing navigator.clipboard
-- Add focus restoration in pasteStatement() before all text insertion operations  
-- Fix clipboard access issues when user switches between terminal and browser windows
-- Ensure document has focus before writeText() operations to prevent DOMException
+- Add extractFbIdFromUrl() utility to extract clean fb_id from Facebook group URLs
+- Modify saveDiscoveredLinks() to automatically add new groups to group_details
+- Update getGroupsForExploration query to prioritize unanalyzed groups (name IS NULL)
+- Add processUnprocessedLinks() to convert discovered_group_links to group_details format
+- Fix inconsistency between URL format in discovered_group_links and fb_id in other tables
+- Add utility script process_discovered_links.js for one-time processing of existing links
+- Ensure group exploration prioritizes truly unknown groups over already analyzed ones
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
