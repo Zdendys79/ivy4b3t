@@ -949,6 +949,9 @@ export class FBBot {
 
       Log.info('[FB]', `Vkládám text příspěvku (${text.length} znaků). Metoda: ${useClipboard ? 'schránka' : 'psaní po písmenech'}`);
       
+      // Ujisti se, že má FB stránka focus před vkládáním
+      await this.bringToFront();
+      
       const delay = 10 * wait.timeout();
       Log.debug('[FB]', `Čekám ${delay}ms před vložením textu...`);
       await wait.delay(delay);
@@ -1007,6 +1010,10 @@ export class FBBot {
   async pasteTextViaClipboard(text) {
     try {
       if (!text) throw `Prázdný text pro vložení.`;
+
+      // Ujisti se, že má stránka focus pro přístup ke schránce
+      await this.bringToFront();
+      await wait.delay(500); // Krátká pauza po focus
 
       // Zkopíruj text do schránky
       await this.page.evaluate((textToCopy) => {

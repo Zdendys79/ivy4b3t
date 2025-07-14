@@ -1,11 +1,9 @@
-fix: Restore group join functionality and remove unnecessary text variants
+fix: Add focus restoration before clipboard operations to prevent "Document is not focused" errors
 
-- Fix broken joinToGroup() function call in iv_actions.js (was clickJoinGroupButton)
-- Remove unnecessary text variants - use only exact texts: "Přidat se ke skupině"
-- Add comprehensive debugging for group analysis decisions
-- Fix membership status detection logic - now checks join button before attempting to post
-- Add detailed logging for group analysis showing posting capability and join button status
-- Restore simple, clean joinToGroup() function using only standard Czech text
+- Add bringToFront() call in pasteTextViaClipboard() before accessing navigator.clipboard
+- Add focus restoration in pasteStatement() before all text insertion operations  
+- Fix clipboard access issues when user switches between terminal and browser windows
+- Ensure document has focus before writeText() operations to prevent DOMException
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
