@@ -9,9 +9,7 @@
 import { ACTIONS } from './actions.js';
 import actionQuality from './action_quality.js'; // default export
 import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
-import { DISCOVERED_LINKS } from './discovered_links.js';
 import { ERROR_REPORTS } from './error-reports.js';
-import { GROUP_DETAILS } from './group_details.js';
 import { GROUPS } from './groups.js';
 import { HOSTNAME_PROTECTION } from './hostname_protection.js';
 import { LIMITS } from './limits.js';
@@ -27,9 +25,7 @@ export const SQL = {
   actions: ACTIONS,
   action_quality: actionQuality,
   behavioral_profiles: BEHAVIORAL_PROFILES,
-  discovered_links: DISCOVERED_LINKS,
   'error-reports': ERROR_REPORTS,
-  group_details: GROUP_DETAILS,
   groups: GROUPS,
   hostname_protection: HOSTNAME_PROTECTION,
   limits: LIMITS,

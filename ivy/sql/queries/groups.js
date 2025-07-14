@@ -79,9 +79,9 @@ export const GROUPS = {
     WHERE id = ?
   `,
 
-  updateUserCounter: `
+  updateMemberCount: `
     UPDATE fb_groups
-    SET user_counter = ?
+    SET member_count = ?
     WHERE id = ?
   `,
 
@@ -95,6 +95,89 @@ export const GROUPS = {
     UPDATE fb_groups
     SET is_buy_sell_group = ?
     WHERE fb_id = ?
+  `,
+
+  // ===== NOVÉ DOTAZY PRO KONSOLIDOVANOU TABULKU =====
+
+  insertOrUpdateGroup: `
+    INSERT INTO fb_groups (
+      fb_id, name, member_count, description, category, privacy_type,
+      discovered_by_user_id, is_relevant, posting_allowed, language,
+      activity_level, analysis_notes, status, type, priority
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      member_count = VALUES(member_count),
+      description = VALUES(description),
+      category = VALUES(category),
+      privacy_type = VALUES(privacy_type),
+      is_relevant = VALUES(is_relevant),
+      posting_allowed = VALUES(posting_allowed),
+      language = VALUES(language),
+      activity_level = VALUES(activity_level),
+      analysis_notes = VALUES(analysis_notes),
+      status = VALUES(status),
+      last_updated = CURRENT_TIMESTAMP
+  `,
+
+  saveGroupExplorationDetails: `
+    UPDATE fb_groups
+    SET 
+      name = ?,
+      member_count = ?,
+      description = ?,
+      category = ?,
+      privacy_type = ?,
+      is_relevant = ?,
+      posting_allowed = ?,
+      language = ?,
+      activity_level = ?,
+      analysis_notes = ?,
+      analysis_count = analysis_count + 1,
+      last_analysis = CURRENT_TIMESTAMP,
+      status = CASE 
+        WHEN ? = 1 THEN 'active'
+        WHEN ? = 0 THEN 'inactive'
+        ELSE 'analyzed'
+      END
+    WHERE fb_id = ?
+  `,
+
+  getGroupsForExploration: `
+    SELECT * FROM fb_groups
+    WHERE (is_relevant IS NULL OR last_analysis < DATE_SUB(NOW(), INTERVAL 7 DAY))
+      AND status NOT IN ('banned', 'inactive')
+    ORDER BY 
+      CASE WHEN name IS NULL THEN 0 ELSE 1 END ASC,
+      CASE WHEN is_relevant IS NULL THEN 0 ELSE 1 END ASC,
+      priority DESC,
+      RAND()
+    LIMIT ?
+  `,
+
+  getRelevantGroups: `
+    SELECT * FROM fb_groups
+    WHERE is_relevant = 1
+      AND status = 'active'
+    ORDER BY member_count DESC, priority DESC
+  `,
+
+  insertDiscoveredLink: `
+    INSERT IGNORE INTO fb_groups (fb_id, discovery_url, discovered_by_user_id, status, type, priority)
+    VALUES (?, ?, ?, 'discovered', 'G', 3)
+  `,
+
+  markDiscoveryAsProcessed: `
+    UPDATE fb_groups
+    SET discovery_processed = TRUE
+    WHERE fb_id = ?
+  `,
+
+  getUnprocessedDiscoveries: `
+    SELECT * FROM fb_groups
+    WHERE discovery_processed = FALSE
+    ORDER BY discovered_at ASC
+    LIMIT ?
   `,
 
   resetCooldowns: `

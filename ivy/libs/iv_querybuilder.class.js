@@ -814,26 +814,9 @@ export class QueryBuilder {
     let success = true;
     for (const link of links) {
       try {
-        // Voláme nový, jednoduchý dotaz pro každý odkaz
-        await this.safeExecute('discovered_links.insertLink', [link, userId]);
-        
-        // Pokus o přidání do group_details pokud ještě neexistuje
         const fbId = this.extractFbIdFromUrl(link);
         if (fbId) {
-          await this.safeExecute('group_details.insertGroup', [
-            fbId, 
-            null, // name - bude doplněno při analýze
-            null, // member_count
-            null, // description  
-            null, // category
-            null, // privacy_type
-            userId, // discovered_by_user_id
-            null, // notes
-            null, // is_relevant - bude určeno při analýze
-            null, // posting_allowed
-            null, // language
-            null  // activity_level
-          ]);
+          await this.safeExecute('groups.insertDiscoveredLink', [fbId, link, userId]);
         }
       } catch (err) {
         await Log.error(`[DB] Nepodařilo se uložit objevený odkaz ${link}: ${err.message}`);
@@ -850,19 +833,20 @@ export class QueryBuilder {
     const groupData = analysis.group;
     const fbGroupId = analysis.url.split('/groups/')[1].split('/')[0];
 
-    return this.safeExecute('group_details.insertGroup', [
-      fbGroupId,
-      analysis.basic.title.split('|')[0].trim() || null,
-      groupData.member_count || 0,
-      groupData.description || null,
-      groupData.category || null,
-      groupData.privacy_type || null,
-      userId,
-      groupData.notes || null,
-      groupData.is_relevant === undefined ? null : groupData.is_relevant,
-      groupData.posting_allowed === undefined ? null : groupData.posting_allowed,
-      groupData.language || null,
-      groupData.activity_level || null
+    return this.safeExecute('groups.saveGroupExplorationDetails', [
+      analysis.basic.title.split('|')[0].trim() || null, // name
+      groupData.member_count || 0, // member_count
+      groupData.description || null, // description
+      groupData.category || null, // category
+      groupData.privacy_type || null, // privacy_type
+      groupData.is_relevant === undefined ? null : groupData.is_relevant, // is_relevant
+      groupData.posting_allowed === undefined ? null : groupData.posting_allowed, // posting_allowed
+      groupData.language || null, // language
+      groupData.activity_level || null, // activity_level
+      groupData.notes || null, // analysis_notes
+      groupData.is_relevant === undefined ? null : groupData.is_relevant, // is_relevant duplicate for CASE
+      groupData.is_relevant === undefined ? null : groupData.is_relevant, // is_relevant duplicate for CASE
+      fbGroupId // WHERE fb_id
     ]);
   }
 }
