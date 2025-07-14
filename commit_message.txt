@@ -1,7 +1,10 @@
-feat: Show duplicate texts and capture input placeholders
+feat: Refactor FB interactions to use new PageAnalyzer methods
 
-- Remove deduplication to show all occurrences of same text
-- Add support for input placeholder and aria-label text
-- Add support for button/link aria-label and title attributes
-- Allow identifying different elements with same text by index
-- Better support for form elements without direct text content
+- Replace findByText/clickByText with PageAnalyzer.clickElementWithText()
+- Add natural delays (0.3-1s before search, 0.2-0.7s before click)
+- Wait for page reaction after clicks (1-3s) and refresh element cache
+- Enable auto-tracking in FB class initialization (10s intervals)
+- Disable scrollIntoView by default - only use visible elements in viewport
+- Add fallback to legacy methods when PageAnalyzer unavailable
+- Refactor key FB methods: _clickByText, acceptCookies, clickSendButton, stillSendButton
+- Improve element detection reliability with viewport filtering and deduplication

@@ -17,6 +17,17 @@ export class PageAnalyzer {
     this.lastAnalysis = null;
     this.analysisCache = new Map();
     this.cacheTimeout = 5000; // 5 sekund
+    
+    // Element tracking pro různé záložky
+    this.elementCache = new Map(); // url -> { elements: [], timestamp, domain }
+    this.elementUpdateInterval = null;
+    this.isElementTrackingActive = false;
+    this.updateIntervalMs = 10000; // 10 sekund default
+    this.autoTrackingEnabled = false;
+    this.autoTrackingOptions = {};
+    
+    // Nastavení event listenerů pro automatický tracking
+    this._setupAutoTracking();
   }
 
 
@@ -1018,6 +1029,776 @@ export class PageAnalyzer {
     if (this.analysisCache.size > 50) {
       const firstKey = this.analysisCache.keys().next().value;
       this.analysisCache.delete(firstKey);
+    }
+  }
+
+  /**
+   * Najde všechny viditelné elementy s krátkým textem (max 10 slov)
+   * @param {Object} options - Možnosti hledání
+   * @returns {Promise<Array>} Seznam nalezených elementů
+   */
+  async findElementsWithShortText(options = {}) {
+    const {
+      maxWords = 10,
+      includeInputs = true,
+      includeButtons = true,
+      onlyVisible = true
+    } = options;
+
+    try {
+      Log.info('[ANALYZER]', `Hledám elementy s textem do ${maxWords} slov...`);
+
+      const elements = await this.page.evaluate((opts) => {
+        const { maxWords, includeInputs, includeButtons, onlyVisible } = opts;
+        
+        // Zaměřujeme se hlavně na DIV a SPAN elementy
+        let selector = 'div, span, a, label, h1, h2, h3, h4, h5, h6, p';
+        if (includeInputs) selector += ', input, textarea, select';
+        if (includeButtons) selector += ', button';
+        
+        const allElements = document.querySelectorAll(selector);
+        const results = [];
+        
+        allElements.forEach((element) => {
+          // Přeskočit skryté elementy
+          if (onlyVisible) {
+            const style = window.getComputedStyle(element);
+            if (style.display === 'none' || style.visibility === 'hidden' || element.offsetWidth === 0) {
+              return;
+            }
+            
+            // Kontrola, zda je element ve viewportu (viditelný na obrazovce)
+            const rect = element.getBoundingClientRect();
+            const isInViewport = rect.top >= 0 && 
+                                rect.left >= 0 && 
+                                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                                rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+            
+            if (!isInViewport) {
+              return;
+            }
+          }
+          
+          // Získání textu - buď přímý text nebo placeholder/aria-label pro inputy
+          let directText = Array.from(element.childNodes)
+            .filter(node => node.nodeType === Node.TEXT_NODE)
+            .map(node => node.textContent.trim())
+            .join(' ')
+            .trim();
+          
+          // Pro inputy a další elementy bez přímého textu, použij placeholder nebo aria-label
+          if (!directText && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT')) {
+            directText = element.placeholder || element.getAttribute('aria-label') || element.value || '';
+          }
+          
+          // Pro buttony a odkazy můžeme zkusit i aria-label nebo title
+          if (!directText && (element.tagName === 'BUTTON' || element.tagName === 'A')) {
+            directText = element.getAttribute('aria-label') || element.title || '';
+          }
+          
+          // Filtrování - max slov a neprázdný text
+          if (directText && directText.split(/\s+/).length <= maxWords) {
+            // Vytvoření jednoduchého XPath
+            const getElementXPath = (el) => {
+              if (el.id) return `//*[@id="${el.id}"]`;
+              if (el === document.body) return '/html/body';
+              
+              let position = 0;
+              const siblings = el.parentNode ? el.parentNode.childNodes : [];
+              for (let i = 0; i < siblings.length; i++) {
+                const sibling = siblings[i];
+                if (sibling === el) {
+                  return getElementXPath(el.parentNode) + '/' + el.tagName.toLowerCase() + '[' + (position + 1) + ']';
+                }
+                if (sibling.nodeType === 1 && sibling.tagName === el.tagName) {
+                  position++;
+                }
+              }
+              return '';
+            };
+
+            results.push({
+              text: directText,
+              tagName: element.tagName,
+              className: element.className || '',
+              id: element.id || '',
+              xpath: getElementXPath(element),
+              rect: {
+                top: element.getBoundingClientRect().top,
+                left: element.getBoundingClientRect().left,
+                width: element.getBoundingClientRect().width,
+                height: element.getBoundingClientRect().height
+              }
+            });
+          }
+        });
+        
+        return results;
+      }, { maxWords, includeInputs, includeButtons, onlyVisible });
+
+      Log.info('[ANALYZER]', `Nalezeno ${elements.length} elementů s krátkým textem`);
+      return elements;
+
+    } catch (err) {
+      await Log.error('[ANALYZER]', `Chyba při hledání elementů: ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Povolí automatické spuštění trackingu při načtení stránky
+   * @param {Object} options - Možnosti sledování
+   */
+  enableAutoElementTracking(options = {}) {
+    this.autoTrackingEnabled = true;
+    this.autoTrackingOptions = {
+      updateInterval: 10000,
+      maxWords: 10,
+      includeInputs: true,
+      includeButtons: true,
+      onlyVisible: true,
+      ...options
+    };
+    
+    Log.info('[ANALYZER]', 'Automatický element tracking povolen');
+  }
+
+  /**
+   * Zakáže automatické spuštění trackingu
+   */
+  disableAutoElementTracking() {
+    this.autoTrackingEnabled = false;
+    this.autoTrackingOptions = {};
+    
+    Log.info('[ANALYZER]', 'Automatický element tracking zakázán');
+  }
+
+  /**
+   * Spustí automatické sledování elementů na pozadí
+   * @param {Object} options - Možnosti sledování
+   */
+  async startElementTracking(options = {}) {
+    const {
+      updateInterval = 10000, // 10 sekund
+      maxWords = 10,
+      includeInputs = true,
+      includeButtons = true,
+      onlyVisible = true
+    } = options;
+
+    if (this.isElementTrackingActive) {
+      Log.warn('[ANALYZER]', 'Element tracking je již aktivní');
+      return;
+    }
+
+    this.updateIntervalMs = updateInterval;
+    this.isElementTrackingActive = true;
+
+    // První aktualizace ihned
+    await this._updateElementCache({ maxWords, includeInputs, includeButtons, onlyVisible });
+
+    // Nastavení pravidelných aktualizací
+    this.elementUpdateInterval = setInterval(async () => {
+      try {
+        if (!this.page || this.page.isClosed()) {
+          this.stopElementTracking();
+          return;
+        }
+        
+        await this._updateElementCache({ maxWords, includeInputs, includeButtons, onlyVisible });
+      } catch (err) {
+        await Log.error('[ANALYZER]', `Chyba při aktualizaci element cache: ${err.message}`);
+      }
+    }, this.updateIntervalMs);
+
+    Log.info('[ANALYZER]', `Element tracking spuštěn s intervalem ${updateInterval}ms`);
+  }
+
+  /**
+   * Zastaví automatické sledování elementů
+   */
+  stopElementTracking() {
+    if (this.elementUpdateInterval) {
+      clearInterval(this.elementUpdateInterval);
+      this.elementUpdateInterval = null;
+    }
+    
+    this.isElementTrackingActive = false;
+    Log.info('[ANALYZER]', 'Element tracking zastaven');
+  }
+
+  /**
+   * Vrátí aktuální elementy pro současnou stránku
+   * @returns {Array} Seznam elementů nebo prázdný array
+   */
+  getCurrentElements() {
+    if (!this.page || this.page.isClosed()) {
+      return [];
+    }
+
+    const url = this.page.url();
+    const cached = this.elementCache.get(url);
+    
+    if (!cached) {
+      return [];
+    }
+
+    return cached.elements;
+  }
+
+  /**
+   * Vrátí elementy pro specifickou doménu
+   * @param {string} domain - Doména (fb, utio, atd.)
+   * @returns {Array} Seznam všech elementů pro doménu
+   */
+  getElementsByDomain(domain) {
+    const results = [];
+    
+    for (const [url, cache] of this.elementCache.entries()) {
+      if (cache.domain === domain) {
+        results.push({
+          url: url,
+          elements: cache.elements,
+          timestamp: cache.timestamp
+        });
+      }
+    }
+    
+    return results;
+  }
+
+  /**
+   * Vrátí statistiky element cache
+   * @returns {Object} Statistiky
+   */
+  getElementCacheStats() {
+    const stats = {
+      totalUrls: this.elementCache.size,
+      isTracking: this.isElementTrackingActive,
+      updateInterval: this.updateIntervalMs,
+      domains: {}
+    };
+
+    for (const [url, cache] of this.elementCache.entries()) {
+      if (!stats.domains[cache.domain]) {
+        stats.domains[cache.domain] = {
+          urls: 0,
+          totalElements: 0,
+          lastUpdate: null
+        };
+      }
+      
+      stats.domains[cache.domain].urls++;
+      stats.domains[cache.domain].totalElements += cache.elements.length;
+      
+      if (!stats.domains[cache.domain].lastUpdate || cache.timestamp > stats.domains[cache.domain].lastUpdate) {
+        stats.domains[cache.domain].lastUpdate = cache.timestamp;
+      }
+    }
+
+    return stats;
+  }
+
+  /**
+   * Vymaže element cache
+   * @param {string} domain - Volitelně vymaž pouze pro specifickou doménu
+   */
+  clearElementCache(domain = null) {
+    if (domain) {
+      for (const [url, cache] of this.elementCache.entries()) {
+        if (cache.domain === domain) {
+          this.elementCache.delete(url);
+        }
+      }
+      Log.info('[ANALYZER]', `Element cache vymazána pro doménu: ${domain}`);
+    } else {
+      this.elementCache.clear();
+      Log.info('[ANALYZER]', 'Celá element cache vymazána');
+    }
+  }
+
+  /**
+   * Privátní metoda pro aktualizaci element cache
+   * @private
+   */
+  async _updateElementCache(options) {
+    try {
+      const url = this.page.url();
+      const domain = this._extractDomain(url);
+      
+      // Najdi elementy
+      const elements = await this.findElementsWithShortText(options);
+      
+      // Uložení do cache
+      this.elementCache.set(url, {
+        elements: elements,
+        timestamp: Date.now(),
+        domain: domain
+      });
+
+      // Údržba cache - max 100 URL
+      if (this.elementCache.size > 100) {
+        const oldestUrl = Array.from(this.elementCache.entries())
+          .sort((a, b) => a[1].timestamp - b[1].timestamp)[0][0];
+        this.elementCache.delete(oldestUrl);
+      }
+
+      Log.debug('[ANALYZER]', `Element cache aktualizována pro ${domain}: ${url} (${elements.length} elementů)`);
+
+    } catch (err) {
+      await Log.error('[ANALYZER]', `Chyba při aktualizaci element cache: ${err.message}`);
+    }
+  }
+
+  /**
+   * Extrahuje doménu z URL
+   * @private
+   */
+  _extractDomain(url) {
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
+      
+      if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
+        return 'fb';
+      }
+      if (hostname.includes('utio.b3group.cz')) {
+        return 'utio';
+      }
+      
+      return hostname;
+    } catch (err) {
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Nastaví event listenery pro automatické spuštění trackingu
+   * @private
+   */
+  _setupAutoTracking() {
+    try {
+      // Event listener pro navigation events
+      this.page.on('domcontentloaded', async () => {
+        if (this.autoTrackingEnabled) {
+          Log.debug('[ANALYZER]', 'DOMContentLoaded - čekám na networkidle2');
+          await this._waitForPageLoad();
+        }
+      });
+
+      this.page.on('load', async () => {
+        if (this.autoTrackingEnabled) {
+          Log.debug('[ANALYZER]', 'Page load - čekám na networkidle2');
+          await this._waitForPageLoad();
+        }
+      });
+
+      // Ručně sledujeme URL změny pro SPA navigaci
+      this._currentUrl = this.page.url();
+      this._setupUrlChangeDetection();
+
+    } catch (err) {
+      Log.warn('[ANALYZER]', `Nepodařilo se nastavit auto tracking: ${err.message}`);
+    }
+  }
+
+  /**
+   * Čeká na networkidle2 a spustí tracking
+   * @private
+   */
+  async _waitForPageLoad() {
+    try {
+      // Počkáme na networkidle2 (max 30 sekund)
+      await this.page.waitForLoadState('networkidle', { timeout: 30000 });
+      
+      // Další krátká pauza pro dokončení JavaScriptu
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const newUrl = this.page.url();
+      Log.info('[ANALYZER]', `Stránka načtena (networkidle2): ${newUrl}`);
+      
+      // Spustí tracking pokud není již aktivní
+      if (!this.isElementTrackingActive) {
+        await this.startElementTracking(this.autoTrackingOptions);
+      } else {
+        // Jen aktualizuj cache pro novou stránku
+        await this._updateElementCache(this.autoTrackingOptions);
+      }
+      
+    } catch (err) {
+      // Timeout nebo jiná chyba - zkusíme spustit tracking i tak
+      Log.warn('[ANALYZER]', `Timeout při čekání na networkidle2: ${err.message}`);
+      
+      if (this.autoTrackingEnabled && !this.isElementTrackingActive) {
+        await this.startElementTracking(this.autoTrackingOptions);
+      }
+    }
+  }
+
+  /**
+   * Nastaví detekci změn URL pro SPA
+   * @private
+   */
+  _setupUrlChangeDetection() {
+    // Pravidelně kontroluj URL změny (pro SPA navigaci)
+    setInterval(async () => {
+      try {
+        if (!this.page || this.page.isClosed()) {
+          return;
+        }
+        
+        const currentUrl = this.page.url();
+        if (currentUrl !== this._currentUrl) {
+          this._currentUrl = currentUrl;
+          Log.debug('[ANALYZER]', `URL změna detekována: ${currentUrl}`);
+          
+          if (this.autoTrackingEnabled) {
+            // Počkej chvíli na načtení nového obsahu
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            await this._updateElementCache(this.autoTrackingOptions);
+          }
+        }
+      } catch (err) {
+        // Ignoruj chyby při URL detekci
+      }
+    }, 5000); // Kontrola každých 5 sekund
+  }
+
+  /**
+   * Klikne na element s daným textem
+   * @param {string} text - Text elementu na který kliknout
+   * @param {Object} options - Možnosti hledání
+   * @returns {Promise<boolean>} true pokud se podařilo kliknout
+   */
+  async clickElementWithText(text, options = {}) {
+    const {
+      matchType = 'exact',     // exact, contains, startsWith
+      elementType = 'any',     // any, button, input, link, div, span
+      timeout = 5000,          // timeout pro kliknutí
+      scrollIntoView = false,  // scroll k elementu před kliknutím (defaultně vypnuto)
+      waitAfterClick = true,   // čekat po kliknutí na změny
+      naturalDelay = true      // přirozené pauzy
+    } = options;
+
+    try {
+      Log.info('[ANALYZER]', `Hledám element s textem: "${text}" (${matchType})`);
+
+      // Přirozená pauza před hledáním
+      if (naturalDelay) {
+        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 700)); // 0.3-1s
+      }
+
+      // Najdi element v cache
+      const element = await this._findElementInCache(text, { matchType, elementType });
+      
+      if (!element) {
+        // Pokud není v cache, zkus přímé hledání na stránce
+        Log.warn('[ANALYZER]', `Element "${text}" nenalezen v cache, zkouším přímé hledání`);
+        return await this._directClickByText(text, options);
+      }
+
+      // Přirozená pauza před kliknutím
+      if (naturalDelay) {
+        await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 500)); // 0.2-0.7s
+      }
+
+      // Klikni na element pomocí XPath nebo selektoru
+      const success = await this._performClick(element, { timeout, scrollIntoView });
+      
+      if (success) {
+        Log.success('[ANALYZER]', `Úspěšné kliknutí na element: "${text}"`);
+        
+        // Počkej na reakci stránky po kliknutí
+        if (waitAfterClick) {
+          Log.debug('[ANALYZER]', 'Čekám na reakci stránky po kliknutí...');
+          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000)); // 1-3s
+          
+          // Aktualizuj element cache po změnách
+          await this._updateElementCache(this.autoTrackingOptions);
+          Log.debug('[ANALYZER]', 'Element cache aktualizována po kliknutí');
+        }
+        
+        return true;
+      } else {
+        Log.error('[ANALYZER]', `Nepodařilo se kliknout na element: "${text}"`);
+        return false;
+      }
+
+    } catch (err) {
+      await Log.error('[ANALYZER]', `Chyba při klikání na "${text}": ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Zkontroluje, zda element s daným textem existuje
+   * @param {string} text - Text elementu
+   * @param {Object} options - Možnosti hledání
+   * @returns {Promise<boolean>} true pokud element existuje
+   */
+  async elementExists(text, options = {}) {
+    const {
+      matchType = 'exact',
+      elementType = 'any',
+      refreshCache = false
+    } = options;
+
+    try {
+      // Možnost refreshe cache před kontrolou
+      if (refreshCache) {
+        await this._updateElementCache(this.autoTrackingOptions);
+      }
+
+      const element = await this._findElementInCache(text, { matchType, elementType });
+      const exists = element !== null;
+      
+      Log.debug('[ANALYZER]', `Element "${text}" ${exists ? 'existuje' : 'neexistuje'}`);
+      return exists;
+
+    } catch (err) {
+      await Log.error('[ANALYZER]', `Chyba při kontrole existence "${text}": ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Vrátí informace o elementu s daným textem
+   * @param {string} text - Text elementu
+   * @param {Object} options - Možnosti hledání
+   * @returns {Promise<Object|null>} Informace o elementu nebo null
+   */
+  async getElementInfo(text, options = {}) {
+    const {
+      matchType = 'exact',
+      elementType = 'any'
+    } = options;
+
+    try {
+      const element = await this._findElementInCache(text, { matchType, elementType });
+      
+      if (element) {
+        Log.debug('[ANALYZER]', `Informace o elementu "${text}": ${element.tagName}`);
+        return {
+          text: element.text,
+          tagName: element.tagName,
+          className: element.className,
+          id: element.id,
+          rect: element.rect,
+          xpath: element.xpath
+        };
+      }
+
+      Log.debug('[ANALYZER]', `Element "${text}" nenalezen`);
+      return null;
+
+    } catch (err) {
+      await Log.error('[ANALYZER]', `Chyba při získávání info o "${text}": ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Počká na objevení elementu s daným textem
+   * @param {string} text - Text elementu
+   * @param {Object} options - Možnosti čekání
+   * @returns {Promise<boolean>} true pokud se element objevil
+   */
+  async waitForElement(text, options = {}) {
+    const {
+      timeout = 10000,         // max čekání
+      checkInterval = 1000,    // interval kontrol
+      matchType = 'exact',
+      elementType = 'any'
+    } = options;
+
+    const startTime = Date.now();
+    
+    Log.info('[ANALYZER]', `Čekám na element "${text}" (max ${timeout}ms)`);
+
+    while (Date.now() - startTime < timeout) {
+      // Refresh cache a zkontroluj existenci
+      await this._updateElementCache(this.autoTrackingOptions);
+      
+      if (await this.elementExists(text, { matchType, elementType })) {
+        Log.success('[ANALYZER]', `Element "${text}" se objevil`);
+        return true;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    Log.warn('[ANALYZER]', `Timeout při čekání na element "${text}"`);
+    return false;
+  }
+
+  /**
+   * Vylistuje všechny dostupné texty elementů pro debug
+   * @param {Object} options - Filtrovací možnosti
+   * @returns {Array<string>} Seznam textů
+   */
+  getAvailableTexts(options = {}) {
+    const {
+      domain = null,           // filtr podle domény
+      elementType = 'any',     // filtr podle typu elementu
+      maxResults = 50          // max počet výsledků
+    } = options;
+
+    try {
+      const elements = this.getCurrentElements();
+      let filteredTexts = elements
+        .filter(el => {
+          if (elementType !== 'any' && el.tagName.toLowerCase() !== elementType.toLowerCase()) {
+            return false;
+          }
+          return true;
+        })
+        .map(el => el.text)
+        .slice(0, maxResults);
+
+      Log.debug('[ANALYZER]', `Nalezeno ${filteredTexts.length} textů pro debug`);
+      return filteredTexts;
+
+    } catch (err) {
+      Log.error('[ANALYZER]', `Chyba při získávání textů: ${err.message}`);
+      return [];
+    }
+  }
+
+  // ========================================
+  // PRIVATE METHODS - Helper funkce pro klikání
+  // ========================================
+
+  /**
+   * Najde element v cache podle textu
+   * @private
+   */
+  async _findElementInCache(text, options) {
+    const { matchType, elementType } = options;
+    const elements = this.getCurrentElements();
+
+    for (const element of elements) {
+      // Kontrola typu elementu
+      if (elementType !== 'any' && element.tagName.toLowerCase() !== elementType.toLowerCase()) {
+        continue;
+      }
+
+      // Kontrola textu podle matchType
+      const elementText = element.text.trim();
+      const searchText = text.trim();
+
+      let matches = false;
+      switch (matchType) {
+        case 'exact':
+          matches = elementText === searchText;
+          break;
+        case 'contains':
+          matches = elementText.toLowerCase().includes(searchText.toLowerCase());
+          break;
+        case 'startsWith':
+          matches = elementText.toLowerCase().startsWith(searchText.toLowerCase());
+          break;
+      }
+
+      if (matches) {
+        return element;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Provede kliknutí na element
+   * @private
+   */
+  async _performClick(element, options) {
+    const { timeout, scrollIntoView } = options;
+
+    try {
+      // Použij XPath nebo CSS selektor
+      let selector = null;
+      
+      if (element.id) {
+        selector = `#${element.id}`;
+      } else if (element.xpath) {
+        selector = element.xpath;
+      } else {
+        // Fallback - pokus se najít podle pozice a textu
+        return await this._directClickByText(element.text, { timeout });
+      }
+
+      // Proveď kliknutí
+      const result = await this.page.evaluate(async (sel, scroll, text) => {
+        let targetElement = null;
+        
+        // Zkus najít podle selektoru
+        if (sel.startsWith('/') || sel.startsWith('(')) {
+          // XPath
+          const xpath = sel;
+          const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+          targetElement = result.singleNodeValue;
+        } else {
+          // CSS selektor
+          targetElement = document.querySelector(sel);
+        }
+
+        // Pokud element není nalezen, zkus najít podle textu
+        if (!targetElement) {
+          const allElements = document.querySelectorAll('*');
+          for (const el of allElements) {
+            if (el.textContent.trim() === text) {
+              targetElement = el;
+              break;
+            }
+          }
+        }
+
+        if (!targetElement) {
+          return false;
+        }
+
+        // Scroll do view (pouze pokud je explicitně požadováno)
+        if (scroll) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // Klikni
+        targetElement.click();
+        return true;
+
+      }, selector, scrollIntoView, element.text);
+
+      return result;
+
+    } catch (err) {
+      Log.warn('[ANALYZER]', `Chyba při _performClick: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Přímé kliknutí podle textu (fallback)
+   * @private
+   */
+  async _directClickByText(text, options) {
+    try {
+      // Použij existující fbSupport funkci jako fallback
+      const elements = await fbSupport.findByText(this.page, text, { 
+        match: options.matchType || 'exact' 
+      });
+      
+      if (elements.length > 0) {
+        Log.info('[ANALYZER]', `Fallback: použito fbSupport.findByText pro "${text}"`);
+        await fbSupport.clickByTextJS(this.page, text, options);
+        return true;
+      }
+
+      return false;
+
+    } catch (err) {
+      Log.warn('[ANALYZER]', `Fallback kliknutí selhalo: ${err.message}`);
+      return false;
     }
   }
 
