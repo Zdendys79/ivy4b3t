@@ -1,11 +1,8 @@
-feat: Simplify group interactions and increase PageAnalyzer threshold
+fix: Resolve posting issues with element detection
 
-- Increase PageAnalyzer element threshold from 500 to 1500 elements
-- Replace complex handleSingleUtioPost with simplified version
-- New method focuses only on "Napište něco" element, no fallback searches
-- Remove unnecessary analysis of "Diskuze", "Discussion", "Featured" elements
-- Add performSimplePublication method for streamlined posting
-- Eliminate overcomplicated decision trees and multiple analysis passes
-- Quick "Obsah teď není dostupný" detection at start
-- Cleaner join button handling without complex page analysis
-- Maintains escalation system and natural delays
+- Fix quote_post to search for "Co se vám honí hlavou" on homepage instead of "Napište něco"
+- Add automatic detection of homepage vs group context in newThing() method
+- Implement dryRun option in clickElementWithText for element existence testing
+- Support dryRun mode in both cache search and direct fallback methods
+- Fix issue where elements existed in cache but were not found by interaction methods
+- Resolves two critical posting failures: quote_post on homepage and group interactions

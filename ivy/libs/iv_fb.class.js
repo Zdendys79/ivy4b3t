@@ -841,20 +841,28 @@ export class FBBot {
 
   async newThing() {
     try {
-      Log.info('[FB]', 'Hledám element "Napište něco"');
+      const currentUrl = this.page.url();
       
-      const elements = await fbSupport.findByText(this.page, "Napište něco", { 
+      // Na homepage hledáme "Co se vám honí hlavou", jinde "Napište něco"
+      const isHomepage = currentUrl === 'https://www.facebook.com/' || 
+                        currentUrl === 'https://www.facebook.com' ||
+                        currentUrl.startsWith('https://www.facebook.com/?');
+      
+      const searchText = isHomepage ? "Co se vám honí hlavou" : "Napište něco";
+      Log.info('[FB]', `Hledám element "${searchText}" (${isHomepage ? 'homepage' : 'skupina'})`);
+      
+      const elements = await fbSupport.findByText(this.page, searchText, { 
         match: 'contains', 
         timeout: 3000
       });
 
       if (elements.length > 0) {
         this.newThingElement = elements[0];
-        Log.success('[FB]', 'Element "Napište něco" nalezen');
+        Log.success('[FB]', `Element "${searchText}" nalezen`);
         return true;
       }
 
-      throw new Error('Element "Napište něco" nebyl nalezen');
+      throw new Error(`Element "${searchText}" nebyl nalezen`);
     } catch (err) {
       await Log.error('[FB] newThing()', err);
       return false;

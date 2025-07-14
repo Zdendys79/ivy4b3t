@@ -1477,7 +1477,8 @@ export class PageAnalyzer {
       timeout = 5000,          // timeout pro kliknutí
       scrollIntoView = false,  // scroll k elementu před kliknutím (defaultně vypnuto)
       waitAfterClick = true,   // čekat po kliknutí na změny
-      naturalDelay = true      // přirozené pauzy
+      naturalDelay = true,     // přirozené pauzy
+      dryRun = false          // pouze test existence, neklikat
     } = options;
 
     try {
@@ -1495,6 +1496,12 @@ export class PageAnalyzer {
         // Pokud není v cache, zkus přímé hledání na stránce
         Log.warn('[ANALYZER]', `Element "${text}" nenalezen v cache, zkouším přímé hledání`);
         return await this._directClickByText(text, options);
+      }
+
+      // Pokud je dryRun, pouze vrať true že element existuje
+      if (dryRun) {
+        Log.debug('[ANALYZER]', `DryRun: Element "${text}" nalezen v cache`);
+        return true;
       }
 
       // Přirozená pauza před kliknutím
@@ -1790,6 +1797,13 @@ export class PageAnalyzer {
       
       if (elements.length > 0) {
         Log.info('[ANALYZER]', `Fallback: použito fbSupport.findByText pro "${text}"`);
+        
+        // Pokud je dryRun, pouze vrať true že element existuje
+        if (options.dryRun) {
+          Log.debug('[ANALYZER]', `DryRun: Element "${text}" nalezen přímým hledáním`);
+          return true;
+        }
+        
         await fbSupport.clickByTextJS(this.page, text, options);
         return true;
       }
