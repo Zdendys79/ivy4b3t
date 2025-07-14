@@ -365,7 +365,9 @@ export class FBBot {
       await this.page.waitForSelector('#pass', { timeout: 5000 });
       await this.page.type('#pass', user.fb_pass, { delay: wait.type() });
 
-      await this._clickByText('Přihlásit se');
+      const config = await getAllConfig();
+      const loginText = config.cfg_login_text || 'Přihlásit se';
+      await this._clickByText(loginText);
       await wait.delay(15 * wait.timeout());
 
       if (await this.isProfileLoaded(user)) {
@@ -392,20 +394,21 @@ export class FBBot {
 
   async acceptCookies() {
     try {
-      // Zkusíme najít tlačítko "Odmítnout volitelné soubory cookie"
-      const rejectText = 'Odmítnout volitelné soubory cookie';
-      Log.info(`[FB] Hledám tlačítko pro cookies: "${rejectText}"`);
+      // Zkusíme najít tlačítko pro cookies z konfigurace (ALLOW = odmítáme volitelné!)
+      const config = await getAllConfig();
+      const acceptText = config.cfg_cookies_allow || 'Odmítnout volitelné soubory cookie';
+      Log.info(`[FB] Hledám tlačítko pro cookies: "${acceptText}"`);
       
-      const cookieButtons = await fbSupport.findByText(this.page, rejectText, { match: 'contains' });
+      const cookieButtons = await fbSupport.findByText(this.page, acceptText, { match: 'contains' });
 
       if (cookieButtons && cookieButtons.length > 0) {
         await cookieButtons[0].click();
         await wait.delay(3000);
-        Log.info(`[FB] Cookie banner odmítnut pomocí "Odmítnout volitelné soubory cookie".`);
+        Log.info(`[FB] Cookie banner přijat pomocí "${acceptText}".`);
         return true;
       }
       
-      Log.warn(`[FB] Cookie tlačítko "${rejectText}" nenalezeno.`);
+      Log.warn(`[FB] Cookie tlačítko "${acceptText}" nenalezeno.`);
       return false;
 
     } catch (err) {
@@ -428,7 +431,9 @@ export class FBBot {
       attempts++;
       try {
         // Hledáme klíčový text, abychom věděli, že jsme stále v procesu
-        const consentElement = await this.page.waitForSelector("xpath///span[contains(., 'Zkontrolujte nastavení reklam') or contains(., 'Review how we use data for ads') or contains(., 'Zkontrolujte, jestli můžeme')]", { timeout: 5000 });
+        const config = await getAllConfig();
+        const adSettingsText = config.cfg_ad_settings || 'Zkontrolujte nastavení reklam';
+        const consentElement = await this.page.waitForSelector(`xpath///span[contains(., '${adSettingsText}') or contains(., 'Review how we use data for ads') or contains(., 'Zkontrolujte, jestli můžeme')]`, { timeout: 5000 });
         if (!consentElement) {
           inConsentFlow = false;
           continue;
@@ -436,13 +441,18 @@ export class FBBot {
 
         Log.info(`[FB][AdConsent] Pokus ${attempts}/${MAX_ATTEMPTS}: Nalezena obrazovka souhlasu.`);
 
-        // Hledáme jakékoliv akční tlačítko
+        // Hledáme jakékoliv akční tlačítko s konfigurovatelnými texty
+        const nextText = config.cfg_next_text || 'Další';
+        const acceptText = config.cfg_accept_text || 'Přijmout';
+        const allowAllText = config.cfg_allow_all_text || 'Povolit vše';
+        const saveText = config.cfg_save_text || 'Uložit';
+        const confirmText = config.cfg_confirm_text || 'Potvrdit';
         const actionButton = await Promise.race([
-          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Další') or contains(., 'Next')]]"),
-          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Přijmout') or contains(., 'Accept')]]"),
-          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Povolit vše') or contains(., 'Allow all')]]"),
-          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Uložit') or contains(., 'Save')]]"),
-          this.page.waitForSelector("xpath///div[@role='button'][.//span[contains(., 'Potvrdit') or contains(., 'Confirm')]]")
+          this.page.waitForSelector(`xpath///div[@role='button'][.//span[contains(., '${nextText}') or contains(., 'Next')]]`),
+          this.page.waitForSelector(`xpath///div[@role='button'][.//span[contains(., '${acceptText}') or contains(., 'Accept')]]`),
+          this.page.waitForSelector(`xpath///div[@role='button'][.//span[contains(., '${allowAllText}') or contains(., 'Allow all')]]`),
+          this.page.waitForSelector(`xpath///div[@role='button'][.//span[contains(., '${saveText}') or contains(., 'Save')]]`),
+          this.page.waitForSelector(`xpath///div[@role='button'][.//span[contains(., '${confirmText}') or contains(., 'Confirm')]]`)
         ]);
 
         if (actionButton) {
@@ -1506,16 +1516,18 @@ export class FBBot {
   }
 
   async defaultRange() {
-    const t1 = "Výchozí okruh uživatelů";
-    const t2 = "Přátelé";
+    const config = await getAllConfig();
+    const t1 = config.cfg_privacy_audience || "Výchozí okruh uživatelů";
+    const t2 = config.cfg_friends_text || "Přátelé";
+    const doneText = config.cfg_done_text || "Hotovo";
     try {
       const rangeSelect = await fbSupport.findByText(this.page, t1, { timeout: 2000 });
       if (rangeSelect.length > 0) {
         const friends = await fbSupport.findByText(this.page, t2, { timeout: 2000 });
         if (friends.length) {
           await friends[friends.length - 2].click();
-          const done = await fbSupport.findByText(this.page, "Hotovo", { timeout: wait.timeout() });
-          if (!done || done.length === 0) throw `Tlačítko "Hotovo" nenalezeno.`;
+          const done = await fbSupport.findByText(this.page, doneText, { timeout: wait.timeout() });
+          if (!done || done.length === 0) throw `Tlačítko "${doneText}" nenalezeno.`;
           await wait.delay(3 * wait.timeout());
           await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done[0]);
           await wait.delay(15 * wait.timeout());
@@ -1624,19 +1636,21 @@ export class FBBot {
   async clickLike() {
     if (Math.random() < 0.1) { // 10% šance
       try {
-        const likes = await fbSupport.findByText(this.page, "To se mi líbí", { timeout: wait.timeout() });
-        if (!likes.length) throw `Tlačítko "To se mi líbí" nenalezeno.`;
+        const config = await getAllConfig();
+        const likeText = config.cfg_like_text || "To se mi líbí";
+        const likes = await fbSupport.findByText(this.page, likeText, { timeout: wait.timeout() });
+        if (!likes.length) throw `Tlačítko "${likeText}" nenalezeno.`;
         const randomLike = likes[Math.floor(Math.random() * likes.length)];
         await randomLike.click();
-        Log.info(`[FB] Kliknuto na tlačítko "To se mi líbí".`);
+        Log.info(`[FB] Kliknuto na tlačítko "${likeText}".`);
         await wait.delay(5 * wait.timeout());
         return true;
       } catch (err) {
-        await Log.error(`[FB] Chyba při klikání na "To se mi líbí": ${err}`);
+        await Log.error(`[FB] Chyba při klikání na lajk tlačítko: ${err}`);
         return false;
       }
     } else {
-      Log.info(`[FB] Kliknutí na "To se mi líbí" přeskočeno (náhodné).`);
+      Log.info(`[FB] Kliknutí na lajk tlačítko přeskočeno (náhodné).`);
       return true;
     }
   }
@@ -1717,7 +1731,9 @@ export class FBBot {
   // Pokračování třídy FBBot
 
   async isSellGroup() {
-    const found = await fbSupport.findByText(this.page, "Prodat", { timeout: 3500 });
+    const config = await getAllConfig();
+    const sellText = config.cfg_sell_text || "Prodat";
+    const found = await fbSupport.findByText(this.page, sellText, { timeout: 3500 });
     if (found.length) {
       Log.info(`[FB] Skupina je prodejní.`);
       return true;
@@ -1727,7 +1743,13 @@ export class FBBot {
 
   async clickDiscus() {
     try {
-      const discussionTexts = ['Diskuze', 'Discussion', 'Hlavní', 'Featured'];
+      const config = await getAllConfig();
+      const discussionTexts = [
+        config.cfg_discussion_text || 'Diskuze',
+        config.cfg_discussion_en || 'Discussion', 
+        config.cfg_main_tab_text || 'Hlavní',
+        config.cfg_main_tab_en || 'Featured'
+      ];
       Log.info('[FB]', `Hledám tlačítko pro diskuzi. Varianty: ${discussionTexts.join(', ')}`);
 
       for (const text of discussionTexts) {
@@ -1757,7 +1779,9 @@ export class FBBot {
 
   async joinToGroup() {
     try {
-      await this._clickByText("Přidat se ke skupině");
+      const config = await getAllConfig();
+      const joinText = config.cfg_group_join_text || 'Přidat se ke skupině';
+      await this._clickByText(joinText);
       return true;
     } catch (err) {
       await Log.error(`[FB] Chyba v joinToGroup: ${err.message}`);
@@ -1767,9 +1791,12 @@ export class FBBot {
 
   async handleAcceptExpertInvite() {
     try {
-      Log.info('[FB]', 'Hledám tlačítko "Přijmout" pro pozvánku experta...');
+      const config = await getAllConfig();
+      const acceptText = config.cfg_accept_text || 'Přijmout';
+      const expertText = config.cfg_expert_accept || 'expertem skupiny';
+      Log.info('[FB]', `Hledám tlačítko "${acceptText}" pro pozvánku experta...`);
       // Hledáme tlačítko "Přijmout" v kontextu, kde se mluví o expertovi.
-      const button = await this.page.waitForSelector("xpath///div[@role='button'][.//span[text()='Přijmout'] and ancestor::div[contains(., 'expertem skupiny')]]", { timeout: 5000 });
+      const button = await this.page.waitForSelector(`xpath///div[@role='button'][.//span[text()='${acceptText}'] and ancestor::div[contains(., '${expertText}')]]`, { timeout: 5000 });
       
       if (button) {
         await button.click();

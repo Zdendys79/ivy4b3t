@@ -6,6 +6,7 @@
 
 import { Log } from './iv_log.class.js';
 import * as fbSupport from './iv_fb_support.js';
+import { getAllConfig } from './iv_config.js';
 
 export class PageAnalyzer {
   constructor(page) {
@@ -536,10 +537,13 @@ export class PageAnalyzer {
         groupInfo.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
       }
 
-      const joinButton = await fbSupport.findByText(this.page, 'Přidat se ke skupině', { match: 'exact' });
+      const config = await getAllConfig();
+      const joinText = config.cfg_group_join_text || 'Přidat se ke skupině';
+      
+      const joinButton = await fbSupport.findByText(this.page, joinText, { match: 'exact' });
       if (joinButton.length > 0) {
         groupInfo.hasJoinButton = true;
-        groupInfo.joinButtonText = 'Přidat se ke skupině';
+        groupInfo.joinButtonText = joinText;
         groupInfo.membershipStatus = 'not_member';
       } else if (groupInfo.isMember) {
         groupInfo.membershipStatus = 'member';
