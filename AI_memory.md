@@ -151,13 +151,13 @@ bash ~/Sync/scripts/db_backup.sh
 ### Database Access
 ```bash
 # Connect to MariaDB database using environment variables
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS
+mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy
 
 # Test database connection
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS -e "SELECT 'Spojení úspěšné!' as Status;"
+mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "SELECT 'Spojení úspěšné!' as Status;"
 
 # Execute SQL commands directly
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS -e "YOUR_SQL_COMMAND;"
+mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "YOUR_SQL_COMMAND;"
 ```
 
 
