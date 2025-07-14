@@ -1,6 +1,11 @@
-refactor: Remove fallback and search only for "Napište něco"
+refactor: Consolidate database tables into single fb_groups table
 
-- Removed fallback search for "Co se vám honí hlavou" 
-- Now searches only for "Napište něco" as originally requested
-- Increased timeout back to 3000ms since there's only one search
-- Simplified logic: find it or fail, no alternatives
+- Merged fb_groups, group_details, and discovered_group_links into unified fb_groups table
+- Added 22 new columns to fb_groups for all group-related data
+- Migrated data from group_details and discovered_group_links tables
+- Converted user_counter to member_count across all records
+- Updated SQL queries in groups.js to use consolidated table structure
+- Removed obsolete discovered_links.js and group_details.js query files
+- Updated application code in iv_querybuilder.class.js for new table structure
+- Created comprehensive indexes for optimized performance
+- Simplified database architecture as requested
