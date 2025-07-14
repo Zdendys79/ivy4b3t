@@ -1,6 +1,6 @@
-fix: Resolve variable name conflict between actions instance and actions array
+fix: Correct buy_sell group navigation and import paths
 
-- Renamed database actions array from 'actions' to 'availableActions' to avoid conflict
-- Fixed variable scope issue where IvActions instance was being overwritten by db.getUserActions() result
-- Updated all references to use correct variable names (actions vs availableActions)
-- Removed debug logging after confirming the fix
+- Fixed import path for iv_interactive_debugger.js in iv_log.class.js (libs to parent dir)
+- Fixed buy_sell group URL suffix from 'buy_sell_discuss' to 'buy_sell_discussion' in iv_fb_support.js  
+- Updated openGroup() in iv_fb.class.js to use proper URL for buy_sell groups from the start
+- Now buy_sell groups navigate directly to discussion section instead of requiring fallback click

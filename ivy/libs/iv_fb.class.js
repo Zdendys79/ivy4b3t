@@ -1549,9 +1549,15 @@ export class FBBot {
 
       await this.bringToFront();
 
-      let fbGroupUrl = "https://FB.com/";
-      fbGroupUrl += group.type === "P" ? "" : "groups/";
-      fbGroupUrl += group.fb_id;
+      let fbGroupUrl;
+      if (group.type === "P") {
+        fbGroupUrl = `https://FB.com/${group.fb_id}`;
+      } else if (group.is_buy_sell_group) {
+        fbGroupUrl = `https://FB.com/groups/${group.fb_id}/buy_sell_discussion`;
+        Log.info('[FB]', `🛒 Používám optimalizovanou navigaci pro prodejní skupinu`);
+      } else {
+        fbGroupUrl = `https://FB.com/groups/${group.fb_id}`;
+      }
       
 
       Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);

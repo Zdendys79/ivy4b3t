@@ -813,7 +813,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
         // Pro buy/sell skupiny použij přímý přístup k diskuzi
         let targetUrl;
         if (group.is_buy_sell_group) {
-          targetUrl = `https://www.facebook.com/groups/${group.fb_id}/buy_sell_discuss`;
+          targetUrl = `https://www.facebook.com/groups/${group.fb_id}/buy_sell_discussion`;
           Log.info(`[${user.id}]`, `🛒 Používám optimalizovanou navigaci pro prodejní skupinu: ${targetUrl}`);
         } else {
           targetUrl = `https://www.facebook.com/groups/${group.fb_id}/`;

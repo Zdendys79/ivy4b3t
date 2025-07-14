@@ -47,7 +47,7 @@ export class Log {
   static async triggerDebugger(level, message, context = {}) {
     try {
       // Import dynamically to avoid circular dependencies
-      const { pauseOnError } = await import('./iv_interactive_debugger.js');
+      const { pauseOnError } = await import('../iv_interactive_debugger.js');
       const shouldStop = await pauseOnError(level, message, context);
       
       if (shouldStop) {
