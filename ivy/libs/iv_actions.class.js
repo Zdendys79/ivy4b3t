@@ -183,19 +183,18 @@ export class IvActions {
       fbBot.initializeAnalyzer();
       await wait.delay(500); // Krátká pauza pro inicializaci
 
-      // Zkus najít "Napište něco" element
-      Log.info(`[${user.id}]`, `🔍 Hledám "Napište něco" element...`);
-      const canPost = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
+      // Zkus kliknout na "Napište něco" element
+      Log.info(`[${user.id}]`, `🔍 Pokouším se kliknout na "Napište něco"...`);
+      const postClicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
         matchType: 'exact',
         scrollIntoView: false,
-        waitAfterClick: false,
-        naturalDelay: true,
-        dryRun: true // Pouze testuj, neklikej
+        waitAfterClick: true,
+        naturalDelay: true
       });
 
-      if (canPost) {
-        Log.info(`[${user.id}]`, `✅ "Napište něco" nalezeno, pokračuji s publikací...`);
-        return await this.performSimplePublication(user, fbBot, utioBot, group, actionCode);
+      if (postClicked) {
+        Log.info(`[${user.id}]`, `✅ Úspěšně kliknuto na "Napište něco", pokračuji s publikací...`);
+        return await this.performDirectPublication(user, fbBot, utioBot, group, actionCode);
       }
 
       // Pokud není "Napište něco", zkus join tlačítko
@@ -254,29 +253,14 @@ export class IvActions {
   }
 
   /**
-   * NOVÁ JEDNODUCHÁ PUBLIKACE - Pouze klikni na "Napište něco" a publikuj
-   * Bez složitých analýz a doplňkových akcí
+   * PŘÍMÁ PUBLIKACE - Editor už je otevřený, pouze získej a odešli zprávu
+   * Bez duplicitního klikání na "Napište něco"
    */
-  async performSimplePublication(user, fbBot, utioBot, group, actionCode) {
-    Log.info(`[${user.id}]`, `📝 Jednoduché publikování do skupiny ${group.name}...`);
+  async performDirectPublication(user, fbBot, utioBot, group, actionCode) {
+    Log.info(`[${user.id}]`, `📝 Editor je otevřený, publikuji do skupiny ${group.name}...`);
     
     try {
-      // Klikni na "Napište něco" element
-      const clicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
-        matchType: 'exact',
-        scrollIntoView: false,
-        waitAfterClick: true,
-        naturalDelay: true
-      });
-
-      if (!clicked) {
-        Log.error(`[${user.id}]`, `❌ Nepodařilo se kliknout na "Napište něco"`);
-        return false;
-      }
-
-      // Počkej na otevření editoru a pak získej zprávu z UTIO
-      await wait.delay(1000 + Math.random() * 2000); // 1-3s
-
+      // Editor už je otevřený po kliknutí na "Napište něco", získej zprávu z UTIO
       const message = await support.pasteMsg(user, group, fbBot, utioBot);
       if (!message) {
         Log.warn(`[${user.id}]`, '❌ Publikace selhala (pasteMsg vrátilo false)');
@@ -289,7 +273,7 @@ export class IvActions {
       return true;
 
     } catch (err) {
-      Log.error(`[${user.id}]`, `❌ Chyba při jednoduché publikaci: ${err.message}`);
+      Log.error(`[${user.id}]`, `❌ Chyba při přímé publikaci: ${err.message}`);
       return false;
     }
   }

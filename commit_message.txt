@@ -1,8 +1,7 @@
-fix: Resolve posting issues with element detection
+refactor: Remove unnecessary dryRun complexity from posting logic
 
-- Fix quote_post to search for "Co se vám honí hlavou" on homepage instead of "Napište něco"
-- Add automatic detection of homepage vs group context in newThing() method
-- Implement dryRun option in clickElementWithText for element existence testing
-- Support dryRun mode in both cache search and direct fallback methods
-- Fix issue where elements existed in cache but were not found by interaction methods
-- Resolves two critical posting failures: quote_post on homepage and group interactions
+- Remove dryRun parameter from clickElementWithText - was unnecessarily complex
+- Simplify handleSingleUtioPost to directly click "Napište něco" instead of testing first
+- Replace performSimplePublication with performDirectPublication (no duplicate clicking)
+- Streamline logic: click once and proceed with publication if successful
+- Eliminates redundant element testing and clicking phases
