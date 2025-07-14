@@ -1,7 +1,6 @@
-feat: Refresh element list after clicking in debugger
+feat: Show only visible elements in viewport in debugger
 
-- Automatically refresh element list after each click (Enter key)
-- Wait 2 seconds for page changes before refreshing
-- Re-inject CSS styles in case page content changed
-- Reset index if out of bounds after refresh
-- Fix blinking animation by re-injecting styles
+- Add viewport visibility check for elements
+- Only show elements currently visible on screen
+- Check if element is within window boundaries (top, left, bottom, right)
+- Helps focus on what user can actually see and interact with

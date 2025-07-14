@@ -92,6 +92,17 @@ async function findElementsWithShortText(page) {
         return;
       }
       
+      // Kontrola, zda je element ve viewportu (viditelný na obrazovce)
+      const rect = element.getBoundingClientRect();
+      const isInViewport = rect.top >= 0 && 
+                          rect.left >= 0 && 
+                          rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                          rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+      
+      if (!isInViewport) {
+        return;
+      }
+      
       // Získání pouze přímého textu elementu (bez potomků)
       const directText = Array.from(element.childNodes)
         .filter(node => node.nodeType === Node.TEXT_NODE)
