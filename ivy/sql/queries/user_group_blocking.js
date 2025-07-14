@@ -22,7 +22,7 @@ export const USER_GROUP_BLOCKING = {
 
   isUserGroupBlocked: `
     SELECT ug.group_id, ug.blocked_until, ug.block_count, ug.last_block_reason,
-           g.nazev as group_name, g.fb_id as group_fb_id,
+           g.name as group_name, g.fb_id as group_fb_id,
            TIMESTAMPDIFF(HOUR, NOW(), ug.blocked_until) as hours_remaining
     FROM user_groups ug
     JOIN fb_groups g ON ug.group_id = g.id
@@ -40,7 +40,7 @@ export const USER_GROUP_BLOCKING = {
            ug.last_block_reason
     FROM fb_groups g
     LEFT JOIN user_groups ug ON g.id = ug.group_id AND ug.user_id = ?
-    WHERE g.typ = ?
+    WHERE g.type = ?
       AND g.priority > 0
       AND (g.next_seen IS NULL OR g.next_seen <= NOW())
       AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
@@ -80,7 +80,7 @@ export const USER_GROUP_BLOCKING = {
   getActiveUserGroupBlocks: `
     SELECT ug.user_id, ug.group_id, ug.blocked_until, ug.block_count, 
            ug.last_block_reason, ug.last_block_date,
-           u.name, u.surname, g.nazev as group_name, g.fb_id as group_fb_id,
+           u.name, u.surname, g.name as group_name, g.fb_id as group_fb_id,
            TIMESTAMPDIFF(HOUR, NOW(), ug.blocked_until) as hours_remaining
     FROM user_groups ug
     JOIN fb_users u ON ug.user_id = u.id
@@ -91,14 +91,14 @@ export const USER_GROUP_BLOCKING = {
   `,
 
   getProblematicGroups: `
-    SELECT g.id, g.nazev, g.fb_id, g.typ,
+    SELECT g.id, g.name, g.fb_id, g.type,
            COUNT(ug.user_id) as affected_users,
            AVG(ug.block_count) as avg_block_count,
            MAX(ug.last_block_date) as last_issue
     FROM fb_groups g
     JOIN user_groups ug ON g.id = ug.group_id
     WHERE ug.block_count > 0
-    GROUP BY g.id, g.nazev, g.fb_id, g.typ
+    GROUP BY g.id, g.name, g.fb_id, g.type
     HAVING affected_users >= ?
     ORDER BY avg_block_count DESC, affected_users DESC
   `,
@@ -132,7 +132,7 @@ export const USER_GROUP_BLOCKING = {
 
   // Pro debugging a reporting
   getUserGroupHistory: `
-    SELECT ug.*, g.nazev, g.fb_id, g.typ,
+    SELECT ug.*, g.name, g.fb_id, g.type,
            CASE 
              WHEN ug.blocked_until > NOW() THEN 'BLOCKED'
              WHEN ug.block_count > 0 THEN 'HAS_ISSUES'
@@ -141,6 +141,6 @@ export const USER_GROUP_BLOCKING = {
     FROM user_groups ug
     JOIN fb_groups g ON ug.group_id = g.id
     WHERE ug.user_id = ?
-    ORDER BY ug.block_count DESC, g.nazev ASC
+    ORDER BY ug.block_count DESC, g.name ASC
   `
 };

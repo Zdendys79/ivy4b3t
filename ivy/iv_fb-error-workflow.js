@@ -122,8 +122,7 @@ async function performDetailedErrorAnalysis(user, fbBot, group, errorType, error
     try {
       if (fbBot.page && !fbBot.page.isClosed()) {
         const screenshot = await fbBot.page.screenshot({
-          fullPage: false,
-          type: 'png'
+          fullPage: false, typee: 'png'
         });
         reportBuilder.addScreenshot(screenshot);
         Log.info('[ERROR_ANALYSIS]', 'Screenshot přidán do reportu');

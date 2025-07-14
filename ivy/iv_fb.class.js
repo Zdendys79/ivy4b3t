@@ -507,8 +507,7 @@ export class FBBot {
           // Vrať objekt s detaily
           return {
             locked: true,
-            reason: fullAnalysis.errors.patterns.reason || 'Detekován problém s účtem',
-            type: fullAnalysis.errors.patterns.type || 'UNKNOWN',
+            reason: fullAnalysis.errors.patterns.reason || 'Detekován problém s účtem', typee: fullAnalysis.errors.patterns.type || 'UNKNOWN',
             severity: fullAnalysis.errors.severity
           };
         }
@@ -620,50 +619,43 @@ export class FBBot {
       // Videoselfie požadavky
       {
         texts: ['videoselfie', 'video selfie', 'Please take a video selfie'],
-        reason: 'Požadavek na videoselfie',
-        type: 'VIDEOSELFIE'
+        reason: 'Požadavek na videoselfie', typee: 'VIDEOSELFIE'
       },
 
       // Klasické zablokování
       {
         texts: ['váš účet jsme uzamkli', 'Account restricted', 'temporarily restricted'],
-        reason: 'Účet je zablokován',
-        type: 'ACCOUNT_LOCKED'
+        reason: 'Účet je zablokován', typee: 'ACCOUNT_LOCKED'
       },
 
       // Ověření identity
       {
         texts: ['Verify your identity', 'ověření identity', 'identity verification'],
-        reason: 'Požadavek na ověření identity',
-        type: 'IDENTITY_VERIFICATION'
+        reason: 'Požadavek na ověření identity', typee: 'IDENTITY_VERIFICATION'
       },
 
       // Podezřelá aktivita
       {
         texts: ['suspicious activity', 'podezřelá aktivita', 'unusual activity'],
-        reason: 'Detekována podezřelá aktivita',
-        type: 'SUSPICIOUS_ACTIVITY'
+        reason: 'Detekována podezřelá aktivita', typee: 'SUSPICIOUS_ACTIVITY'
       },
 
       // Ověření telefonu
       {
         texts: ['Please confirm your phone', 'potvrďte telefon', 'phone verification'],
-        reason: 'Požadavek na ověření telefonu',
-        type: 'PHONE_VERIFICATION'
+        reason: 'Požadavek na ověření telefonu', typee: 'PHONE_VERIFICATION'
       },
 
       // Checkpoint obecně
       {
         texts: ['Security check', 'bezpečnostní kontrola', 'checkpoint'],
-        reason: 'Bezpečnostní checkpoint',
-        type: 'SECURITY_CHECKPOINT'
+        reason: 'Bezpečnostní checkpoint', typee: 'SECURITY_CHECKPOINT'
       },
 
       // Chyby přihlášení
       {
         texts: ['Nepamatujete si svůj účet?', 'Forgot Account?'],
-        reason: 'Neúspěšné přihlášení',
-        type: 'LOGIN_FAILED'
+        reason: 'Neúspěšné přihlášení', typee: 'LOGIN_FAILED'
       }
     ];
 
@@ -675,8 +667,7 @@ export class FBBot {
           if (found && found.length > 0) {
             return {
               detected: true,
-              reason: pattern.reason,
-              type: pattern.type,
+              reason: pattern.reason, typee: pattern.type,
               foundText: text
             };
           }
@@ -688,7 +679,7 @@ export class FBBot {
       }
     }
 
-    return { detected: false, reason: null, type: null };
+    return { detected: false, reason: null, typee: null };
   }
 
   /**
@@ -1559,7 +1550,7 @@ export class FBBot {
       await this.bringToFront();
 
       let fbGroupUrl = "https://FB.com/";
-      fbGroupUrl += group.typ === "P" ? "" : "groups/";
+      fbGroupUrl += group.typee === "P" ? "" : "groups/";
       fbGroupUrl += group.fb_id;
       
 

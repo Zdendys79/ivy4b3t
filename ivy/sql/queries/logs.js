@@ -47,12 +47,12 @@ export const LOGS = {
   // ===== UŽIVATELSKÝ LOG (log_u) =====
 
   insertUserLog: `
-    INSERT INTO log_u (time, user_id, type, data, text)
+    INSERT INTO log_u (time, user_id, typee, data, text)
     VALUES (NOW(), ?, ?, ?, CONCAT('User ',? ,' ',? ,' [',? ,'] says: ', ?))
   `,
 
   getUserLogs: `
-    SELECT time, type, data, text
+    SELECT time, typee, data, text
     FROM log_u
     WHERE user_id = ?
     ORDER BY time DESC
@@ -70,7 +70,7 @@ export const LOGS = {
   getUserLogsByType: `
     SELECT time, data, text
     FROM log_u
-    WHERE user_id = ? AND type = ?
+    WHERE user_id = ? AND type e = ?
     ORDER BY time DESC
     LIMIT ?
   `,

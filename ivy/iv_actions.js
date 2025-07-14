@@ -133,7 +133,7 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
     return false;
   }
 
-  Log.info(`[${user.id}]`, `Vybrána skupina: ${group.nazev} (${group.fb_id})`);
+  Log.info(`[${user.id}]`, `Vybrána skupina: ${group.name} (${group.fb_id})`);
 
   try {
     await fbBot.openGroup(group);
@@ -141,7 +141,7 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
     const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
 
     // Rozhodovací strom - DEBUG informace
-    await Log.info(`[${user.id}]`, `🔍 Analýza skupiny ${group.nazev}:`);
+    await Log.info(`[${user.id}]`, `🔍 Analýza skupiny ${group.name}:`);
     await Log.info(`[${user.id}]`, `  - Může postovat: ${analysis.posting?.canInteract || false}`);
     await Log.info(`[${user.id}]`, `  - Má join tlačítko: ${analysis.group?.hasJoinButton || false}`);
     await Log.info(`[${user.id}]`, `  - Status členství: ${analysis.group?.membershipStatus || 'unknown'}`);
@@ -160,7 +160,7 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
         return true;
       }
 
-      await Log.info(`[${user.id}]`, `🚀 Pokouším se přidat do skupiny ${group.nazev}...`);
+      await Log.info(`[${user.id}]`, `🚀 Pokouším se přidat do skupiny ${group.name}...`);
       const joinResult = await fbBot.joinToGroup();
       
       if (joinResult) {
@@ -168,16 +168,16 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
         const afterClickAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
         
         if (!afterClickAnalysis.group?.hasJoinButton) {
-          await Log.success(`[${user.id}]`, `✅ Úspěšně odeslána žádost o členství ve skupině ${group.nazev}.`);
-          await db.logAction(user.id, joinActionCode, group.id, `Žádost o členství: ${group.nazev}`);
+          await Log.success(`[${user.id}]`, `✅ Úspěšně odeslána žádost o členství ve skupině ${group.name}.`);
+          await db.logAction(user.id, joinActionCode, group.id, `Žádost o členství: ${group.name}`);
           return true;
         } else {
-          await Log.warn(`[${user.id}]`, `⚠️ Join tlačítko stále viditelné po kliknutí ve skupině ${group.nazev}.`);
+          await Log.warn(`[${user.id}]`, `⚠️ Join tlačítko stále viditelné po kliknutí ve skupině ${group.name}.`);
           await db.blockUserGroup(user.id, group.id, 'Join button still visible after click', 7);
           return false;
         }
       } else {
-        await Log.error(`[${user.id}]`, `❌ Nepodařilo se kliknout na join tlačítko ve skupině ${group.nazev}.`);
+        await Log.error(`[${user.id}]`, `❌ Nepodařilo se kliknout na join tlačítko ve skupině ${group.name}.`);
         await db.blockUserGroup(user.id, group.id, 'Failed to click join button', 7);
         return false;
       }
@@ -200,19 +200,19 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
     }
 
     const reason = analysis.details?.join(', ') || 'Nespecifikovaný problém s oprávněním.';
-    await Log.warn(`[${user.id}]`, `Skupina ${group.nazev} je problematická: ${reason}`);
+    await Log.warn(`[${user.id}]`, `Skupina ${group.name} je problematická: ${reason}`);
     await db.blockUserGroup(user.id, group.id, reason, 30);
     return false;
 
   } catch (err) {
-    await Log.error(`[${user.id}]`, `Kompletní selhání při práci se skupinou ${group.nazev}: ${err.message}`);
+    await Log.error(`[${user.id}]`, `Kompletní selhání při práci se skupinou ${group.name}: ${err.message}`);
     await db.blockUserGroup(user.id, group.id, err.message, 7);
     return false;
   }
 }
 
 async function performPublication(user, fbBot, utioBot, group, actionCode) {
-  Log.info(`[${user.id}]`, `Zahajuji publikaci do skupiny ${group.nazev}...`);
+  Log.info(`[${user.id}]`, `Zahajuji publikaci do skupiny ${group.name}...`);
   
   // Zpracování doplňkových akcí před postováním
   const analysis = await fbBot.pageAnalyzer.lastAnalysis;
@@ -233,9 +233,9 @@ async function performPublication(user, fbBot, utioBot, group, actionCode) {
     return false;
   }
 
-  await db.logAction(user.id, actionCode, group.id, `Post do skupiny: ${group.nazev}`);
+  await db.logAction(user.id, actionCode, group.id, `Post do skupiny: ${group.name}`);
   await support.updatePostStats(group, user, actionCode);
-  Log.success(`[${user.id}]`, `✅ Úspěšně publikováno do skupiny ${group.nazev}!`);
+  Log.success(`[${user.id}]`, `✅ Úspěšně publikováno do skupiny ${group.name}!`);
   return true;
 }
 
@@ -729,22 +729,22 @@ async function detectAndMarkBuySellGroup(group) {
     // Označ skupinu jako buy/sell
     await db.query(SQL.groups.updateBuySellFlag, [true, group.id]);
     
-    await Log.success('[DETECT]', `🛒 Skupina "${group.nazev}" označena jako prodejní (buy/sell) - přímý přístup k diskuzi možný přes /buy_sell_discuss`);
+    await Log.success('[DETECT]', `🛒 Skupina "${group.name}" označena jako prodejní (buy/sell) - přímý přístup k diskuzi možný přes /buy_sell_discuss`);
     
     // Log do systému pro statistiky
     await db.logSystemEvent(
       'BUY_SELL_GROUP_DETECTED', 
       'INFO',
-      `Auto-detected buy/sell group: ${group.nazev} (ID: ${group.id})`,
+      `Auto-detected buy/sell group: ${group.name} (ID: ${group.id})`,
       {
         group_id: group.id,
-        group_name: group.nazev,
+        group_name: group.name,
         fb_id: group.fb_id,
         detection_method: 'discussion_tab_click'
       }
     );
 
   } catch (err) {
-    await Log.error('[DETECT]', `Chyba při označení buy/sell skupiny ${group.nazev}: ${err.message}`);
+    await Log.error('[DETECT]', `Chyba při označení buy/sell skupiny ${group.name}: ${err.message}`);
   }
 }

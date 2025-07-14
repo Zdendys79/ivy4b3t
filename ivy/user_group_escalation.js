@@ -193,7 +193,7 @@ export async function detectMembershipRequest(user, group, pageContent) {
   );
   
   if (detected) {
-    await Log.warn(`[${user.id}]`, `🚨 DETEKOVÁNA ŽÁDOST O ČLENSTVÍ ve skupině ${group.nazev}`);
+    await Log.warn(`[${user.id}]`, `🚨 DETEKOVÁNA ŽÁDOST O ČLENSTVÍ ve skupině ${group.name}`);
     
     // Automaticky zablokuj skupinu pro tohoto uživatele
     const blockResult = await blockUserGroup(

@@ -202,8 +202,8 @@ export const ERROR_REPORTS = {
       er.*,
       u.e_mail as user_email,
       u.locked as user_locked,
-      g.nazev as group_name,
-      g.typ as group_type
+      g.name as group_name,
+      g.type as group_type
     FROM fb_error_reports er
     LEFT JOIN fb_users u ON er.user_id = u.id
     LEFT JOIN fb_groups g ON er.group_id = g.id
@@ -216,7 +216,7 @@ export const ERROR_REPORTS = {
       er.page_url, er.page_title, er.full_analysis_data,
       er.hostname, er.reviewed, er.resolved,
       u.name as user_name, u.surname as user_surname,
-      g.nazev as group_name, g.fb_id as group_fb_id
+      g.name as group_name, g.fb_id as group_fb_id
     FROM fb_error_reports er
     LEFT JOIN fb_users u ON er.user_id = u.id
     LEFT JOIN fb_groups g ON er.group_id = g.id

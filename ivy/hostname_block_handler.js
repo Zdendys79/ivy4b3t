@@ -92,8 +92,7 @@ export async function detectAccountBlock(fbBot, user) {
         // Starý formát
         return {
           locked: true,
-          reason: lockResult,
-          type: 'UNKNOWN',
+          reason: lockResult, typee: 'UNKNOWN',
           severity: 'critical'
         };
       }
@@ -102,8 +101,7 @@ export async function detectAccountBlock(fbBot, user) {
         // Nový formát
         return {
           locked: true,
-          reason: lockResult.reason || 'Account locked',
-          type: lockResult.type || 'UNKNOWN',
+          reason: lockResult.reason || 'Account locked', typee: lockResult.type || 'UNKNOWN',
           severity: lockResult.severity || 'critical'
         };
       }

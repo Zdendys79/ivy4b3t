@@ -178,7 +178,7 @@ export class UIBot {
         return false;
       }
       await this.fbBot.openGroup(group);
-      Log.success('[UI]', `Skupina ${group.nazev} otevřena pro uživatele ${user_id}`);
+      Log.success('[UI]', `Skupina ${group.name} otevřena pro uživatele ${user_id}`);
       await this._waitForBrowserCloseOrNextCommand();
       return true;
     } catch (err) {

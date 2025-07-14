@@ -342,7 +342,7 @@ export async function updatePostStats(group, user, actionCode) {
     // Zaloguj akci
     const referenceId = group ? group.id : '0';
     const actionText = group ?
-      `Post do skupiny: ${group.nazev || group.name || group.fb_id}` :
+      `Post do skupiny: ${group.name || group.name || group.fb_id}` :
       `Akce: ${actionCode}`;
 
     await db.logUserAction(user.id, actionCode, referenceId, actionText);

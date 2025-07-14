@@ -823,12 +823,12 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
         await fbBot.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page load
         
-        Log.success(`[${user.id}]`, `✅ Úspěšně navigováno na skupinu ${group.nazev}`);
+        Log.success(`[${user.id}]`, `✅ Úspěšně navigováno na skupinu ${group.name}`);
       } catch (navErr) {
         Log.error(`[${user.id}]`, `❌ Chyba při navigaci na skupinu: ${navErr.message}`);
         return {
           ready: false,
-          reason: `Navigace na skupinu ${group.nazev} selhala: ${navErr.message}`,
+          reason: `Navigace na skupinu ${group.name} selhala: ${navErr.message}`,
           critical: true,
           shouldNavigate: false
         };
@@ -915,7 +915,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
                   
                   // Zaloguj akci do action_log pro budoucí časové omezení
                   try {
-                    await db.logAction(user.id, 'join_group', group.fb_id, `Automaticky přidán do skupiny: ${group.nazev}`);
+                    await db.logAction(user.id, 'join_group', group.fb_id, `Automaticky přidán do skupiny: ${group.name}`);
                     Log.info(`[${user.id}]`, '📝 Akce join_group zalogována pro časové omezení');
                   } catch (logErr) {
                     Log.warn(`[${user.id}]`, `⚠️ Nepodařilo se zalogovat join_group akci: ${logErr.message}`);

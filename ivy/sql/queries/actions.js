@@ -220,15 +220,15 @@ export const ACTIONS = {
       FROM user_group_limits ugl
       LEFT JOIN (
         SELECT
-          fg.typ,
+          fg.type,
           COUNT(*) as current_posts
         FROM action_log al
         JOIN fb_groups fg ON al.reference_id = fg.id
         WHERE al.account_id = ?
           AND al.action_code LIKE 'post_utio_%'
           AND al.timestamp >= NOW() - INTERVAL ugl.time_window_hours HOUR
-        GROUP BY fg.typ
-      ) usage_stats ON ugl.group_type = usage_stats.typ
+        GROUP BY fg.type
+      ) usage_stats ON ugl.group_type = usage_stats.type
       WHERE ugl.user_id = ?
     ) limit_check ON ad.action_code = limit_check.action_code
     WHERE uap.user_id = ?

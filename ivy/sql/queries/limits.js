@@ -49,7 +49,7 @@ export const LIMITS = {
     JOIN fb_groups fg ON al.reference_id = fg.id
     WHERE al.account_id = ?
       AND al.action_code LIKE 'post_utio_%'
-      AND fg.typ = ?
+      AND fg.type = ?
       AND al.timestamp >= NOW() - INTERVAL ? HOUR
   `,
 
@@ -70,7 +70,7 @@ export const LIMITS = {
       JOIN fb_groups fg ON al.reference_id = fg.id
       WHERE al.account_id = ?
         AND al.action_code LIKE 'post_utio_%'
-        AND fg.typ = ?
+        AND fg.type = ?
         AND al.timestamp >= NOW() - INTERVAL ? HOUR
     ) current_usage ON 1=1
     WHERE ugl.user_id = ? AND ugl.group_type = ?
@@ -100,7 +100,7 @@ export const LIMITS = {
       JOIN fb_groups fg ON al.reference_id = fg.id
       WHERE al.account_id = ?
         AND al.action_code LIKE 'post_utio_%'
-        AND fg.typ = ?
+        AND fg.type = ?
         AND al.timestamp >= NOW() - INTERVAL ? HOUR
     ) current_usage ON 1=1
     WHERE ugl.user_id = ? AND ugl.group_type = ?
@@ -118,15 +118,15 @@ export const LIMITS = {
     FROM user_group_limits ugl
     LEFT JOIN (
       SELECT
-        fg.typ as group_type,
+        fg.type as group_type,
         COUNT(*) as current_posts
       FROM action_log al
       JOIN fb_groups fg ON al.reference_id = fg.id
-      JOIN user_group_limits ugl2 ON fg.typ = ugl2.group_type AND al.account_id = ugl2.user_id
+      JOIN user_group_limits ugl2 ON fg.type = ugl2.group_type AND al.account_id = ugl2.user_id
       WHERE al.account_id = ?
         AND al.action_code LIKE 'post_utio_%'
         AND al.timestamp >= NOW() - INTERVAL ugl2.time_window_hours HOUR
-      GROUP BY fg.typ
+      GROUP BY fg.type
     ) usage_stats ON ugl.group_type = usage_stats.group_type
     WHERE ugl.user_id = ?
     ORDER BY CASE ugl.group_type
@@ -220,8 +220,8 @@ export const LIMITS = {
       u.name,
       u.surname,
       al.action_code,
-      fg.nazev as group_name,
-      fg.typ as group_type,
+      fg.name as group_name,
+      fg.type as group_type,
       al.text,
       ugl.max_posts,
       ugl.time_window_hours,
@@ -231,14 +231,14 @@ export const LIMITS = {
         JOIN fb_groups fg2 ON al2.reference_id = fg2.id
         WHERE al2.account_id = al.account_id
           AND al2.action_code LIKE 'post_utio_%'
-          AND fg2.typ = fg.typ
+          AND fg2.type = fg.type
           AND al2.timestamp >= al.timestamp - INTERVAL ugl.time_window_hours HOUR
           AND al2.timestamp <= al.timestamp
       ) as posts_in_window_at_time
     FROM action_log al
     JOIN fb_users u ON al.account_id = u.id
     JOIN fb_groups fg ON al.reference_id = fg.id
-    JOIN user_group_limits ugl ON al.account_id = ugl.user_id AND fg.typ = ugl.group_type
+    JOIN user_group_limits ugl ON al.account_id = ugl.user_id AND fg.type = ugl.group_type
     WHERE al.action_code LIKE 'post_utio_%'
       AND al.timestamp >= NOW() - INTERVAL 24 HOUR
     ORDER BY al.timestamp DESC
@@ -251,9 +251,9 @@ export const LIMITS = {
       al.account_id,
       u.name,
       u.surname,
-      fg.typ as group_type,
+      fg.type as group_type,
       COUNT(*) OVER (
-        PARTITION BY al.account_id, fg.typ
+        PARTITION BY al.account_id, fg.type
         ORDER BY al.timestamp
         RANGE BETWEEN INTERVAL ugl.time_window_hours HOUR PRECEDING AND CURRENT ROW
       ) as posts_in_window,
@@ -261,7 +261,7 @@ export const LIMITS = {
     FROM action_log al
     JOIN fb_users u ON al.account_id = u.id
     JOIN fb_groups fg ON al.reference_id = fg.id
-    JOIN user_group_limits ugl ON al.account_id = ugl.user_id AND fg.typ = ugl.group_type
+    JOIN user_group_limits ugl ON al.account_id = ugl.user_id AND fg.type = ugl.group_type
     WHERE al.action_code LIKE 'post_utio_%'
       AND al.timestamp >= NOW() - INTERVAL 7 DAY
     HAVING posts_in_window > max_posts
@@ -311,7 +311,7 @@ export const LIMITS = {
       AND al.timestamp >= NOW() - INTERVAL 24 HOUR
       AND EXISTS (
         SELECT 1 FROM fb_groups fg
-        WHERE fg.id = al.reference_id AND fg.typ = ugl.group_type
+        WHERE fg.id = al.reference_id AND fg.type = ugl.group_type
       )
     WHERE u.locked IS NULL
     GROUP BY ugl.group_type, ugl.user_id, u.name, u.surname, ugl.max_posts
@@ -330,7 +330,7 @@ export const LIMITS = {
     JOIN fb_groups fg ON al.reference_id = fg.id
     WHERE al.account_id = ?
       AND al.action_code LIKE 'post_utio_%'
-      AND fg.typ = ?
+      AND fg.type = ?
       AND al.timestamp >= NOW() - INTERVAL ? HOUR
   `,
 };

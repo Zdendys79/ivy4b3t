@@ -1,12 +1,12 @@
-feat: Prioritize unknown groups in exploration and fix fb_id extraction from URLs
+refactor: Rename database columns nazev->name and typ->type in fb_groups table
 
-- Add extractFbIdFromUrl() utility to extract clean fb_id from Facebook group URLs
-- Modify saveDiscoveredLinks() to automatically add new groups to group_details
-- Update getGroupsForExploration query to prioritize unanalyzed groups (name IS NULL)
-- Add processUnprocessedLinks() to convert discovered_group_links to group_details format
-- Fix inconsistency between URL format in discovered_group_links and fb_id in other tables
-- Add utility script process_discovered_links.js for one-time processing of existing links
-- Ensure group exploration prioritizes truly unknown groups over already analyzed ones
+- Execute ALTER TABLE to rename nazev to name and typ to type
+- Update all SQL queries to use new column names (name, type) 
+- Create automated script to replace all code references (.nazev -> .name, .typ -> .type)
+- Update 18 JavaScript files with new column references
+- Fix web interface to use new column names
+- Prepare for new group type 'E' (Exploration) for newly discovered groups
+- Maintain backward compatibility with existing group types G, GV, P
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
