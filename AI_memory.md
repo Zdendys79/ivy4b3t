@@ -160,21 +160,6 @@ mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "SELECT 'Spojení úspěšné!
 mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "YOUR_SQL_COMMAND;"
 ```
 
-
-
-**Commit Message Format:**
-```
-type: Brief description of changes
-
-- Bullet point describing specific change
-- Another change description
-- Third change if applicable
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
 ### Development Tools
 ```bash
 # Version management (automatically runs on git commit)
