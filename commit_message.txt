@@ -1,26 +1,3 @@
-refactor: Convert iv_actions.js to class and fix remaining typee->type errors
+fix: Correct import path for iv_log.class.js in iv_actions.class.js
 
-- Refactor iv_actions.js to iv_actions.class.js for better testability and OOP design
-- Update all imports and usage in iv_worker.js to use new IvActions class instance
-- Create comprehensive test suite for all implemented wheel of fortune actions:
-  * test_quote_post.js - Timeline quote posting test
-  * test_post_utio_g.js - UTIO articles to G-type groups test  
-  * test_post_utio_gv.js - Scientific articles to GV-type groups test
-  * test_group_explore.js - New FB groups exploration test
-  * test_account_delay.js - Short account pause test
-  * test_account_sleep.js - Long account sleep test
-- Add test_runner.js with support for different test suites (all/critical/non-invasive)
-- Fix remaining typee->type column reference errors in 7 files:
-  * sql/queries/groups.js - Fix g.typee in SQL queries
-  * sql/queries/logs.js - Fix typee in log queries  
-  * iv_page_analyzer.class.js - Fix error object properties
-  * iv_fb.class.js - Fix detection object properties and group.typee
-  * iv_fb-error-workflow.js - Fix screenshot type property
-  * hostname_block_handler.js - Fix error object properties
-  * web/public/assets/js/app.js - Fix function parameter name
-- Update README.md to reflect new class-based architecture
-- Maintain backward compatibility with exported functions for legacy code
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+Fixed module not found error by changing relative import path from './iv_log.class.js' to '../iv_log.class.js'
