@@ -1,12 +1,11 @@
-fix: Restore and improve group membership detection and join functionality
+fix: Restore group join functionality and remove unnecessary text variants
 
 - Fix broken joinToGroup() function call in iv_actions.js (was clickJoinGroupButton)
-- Add multiple join button text variants support in PageAnalyzer
-- Improve join button detection with timeout handling and multiple language support
+- Remove unnecessary text variants - use only exact texts: "Přidat se ke skupině"
 - Add comprehensive debugging for group analysis decisions
-- Enhance joinToGroup() function with fallback text variants and better error handling
 - Fix membership status detection logic - now checks join button before attempting to post
 - Add detailed logging for group analysis showing posting capability and join button status
+- Restore simple, clean joinToGroup() function using only standard Czech text
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

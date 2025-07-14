@@ -1757,20 +1757,8 @@ export class FBBot {
 
   async joinToGroup() {
     try {
-      // Zkus různé varianty textu tlačítka
-      const joinButtonTexts = ['Přidat se ke skupině', 'Join group', 'Připojit se', 'Požádat o členství'];
-      
-      for (const buttonText of joinButtonTexts) {
-        try {
-          await this._clickByText(buttonText);
-          await Log.success(`[FB]`, `✅ Úspěšně kliknuto na "${buttonText}"`);
-          return true;
-        } catch (err) {
-          await Log.debug(`[FB]`, `Tlačítko "${buttonText}" nenalezeno, zkouším další...`);
-        }
-      }
-      
-      throw new Error('Žádné tlačítko pro přidání do skupiny nenalezeno');
+      await this._clickByText("Přidat se ke skupině");
+      return true;
     } catch (err) {
       await Log.error(`[FB] Chyba v joinToGroup: ${err.message}`);
       return false;
