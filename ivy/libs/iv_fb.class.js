@@ -972,8 +972,8 @@ export class FBBot {
       // Ujisti se, že má FB stránka focus před vkládáním
       await this.bringToFront();
       
-      const delay = 10 * wait.timeout();
-      Log.debug('[FB]', `Čekám ${delay}ms před vložením textu...`);
+      const delay = 2000 + Math.random() * 3000; // 2-5 sekund místo 10+
+      Log.debug('[FB]', `Čekám ${delay.toFixed(0)}ms před vložením textu...`);
       await wait.delay(delay);
       
       if (useClipboard) {

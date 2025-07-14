@@ -1,10 +1,7 @@
-feat: Add fallback element handling for "Diskuze" and "Přidat se ke skupině"
+perf: Reduce excessive delay before text insertion in pasteStatement
 
-- Cache "Diskuze" and "Přidat se ke skupině" elements during analysis phase
-- Use fallback elements only when "Napište něco" is not available
-- Implement element validity checks with automatic fallback to fresh search
-- Add discussion and join group element properties to FBBot constructor
-- Optimize clickDiscus() and joinToGroup() methods to reuse cached elements
-- Enhance verifyFBReadinessForUtio to find and cache all posting elements
-- Implement intelligent fallback chain: direct -> discussion -> join group
-- Prevents unnecessary element searches and improves posting reliability
+- Reduce delay from 10+ seconds to 2-5 seconds before text insertion
+- Change from `10 * wait.timeout()` to fixed 2-5 second random delay
+- Prevents user frustration with long waits during posting process
+- Maintains human-like behavior while improving user experience
+- Fixes issue where posting process appeared stuck for 10+ seconds
