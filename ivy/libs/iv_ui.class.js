@@ -10,11 +10,11 @@
 import os from 'node:os';
 import puppeteer from 'puppeteer';
 
-import { db } from './iv_sql.js'
+import { db } from '../iv_sql.js'
 import { FBBot } from './iv_fb.class.js';
 import { Log } from './iv_log.class.js';
 
-import * as wait from './iv_wait.js';
+import * as wait from '../iv_wait.js';
 
 export class UIBot {
   constructor() {

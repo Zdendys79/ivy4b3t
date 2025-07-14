@@ -2,12 +2,12 @@
 
 import { Log } from './iv_log.class.js';
 import { PageAnalyzer } from './iv_page_analyzer.class.js';
-import { getHumanBehavior } from './iv_human_behavior_advanced.js';
-import { db } from './iv_sql.js';
-import * as fbSupport from './iv_fb_support.js';
-import { getAllConfig } from './iv_config.js';
+import { getHumanBehavior } from '../iv_human_behavior_advanced.js';
+import { db } from '../iv_sql.js';
+import * as fbSupport from '../iv_fb_support.js';
+import { getAllConfig } from '../iv_config.js';
 
-import * as wait from './iv_wait.js';
+import * as wait from '../iv_wait.js';
 
 export class FBBot {
   constructor(context, userId = null) {

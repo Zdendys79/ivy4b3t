@@ -1,5 +1,9 @@
-fix: Correct import paths for non-class files in libs/ directory
+fix: Correct all remaining import paths in libs/ directory
 
-- Fixed iv_console_logger.class.js imports: iv_sql.js, iv_version.js, sql/queries/index.js
-- Fixed iv_querybuilder.class.js import: sql/queries/index.js
-- All imports from libs/ to parent directory now use correct '../' path prefix
+- Fixed iv_fb.class.js: updated 5 imports to use '../' for non-class files
+- Fixed iv_page_analyzer.class.js: updated 2 imports for fbSupport and config
+- Fixed iv_ErrorReportBuilder.class.js: updated 1 import for iv_sql.js
+- Fixed iv_utio.class.js: updated 1 import for iv_wait.js
+- Fixed iv_ui.class.js: updated 2 imports for iv_sql.js and iv_wait.js
+
+All class files in libs/ now correctly import non-class files from parent directory using '../' prefix

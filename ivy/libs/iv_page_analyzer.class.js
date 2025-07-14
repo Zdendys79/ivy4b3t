@@ -5,8 +5,8 @@
  */
 
 import { Log } from './iv_log.class.js';
-import * as fbSupport from './iv_fb_support.js';
-import { getAllConfig } from './iv_config.js';
+import * as fbSupport from '../iv_fb_support.js';
+import { getAllConfig } from '../iv_config.js';
 
 export class PageAnalyzer {
   constructor(page) {

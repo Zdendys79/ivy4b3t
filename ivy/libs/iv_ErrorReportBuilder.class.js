@@ -8,7 +8,7 @@
 
 import os from 'node:os';
 import { Log } from './iv_log.class.js';
-import { db } from './iv_sql.js';
+import { db } from '../iv_sql.js';
 
 export class ErrorReportBuilder {
   constructor() {
