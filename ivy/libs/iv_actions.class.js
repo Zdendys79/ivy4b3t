@@ -16,7 +16,7 @@ import { db } from '../iv_sql.js'
 import { SQL } from '../sql/queries/index.js';
 import { getAllConfig } from '../iv_config.js';
 import { Log } from './iv_log.class.js';
-import { getAvailableGroupsForUser, detectMembershipRequest } from '../user_group_escalation.js';
+import { getAvailableGroupsForUser, detectMembershipRequest, blockUserGroup } from '../user_group_escalation.js';
 
 export class IvActions {
   constructor(options = {}) {
@@ -203,12 +203,12 @@ export class IvActions {
             return true;
           } else {
             await Log.warn(`[${user.id}]`, `⚠️ Join tlačítko stále viditelné po kliknutí ve skupině ${group.name}.`);
-            await this.db.blockUserGroup(user.id, group.id, 'Join button still visible after click', 7);
+            await blockUserGroup(user.id, group.id, 'Join button still visible after click');
             return false;
           }
         } else {
           await Log.error(`[${user.id}]`, `❌ Nepodařilo se kliknout na join tlačítko ve skupině ${group.name}.`);
-          await this.db.blockUserGroup(user.id, group.id, 'Failed to click join button', 7);
+          await blockUserGroup(user.id, group.id, 'Failed to click join button');
           return false;
         }
       }
@@ -220,7 +220,7 @@ export class IvActions {
       if (pageContent.includes('Obsah teď není dostupný')) {
         await Log.warn(`[${user.id}]`, `Skupina ${group.name} je trvale nedostupná`);
         await wait.delay(2000 + Math.random() * 3000); // 2-5s pauza
-        await this.db.blockUserGroup(user.id, group.id, 'Obsah trvale nedostupný', 365); // Zablokovat na rok
+        await blockUserGroup(user.id, group.id, 'Obsah trvale nedostupný - skupina neexistuje'); // Použij escalation systém
         return false;
       }
       
@@ -240,12 +240,12 @@ export class IvActions {
 
       const reason = analysis.details?.join(', ') || 'Nespecifikovaný problém s oprávněním.';
       await Log.warn(`[${user.id}]`, `Skupina ${group.name} je problematická: ${reason}`);
-      await this.db.blockUserGroup(user.id, group.id, reason, 30);
+      await blockUserGroup(user.id, group.id, reason); // Použij escalation systém místo pevných 30 dní
       return false;
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Kompletní selhání při práci se skupinou ${group.name}: ${err.message}`);
-      await this.db.blockUserGroup(user.id, group.id, err.message, 7);
+      await blockUserGroup(user.id, group.id, `Systémová chyba: ${err.message}`); // Použij escalation systém
       return false;
     }
   }

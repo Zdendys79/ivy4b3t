@@ -1,7 +1,9 @@
-fix: Handle "Obsah teď není dostupný" groups properly
+feat: Implement exponential escalation for group blocking
 
-- Add detection for permanently unavailable groups in post_utio_g action
-- Block such groups for 365 days instead of 30 days
-- Add 2-5 second natural delay before failing the action
-- Prevents infinite loops when groups are permanently inaccessible
-- Worker will automatically continue with next action from wheel of fortune
+- Replace all fixed-duration blocking with exponential escalation system
+- Use blockUserGroup() from user_group_escalation.js instead of db.blockUserGroup()
+- Escalation formula: 5 * 2^(n-1) days, max 180 days (6 months)
+- First problem: 5 days, second: 10 days, third: 20 days, etc.
+- System learns which groups are truly problematic vs temporary issues
+- Improves long-term reliability and reduces false positives
+- Handles "Obsah trvale nedostupný", join failures, and general errors intelligently
