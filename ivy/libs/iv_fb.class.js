@@ -14,6 +14,8 @@ export class FBBot {
     this.context = context;
     this.page = null;
     this.newThingElement = null;
+    this.discussionElement = null;
+    this.joinGroupElement = null;
     this.isInitialized = false;
     this.pageAnalyzer = null;
     this.userId = userId;
@@ -806,6 +808,69 @@ export class FBBot {
       throw new Error('Element "Napište něco" nebyl nalezen');
     } catch (err) {
       await Log.error('[FB] newThing()', err);
+      return false;
+    }
+  }
+
+  async findDiscussionElement() {
+    try {
+      const config = await getAllConfig();
+      const discussionTexts = [
+        config.cfg_discussion_text || 'Diskuze',
+        config.cfg_discussion_en || 'Discussion', 
+        config.cfg_main_tab_text || 'Hlavní',
+        config.cfg_main_tab_en || 'Featured'
+      ];
+      
+      Log.info('[FB]', `Hledám element pro diskuzi. Varianty: ${discussionTexts.join(', ')}`);
+
+      for (const text of discussionTexts) {
+        try {
+          const elements = await fbSupport.findByText(this.page, text, { 
+            match: 'exact', 
+            timeout: 1500
+          });
+
+          if (elements.length > 0) {
+            this.discussionElement = elements[0];
+            Log.success('[FB]', `Element pro diskuzi "${text}" nalezen`);
+            return true;
+          }
+        } catch (e) {
+          // Pokračovat s další variantou
+        }
+      }
+      
+      Log.info('[FB]', 'Element pro diskuzi nebyl nalezen');
+      return false;
+    } catch (err) {
+      await Log.error('[FB] findDiscussionElement()', err);
+      return false;
+    }
+  }
+
+  async findJoinGroupElement() {
+    try {
+      const config = await getAllConfig();
+      const joinText = config.cfg_group_join_text || 'Přidat se ke skupině';
+      
+      Log.info('[FB]', `Hledám element pro přidání do skupiny: "${joinText}"`);
+
+      const elements = await fbSupport.findByText(this.page, joinText, { 
+        match: 'exact', 
+        timeout: 3000
+      });
+
+      if (elements.length > 0) {
+        this.joinGroupElement = elements[0];
+        Log.success('[FB]', `Element pro přidání do skupiny "${joinText}" nalezen`);
+        return true;
+      }
+
+      Log.info('[FB]', 'Element pro přidání do skupiny nebyl nalezen');
+      return false;
+    } catch (err) {
+      await Log.error('[FB] findJoinGroupElement()', err);
       return false;
     }
   }
@@ -1693,34 +1758,34 @@ export class FBBot {
 
   async clickDiscus() {
     try {
-      const config = await getAllConfig();
-      const discussionTexts = [
-        config.cfg_discussion_text || 'Diskuze',
-        config.cfg_discussion_en || 'Discussion', 
-        config.cfg_main_tab_text || 'Hlavní',
-        config.cfg_main_tab_en || 'Featured'
-      ];
-      Log.info('[FB]', `Hledám tlačítko pro diskuzi. Varianty: ${discussionTexts.join(', ')}`);
-
-      for (const text of discussionTexts) {
+      // Použij již nalezený element pokud existuje
+      if (this.discussionElement) {
         try {
-          // Hledáme v odkazech, spanech a divech s rolí tlačítka
-          const elements = await fbSupport.findByText(this.page, text, { 
-            match: 'exact', 
-            timeout: 1500, // Kratší timeout pro každou variantu
-          });
-
-          if (elements.length > 0) {
-            await elements[0].click();
-            Log.success('[FB]', `✅ Úspěšně kliknuto na "${text}"`);
+          // Ověř, že element je stále platný
+          const elementExists = await this.page.evaluate((el) => {
+            return el && el.isConnected && el.offsetParent !== null;
+          }, this.discussionElement);
+          
+          if (elementExists) {
+            await this.discussionElement.click();
+            Log.success('[FB]', '✅ Úspěšně kliknuto na element pro diskuzi (z cache)');
             return true;
+          } else {
+            Log.warn('[FB]', 'Element pro diskuzi již není platný, hledám znovu...');
           }
-        } catch (e) {
-          // Ignorovat chybu, pokud text není nalezen, a pokračovat s další variantou
+        } catch (err) {
+          Log.warn('[FB]', `Chyba při ověřování elementu pro diskuzi: ${err.message}, hledám znovu...`);
         }
       }
+
+      // Fallback - hledej element znovu
+      if (await this.findDiscussionElement()) {
+        await this.discussionElement.click();
+        Log.success('[FB]', '✅ Úspěšně kliknuto na element pro diskuzi (nově nalezený)');
+        return true;
+      }
       
-      throw new Error('Žádná z variant tlačítka pro diskuzi nebyla nalezena.');
+      throw new Error('Element pro diskuzi nebyl nalezen');
     } catch (err) {
       Log.debug(`[FB] clickDiscus selhal: ${err.message}`);
       return false;
@@ -1729,10 +1794,34 @@ export class FBBot {
 
   async joinToGroup() {
     try {
-      const config = await getAllConfig();
-      const joinText = config.cfg_group_join_text || 'Přidat se ke skupině';
-      await this._clickByText(joinText);
-      return true;
+      // Použij již nalezený element pokud existuje
+      if (this.joinGroupElement) {
+        try {
+          // Ověř, že element je stále platný
+          const elementExists = await this.page.evaluate((el) => {
+            return el && el.isConnected && el.offsetParent !== null;
+          }, this.joinGroupElement);
+          
+          if (elementExists) {
+            await this.joinGroupElement.click();
+            Log.success('[FB]', '✅ Úspěšně kliknuto na element pro přidání do skupiny (z cache)');
+            return true;
+          } else {
+            Log.warn('[FB]', 'Element pro přidání do skupiny již není platný, hledám znovu...');
+          }
+        } catch (err) {
+          Log.warn('[FB]', `Chyba při ověřování elementu pro přidání do skupiny: ${err.message}, hledám znovu...`);
+        }
+      }
+
+      // Fallback - hledej element znovu
+      if (await this.findJoinGroupElement()) {
+        await this.joinGroupElement.click();
+        Log.success('[FB]', '✅ Úspěšně kliknuto na element pro přidání do skupiny (nově nalezený)');
+        return true;
+      }
+      
+      throw new Error('Element pro přidání do skupiny nebyl nalezen');
     } catch (err) {
       await Log.error(`[FB] Chyba v joinToGroup: ${err.message}`);
       return false;

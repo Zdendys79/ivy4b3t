@@ -1,8 +1,10 @@
-fix: Optimize "Napište něco" element handling to prevent wrong clicks
+feat: Add fallback element handling for "Diskuze" and "Přidat se ke skupině"
 
-- Use already found element from verifyFBReadinessForUtio instead of searching again
-- Prevent clicking on wrong elements by reusing validated element from analysis
-- Add element validity check before clicking to handle page changes
-- Fallback to search if element becomes invalid after UTIO navigation
-- Eliminates duplicate element searches that caused posting failures
-- Improves reliability of Facebook posting workflow
+- Cache "Diskuze" and "Přidat se ke skupině" elements during analysis phase
+- Use fallback elements only when "Napište něco" is not available
+- Implement element validity checks with automatic fallback to fresh search
+- Add discussion and join group element properties to FBBot constructor
+- Optimize clickDiscus() and joinToGroup() methods to reuse cached elements
+- Enhance verifyFBReadinessForUtio to find and cache all posting elements
+- Implement intelligent fallback chain: direct -> discussion -> join group
+- Prevents unnecessary element searches and improves posting reliability

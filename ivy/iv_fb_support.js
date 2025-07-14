@@ -1043,14 +1043,39 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
           
           const canPost = await fbBot.newThing();
           if (!canPost) {
+            // Pokud "Napište něco" není k dispozici, zkus najít "Diskuze" a "Přidat se ke skupině"
+            Log.info(`[${user.id}]`, '🔍 "Napište něco" nedostupné, hledám alternativní elementy...');
+            
+            // Najdi a ulož elementy pro diskuzi a přidání do skupiny
+            await fbBot.findDiscussionElement();
+            await fbBot.findJoinGroupElement();
+            
+            // Zkontroluj, zda je k dispozici alespoň jeden z fallback elementů
+            if (!fbBot.discussionElement && !fbBot.joinGroupElement) {
+              return {
+                ready: false,
+                reason: 'Ani element pro psaní příspěvku ani alternativní elementy nejsou k dispozici',
+                critical: false,
+                shouldNavigate: false,
+                analysisDetails: analysis
+              };
+            }
+            
+            Log.success(`[${user.id}]`, '✅ Skupina připravena s alternativními elementy (diskuze/přidání do skupiny)');
             return {
-              ready: false,
-              reason: 'Element pro psaní příspěvku nenalezen',
+              ready: true,
+              reason: 'Skupina připravena s alternativními elementy',
               critical: false,
               shouldNavigate: false,
-              analysisDetails: analysis
+              analysisDetails: analysis,
+              fallbackMode: true
             };
           }
+          
+          // Pokud je "Napište něco" k dispozici, najdi i alternativní elementy pro případ potřeby
+          Log.info(`[${user.id}]`, '🔍 Hledám také alternativní elementy pro případ potřeby...');
+          await fbBot.findDiscussionElement();
+          await fbBot.findJoinGroupElement();
           
           Log.success(`[${user.id}]`, '✅ Skupina je připravena pro UTIO postování - element pro psaní nalezen');
           return {

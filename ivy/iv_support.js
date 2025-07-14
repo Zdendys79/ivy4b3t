@@ -259,32 +259,73 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     Log.info(`[${user.id}]`, '⏱️ Dodatečná stabilizace před otevřením dialogu...');
     await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
 
-    // 1. Použij již nalezený element pro psaní příspěvku
-    // Element už byl nalezen a uložen v verifyFBReadinessForUtio
-    if (!fbBot.newThingElement) {
-      await Log.error(`[${user.id}]`, 'Element pro psaní příspěvku není k dispozici (nebyl nalezen při ověřování)');
-      return false;
+    // 1. Použij již nalezený element pro psaní příspěvku nebo fallback elementy
+    let postingMethod = 'direct'; // direct, discussion, join
+    
+    // Zkus použít primární element "Napište něco"
+    if (fbBot.newThingElement) {
+      try {
+        const elementExists = await fbBot.page.evaluate((el) => {
+          return el && el.isConnected && el.offsetParent !== null;
+        }, fbBot.newThingElement);
+        
+        if (!elementExists) {
+          Log.warn(`[${user.id}]`, 'Element pro psaní příspěvku již není platný, hledám znovu...');
+          if (!await fbBot.newThing()) {
+            Log.info(`[${user.id}]`, 'Přepínám na fallback metodu...');
+            postingMethod = 'fallback';
+          }
+        }
+      } catch (err) {
+        Log.warn(`[${user.id}]`, `Chyba při ověřování elementu: ${err.message}, přepínám na fallback...`);
+        postingMethod = 'fallback';
+      }
+    } else {
+      // Pokud nebyl nalezen "Napište něco", použij fallback
+      postingMethod = 'fallback';
     }
-
-    // Ověř, že element je stále platný (může se stát, že se stránka změnila)
-    try {
-      const elementExists = await fbBot.page.evaluate((el) => {
-        return el && el.isConnected && el.offsetParent !== null;
-      }, fbBot.newThingElement);
+    
+    // Fallback metoda - použij "Diskuze" nebo "Přidat se ke skupině"
+    if (postingMethod === 'fallback') {
+      Log.info(`[${user.id}]`, '🔄 Používám fallback metodu pro posting...');
       
-      if (!elementExists) {
-        Log.warn(`[${user.id}]`, 'Element pro psaní příspěvku již není platný, hledám znovu...');
-        if (!await fbBot.newThing()) {
-          await Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku ve skupině');
-          return false;
+      // Zkus kliknout na "Diskuze" pokud existuje
+      if (fbBot.discussionElement) {
+        Log.info(`[${user.id}]`, '🔄 Pokouším se kliknout na "Diskuze"...');
+        if (await fbBot.clickDiscus()) {
+          await wait.delay(3000 + Math.random() * 2000); // Čekání na načtení
+          // Po kliknutí na diskuze zkus najít "Napište něco" znovu
+          if (await fbBot.newThing()) {
+            postingMethod = 'discussion';
+          }
         }
       }
-    } catch (err) {
-      Log.warn(`[${user.id}]`, `Chyba při ověřování elementu: ${err.message}, hledám znovu...`);
-      if (!await fbBot.newThing()) {
-        await Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku ve skupině');
+      
+      // Pokud diskuze nefunguje, zkus "Přidat se ke skupině"
+      if (postingMethod === 'fallback' && fbBot.joinGroupElement) {
+        Log.info(`[${user.id}]`, '🔄 Pokouším se kliknout na "Přidat se ke skupině"...');
+        if (await fbBot.joinToGroup()) {
+          await wait.delay(5000 + Math.random() * 3000); // Čekání na přidání
+          // Po přidání do skupiny zkus najít "Napište něco" znovu
+          if (await fbBot.newThing()) {
+            postingMethod = 'join';
+          }
+        }
+      }
+      
+      // Pokud žádná fallback metoda nefunguje
+      if (postingMethod === 'fallback') {
+        await Log.error(`[${user.id}]`, 'Žádná metoda pro posting není k dispozici');
         return false;
       }
+      
+      Log.success(`[${user.id}]`, `✅ Fallback metoda "${postingMethod}" úspěšná`);
+    }
+    
+    // Ověř, že máme element pro psaní
+    if (!fbBot.newThingElement) {
+      await Log.error(`[${user.id}]`, 'Element pro psaní příspěvku není k dispozici ani po fallback metodách');
+      return false;
     }
 
     if (!await fbBot.clickNewThing()) {
