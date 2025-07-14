@@ -1,9 +1,8 @@
-fix: Complete database migration by adding missing columns
+fix: Optimize "Napište něco" element handling to prevent wrong clicks
 
-- Fixed ALTER TABLE script execution by adding columns individually
-- Added discovery_url, member_count, discovered_by_user_id, status columns
-- Added description, category, privacy_type, language, activity_level columns
-- Added is_relevant, posting_allowed, analysis_notes, analysis_count, last_analysis columns
-- Converted user_counter data to member_count column
-- Fixed SQL errors in groups.saveGroupExplorationDetails query
-- Database migration now fully functional for group exploration workflow
+- Use already found element from verifyFBReadinessForUtio instead of searching again
+- Prevent clicking on wrong elements by reusing validated element from analysis
+- Add element validity check before clicking to handle page changes
+- Fallback to search if element becomes invalid after UTIO navigation
+- Eliminates duplicate element searches that caused posting failures
+- Improves reliability of Facebook posting workflow

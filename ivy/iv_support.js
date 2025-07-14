@@ -259,10 +259,32 @@ export async function pasteMsg(user, group, fbBot, utioBot = null) {
     Log.info(`[${user.id}]`, '⏱️ Dodatečná stabilizace před otevřením dialogu...');
     await wait.delay(3000 + Math.random() * 2000); // 3-5 sekund
 
-    // 1. Najdi a klikni na pole pro psaní příspěvku ve skupině
-    if (!await fbBot.newThing()) {
-      await Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku ve skupině');
+    // 1. Použij již nalezený element pro psaní příspěvku
+    // Element už byl nalezen a uložen v verifyFBReadinessForUtio
+    if (!fbBot.newThingElement) {
+      await Log.error(`[${user.id}]`, 'Element pro psaní příspěvku není k dispozici (nebyl nalezen při ověřování)');
       return false;
+    }
+
+    // Ověř, že element je stále platný (může se stát, že se stránka změnila)
+    try {
+      const elementExists = await fbBot.page.evaluate((el) => {
+        return el && el.isConnected && el.offsetParent !== null;
+      }, fbBot.newThingElement);
+      
+      if (!elementExists) {
+        Log.warn(`[${user.id}]`, 'Element pro psaní příspěvku již není platný, hledám znovu...');
+        if (!await fbBot.newThing()) {
+          await Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku ve skupině');
+          return false;
+        }
+      }
+    } catch (err) {
+      Log.warn(`[${user.id}]`, `Chyba při ověřování elementu: ${err.message}, hledám znovu...`);
+      if (!await fbBot.newThing()) {
+        await Log.error(`[${user.id}]`, 'Nepodařilo se najít pole pro psaní příspěvku ve skupině');
+        return false;
+      }
     }
 
     if (!await fbBot.clickNewThing()) {
