@@ -1,10 +1,7 @@
-feat: Refactor FB interactions to use new PageAnalyzer methods
+fix: Handle "Obsah teď není dostupný" groups properly
 
-- Replace findByText/clickByText with PageAnalyzer.clickElementWithText()
-- Add natural delays (0.3-1s before search, 0.2-0.7s before click)
-- Wait for page reaction after clicks (1-3s) and refresh element cache
-- Enable auto-tracking in FB class initialization (10s intervals)
-- Disable scrollIntoView by default - only use visible elements in viewport
-- Add fallback to legacy methods when PageAnalyzer unavailable
-- Refactor key FB methods: _clickByText, acceptCookies, clickSendButton, stillSendButton
-- Improve element detection reliability with viewport filtering and deduplication
+- Add detection for permanently unavailable groups in post_utio_g action
+- Block such groups for 365 days instead of 30 days
+- Add 2-5 second natural delay before failing the action
+- Prevents infinite loops when groups are permanently inaccessible
+- Worker will automatically continue with next action from wheel of fortune

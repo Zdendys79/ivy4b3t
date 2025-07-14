@@ -215,6 +215,15 @@ export class IvActions {
 
       // Pokud není ani možnost postovat ani join tlačítko
       
+      // Kontrola na "Obsah teď není dostupný" 
+      const pageContent = await fbBot.page.evaluate(() => document.body.textContent);
+      if (pageContent.includes('Obsah teď není dostupný')) {
+        await Log.warn(`[${user.id}]`, `Skupina ${group.name} je trvale nedostupná`);
+        await wait.delay(2000 + Math.random() * 3000); // 2-5s pauza
+        await this.db.blockUserGroup(user.id, group.id, 'Obsah trvale nedostupný', 365); // Zablokovat na rok
+        return false;
+      }
+      
       if (analysis.posting?.actionRequired === 'click_discussion_tab') {
           await Log.info(`[${user.id}]`, 'Je potřeba přejít do diskuze, zkouším...');
           const clicked = await fbBot.clickDiscus();
