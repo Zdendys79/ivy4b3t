@@ -373,7 +373,7 @@ export class PageAnalyzer {
       }
 
       // Hodnocení komplexnosti (upravené pro moderní Facebook)
-      const isNormal = data.metrics.elements > 500 &&
+      const isNormal = data.metrics.elements > 1500 &&
         data.metrics.images > 10 &&          // Facebook používá hodně SVG ikon
         data.metrics.scripts > 20 &&
         data.metrics.links > 5;              // SPA používá méně přímých odkazů

@@ -1,9 +1,11 @@
-feat: Implement exponential escalation for group blocking
+feat: Simplify group interactions and increase PageAnalyzer threshold
 
-- Replace all fixed-duration blocking with exponential escalation system
-- Use blockUserGroup() from user_group_escalation.js instead of db.blockUserGroup()
-- Escalation formula: 5 * 2^(n-1) days, max 180 days (6 months)
-- First problem: 5 days, second: 10 days, third: 20 days, etc.
-- System learns which groups are truly problematic vs temporary issues
-- Improves long-term reliability and reduces false positives
-- Handles "Obsah trvale nedostupný", join failures, and general errors intelligently
+- Increase PageAnalyzer element threshold from 500 to 1500 elements
+- Replace complex handleSingleUtioPost with simplified version
+- New method focuses only on "Napište něco" element, no fallback searches
+- Remove unnecessary analysis of "Diskuze", "Discussion", "Featured" elements
+- Add performSimplePublication method for streamlined posting
+- Eliminate overcomplicated decision trees and multiple analysis passes
+- Quick "Obsah teď není dostupný" detection at start
+- Cleaner join button handling without complex page analysis
+- Maintains escalation system and natural delays
