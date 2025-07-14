@@ -158,7 +158,7 @@ async function main() {
   await page.goto('https://www.facebook.com', { waitUntil: 'networkidle2' });
   
   // Počkání na načtení stránky
-  await page.waitForTimeout(3000);
+  await new Promise(resolve => setTimeout(resolve, 3000));
   
   console.log('\nHledám elementy s textem do 10 slov...');
   elements = await findElementsWithShortText(page);

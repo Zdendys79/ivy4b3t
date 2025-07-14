@@ -1,8 +1,4 @@
-feat: Add interactive element debugger for Facebook automation testing
+fix: Replace deprecated waitForTimeout with setTimeout in test.js
 
-- Create test.js with visual element inspector and selector
-- Implement arrow key navigation through found elements (up to 10 words)
-- Add red blinking highlight for currently selected element
-- Enable click testing with ENTER key on highlighted elements
-- Use Profile0 for testing with standard browser launch parameters
-- Help debug element identification issues in Facebook automation
+- Fix TypeError by replacing page.waitForTimeout with Promise-based setTimeout
+- Ensures compatibility with current Puppeteer version
