@@ -83,7 +83,6 @@ async function findElementsWithShortText(page) {
     // Zaměřujeme se hlavně na DIV a SPAN elementy
     const allElements = document.querySelectorAll('div, span, a, button, input, label, h1, h2, h3, h4, h5, h6, p');
     const results = [];
-    const processedTexts = new Set(); // Pro odstranění duplicit
     
     allElements.forEach((element, index) => {
       // Přeskočit skryté elementy
@@ -103,16 +102,25 @@ async function findElementsWithShortText(page) {
         return;
       }
       
-      // Získání pouze přímého textu elementu (bez potomků)
-      const directText = Array.from(element.childNodes)
+      // Získání textu - buď přímý text nebo placeholder/aria-label pro inputy
+      let directText = Array.from(element.childNodes)
         .filter(node => node.nodeType === Node.TEXT_NODE)
         .map(node => node.textContent.trim())
         .join(' ')
         .trim();
       
+      // Pro inputy a další elementy bez přímého textu, použij placeholder nebo aria-label
+      if (!directText && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT')) {
+        directText = element.placeholder || element.getAttribute('aria-label') || element.value || '';
+      }
+      
+      // Pro buttony a odkazy můžeme zkusit i aria-label nebo title
+      if (!directText && (element.tagName === 'BUTTON' || element.tagName === 'A')) {
+        directText = element.getAttribute('aria-label') || element.title || '';
+      }
+      
       // Filtrování - max 10 slov a neprázdný text
-      if (directText && directText.split(/\s+/).length <= 10 && !processedTexts.has(directText)) {
-        processedTexts.add(directText);
+      if (directText && directText.split(/\s+/).length <= 10) {
         results.push({
           index: results.length,
           text: directText,
