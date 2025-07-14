@@ -1,11 +1,9 @@
-refactor: Consolidate database tables into single fb_groups table
+fix: Complete database migration by adding missing columns
 
-- Merged fb_groups, group_details, and discovered_group_links into unified fb_groups table
-- Added 22 new columns to fb_groups for all group-related data
-- Migrated data from group_details and discovered_group_links tables
-- Converted user_counter to member_count across all records
-- Updated SQL queries in groups.js to use consolidated table structure
-- Removed obsolete discovered_links.js and group_details.js query files
-- Updated application code in iv_querybuilder.class.js for new table structure
-- Created comprehensive indexes for optimized performance
-- Simplified database architecture as requested
+- Fixed ALTER TABLE script execution by adding columns individually
+- Added discovery_url, member_count, discovered_by_user_id, status columns
+- Added description, category, privacy_type, language, activity_level columns
+- Added is_relevant, posting_allowed, analysis_notes, analysis_count, last_analysis columns
+- Converted user_counter data to member_count column
+- Fixed SQL errors in groups.saveGroupExplorationDetails query
+- Database migration now fully functional for group exploration workflow
