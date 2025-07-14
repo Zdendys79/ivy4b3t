@@ -63,7 +63,7 @@ export class Log {
 
   static async warnInteractive(module, message, context = {}) {
     this.warn(module, message);
-    const { pauseOnError } = await import('./iv_interactive_debugger.js');
+    const { pauseOnError } = await import('../iv_interactive_debugger.js');
     return await pauseOnError('WARNING', `${module}: ${message}`, context);
   }
 
@@ -73,7 +73,7 @@ export class Log {
     if (error.stack) {
       this.debug(error.stack);
     }
-    const { pauseOnError } = await import('./iv_interactive_debugger.js');
+    const { pauseOnError } = await import('../iv_interactive_debugger.js');
     return await pauseOnError('ERROR', `${module}: ${message}`, { ...context, stack: error.stack });
   }
 }

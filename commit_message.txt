@@ -1,10 +1,6 @@
-refactor: Simplify Facebook posting process and add human-like delays
+fix: Correct remaining import paths and add fallback for post field detection
 
-- Simplified newThing() to only search for "Napište něco" instead of multiple variants
-- Simplified submit button search to only look for "Zveřejnit" instead of multiple options  
-- Added random delays between actions to simulate human behavior:
-  * 0.3-1.1s pause before clicking post field
-  * 1.5-3.5s pause after clicking post field
-  * 2-5s pause before searching submit button
-  * 0.5-2s pause before clicking submit button
-- Removed unnecessary fallback strategies and complex verification loops
+- Fixed remaining iv_interactive_debugger.js import paths in iv_log.class.js
+- Added fallback to newThing() method to search for "Co se vám honí hlavou" if "Napište něco" not found
+- Reduced timeout for each search from 3s to 2s for faster fallback
+- Maintains simple approach with only two text variants instead of complex strategies

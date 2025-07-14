@@ -790,11 +790,12 @@ export class FBBot {
 
   async newThing() {
     try {
+      // Zkusíme nejdřív "Napište něco"
       Log.info('[FB]', 'Hledám element "Napište něco"');
       
-      const elements = await fbSupport.findByText(this.page, "Napište něco", { 
+      let elements = await fbSupport.findByText(this.page, "Napište něco", { 
         match: 'startsWith', 
-        timeout: 3000
+        timeout: 2000
       });
 
       if (elements.length > 0) {
@@ -803,7 +804,20 @@ export class FBBot {
         return true;
       }
 
-      throw new Error('Element "Napište něco" nebyl nalezen');
+      // Fallback: zkusíme "Co se vám honí hlavou"
+      Log.info('[FB]', 'Zkouším fallback "Co se vám honí hlavou"');
+      elements = await fbSupport.findByText(this.page, "Co se vám honí hlavou", { 
+        match: 'startsWith', 
+        timeout: 2000
+      });
+
+      if (elements.length > 0) {
+        this.newThingElement = elements[0];
+        Log.success('[FB]', 'Element "Co se vám honí hlavou" nalezen');
+        return true;
+      }
+
+      throw new Error('Ani jeden z textů pro psaní nebyl nalezen');
     } catch (err) {
       await Log.error('[FB] newThing()', err);
       return false;
