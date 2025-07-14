@@ -1,13 +1,12 @@
-feat: Add automatic buy/sell group detection and optimization
+fix: Restore and improve group membership detection and join functionality
 
-- Add is_buy_sell_group boolean column to fb_groups table with index
-- Implement automatic detection when clicking Discussion tab enables posting
-- Add SQL queries for updating buy/sell group flag (updateBuySellFlag, updateBuySellFlagByFbId)
-- Add auto-marking logic in iv_actions.js when discussion click enables interaction
-- Implement optimized navigation for buy/sell groups using /buy_sell_discuss URL
-- Add detectAndMarkBuySellGroup function with system logging
-- Update ivy_create_full.sql schema with new column and index
-- Create migration script add_buy_sell_group_column.sql for existing databases
+- Fix broken joinToGroup() function call in iv_actions.js (was clickJoinGroupButton)
+- Add multiple join button text variants support in PageAnalyzer
+- Improve join button detection with timeout handling and multiple language support
+- Add comprehensive debugging for group analysis decisions
+- Enhance joinToGroup() function with fallback text variants and better error handling
+- Fix membership status detection logic - now checks join button before attempting to post
+- Add detailed logging for group analysis showing posting capability and join button status
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

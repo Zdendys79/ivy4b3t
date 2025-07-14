@@ -140,33 +140,50 @@ async function handleSingleUtioPost(user, fbBot, utioBot, groupType) {
     fbBot.initializeAnalyzer();
     const analysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
 
-    // Rozhodovací strom
+    // Rozhodovací strom - DEBUG informace
+    await Log.info(`[${user.id}]`, `🔍 Analýza skupiny ${group.nazev}:`);
+    await Log.info(`[${user.id}]`, `  - Může postovat: ${analysis.posting?.canInteract || false}`);
+    await Log.info(`[${user.id}]`, `  - Má join tlačítko: ${analysis.group?.hasJoinButton || false}`);
+    await Log.info(`[${user.id}]`, `  - Status členství: ${analysis.group?.membershipStatus || 'unknown'}`);
+    
     if (analysis.posting?.canInteract) {
+      await Log.info(`[${user.id}]`, `✅ Mohu postovat, pokračuji s publikací...`);
       return await performPublication(user, fbBot, utioBot, group, actionCode);
     }
 
     if (analysis.group?.hasJoinButton) {
+      await Log.info(`[${user.id}]`, `🔘 Nalezeno tlačítko pro přidání, text: "${analysis.group.joinButtonText}"`);
+
       const recentJoin = await db.getRecentJoinGroupAction(user.id, joinActionCode);
       if (recentJoin) {
-        await Log.info(`[${user.id}]`, `Již byla odeslána žádost o členství do skupiny typu '${groupType}' v posledních 8 hodinách. Čeká se.`);
+        await Log.info(`[${user.id}]`, `⏰ Již byla odeslána žádost o členství do skupiny typu '${groupType}' v posledních 8 hodinách. Čeká se.`);
         return true;
       }
 
-      await Log.info(`[${user.id}]`, `Pokouším se přidat do skupiny ${group.nazev}...`);
-      await fbBot.clickJoinGroupButton();
-      await wait.delay(3000, 5000);
-
-      const afterClickAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
-      if (!afterClickAnalysis.group?.hasJoinButton) {
-        await Log.success(`[${user.id}]`, `Úspěšně odeslána žádost o členství ve skupině ${group.nazev}.`);
-        await db.logAction(user.id, joinActionCode, group.id, `Žádost o členství: ${group.nazev}`);
-        return true;
+      await Log.info(`[${user.id}]`, `🚀 Pokouším se přidat do skupiny ${group.nazev}...`);
+      const joinResult = await fbBot.joinToGroup();
+      
+      if (joinResult) {
+        await wait.delay(3000, 5000);
+        const afterClickAnalysis = await fbBot.pageAnalyzer.analyzeFullPage({ forceRefresh: true });
+        
+        if (!afterClickAnalysis.group?.hasJoinButton) {
+          await Log.success(`[${user.id}]`, `✅ Úspěšně odeslána žádost o členství ve skupině ${group.nazev}.`);
+          await db.logAction(user.id, joinActionCode, group.id, `Žádost o členství: ${group.nazev}`);
+          return true;
+        } else {
+          await Log.warn(`[${user.id}]`, `⚠️ Join tlačítko stále viditelné po kliknutí ve skupině ${group.nazev}.`);
+          await db.blockUserGroup(user.id, group.id, 'Join button still visible after click', 7);
+          return false;
+        }
       } else {
-        await Log.error(`[${user.id}]`, `Nepodařilo se kliknout na "Přidat se" ve skupině ${group.nazev}.`);
+        await Log.error(`[${user.id}]`, `❌ Nepodařilo se kliknout na join tlačítko ve skupině ${group.nazev}.`);
         await db.blockUserGroup(user.id, group.id, 'Failed to click join button', 7);
         return false;
       }
     }
+
+    // Pokud není ani možnost postovat ani join tlačítko
     
     if (analysis.posting?.actionRequired === 'click_discussion_tab') {
         await Log.info(`[${user.id}]`, 'Je potřeba přejít do diskuze, zkouším...');

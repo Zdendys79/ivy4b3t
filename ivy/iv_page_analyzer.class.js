@@ -536,11 +536,28 @@ export class PageAnalyzer {
         groupInfo.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
       }
 
-      const joinButton = await fbSupport.findByText(this.page, 'Přidat se ke skupině', { match: 'exact' });
+      // Hledej různé varianty tlačítka pro přidání do skupiny
+      const joinButtonTexts = ['Přidat se ke skupině', 'Join group', 'Připojit se', 'Požádat o členství'];
+      let joinButton = [];
+      let foundButtonText = '';
+      
+      for (const buttonText of joinButtonTexts) {
+        try {
+          joinButton = await fbSupport.findByText(this.page, buttonText, { match: 'exact', timeout: 1000 });
+          if (joinButton.length > 0) {
+            foundButtonText = buttonText;
+            break;
+          }
+        } catch (err) {
+          // Pokračuj na další variantu
+        }
+      }
+      
       if (joinButton.length > 0) {
         groupInfo.hasJoinButton = true;
-        groupInfo.joinButtonText = await this.page.evaluate(el => el.textContent.trim(), joinButton[0]);
+        groupInfo.joinButtonText = foundButtonText;
         groupInfo.membershipStatus = 'not_member';
+        await Log.info('[ANALYZER]', `🔘 Nalezeno tlačítko pro přidání: "${foundButtonText}"`);
       } else if (groupInfo.isMember) {
         groupInfo.membershipStatus = 'member';
       } else if (groupInfo.isPending) {
