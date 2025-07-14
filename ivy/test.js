@@ -161,14 +161,19 @@ async function main() {
   
   const page = await context.newPage();
   
-  // Injekce CSS stylů
-  await page.addStyleTag({ content: HIGHLIGHT_STYLE });
+  // Funkce pro injekci CSS stylů
+  const injectStyles = async () => {
+    await page.addStyleTag({ content: HIGHLIGHT_STYLE });
+  };
   
   console.log('Navigace na Facebook...');
   await page.goto('https://www.facebook.com', { waitUntil: 'networkidle2' });
   
   // Počkání na načtení stránky
   await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // Injekce stylů
+  await injectStyles();
   
   console.log('\nHledám elementy s textem do 10 slov...');
   elements = await findElementsWithShortText(page);
@@ -242,6 +247,28 @@ async function main() {
           return false;
         }, currentIndex);
         console.log('Kliknutí provedeno!');
+        
+        // Počkat chvíli na případné změny na stránce
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Znovu načíst elementy
+        console.log('\nObnovuji seznam elementů...');
+        
+        // Znovu injektovat styly (pro případ, že se stránka změnila)
+        await injectStyles();
+        
+        elements = await findElementsWithShortText(page);
+        
+        // Resetovat index pokud je mimo rozsah
+        if (currentIndex >= elements.length) {
+          currentIndex = 0;
+        }
+        
+        // Znovu zobrazit a zvýraznit
+        displayElements();
+        if (elements.length > 0) {
+          await highlightElement(page, currentIndex);
+        }
       } catch (error) {
         console.log('Chyba při kliknutí:', error.message);
       }

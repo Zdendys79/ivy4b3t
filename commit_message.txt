@@ -1,7 +1,7 @@
-fix: Focus element detection on DIV and SPAN with direct text
+feat: Refresh element list after clicking in debugger
 
-- Change selector to focus on div, span, a, button, input, label, h1-h6, p elements
-- Return to using only direct text nodes (excluding child element text)
-- Add deduplication to avoid showing same text multiple times
-- Fix variable reference error (text -> directText)
-- Better matches Facebook's UI where most clickable text is in DIV/SPAN
+- Automatically refresh element list after each click (Enter key)
+- Wait 2 seconds for page changes before refreshing
+- Re-inject CSS styles in case page content changed
+- Reset index if out of bounds after refresh
+- Fix blinking animation by re-injecting styles
