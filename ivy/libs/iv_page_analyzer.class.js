@@ -770,11 +770,12 @@ export class PageAnalyzer {
     try {
       const checkpointIndicators = await this.page.evaluate(() => {
         const checkpointTexts = [
-          'security check',
-          'bezpečnostní kontrola',
-          'checkpoint',
+          'security check required',
+          'bezpečnostní kontrola vyžadována',
           'verify your identity',
-          'ověření identity'
+          'ověření identity',
+          'confirm your identity',
+          'potvrdit vaši identitu'
         ];
 
         const bodyText = document.body.textContent.toLowerCase();

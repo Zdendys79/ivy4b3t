@@ -143,7 +143,15 @@ export class UserSelector {
    */
   async _selectUserForProductionBranch() {
     Log.info('[USER_SELECTOR]', '🚀 Produkční větev - standardní výběr uživatele');
-    return await db.getUserWithAvailableActions(this.hostname);
+    
+    const user = await db.getUserWithAvailableActions(this.hostname);
+    if (user) {
+      // Aktualizuj next_worktime hned po výběru - vždy!
+      await db.updateUserWorktime(user.id, 15);
+      Log.info('[USER_SELECTOR]', `🚀 Produkční větev: Čas aktivity uživatele ${user.id} posunut o 15 minut`);
+    }
+    
+    return user;
   }
 
   /**
