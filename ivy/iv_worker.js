@@ -87,6 +87,8 @@ export async function tick() {
       // Budoucí modul pro nefunkční FB
       await Log.error(`[${user.id}]`, 'FB není funkční - ukončuji cyklus');
       await browserManager.closeBrowser(browser);
+      // Počkej před dalším pokusem
+      await waitWithHeartbeat(5); // 5 minut čekání při checkpoint
       return;
     }
     

@@ -1,5 +1,5 @@
-fix: Replace old iv_worker.js with refactored version
+fix: Add wait period after FB checkpoint detection
 
-- Remove old iv_worker.js that was importing non-existent getRandomAction
-- Rename iv_worker_new.js to iv_worker.js to fix import errors
-- Fix SyntaxError preventing Ivy startup
+- Add 5 minute wait when FB is not functional (checkpoint detected)
+- Prevents rapid retry loop that was opening browser 3x in a row
+- Fixes issue where worker immediately retried without delay
