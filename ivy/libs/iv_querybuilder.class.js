@@ -849,4 +849,34 @@ export class QueryBuilder {
       fbGroupId // WHERE fb_id
     ]);
   }
+
+  // =========================================================
+  // USER_GROUPS - Správa členství uživatelů ve skupinách
+  // =========================================================
+
+  /**
+   * Uloží žádost o členství uživatele ve skupině
+   * @param {number} userId - ID uživatele
+   * @param {number} groupId - ID skupiny
+   * @param {string} note - Poznámka k žádosti
+   * @returns {Promise<boolean>} True pokud bylo úspěšné
+   */
+  async insertUserGroupMembership(userId, groupId, note = 'Žádost o členství') {
+    const query = `
+      INSERT INTO user_groups (user_id, group_id, type, note, time) 
+      VALUES (?, ?, 1, ?, NOW())
+      ON DUPLICATE KEY UPDATE 
+        type = VALUES(type),
+        note = VALUES(note), 
+        time = NOW()
+    `;
+    
+    try {
+      const result = await this.safeExecute(query, [userId, groupId, note]);
+      return result && result.affectedRows > 0;
+    } catch (error) {
+      await Log.error('[DB]', `Chyba při ukládání členství uživatele ${userId} ve skupině ${groupId}: ${error.message}`);
+      return false;
+    }
+  }
 }

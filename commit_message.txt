@@ -1,9 +1,7 @@
-feat: Přidat lidské pauzy před navigační akce
+fix: Implementovat správné pořadí fallback mechanismu pro joinToGroup
 
-- Přidat pauzu 5-15 sekund před všechny navigační akce (změna URL)
-- Upravit openFB() a openGroup() v iv_fb.class.js
-- Přidat pauzy do UTIO navigace v iv_utio.class.js
-- Upravit navigateToHomepage() v quote_post.action.js
-- Přidat pauzu do navigace v iv_fb_support.js
-- Všechny pauzy mají informativní logy s délkou čekání
-- Automatizace nyní vypadá lidštěji s realistickými pauzy před navigací
+- Přidán krok "Diskuze" mezi "Napište něco" a "Přidat se ke skupině"
+- joinToGroup se nyní používá pouze jako poslední možnost
+- Přidáno duální logování do action_log (8h limit) a user_groups (vztah)
+- Implementována metoda insertUserGroupMembership v QueryBuilder
+- Opraveno přílišné používání joinToGroup funkce
