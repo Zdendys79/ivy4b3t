@@ -20,9 +20,8 @@ import { Log } from './libs/iv_log.class.js';
 import { IvMath } from './libs/iv_math.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { runWheelOfFortune } from './iv_wheel.js';
-import { enableDebugger, setDebugContext } from './iv_interactive_debugger.js';
+import { enableDebugger } from './iv_interactive_debugger.js';
 import { handleNewAccountBlock, detectAccountBlock } from './hostname_block_handler.js';
-import { FBBot } from './libs/iv_fb.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
 import { BrowserManager } from './libs/iv_browser_manager.class.js';
 import { UserSelector } from './libs/iv_user_selector.class.js';
@@ -79,18 +78,10 @@ export async function tick() {
 
     Log.success(`[${user.id}]`, `🚀 Vybrán uživatel ${user.name} ${user.surname}`);
 
-    // KROK 4: Otevření FB a rychlá kontrola
+    // KROK 4: Otevření FB a předání kolu štěstí
     const { instance: browser, context } = await browserManager.openForUser(user);
-    const fbReady = await quickFBCheck(user, context);
     
-    if (!fbReady) {
-      // Budoucí modul pro nefunkční FB
-      await Log.error(`[${user.id}]`, 'FB není funkční - ukončuji cyklus');
-      await browserManager.closeBrowser(browser);
-      return;
-    }
-    
-    // KROK 5: Předání kolu štěstí
+    // KROK 5: Předání kolu štěstí (obsahuje FB check)
     const wheelResult = await runWheelOfFortune(user, browser, context);
     
     // KROK 6: Kontrola UI přerušení
@@ -118,32 +109,6 @@ export async function tick() {
 }
 
 
-/**
- * Rychlá kontrola FB stavu - používá sjednocené metody z analyzéru
- */
-async function quickFBCheck(user, context) {
-  try {
-    const fbBot = new FBBot(context, user.id);
-    if (!await fbBot.init()) {
-      return false;
-    }
-    
-    setDebugContext(user, fbBot.page);
-    
-    const fbOpenSuccess = await fbBot.openFB(user, false);
-    if (!fbOpenSuccess) {
-      return false;
-    }
-
-    // Použij sjednocené metody z analyzéru
-    fbBot.initializeAnalyzer();
-    return await fbBot.pageAnalyzer.quickFBCheck(user);
-    
-  } catch (err) {
-    await Log.error(`[${user.id}]`, `Chyba při kontrole FB: ${err.message}`);
-    return false;
-  }
-}
 
 
 /**

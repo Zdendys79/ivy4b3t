@@ -80,26 +80,47 @@ export class BrowserManager {
     }
 
     try {
-      await wait.delay(2000, false);
+      // Krátká pauza před zavřením
+      Log.debug('[BROWSER]', 'Čekám 1s před zavřením prohlížeče...');
+      await wait.delay(1000, false);
 
+      // Nejdřív zavři všechny stránky
+      try {
+        const pages = await browser.pages();
+        Log.info('[BROWSER]', `Zavírám ${pages.length} stránek...`);
+        
+        for (const page of pages) {
+          if (!page.isClosed()) {
+            Log.debug('[BROWSER]', `Zavírám stránku: ${page.url()}`);
+            await page.close();
+          }
+        }
+        Log.debug('[BROWSER]', 'Všechny stránky zavřeny');
+      } catch (pageErr) {
+        Log.warn('[BROWSER]', `Chyba při zavírání stránek: ${pageErr.message}`);
+      }
+
+      // Pak zavři browser s timeoutem
+      const timeoutMs = config.browser_close_timeout;
+      Log.info('[BROWSER]', `Zavírám browser s timeout ${timeoutMs}ms...`);
+      
       const closePromise = browser.close();
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Browser close timeout')), config.browser_close_timeout)
+        setTimeout(() => reject(new Error(`Browser close timeout after ${timeoutMs}ms`)), timeoutMs)
       );
 
       await Promise.race([closePromise, timeoutPromise]);
-      Log.info('[BROWSER]', 'BrowserManager úspěšně zavřel prohlížeč');
+      Log.success('[BROWSER]', 'BrowserManager úspěšně zavřel prohlížeč');
 
     } catch (err) {
       await Log.warn('[BROWSER]', `Chyba při uzavírání prohlížeče: ${err.message}`);
 
+      // Force close jako poslední možnost
       try {
-        const pages = await browser.pages();
-        for (const page of pages) {
-          await page.close();
+        if (browser.isConnected()) {
+          await browser.close();
+          Log.info('[BROWSER]', 'Prohlížeč force-uzavřen');
         }
-        await browser.close();
-        Log.info('[BROWSER]', 'Prohlížeč force-uzavřen');
       } catch (forceErr) {
         await Log.error('[BROWSER]', `Force close také selhal: ${forceErr.message}`);
       }
@@ -118,29 +139,37 @@ export class BrowserManager {
       return;
     }
 
-    Log.info('[BROWSER]', `Zavírám ${this.activeBrowsers.size} aktivních browser instances...`);
+    const browserCount = this.activeBrowsers.size;
+    Log.info('[BROWSER]', `Zavírám ${browserCount} aktivních browser instances...`);
     
-    const shutdownPromises = Array.from(this.activeBrowsers).map(async (browser) => {
+    const shutdownPromises = Array.from(this.activeBrowsers).map(async (browser, index) => {
       try {
+        Log.debug('[BROWSER]', `Zavírám browser instance ${index + 1}/${browserCount}`);
         if (browser && browser.isConnected()) {
           const pages = await browser.pages();
+          Log.debug('[BROWSER]', `Browser ${index + 1} má ${pages.length} stránek`);
+          
           for (const page of pages) {
             if (!page.isClosed()) {
               await page.close();
             }
           }
           await browser.close();
+          Log.debug('[BROWSER]', `Browser instance ${index + 1} úspěšně zavřen`);
         }
       } catch (err) {
-        Log.warn('[BROWSER]', `Chyba při zavírání browser instance: ${err.message}`);
+        Log.warn('[BROWSER]', `Chyba při zavírání browser instance ${index + 1}: ${err.message}`);
       }
     });
 
     try {
+      const timeoutMs = config.shutdown_timeout;
+      Log.info('[BROWSER]', `Čekám na shutdown všech browsers s timeout ${timeoutMs}ms...`);
+      
       await Promise.race([
         Promise.all(shutdownPromises),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Shutdown timeout')), config.shutdown_timeout)
+          setTimeout(() => reject(new Error(`Shutdown timeout after ${timeoutMs}ms`)), timeoutMs)
         )
       ]);
       Log.success('[BROWSER]', 'Všechny browser instances úspěšně uzavřeny');

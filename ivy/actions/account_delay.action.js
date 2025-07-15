@@ -10,6 +10,7 @@
 
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
+import * as support from '../iv_support.js';
 
 export class AccountDelayAction extends BaseAction {
   constructor() {
@@ -30,18 +31,30 @@ export class AccountDelayAction extends BaseAction {
    * Ověří připravenost akce
    */
   async verifyReadiness(user, context) {
+    // Account delay funguje jen v produkční verzi, na main větvi se nepoužívá
+    const gitInfo = await support.getGitInfo();
+    const isMainBranch = gitInfo.branch === 'main';
+    
+    if (isMainBranch) {
+      return {
+        ready: false,
+        reason: 'Account delay se nepoužívá na main větvi - používá se next_worktime při výběru uživatele',
+        critical: false
+      };
+    }
+    
     return {
       ready: true,
-      reason: 'Account delay je vždy připraven'
+      reason: 'Account delay je připraven pro produkční větev'
     };
   }
 
   /**
-   * Provedení account delay
+   * Provedení account delay - pouze pro produkční větev
    */
   async execute(user, context, pickedAction) {
     try {
-      // Nastav delay na 1-4 hodiny
+      // Nastav delay na 1-4 hodiny (pouze pro produkční větev)
       const delayMinutes = 60 + Math.random() * 180; // 1-4 hodiny
       
       await this.db.updateUserWorktime(user.id, delayMinutes);

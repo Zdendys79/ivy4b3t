@@ -1,6 +1,9 @@
-fix: Perform page analysis before checkpoint detection
+fix: Přidat detailní logging pro timeout diagnostiku
 
-- Change quickFBCheck to analyze page content first, then check for problems
-- Only search for checkpoint/block causes if page analysis shows issues
-- Fixes false checkpoint detection on functional pages
-- Follows proper diagnostic flow: analyze → detect problems → find cause
+- Přidat logy do BrowserManager closeBrowser a shutdownAll metod
+- Zobrazit timeout hodnoty v ms a detailní kroky zavírání
+- Přidat logy do UI timeout handlingu v handleUICommandComplete
+- Detailní logging pro _waitForBrowserCloseOrNextCommand
+- Opravit NaN timeout warning v config parsing s validací
+- Přidat debug informace pro Promise.race timeout situace
+- Vylepšit diagnostiku browser close problémů

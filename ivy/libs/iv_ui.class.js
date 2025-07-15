@@ -144,18 +144,22 @@ export class UIBot {
         throw new Error('Failed to open Facebook page');
       }
 
-      // Zpracuj UI příkaz s timeoutem 20 minut
+      // Zpracuj UI příkaz s timeoutem
       let uiSuccess = false;
       try {
+        const timeoutMinutes = config.ui_timeout_minutes;
+        const timeoutMs = timeoutMinutes * 60 * 1000;
+        Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command} s timeout ${timeoutMinutes} minut (${timeoutMs}ms)`);
+        
         const uiPromise = this.processCommand(command, fbBot);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`UI command timeout - ${config.ui_timeout_minutes} minutes`)), config.ui_timeout_minutes * 60 * 1000)
+          setTimeout(() => reject(new Error(`UI command timeout after ${timeoutMinutes} minutes (${timeoutMs}ms)`)), timeoutMs)
         );
 
         uiSuccess = await Promise.race([uiPromise, timeoutPromise]);
       } catch (err) {
         if (err.message.includes('timeout')) {
-          await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} vypršel po 20 minutách`);
+          await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} vypršel: ${err.message}`);
           uiSuccess = false;
         } else {
           throw err;
@@ -278,11 +282,14 @@ export class UIBot {
     const timeoutMs = timeoutMinutes * 60 * 1000;
     let elapsedTime = 0;
 
-    Log.info('[UI]', `Čekám na manuální zavření prohlížeče (max ${timeoutMinutes} min)...`);
+    Log.info('[UI]', `Čekám na manuální zavření prohlížeče (max ${timeoutMinutes} minut = ${timeoutMs}ms)...`);
 
     // Spustíme interval, který bude posílat heartbeat
     const heartbeatInterval = setInterval(() => {
       try {
+        elapsedTime += checkIntervalMs;
+        const remainingMinutes = Math.ceil((timeoutMs - elapsedTime) / 60000);
+        Log.debug('[UI]', `Heartbeat - zbývá ${remainingMinutes} minut čekání...`);
         db.heartBeat(this.currentCommand.user_id || 0, 0, 'UI_WAIT');
       } catch (e) {
         Log.warn('[UI]', `Heartbeat během čekání selhal: ${e.message}`);
@@ -291,19 +298,31 @@ export class UIBot {
 
     try {
       // Čekáme na jednu ze dvou událostí: zavření prohlížeče nebo timeout
+      Log.debug('[UI]', 'Spouštím Promise.race mezi browser.disconnected a setTimeout...');
       await Promise.race([
-        new Promise(resolve => browser.once('disconnected', resolve)),
-        new Promise(resolve => setTimeout(resolve, timeoutMs))
+        new Promise(resolve => {
+          browser.once('disconnected', () => {
+            Log.debug('[UI]', 'Browser disconnected event triggered');
+            resolve();
+          });
+        }),
+        new Promise(resolve => {
+          setTimeout(() => {
+            Log.debug('[UI]', `Timeout ${timeoutMs}ms elapsed`);
+            resolve();
+          }, timeoutMs);
+        })
       ]);
 
       if (!browser.isConnected()) {
-        Log.info('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
+        Log.success('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
       } else {
-        Log.info('[UI]', 'Timeout čekání na zavření prohlížeče.');
+        Log.warn('[UI]', `Timeout čekání na zavření prohlížeče po ${timeoutMinutes} minutách.`);
       }
     } finally {
       // Vždy po skončení čekání zrušíme interval pro heartbeat
       clearInterval(heartbeatInterval);
+      Log.debug('[UI]', 'Heartbeat interval cleared');
     }
   }
 
@@ -326,9 +345,12 @@ export class UIBot {
     }
 
     try {
+      Log.debug('[UI]', 'Čekám 2s před zavřením prohlížeče...');
       await wait.delay(2000, false);
+      
+      Log.info('[UI]', 'Zavírám prohlížeč...');
       await browser.close();
-      Log.info('[UI]', 'UIBot úspěšně zavřel prohlížeč');
+      Log.success('[UI]', 'UIBot úspěšně zavřel prohlížeč');
     } catch (err) {
       await Log.warn('[UI]', `Chyba při uzavírání prohlížeče: ${err.message}`);
     }

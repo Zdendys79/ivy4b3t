@@ -423,13 +423,19 @@ export class IvyConfig {
   _parseValue(value, type) {
     switch (type) {
       case 'number':
-        return parseFloat(value);
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) {
+          Log.warn('[IVY_CONFIG]', `Neplatná číselná hodnota: ${value}, používám 0`);
+          return 0;
+        }
+        return numValue;
       case 'boolean':
         return value === 'true' || value === '1';
       case 'json':
         try {
           return JSON.parse(value);
         } catch (e) {
+          Log.warn('[IVY_CONFIG]', `Neplatný JSON: ${value}, používám původní string`);
           return value;
         }
       default:
