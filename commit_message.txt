@@ -1,7 +1,6 @@
-fix: Improve checkpoint detection and fix user rotation
+fix: Perform page analysis before checkpoint detection
 
-- Fix false positive checkpoint detection by using more specific patterns
-- Remove generic "checkpoint" text that matched non-security content
-- Add next_worktime update for production branch user selection
-- Ensure user rotation works properly by updating worktime immediately after selection
-- Remove unnecessary 5-minute wait since checkpoint detection is now more accurate
+- Change quickFBCheck to analyze page content first, then check for problems
+- Only search for checkpoint/block causes if page analysis shows issues
+- Fixes false checkpoint detection on functional pages
+- Follows proper diagnostic flow: analyze → detect problems → find cause

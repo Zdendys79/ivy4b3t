@@ -2033,17 +2033,19 @@ export class PageAnalyzer {
         return false;
       }
 
-      // Kontrola blokace účtu
-      const blockStatus = await this.detectAccountBlock();
-      if (blockStatus.isBlocked) {
-        Log.warn(`[${user.id}]`, `FB není funkční - ${blockStatus.blockType}: ${blockStatus.foundTexts.join(', ')}`);
-        return false;
-      }
-
-      // Kontrola základních chyb
-      const hasErrors = await this._quickErrorCheck();
-      if (hasErrors) {
-        Log.warn(`[${user.id}]`, 'FB není funkční - detekované chyby na stránce');
+      // Proveď základní analýzu stránky
+      const basicAnalysis = await this.analyzeFullPage({ forceRefresh: true });
+      
+      // Pokud je stránka chudá, TEPRVE POTOM hledej příčinu
+      if (basicAnalysis.severity === 'high' || basicAnalysis.severity === 'medium') {
+        // Nyní můžeme hledat příčinu - checkpoint, blokace, atd.
+        const blockStatus = await this.detectAccountBlock();
+        if (blockStatus.isBlocked) {
+          Log.warn(`[${user.id}]`, `FB není funkční - ${blockStatus.blockType}: ${blockStatus.foundTexts.join(', ')}`);
+          return false;
+        }
+        
+        Log.warn(`[${user.id}]`, `FB není funkční - stránka má problémy: ${basicAnalysis.reason}`);
         return false;
       }
 
