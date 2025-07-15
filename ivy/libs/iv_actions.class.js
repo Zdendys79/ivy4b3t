@@ -11,11 +11,14 @@ import * as wait from '../iv_wait.js';
 import * as support from '../iv_support.js';
 import * as fbSupport from '../iv_fb_support.js';
 import { groupExploreAction } from '../iv_group_explore_action.js';
-import { setInvasiveLock, initInvasiveLock, clearInvasiveLock } from '../iv_wheel.js';
+// Invasive lock již neřeší IvActions - přesunuto do Wheel
 import { db } from '../iv_sql.js'
 import { SQL } from '../sql/queries/index.js';
 import { getAllConfig } from '../iv_config.js';
 import { Log } from './iv_log.class.js';
+import { getIvyConfig } from './iv_config.class.js';
+
+const config = getIvyConfig();
 import { getAvailableGroupsForUser, detectMembershipRequest, blockUserGroup } from '../user_group_escalation.js';
 
 export class IvActions {
@@ -409,18 +412,7 @@ export class IvActions {
       });
 
       Log.debug('[DIAGNOSTIC]', `Picked action object in runAction: ${JSON.stringify(pickedAction)}`);
-      if (result && pickedAction.invasive) {
-        try {
-          const cooldownConfig = this.config.cfg_posting_cooldown || { min_seconds: 120, max_seconds: 240 };
-          const cooldownMs = (cooldownConfig.min_seconds + 
-                            Math.random() * (cooldownConfig.max_seconds - cooldownConfig.min_seconds)) * 1000;
-          
-          setInvasiveLock(cooldownMs);
-          Log.info(`[${user.id}]`, `🔒 Invasive lock nastaven na ${Math.round(cooldownMs / 1000)}s po úspěšné akci ${actionCode}`);
-        } catch (err) {
-          await Log.warn(`[${user.id}]`, `Nepodařilo se nastavit invasive lock: ${err.message}`);
-        }
-      }
+      // Invasive lock je nyní odpovědností Wheel
 
       return result;
 
@@ -444,7 +436,7 @@ export class IvActions {
 
       await fbBot.page.goto('https://www.facebook.com/', {
         waitUntil: 'domcontentloaded',
-        timeout: 30000
+        timeout: config.action_timeout_minutes * 60 * 1000
       });
 
       await wait.delay(2000 + Math.random() * 3000);
@@ -677,7 +669,7 @@ export class IvActions {
       
       Log.info(`[${user.id}]`, `🎯 Navštěvuji skupinu (zdroj: ${source}): ${groupUrl}`);
       
-      await fbBot.page.goto(groupUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await fbBot.page.goto(groupUrl, { waitUntil: 'domcontentloaded', timeout: config.fb_page_load_timeout });
       await wait.delay(3000, 5000);
       
       // Trochu scrolluj, aby to vypadalo jako reálná aktivita
@@ -708,7 +700,7 @@ export class IvActions {
         
         Log.info(`[${user.id}]`, `👤 Navštěvuji profil...`);
         
-        await fbBot.page.goto(randomProfile, { waitUntil: 'domcontentloaded', timeout: 10000 });
+        await fbBot.page.goto(randomProfile, { waitUntil: 'domcontentloaded', timeout: config.fb_page_load_timeout });
         await wait.delay(3000, 6000);
         
         // Krátké scrollování
@@ -733,7 +725,7 @@ export class IvActions {
       Log.info(`[${user.id}]`, `📰 Scrolluji ve feedu...`);
       
       // Jdi na homepage
-      await fbBot.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+      await fbBot.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded', timeout: config.fb_page_load_timeout });
       await wait.delay(2000);
       
       await this.scrollPageRandomly(fbBot, timeLimit - 2000);
@@ -750,7 +742,7 @@ export class IvActions {
     try {
       Log.info(`[${user.id}]`, `🔔 Kontroluji notifikace...`);
       
-      await fbBot.page.goto('https://www.facebook.com/notifications', { waitUntil: 'domcontentloaded', timeout: 10000 });
+      await fbBot.page.goto('https://www.facebook.com/notifications', { waitUntil: 'domcontentloaded', timeout: config.fb_page_load_timeout });
       await wait.delay(3000, 6000);
       
       // Krátké scrollování v notifikacích
@@ -822,21 +814,25 @@ export class IvActions {
   }
 }
 
+// DEPRECATED - používá se nová IvActions v iv_actions_new.class.js
 // Export pro kompatibilitu s původním kódem
 export async function getActionRequirements(actionCode) {
+  const { IvActions } = await import('./iv_actions_new.class.js');
   const actions = new IvActions();
   await actions.init();
   return await actions.getActionRequirements(actionCode);
 }
 
 export async function runAction(user, actionCode, context, pickedAction) {
+  const { IvActions } = await import('./iv_actions_new.class.js');
   const actions = new IvActions();
   await actions.init();
   return await actions.runAction(user, actionCode, context, pickedAction);
 }
 
 export async function performNonInvasiveActivity(user, fbBot, totalPauseTime) {
-  const actions = new IvActions();
-  await actions.init();
-  return await actions.performNonInvasiveActivity(user, fbBot, totalPauseTime);
+  // Tato funkce byla odstraněna z nové architektury
+  // Bude implementována v budoucnu jako samostatná třída
+  console.warn('performNonInvasiveActivity je deprecated a není dostupná v nové architektuře');
+  return false;
 }

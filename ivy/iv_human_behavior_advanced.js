@@ -9,6 +9,9 @@
 import * as wait from './iv_wait.js';
 import { db } from './iv_sql.js';
 import { Log } from './libs/iv_log.class.js';
+import { getIvyConfig } from './libs/iv_config.class.js';
+
+const config = getIvyConfig();
 
 /**
  * Hlavní třída pro pokročilé lidské chování
@@ -323,7 +326,7 @@ export class AdvancedHumanBehavior {
       });
       
       // Přidání nových vlastností
-      base.hesitation_chance = (effects.hesitation_chance || 1) * 0.3;
+      base.hesitation_chance = (effects.hesitation_chance || 1) * config.hesitation_chance;
     }
     
     return base;
@@ -335,7 +338,7 @@ export class AdvancedHumanBehavior {
   calculateCharDelay(profile, context) {
     // Fallback pro chybějící hodnoty
     const typingSpeed = profile.avg_typing_speed || 150;
-    const variance = profile.typing_variance || 0.3;
+    const variance = profile.typing_variance || config.typing_mistakes_chance * 4.3; // přepočet 0.07 * 4.3 ≈ 0.3
 
     const baseWPM = typingSpeed * (0.8 + Math.random() * 0.4);
     const charsPerSecond = (baseWPM * 5) / 60;

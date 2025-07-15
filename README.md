@@ -12,6 +12,36 @@
 * Distribuce příspěvku do skupin podle lokality a priority
 * Snadná rozšiřitelnost a přehledná struktura kódu
 
+## 🔄 Jak systém funguje
+
+### Hlavní cyklus (ivy.js)
+1. **Spuštění a inicializace**: Systém načte verzi, inicializuje logger a zapíše startup event
+2. **Nekonečná smyčka**: Kontroluje heartbeat, verzi v databázi a volá pracovní tick
+3. **Graceful shutdown**: Při ukončení zavře všechny browsery a databázové spojení
+
+### Pracovní cyklus (iv_worker.js)
+1. **Kontrola UI příkazů**: Zpracování manuálních příkazů z webového rozhraní
+2. **Ochrana hostname**: Kontrola, zda není hostname zablokován kvůli detekci banů
+3. **Výběr uživatele**: 
+   - Na hlavní větvi (main): Rotační výběr nejstaršího připraveného uživatele
+   - Na produkční větvi: Výběr uživatele s dostupnými akcemi
+4. **Kolo štěstí**: Losování akcí podle vah a limitů
+5. **Inicializace služeb**: Otevření browseru a požadovaných záložek (FB/UTIO)
+6. **Provedení akcí**: Postupné provádění vylosovaných akcí
+7. **Ukončující akce**: Po vyprázdnění kola account_delay nebo account_sleep
+8. **Čekání**: 1-5 minut s pravidelným heartbeat
+
+### Typy akcí
+- **FB akce**: timeline_post, group_post, comment, react, messenger_check, quote_post, group_explore
+- **UTIO akce**: post_utio_g (běžné skupiny), post_utio_gv (vlastní skupiny), post_utio_p (prodejní skupiny)
+- **Systémové akce**: account_delay, account_sleep
+
+### Bezpečnostní mechanismy
+- **Invasive lock**: Ochrana před příliš častými invazivními akcemi
+- **Hostname protection**: Blokování hostname při detekci banu účtu
+- **Account blocking**: Automatické označení problémových účtů
+- **Consecutive failures**: Automatický account_delay po 5 neúspěšných akcích
+
 ---
 
 ## 📁 Struktura projektu
@@ -29,8 +59,16 @@
 │   ├── iv_support.js         ← Pomocné funkce – vkládání zpráv, zvýšení limitů, screenshoty
 │   ├── iv_version.js         ← Načítání verze z `package.json`
 │   ├── iv_rhythm.js          ← Plánování akcí podle `action_plan`
-│   ├── libs/iv_actions.class.js ← Implementace akcí na základě `action_code` (třída)
-│   ├── iv_log.class.js       ← Centralizované logování s podporou úrovní a ikon
+│   ├── libs/                ← Objektově orientované třídy
+│   │   ├── iv_actions.class.js    ← Implementace všech typů akcí
+│   │   ├── iv_fb.class.js         ← Třída pro práci s Facebook
+│   │   ├── iv_utio.class.js       ← Třída pro práci s UTIO portálem
+│   │   ├── iv_ui.class.js         ← Třída pro zpracování UI příkazů
+│   │   ├── iv_log.class.js        ← Centralizované logování
+│   │   ├── iv_page_analyzer.class.js ← Analýza stavu FB stránky
+│   │   ├── iv_querybuilder.class.js  ← Builder pro složité SQL dotazy
+│   │   ├── iv_console_logger.class.js ← Logger pro konzoli s session ID
+│   │   └── iv_char.class.js       ← Pomocné funkce pro práci s textem
 │   ├── config.json           ← Konfigurace větve, log úrovní, ikon a chování
 │   ├── git-common.sh         ← Společný modul pro Git operace napříč skripty
 │   ├── start.sh              ← Opakovaný spouštěcí skript (git pull + rsync + `node ivy.js`)
@@ -97,17 +135,30 @@
 | Soubor                  | Účel                                                                      |
 | ----------------------- | ------------------------------------------------------------------------- |
 | `ivy.js`                | Spouštěcí smyčka klienta – volá `tick()`, hlídá verzi, zapisuje heartBeat |
-| `iv_worker.js`          | Hlavní pracovní logika robota – login, akce, volání FB a UTIO             |
-| `iv_ui.js`              | Zpracování UI příkazů z tabulky `ui_commands`                             |
-| `iv_fb.js`              | Interakce s FBem: login, vkládání, skupiny, kontrola stavů          |
-| `iv_utio.js`            | Práce s portálem UTIO: přihlášení, výběr oblasti, získání zprávy          |
-| `iv_wait.js`            | Generování zpoždění pro simulaci lidského chování                         |
+| `iv_worker.js`          | Hlavní pracovní logika robota – výběr uživatele, kolo štěstí, provedení akcí |
+| `iv_wheel.js`           | Implementace kola štěstí pro losování akcí, správa invasive lock          |
 | `iv_sql.js`             | Abstrakce databázové vrstvy pomocí dotazů ze `sql/queries/index.js`       |
+| `iv_wait.js`            | Generování zpoždění pro simulaci lidského chování                         |
 | `iv_support.js`         | Pomocné funkce: postování zpráv, screenshoty, zvyšování limitů            |
 | `iv_version.js`         | Načtení verze z `package.json`, použití pro validaci vůči DB              |
-| `iv_rhythm.js`          | Modul pro plánování akcí z `action_definitions` a `user_action_plan`      |
-| `iv_actions.js`         | Realizace konkrétních typů akcí uživatelů (např. delay, sleep, like)      |
-| `iv_log.class.js`       | Centralizované logování s podporou úrovní (debug, info, warn, error)      |
+| `iv_config.js`          | Správa konfigurace - načítání a validace config.json                      |
+| `hostname_block_handler.js` | Ochrana před lavinou banů - blokování hostname                        |
+| `iv_interactive_debugger.js` | Interaktivní debugger pro analýzu chyb                             |
+
+### Složka ivy/libs - objektové třídy
+
+| Soubor                  | Účel                                                                      |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `iv_actions.class.js`   | Hlavní třída pro správu a provádění všech typů akcí                     |
+| `iv_fb.class.js`        | FBBot - třída pro interakci s Facebook (login, postování, analýza)      |
+| `iv_utio.class.js`      | UtioBot - třída pro práci s UTIO portálem (login, získání zpráv)        |
+| `iv_ui.class.js`        | UIBot - zpracování manuálních příkazů z webového rozhraní               |
+| `iv_log.class.js`       | Log - centralizované logování s podporou úrovní a barev                 |
+| `iv_page_analyzer.class.js` | PageAnalyzer - pokročilá analýza stavu FB stránky                  |
+| `iv_querybuilder.class.js` | QueryBuilder - dynamické vytváření složitých SQL dotazů              |
+| `iv_console_logger.class.js` | ConsoleLogger - logger s podporou session ID a flush mechanismu     |
+| `iv_char.class.js`      | Char - pomocné funkce pro práci s textem a řetězci                      |
+| `iv_math.class.js`      | IvMath - matematické funkce, náhodná čísla, intervaly                   |
 
 ### Složka ivy - konfigurační soubory
 

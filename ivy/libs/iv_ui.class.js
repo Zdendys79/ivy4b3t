@@ -13,6 +13,9 @@ import puppeteer from 'puppeteer';
 import { db } from '../iv_sql.js'
 import { FBBot } from './iv_fb.class.js';
 import { Log } from './iv_log.class.js';
+import { getIvyConfig } from './iv_config.class.js';
+
+const config = getIvyConfig();
 
 import * as wait from '../iv_wait.js';
 
@@ -105,6 +108,84 @@ export class UIBot {
     }
 
     return result;
+  }
+
+  /**
+   * NOVÁ HLAVNÍ FUNKCE - Kompletní zpracování UI příkazu s timeoutem a zavřením prohlížeče
+   * @param {Object} command - UI příkaz z databáze
+   * @param {Object} user - Uživatelská data
+   * @param {Object} browser - Puppeteer browser instance
+   * @param {Object} context - Browser context
+   * @returns {Promise<void>} Vždy zavře prohlížeč
+   */
+  async handleUICommandComplete(command, user, browser, context) {
+    const { FBBot } = await import('./iv_fb.class.js');
+    const { setDebugContext } = await import('../iv_interactive_debugger.js');
+    
+    let fbBot = null;
+
+    try {
+      Log.info(`[${user.id}]`, `🎮 UIBot převzal kontrolu pro příkaz: ${command.command}`);
+
+      // Inicializuj FB bota s existujícím kontextem
+      fbBot = new FBBot(context, user.id);
+      if (!await fbBot.init()) {
+        throw new Error('FB initialization failed for UI command');
+      }
+      
+      // Set debug context
+      if (fbBot.page) {
+        setDebugContext(user, fbBot.page);
+      }
+
+      // Otevři stránku FB bez analýzy
+      const fbOpenSuccess = await fbBot.openFB(user, false);
+      if (!fbOpenSuccess) {
+        throw new Error('Failed to open Facebook page');
+      }
+
+      // Zpracuj UI příkaz s timeoutem 20 minut
+      let uiSuccess = false;
+      try {
+        const uiPromise = this.processCommand(command, fbBot);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`UI command timeout - ${config.ui_timeout_minutes} minutes`)), config.ui_timeout_minutes * 60 * 1000)
+        );
+
+        uiSuccess = await Promise.race([uiPromise, timeoutPromise]);
+      } catch (err) {
+        if (err.message.includes('timeout')) {
+          await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} vypršel po 20 minutách`);
+          uiSuccess = false;
+        } else {
+          throw err;
+        }
+      }
+
+      if (uiSuccess) {
+        Log.success(`[${user.id}]`, `UI příkaz ${command.command} dokončen úspěšně`);
+      } else {
+        await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} selhal`);
+      }
+
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při zpracování UI příkazu: ${err.message}`);
+    } finally {
+      // UIBot vždy zavře prohlížeč
+      await this._closeBrowserSafely(browser);
+      
+      // Cleanup FB bota
+      if (fbBot) {
+        try {
+          await fbBot.close();
+        } catch (e) {
+          // Ignoruj cleanup chyby
+        }
+      }
+      
+      // Cleanup vlastních zdrojů
+      await this.close();
+    }
   }
 
   /**
@@ -223,6 +304,33 @@ export class UIBot {
     } finally {
       // Vždy po skončení čekání zrušíme interval pro heartbeat
       clearInterval(heartbeatInterval);
+    }
+  }
+
+  /**
+   * Bezpečně zavře prohlížeč
+   * @param {Object} browser - Puppeteer browser instance
+   * @returns {Promise<void>}
+   */
+  async _closeBrowserSafely(browser) {
+    const DEBUG_KEEP_BROWSER_OPEN = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
+    
+    if (DEBUG_KEEP_BROWSER_OPEN) {
+      Log.info('[UI]', 'Debug režim: prohlížeč NEBUDE zavřen');
+      return;
+    }
+
+    if (!browser || !browser.isConnected()) {
+      Log.info('[UI]', 'Prohlížeč již byl uzavřen nebo neexistuje');
+      return;
+    }
+
+    try {
+      await wait.delay(2000, false);
+      await browser.close();
+      Log.info('[UI]', 'UIBot úspěšně zavřel prohlížeč');
+    } catch (err) {
+      await Log.warn('[UI]', `Chyba při uzavírání prohlížeče: ${err.message}`);
     }
   }
 }

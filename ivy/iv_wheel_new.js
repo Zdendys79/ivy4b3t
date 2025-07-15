@@ -1,6 +1,6 @@
 /**
- * Název souboru: iv_wheel.js - REFAKTOROVANÁ VERZE
- * Umístění: ~/ivy/iv_wheel.js
+ * Název souboru: iv_wheel_new.js - REFAKTOROVANÁ VERZE
+ * Umístění: ~/ivy/iv_wheel_new.js
  *
  * Popis: Zjednodušené kolo štěstí - pouze losování a orchestrace
  * - Losuje akce podle vah a limitů
@@ -13,7 +13,7 @@ import { db } from './iv_sql.js';
 import { Log } from './libs/iv_log.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
 import { InvasiveLock } from './libs/iv_invasive_lock.class.js';
-import { IvActions } from './libs/iv_actions_new.class.js';
+import { IvActions } from './libs/iv_actions.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { IvMath } from './libs/iv_math.class.js';
 import * as wait from './iv_wait.js';
@@ -216,6 +216,7 @@ function pickAction(actions) {
 async function handleNoAction(user, invasiveLock) {
   if (invasiveLock.isActive()) {
     Log.info(`[${user.id}]`, `Čekání na invasive lock (${invasiveLock.getRemainingSeconds()}s)`);
+    // Zde by mohla být neškodná aktivita, ale neděláme fallbacky
   } else {
     Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce');
   }
@@ -238,25 +239,3 @@ function calculateInvasiveCooldown() {
 
 // Export pro kompatibilitu
 export { InvasiveLock };
-
-// Import kompatibilních funkcí
-import { 
-  initInvasiveLock,
-  setInvasiveLock,
-  hasInvasiveLock,
-  clearInvasiveLock,
-  getActionStats,
-  hasAvailableActions,
-  getActionRecommendations
-} from './iv_wheel_compatibility.js';
-
-// Re-export pro zpětnou kompatibilitu
-export {
-  initInvasiveLock,
-  setInvasiveLock, 
-  hasInvasiveLock,
-  clearInvasiveLock,
-  getActionStats,
-  hasAvailableActions,
-  getActionRecommendations
-};

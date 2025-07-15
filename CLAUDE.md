@@ -56,3 +56,16 @@ mysql -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_NAME -e "SELECT 'Connection success
 
 # Execute SQL file
 mysql -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_NAME < file_with_queries.sql
+
+---
+
+## KRITICKÉ PRAVIDLO - BEZ VÝJIMEK
+
+**ZÁKAZ používání a vytváření fallback metod!** Všechny hlavní metody buď fungují, nebo selžou a s tím musí systém počítat!
+
+- NIKDY nevytvářej záložní řešení typu "pokud metoda A selže, zkus metodu B"
+- NIKDY nepřidávej fallback mechanismy do kódu
+- Když metoda selže, nech ji selhat a vrať chybu
+- Systém je navržen tak, aby počítal se selháními - nepotřebuje fallbacky
+- Příklad špatně: `try { methodA() } catch { methodB() }` ❌
+- Příklad správně: `try { methodA() } catch { throw error }` ✅

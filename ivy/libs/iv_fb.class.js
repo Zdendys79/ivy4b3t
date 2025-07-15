@@ -6,6 +6,9 @@ import { getHumanBehavior } from '../iv_human_behavior_advanced.js';
 import { db } from '../iv_sql.js';
 import * as fbSupport from '../iv_fb_support.js';
 import { getAllConfig } from '../iv_config.js';
+import { getIvyConfig } from './iv_config.class.js';
+
+const config = getIvyConfig();
 
 import * as wait from '../iv_wait.js';
 
@@ -47,7 +50,7 @@ export class FBBot {
       }
 
       // Nastavení timeoutu pro navigaci
-      this.page.setDefaultNavigationTimeout(15000);
+      this.page.setDefaultNavigationTimeout(config.fb_page_load_timeout);
 
       // Nastavení user-agent a viewport
       await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
@@ -152,10 +155,7 @@ export class FBBot {
 
   async _checkTexts(text1, text2) {
     if (!this.pageAnalyzer) {
-      await Log.warn('[FB]', 'PageAnalyzer není dostupný, používám fallback');
-      const t1 = await fbSupport.findByText(this.page, text1);
-      const t2 = await fbSupport.findByText(this.page, text2);
-      return t1.length && t2.length;
+      throw new Error('PageAnalyzer není inicializován');
     }
 
     const exists1 = await this.pageAnalyzer.elementExists(text1);
@@ -382,12 +382,8 @@ export class FBBot {
   }
 
   async isProfileLoaded(user) {
-    try {
-      await this.page.waitForSelector('[aria-label="Váš profil"]', { timeout: 5000 });
-      return true;
-    } catch {
-      return false;
-    }
+    // Použij sjednocené metody z analyzéru
+    return await this.pageAnalyzer.isProfileLoaded(user);
   }
 
   async login(user) {
@@ -434,33 +430,24 @@ export class FBBot {
       const acceptText = config.cfg_cookies_allow || 'Odmítnout volitelné soubory cookie';
       Log.info(`[FB] Hledám tlačítko pro cookies: "${acceptText}"`);
       
-      if (this.pageAnalyzer) {
-        const success = await this.pageAnalyzer.clickElementWithText(acceptText, {
-          matchType: 'contains',
-          timeout: 5000,
-          waitAfterClick: true,
-          naturalDelay: true
-        });
-
-        if (success) {
-          Log.info(`[FB] Cookie banner přijat pomocí PageAnalyzer: "${acceptText}".`);
-          return true;
-        }
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
       }
 
-      // Fallback na původní metodu
-      Log.warn('[FB] Používám fallback pro cookies');
-      const cookieButtons = await fbSupport.findByText(this.page, acceptText, { match: 'contains' });
+      const success = await this.pageAnalyzer.clickElementWithText(acceptText, {
+        matchType: 'contains',
+        timeout: 5000,
+        waitAfterClick: true,
+        naturalDelay: true
+      });
 
-      if (cookieButtons && cookieButtons.length > 0) {
-        await cookieButtons[0].click();
-        await wait.delay(3000);
-        Log.info(`[FB] Cookie banner přijat pomocí fallback: "${acceptText}".`);
+      if (success) {
+        Log.info(`[FB] Cookie banner přijat pomocí PageAnalyzer: "${acceptText}".`);
         return true;
+      } else {
+        Log.warn(`[FB] Cookie tlačítko "${acceptText}" nenalezeno.`);
+        return false;
       }
-      
-      Log.warn(`[FB] Cookie tlačítko "${acceptText}" nenalezeno.`);
-      return false;
 
     } catch (err) {
       Log.error(`[FB] Cookie banner error: ${err.message}`);
@@ -841,6 +828,10 @@ export class FBBot {
 
   async newThing() {
     try {
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
+      }
+
       const currentUrl = this.page.url();
       
       // Na homepage hledáme "Co se vám honí hlavou", jinde "Napište něco"
@@ -851,14 +842,17 @@ export class FBBot {
       const searchText = isHomepage ? "Co se vám honí hlavou" : "Napište něco";
       Log.info('[FB]', `Hledám element "${searchText}" (${isHomepage ? 'homepage' : 'skupina'})`);
       
-      const elements = await fbSupport.findByText(this.page, searchText, { 
-        match: 'startsWith', 
-        timeout: 3000
+      // Použij PageAnalyzer místo fbSupport.findByText
+      const elementExists = await this.pageAnalyzer.elementExists(searchText, {
+        matchType: 'startsWith',
+        refreshCache: true
       });
 
-      if (elements.length > 0) {
-        this.newThingElement = elements[0];
-        Log.success('[FB]', `Element "${searchText}" nalezen`);
+      if (elementExists) {
+        // Uložíme si informaci, že element existuje - clickNewThing() použije PageAnalyzer
+        this.newThingText = searchText;
+        this.newThingElement = true; // Kompatibilita s původním kódem
+        Log.success('[FB]', `Element "${searchText}" nalezen v PageAnalyzer cache`);
         return true;
       }
 
@@ -871,6 +865,10 @@ export class FBBot {
 
   async findDiscussionElement() {
     try {
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
+      }
+
       const config = await getAllConfig();
       const discussionTexts = [
         config.cfg_discussion_text || 'Diskuze',
@@ -883,14 +881,16 @@ export class FBBot {
 
       for (const text of discussionTexts) {
         try {
-          const elements = await fbSupport.findByText(this.page, text, { 
-            match: 'exact', 
-            timeout: 1500
+          // Použij PageAnalyzer místo fbSupport.findByText
+          const elementExists = await this.pageAnalyzer.elementExists(text, {
+            matchType: 'exact',
+            refreshCache: false
           });
 
-          if (elements.length > 0) {
-            this.discussionElement = elements[0];
-            Log.success('[FB]', `Element pro diskuzi "${text}" nalezen`);
+          if (elementExists) {
+            this.discussionText = text;
+            this.discussionElement = true; // Kompatibilita s původním kódem
+            Log.success('[FB]', `Element pro diskuzi "${text}" nalezen v PageAnalyzer cache`);
             return true;
           }
         } catch (e) {
@@ -908,19 +908,24 @@ export class FBBot {
 
   async findJoinGroupElement() {
     try {
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
+      }
+
       const config = await getAllConfig();
       const joinText = config.cfg_group_join_text || 'Přidat se ke skupině';
       
       Log.info('[FB]', `Hledám element pro přidání do skupiny: "${joinText}"`);
 
-      const elements = await fbSupport.findByText(this.page, joinText, { 
-        match: 'exact', 
-        timeout: 3000
+      const elementExists = await this.pageAnalyzer.elementExists(joinText, {
+        matchType: 'exact',
+        refreshCache: true
       });
 
-      if (elements.length > 0) {
-        this.joinGroupElement = elements[0];
-        Log.success('[FB]', `Element pro přidání do skupiny "${joinText}" nalezen`);
+      if (elementExists) {
+        this.joinGroupText = joinText;
+        this.joinGroupElement = true; // Kompatibilita s původním kódem
+        Log.success('[FB]', `Element pro přidání do skupiny "${joinText}" nalezen v PageAnalyzer cache`);
         return true;
       }
 
@@ -995,22 +1000,31 @@ export class FBBot {
 
   async clickNewThing() {
     try {
-      if (!this.newThingElement) {
+      if (!this.newThingElement || !this.newThingText) {
         Log.error('[FB]', 'newThingElement není definován. Možná selhal newThing()');
         return false;
       }
       
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
+      }
+      
       Log.info('[FB]', 'Klikám na element pro psaní příspěvku...');
       await this.bringToFront();
-      await wait.delay(300 + Math.random() * 800); // Náhodná pauza před kliknutím 0.3-1.1s
-      await this.newThingElement.click();
       
-      const delay = 1500 + Math.random() * 2000; // Náhodná pauza 1.5-3.5s
-      Log.info('[FB]', `Čekám ${Math.round(delay)}ms po kliknutí na pole pro psaní příspěvku...`);
-      await wait.delay(delay);
+      // Použij PageAnalyzer pro kliknutí
+      const clickResult = await this.pageAnalyzer.clickElementWithText(this.newThingText, {
+        matchType: 'startsWith',
+        naturalDelay: true,
+        waitAfterClick: true
+      });
       
-      Log.success('[FB]', 'Kliknuto na pole pro psaní příspěvku.');
-      return true;
+      if (clickResult) {
+        Log.success('[FB]', 'Kliknuto na pole pro psaní příspěvku pomocí PageAnalyzer.');
+        return true;
+      } else {
+        throw new Error('PageAnalyzer kliknutí selhalo');
+      }
     } catch (err) {
       await Log.error('[FB]', `Klik na newThingElement selhal: ${err}`);
       return false;
@@ -1158,6 +1172,10 @@ export class FBBot {
         return false;
       }
 
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
+      }
+
       await this.bringToFront();
 
       Log.info('[FB] Kontrolujem napsaný text...');
@@ -1168,50 +1186,26 @@ export class FBBot {
 
       Log.info('[FB] Klikám na tlačítko "Zveřejnit"');
 
-      let success = false;
-      
-      // Zkus PageAnalyzer
-      if (this.pageAnalyzer) {
-        success = await this.pageAnalyzer.clickElementWithText("Zveřejnit", {
+      const config = await getAllConfig();
+      const submitTexts = config.cfg_submit_texts || ["Zveřejnit", "Přidat"];
+
+      // Zkus jednotlivé texty přes PageAnalyzer
+      for (const submitText of submitTexts) {
+        const success = await this.pageAnalyzer.clickElementWithText(submitText, {
           matchType: 'exact',
           timeout: 3000,
           waitAfterClick: true,
           naturalDelay: true
         });
-      }
 
-      // Fallback na původní metodu
-      if (!success) {
-        Log.warn('[FB] Používám fallback pro Zveřejnit');
-        const buttons = await fbSupport.findByText(this.page, "Zveřejnit", { match: 'exact', timeout: 3000 });
-        
-        if (buttons.length > 0) {
-          await wait.delay(500 + Math.random() * 1500);
-          await buttons[0].click();
-          success = true;
-        }
-      }
-      
-      if (success) {
-        Log.success('[FB] Příspěvek odeslán');
-        return true;
-      }
-
-      Log.warn('[FB] Tlačítko "Zveřejnit" nenalezeno');
-
-      await Log.warn('[FB] Nepodařilo se najít odeslací tlačítko pomocí findByText, zkouším JavaScript metodu...');
-      
-      // Druhý pokus: JavaScript metoda
-      for (const targetText of submitTexts) {
-        const jsResult = await fbSupport.clickByTextJS(this.page, targetText, { match: 'exact' });
-        if (jsResult) {
-          Log.success(`[FB] Příspěvek úspěšně odeslán pomocí JavaScript metody!`);
+        if (success) {
+          Log.success(`[FB] Příspěvek odeslán pomocí PageAnalyzer: "${submitText}"`);
           return true;
         }
       }
-      
-      await Log.warn('[FB] JavaScript metoda také selhala, zkouším fallback...');
-      return await this.fallbackClick();
+
+      Log.warn('[FB] Žádné odeslací tlačítko nenalezeno');
+      return false;
 
     } catch (err) {
       await Log.error(`[FB] Chyba při odesílání:`, err);
@@ -1219,69 +1213,7 @@ export class FBBot {
     }
   }
 
-  async fallbackClick() {
-    Log.info('[FB] Spouštím fallback klikání...');
-
-    try {
-      const config = await getAllConfig();
-      const submitTexts = config.cfg_submit_texts || ["Zveřejnit", "Přidat"];
-      
-      // Najdi všechny span elementy pomocí JavaScript evaluation
-      const spans = await this.page.evaluate(() => {
-        return Array.from(document.querySelectorAll('span')).map((span, index) => ({
-          index,
-          text: span.textContent?.trim() || '',
-          isVisible: span.offsetParent !== null
-        }));
-      });
-
-      // Projdi všechny span elementy
-      for (const spanInfo of spans) {
-        try {
-          // Kontroluj podle prioritního seznamu
-          if (spanInfo.isVisible && submitTexts.includes(spanInfo.text)) {
-            Log.info(`[FB] Fallback našel: "${spanInfo.text}"`);
-
-            // Zkusíme kliknout pomocí JavaScript
-            const clickResult = await this.page.evaluate((spanIndex) => {
-              const allSpans = document.querySelectorAll('span');
-              const targetSpan = allSpans[spanIndex];
-              if (targetSpan && targetSpan.offsetParent !== null) {
-                targetSpan.click();
-                return true;
-              }
-              return false;
-            }, spanInfo.index);
-
-            if (clickResult) {
-              await wait.delay(3000);
-
-              // Kontrola - pokud span zmizelo, pravděpodobně se to povedlo
-              const stillExists = await this.page.evaluate((spanIndex) => {
-                const allSpans = document.querySelectorAll('span');
-                const targetSpan = allSpans[spanIndex];
-                return targetSpan && document.contains(targetSpan);
-              }, spanInfo.index).catch(() => false);
-
-              if (!stillExists) {
-                Log.success('[FB] Fallback kliknutí bylo úspěšné!');
-                return true;
-              }
-            }
-          }
-        } catch (spanErr) {
-          // Pokračujeme na další span
-        }
-      }
-
-      await Log.warn('[FB] Fallback klikání nenašlo vhodné tlačítko.');
-      return false;
-
-    } catch (err) {
-      await Log.error('[FB] Fallback klikání selhalo:', err);
-      return false;
-    }
-  }
+  // fallbackClick() odstraněna - používáme pouze PageAnalyzer
 
   async findActiveSendButtons() {
     const candidates = [];
@@ -1753,17 +1685,14 @@ export class FBBot {
   }
 
   async stillSendButton() {
-    let exists = false;
-    
-    if (this.pageAnalyzer) {
-      exists = await this.pageAnalyzer.elementExists("Zveřejnit", { 
-        matchType: 'exact',
-        refreshCache: true 
-      });
-    } else {
-      const found = await fbSupport.findByText(this.page, "Zveřejnit", { timeout: wait.timeout() });
-      exists = found.length > 0;
+    if (!this.pageAnalyzer) {
+      throw new Error('PageAnalyzer není inicializován');
     }
+
+    const exists = await this.pageAnalyzer.elementExists("Zveřejnit", { 
+      matchType: 'exact',
+      refreshCache: true 
+    });
     
     if (exists) {
       Log.info(`[FB] Tlačítko "Zveřejnit" stále nalezeno!`);
@@ -1785,8 +1714,15 @@ export class FBBot {
   }
 
   async loginFailedEn() {
-    const found = await fbSupport.findByText(this.page, "Forgot Account?", { timeout: 1500 });
-    if (found.length) {
+    if (!this.pageAnalyzer) {
+      throw new Error('PageAnalyzer není inicializován');
+    }
+
+    const found = await this.pageAnalyzer.elementExists("Forgot Account?", {
+      matchType: 'exact',
+      refreshCache: true
+    });
+    if (found) {
       Log.info(`[FB] Text "Forgot Account?" nalezen.`);
       return true;
     }
@@ -1794,8 +1730,15 @@ export class FBBot {
   }
 
   async loginFailedCs() {
-    const found = await fbSupport.findByText(this.page, "Nepamatujete si svůj účet?", { timeout: 1500 });
-    if (found.length) {
+    if (!this.pageAnalyzer) {
+      throw new Error('PageAnalyzer není inicializován');
+    }
+
+    const found = await this.pageAnalyzer.elementExists("Nepamatujete si svůj účet?", {
+      matchType: 'exact',
+      refreshCache: true
+    });
+    if (found) {
       Log.info(`[FB] Text "Nepamatujete si svůj účet?" nalezen.`);
       return true;
     }
@@ -1881,31 +1824,36 @@ export class FBBot {
 
   async joinToGroup() {
     try {
-      // Použij již nalezený element pokud existuje
-      if (this.joinGroupElement) {
-        try {
-          // Ověř, že element je stále platný
-          const elementExists = await this.page.evaluate((el) => {
-            return el && el.isConnected && el.offsetParent !== null;
-          }, this.joinGroupElement);
-          
-          if (elementExists) {
-            await this.joinGroupElement.click();
-            Log.success('[FB]', '✅ Úspěšně kliknuto na element pro přidání do skupiny (z cache)');
-            return true;
-          } else {
-            Log.warn('[FB]', 'Element pro přidání do skupiny již není platný, hledám znovu...');
-          }
-        } catch (err) {
-          Log.warn('[FB]', `Chyba při ověřování elementu pro přidání do skupiny: ${err.message}, hledám znovu...`);
+      if (!this.pageAnalyzer) {
+        throw new Error('PageAnalyzer není inicializován');
+      }
+
+      // Pokud už máme text z findJoinGroupElement, použij ho
+      if (this.joinGroupText) {
+        const success = await this.pageAnalyzer.clickElementWithText(this.joinGroupText, {
+          matchType: 'exact',
+          naturalDelay: true,
+          waitAfterClick: true
+        });
+
+        if (success) {
+          Log.success('[FB]', '✅ Úspěšně kliknuto na element pro přidání do skupiny pomocí PageAnalyzer');
+          return true;
         }
       }
 
-      // Fallback - hledej element znovu
+      // Pokud nemáme text, zkus najít element
       if (await this.findJoinGroupElement()) {
-        await this.joinGroupElement.click();
-        Log.success('[FB]', '✅ Úspěšně kliknuto na element pro přidání do skupiny (nově nalezený)');
-        return true;
+        const success = await this.pageAnalyzer.clickElementWithText(this.joinGroupText, {
+          matchType: 'exact',
+          naturalDelay: true,
+          waitAfterClick: true
+        });
+
+        if (success) {
+          Log.success('[FB]', '✅ Úspěšně kliknuto na element pro přidání do skupiny (nově nalezený)');
+          return true;
+        }
       }
       
       throw new Error('Element pro přidání do skupiny nebyl nalezen');
