@@ -1,15 +1,5 @@
-refactor: Replace fbSupport.findByText with PageAnalyzer cache-powered search
+fix: Replace old iv_worker.js with refactored version
 
-- Rewrite newThing() and clickNewThing() to use PageAnalyzer instead of fbSupport.findByText
-- Update findDiscussionElement() to leverage element cache for faster group navigation
-- Refactor acceptCookies() to use precise PageAnalyzer matching instead of fallback logic
-- Simplify clickSendButton() to use PageAnalyzer with submit text variants from config
-- Update stillSendButton() to check element existence through PageAnalyzer cache
-- Rewrite joinToGroup() and findJoinGroupElement() to use cache-powered element detection
-- Replace _checkTexts() fallback with PageAnalyzer dual text existence checking
-- Update loginFailedEn/Cs() to use PageAnalyzer for login failure detection
-- Remove fallbackClick() method - eliminate 62 lines of complex fallback logic
-- Fix problematic [placeholder*="Co"] selector that caused false positive posting detection
-- All FB methods now use consistent PageAnalyzer interface with cache optimization
-- Eliminate document.querySelectorAll('*') page scanning in favor of intelligent caching
-- Improve element detection accuracy with precise startsWith/exact/contains matching
+- Remove old iv_worker.js that was importing non-existent getRandomAction
+- Rename iv_worker_new.js to iv_worker.js to fix import errors
+- Fix SyntaxError preventing Ivy startup
