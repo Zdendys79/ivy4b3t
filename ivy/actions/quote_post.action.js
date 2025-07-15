@@ -84,6 +84,11 @@ export class QuotePostAction extends BaseAction {
    * Navigace na FB homepage - bez verifikace URL
    */
   async navigateToHomepage(user, fbBot) {
+    // Lidská pauza před navigací na FB homepage
+    const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
+    Log.info(`[${user.id}]`, `Čekám ${Math.round(navigationDelay/1000)}s před navigací na FB homepage...`);
+    await new Promise(resolve => setTimeout(resolve, navigationDelay));
+
     Log.info(`[${user.id}]`, 'Naviguji na FB homepage...');
 
     await fbBot.page.goto('https://www.facebook.com/', {

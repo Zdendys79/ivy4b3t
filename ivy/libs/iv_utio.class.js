@@ -41,6 +41,11 @@ export class UtioBot {
       // Nastavení timeoutu pro navigaci
       this.page.setDefaultNavigationTimeout(30000);
 
+      // Lidská pauza před navigací na UTIO
+      const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
+      Log.info('[UTIO]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na UTIO...`);
+      await wait.delay(navigationDelay, false);
+
       Log.info('[UTIO]', 'Načítám UTIO přihlašovací stránku...');
       await this.page.goto('https://utio.b3group.cz/site/login', {
         waitUntil: "domcontentloaded",
@@ -357,6 +362,11 @@ export class UtioBot {
    */
   async _navigateToMessageGenerator() {
     try {
+      // Lidská pauza před navigací na generátor zpráv
+      const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
+      Log.info('[UTIO]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na generátor zpráv...`);
+      await wait.delay(navigationDelay, false);
+
       Log.info('[UTIO]', 'Naviguji na stránku pro generování zpráv...');
       await this.page.goto('https://utio.b3group.cz/tags/index', {
         waitUntil: "domcontentloaded",

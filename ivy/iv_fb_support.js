@@ -820,6 +820,11 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
           Log.info(`[${user.id}]`, `📍 Navigace na standardní skupinu: ${targetUrl}`);
         }
         
+        // Lidská pauza před navigací na skupinu
+        const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
+        Log.info(`[${user.id}]`, `Čekám ${Math.round(navigationDelay/1000)}s před navigací na skupinu...`);
+        await new Promise(resolve => setTimeout(resolve, navigationDelay));
+        
         await fbBot.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page load
         

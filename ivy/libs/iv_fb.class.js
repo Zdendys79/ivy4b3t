@@ -371,6 +371,12 @@ export class FBBot {
   async openFB(user) {
     try {
       await this.bringToFront();
+      
+      // Lidská pauza před navigací na Facebook
+      const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
+      Log.info('[FB]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na Facebook...`);
+      await wait.delay(navigationDelay, false);
+      
       await this.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
       await wait.delay(2000, 3000); // Krátká pauza na stabilizaci
       Log.info('[FB]', 'Stránka FB byla úspěšně otevřena.');
@@ -1578,6 +1584,10 @@ export class FBBot {
         fbGroupUrl = `https://FB.com/groups/${group.fb_id}`;
       }
       
+      // Lidská pauza před navigací na skupinu
+      const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
+      Log.info('[FB]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na skupinu ${group.name}...`);
+      await wait.delay(navigationDelay, false);
 
       Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);
 

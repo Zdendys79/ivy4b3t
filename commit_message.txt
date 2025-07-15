@@ -1,9 +1,9 @@
-fix: Přidat detailní logging pro timeout diagnostiku
+feat: Přidat lidské pauzy před navigační akce
 
-- Přidat logy do BrowserManager closeBrowser a shutdownAll metod
-- Zobrazit timeout hodnoty v ms a detailní kroky zavírání
-- Přidat logy do UI timeout handlingu v handleUICommandComplete
-- Detailní logging pro _waitForBrowserCloseOrNextCommand
-- Opravit NaN timeout warning v config parsing s validací
-- Přidat debug informace pro Promise.race timeout situace
-- Vylepšit diagnostiku browser close problémů
+- Přidat pauzu 5-15 sekund před všechny navigační akce (změna URL)
+- Upravit openFB() a openGroup() v iv_fb.class.js
+- Přidat pauzy do UTIO navigace v iv_utio.class.js
+- Upravit navigateToHomepage() v quote_post.action.js
+- Přidat pauzu do navigace v iv_fb_support.js
+- Všechny pauzy mají informativní logy s délkou čekání
+- Automatizace nyní vypadá lidštěji s realistickými pauzy před navigací
