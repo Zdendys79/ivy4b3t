@@ -31,9 +31,9 @@ Files: kebab-case
 Constants: UPPER_SNAKE_CASE
 
 At the end of each task (solution), create a draft commit message in English.
-1
+
 ---
-### Git Commit Process - ABSOLUTNÍ PRIORITA!
+### Git Commit Process ###
 When commit is requested OR when making ANY changes to source code, configuration files, or installation scripts, use ONLY the automated commit script:
 
 ```bash
@@ -148,17 +148,12 @@ bash ~/Sync/scripts/db_backup.sh
 4. **Otestuj kompletní databázovou instalaci** před commitem
 5. **Všechny úpravy databáze = automatický commit pomocí ./commit.sh**
 
-### Database Access
-```bash
-# Connect to MariaDB database using environment variables
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy
+# Connect to MariaDB using environment variables
+# Execute SQL command directly
+mysql -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_NAME -e "SELECT 'Spojení úspěšné!' AS Status;"
 
-# Test database connection
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "SELECT 'Spojení úspěšné!' as Status;"
-
-# Execute SQL commands directly
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "YOUR_SQL_COMMAND;"
-```
+# Execute SQL file
+mysql -h $DB_HOST -u $DB_USER -p$DB_PASS $DB_NAME < file_with_queries.sql
 
 ### Development Tools
 ```bash
@@ -289,5 +284,5 @@ This is a defensive automation tool for legitimate social media account manageme
 # This file is git-ignored and contains implementation details
 
 ## Environment Variables Available
-- CLAUDE_DB_USER, CLAUDE_DB_PASS - MariaDB access
-- CLAUDE_GIT_TOKEN - GitHub PAT authentication (aktualizován 2025-07-02)
+- DB_HOST, DB_NAME, DB_USER, DB_PASS - MariaDB access
+- GIT_TOKEN - GitHub PAT authentication (aktualizován 2025-07-02)
