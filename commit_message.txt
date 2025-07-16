@@ -1,6 +1,5 @@
-refactor: Nahradit gitBranch proměnnou za global.isTestBranch
+fix: Použít process.env.IVY_GIT_BRANCH místo ternary operátoru
 
-- Odstranit lokální gitBranch konstantu z ivy.js
-- Přesunout global.isTestBranch definici na začátek (hned po konstantách)
-- Nahradit všechna použití gitBranch za global.isTestBranch ternary operátor
-- Centralizovat branch logiku do jedné globální proměnné
+- Nahradit (global.isTestBranch ? 'main' : 'production') za process.env.IVY_GIT_BRANCH
+- Jednodušší a čitelnější informace v lozích a system loggeru
+- Zachovat global.isTestBranch pouze pro boolean testovací logiku
