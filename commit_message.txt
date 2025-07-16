@@ -1,8 +1,5 @@
-refactor: Odstranit všechny fallback mechanismy podle KRITICKÉHO PRAVIDLA
+fix: Opravit heartBeatExtended SQL chybu s DATETIME formátem
 
-- Odstranit findPostElementFallback metodu z iv_fb.class.js
-- Odstranit PageAnalyzer fallbacky - místo fallback throw error
-- Odstranit typing fallback v iv_fb.class.js - userId je povinný
-- Odstranit celý iv_support.js s kritickým fallback systémem
-- Nahradit getGitInfo() fallback za process.env.IVY_GIT_BRANCH
-- Všechny fallback mechanismy nahrazeny za throw error pro nucené řešení zdrojů chyb
+- Konvertovat timestamp na DATETIME formát pro action_started_at
+- Použít .toISOString().slice(0, 19).replace('T', ' ') pro MySQL DATETIME
+- Opravit "Incorrect datetime value" chybu v heartbeat tabulce

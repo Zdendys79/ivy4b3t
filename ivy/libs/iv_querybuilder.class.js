@@ -279,9 +279,15 @@ export class QueryBuilder {
   async heartBeatExtended(params) {
     const { hostname, version, userId, action, actionStartedAt } = params;
     
+    // Konvertovat timestamp na DATETIME nebo NULL
+    let actionStartedAtFormatted = null;
+    if (actionStartedAt) {
+      actionStartedAtFormatted = new Date(actionStartedAt).toISOString().slice(0, 19).replace('T', ' ');
+    }
+    
     // Aktualizovat heartbeat
     await this.safeExecute('system.heartBeatExtended', [
-      hostname, userId, version, action, actionStartedAt, userId, version, action, actionStartedAt
+      hostname, userId, version, action, actionStartedAtFormatted, userId, version, action, actionStartedAtFormatted
     ]);
     
     // Získat UI příkaz a verzi z databáze
