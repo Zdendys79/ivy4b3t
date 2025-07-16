@@ -17,7 +17,6 @@ import { PostUtioGvAction } from '../actions/post_utio_gv.action.js';
 import { PostUtioPAction } from '../actions/post_utio_p.action.js';
 import { AccountDelayAction } from '../actions/account_delay.action.js';
 import { AccountSleepAction } from '../actions/account_sleep.action.js';
-import { QuotePostAction } from '../actions/quote_post.action.js';
 import { GroupPostAction } from '../actions/group_post.action.js';
 import { TimelinePostAction } from '../actions/timeline_post.action.js';
 import { CommentAction } from '../actions/comment.action.js';
@@ -51,7 +50,7 @@ export class ActionRouter {
       this.registerAction('account_sleep', AccountSleepAction);
 
       // Registrace ostatních akcí
-      this.registerAction('quote_post', QuotePostAction);
+      // quote_post akce byla odstraněna - použij nový systém
       this.registerAction('group_post', GroupPostAction);
       this.registerAction('timeline_post', TimelinePostAction);
       this.registerAction('comment', CommentAction);

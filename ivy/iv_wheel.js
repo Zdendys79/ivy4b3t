@@ -1,5 +1,5 @@
 /**
- * Název souboru: iv_wheel.js - REFAKTOROVANÁ VERZE
+ * Název souboru: iv_wheel.js
  * Umístění: ~/ivy/iv_wheel.js
  *
  * Popis: Zjednodušené kolo štěstí - pouze losování a orchestrace
@@ -13,12 +13,9 @@ import { db } from './iv_sql.js';
 import { Log } from './libs/iv_log.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
 import { InvasiveLock } from './libs/iv_invasive_lock.class.js';
-import { IvActions } from './libs/iv_actions_new.class.js';
+import { IvActions } from './libs/iv_actions.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { IvMath } from './libs/iv_math.class.js';
-import { FBBot } from './libs/iv_fb.class.js';
-import { UtioBot } from './libs/iv_utio.class.js';
-import { setDebugContext } from './iv_interactive_debugger.js';
 import * as wait from './iv_wait.js';
 
 const config = getIvyConfig();
@@ -63,49 +60,13 @@ export async function runWheelOfFortune(user, browser, context) {
     throw new Error('Nepodařilo se inicializovat IvActions');
   }
 
-  // Vytvoření bot instancí pro akce
-  const fbBot = new FBBot(context, user.id);
-  if (!await fbBot.init()) {
-    throw new Error('Nepodařilo se inicializovat FBBot');
-  }
-  
-  // Otevření FB a rychlá kontrola
-  const fbOpenSuccess = await fbBot.openFB(user, false);
-  if (!fbOpenSuccess) {
-    throw new Error('FB není funkční - nelze pokračovat v kole štěstí');
-  }
-  
-  // Nastavení debug kontextu
-  setDebugContext(user, fbBot.page);
-  
-  // Inicializace analyzéru pro všechny akce
-  fbBot.initializeAnalyzer();
-  
-  // Rychlá kontrola FB stavu
-  const fbReady = await fbBot.pageAnalyzer.quickFBCheck(user);
-  if (!fbReady) {
-    throw new Error('FB není funkční podle analyzéru');
-  }
-  
-  // Vytvoření UtioBot instance
-  const utioBot = new UtioBot(context);
-  if (!await utioBot.init()) {
-    throw new Error('Nepodařilo se inicializovat UtioBot');
-  }
-  
-  // Kontext pro akce
-  const actionContext = {
-    fbBot,
-    utioBot
-  };
-
   try {
     // Hlavní smyčka
     while (true) {
       // 1. Kontrola consecutive failures
       if (consecutiveFailures >= config.consecutive_failures_limit) {
         await Log.error(`[${user.id}]`, `🚨 ${consecutiveFailures} neúspěšných akcí za sebou`);
-        await actions.runAction(user, 'account_delay', actionContext);
+        await actions.runAction(user, 'account_delay', { browser, context });
         break;
       }
 
@@ -116,7 +77,7 @@ export async function runWheelOfFortune(user, browser, context) {
       if (isWheelEmpty(availableActions)) {
         const endingAction = await handleEmptyWheel(user, availableActions);
         if (endingAction) {
-          await actions.runAction(user, endingAction.code, actionContext);
+          await actions.runAction(user, endingAction.code, { browser, context });
         }
         break;
       }
@@ -131,7 +92,7 @@ export async function runWheelOfFortune(user, browser, context) {
       Log.info(`[${user.id}]`, `Vylosována akce #${actionCount + 1}: ${pickedAction.code}`);
 
       // 5. Provedení akce
-      const success = await actions.runAction(user, pickedAction.code, actionContext, pickedAction);
+      const success = await actions.runAction(user, pickedAction.code, { browser, context }, pickedAction);
       
       if (!success) {
         consecutiveFailures++;
@@ -246,7 +207,10 @@ function pickAction(actions) {
   if (normalActions.length === 0) return null;
   
   const wheel = new Wheel(normalActions);
-  return wheel.pick();
+  //return wheel.pick();
+  // Z důvodu testování volíme právě jednu akci:
+  const quotePostAction = normalActions.find(a => a.code === 'quote_post');
+  return quotePostAction;
 }
 
 /**
@@ -255,6 +219,7 @@ function pickAction(actions) {
 async function handleNoAction(user, invasiveLock) {
   if (invasiveLock.isActive()) {
     Log.info(`[${user.id}]`, `Čekání na invasive lock (${invasiveLock.getRemainingSeconds()}s)`);
+    // Zde by mohla být neškodná aktivita, ale neděláme fallbacky
   } else {
     Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce');
   }
@@ -277,25 +242,3 @@ function calculateInvasiveCooldown() {
 
 // Export pro kompatibilitu
 export { InvasiveLock };
-
-// Import kompatibilních funkcí
-import { 
-  initInvasiveLock,
-  setInvasiveLock,
-  hasInvasiveLock,
-  clearInvasiveLock,
-  getActionStats,
-  hasAvailableActions,
-  getActionRecommendations
-} from './iv_wheel_compatibility.js';
-
-// Re-export pro zpětnou kompatibilitu
-export {
-  initInvasiveLock,
-  setInvasiveLock, 
-  hasInvasiveLock,
-  clearInvasiveLock,
-  getActionStats,
-  hasAvailableActions,
-  getActionRecommendations
-};

@@ -6,7 +6,6 @@
  */
 
 import { Log } from './libs/iv_log.class.js';
-import { runQuotePostTest } from './test_quote_post.js';
 import { runPostUtioGTest } from './test_post_utio_g.js';
 import { runPostUtioGvTest } from './test_post_utio_gv.js';
 import { runGroupExploreTest } from './test_group_explore.js';
@@ -28,7 +27,6 @@ class TestRunner {
     await Log.info('[TEST_RUNNER]', '🚀 ===== SPOUŠTÍM VŠECHNY TESTY =====');
     
     const tests = [
-      { name: 'Quote Post', runner: runQuotePostTest, weight: 500 },
       { name: 'Post UTIO G', runner: runPostUtioGTest, weight: 400 },
       { name: 'Post UTIO GV', runner: runPostUtioGvTest, weight: 400 },
       { name: 'Group Explore', runner: runGroupExploreTest, weight: 200 },

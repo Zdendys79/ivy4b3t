@@ -1,7 +1,9 @@
-fix: Implementovat správné pořadí fallback mechanismu pro joinToGroup
+refactor: Odstranit starý kód quote_post a přidat testovací bypass
 
-- Přidán krok "Diskuze" mezi "Napište něco" a "Přidat se ke skupině"
-- joinToGroup se nyní používá pouze jako poslední možnost
-- Přidáno duální logování do action_log (8h limit) a user_groups (vztah)
-- Implementována metoda insertUserGroupMembership v QueryBuilder
-- Opraveno přílišné používání joinToGroup funkce
+- Smazány soubory iv_wheel.js a iv_wheel_compatibility.js
+- Přejmenován iv_wheel_new.js na iv_wheel.js
+- Odstraněna stará implementace quote_post z iv_actions.class.js
+- Smazán quote_post.action.js a test_quote_post.js
+- Vyčištěny všechny odkazy na staré soubory
+- Vytvořen nový jednoduchý systém quote_post_simple.action.js
+- Přidán testovací bypass do wheel pro vracení quote_post akce

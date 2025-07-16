@@ -353,7 +353,8 @@ export class IvActions {
           break;
 
         case 'quote_post':
-          result = await this.quotePost(user, fbBot);
+          await Log.error(`[${user.id}]`, 'Quote post akce byla odstraněna - použij nový systém');
+          result = false;
           break;
 
         case 'account_delay':
@@ -460,46 +461,6 @@ export class IvActions {
     }
   }
 
-  /**
-   * Quote post akce
-   */
-  async quotePost(user, fbBot) {
-    try {
-      const quote = await this.db.getRandomQuote(user.id);
-      if (!quote) {
-        await Log.warn(`[${user.id}]`, 'Žádný vhodný citát k dispozici.');
-        return false;
-      }
-
-      Log.info(`[${user.id}]`, 'Začínám psát citát...');
-
-      // Přejdi na homepage
-      if (!await this.navigateToHomepage(user, fbBot)) {
-        await Log.error(`[${user.id}]`, 'Nepodařilo se přejít na homepage před psaním citátu.');
-        return false;
-      }
-
-      const postText = `${quote.text}${quote.author ? `\n– ${quote.author}` : ''}`;
-
-      // Píšeme citát místo vkládání ze schránky
-      const result = await support.writeMsg(user, postText, fbBot);
-
-      if (!result) {
-        await Log.error(`[${user.id}]`, 'Nepodařilo se napsat citát.');
-        return false;
-      }
-
-      await support.updatePostStats(null, user, 'quote_post');
-      await this.db.markQuoteAsUsed(quote.id, user.id);
-
-      Log.success(`[${user.id}]`, `✅ Citát úspěšně publikován: "${quote.text.substring(0, 50)}..."`);
-      return true;
-
-    } catch (err) {
-      await Log.error(`[${user.id}] quotePost`, err);
-      return false;
-    }
-  }
 
   /**
    * Sleduje úspěšnost akcí a doporučuje optimalizace
