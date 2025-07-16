@@ -1,6 +1,6 @@
-fix: Vytvořit global.isTestBranch a opravit výběr uživatele na main větvi
+refactor: Nahradit gitBranch proměnnou za global.isTestBranch
 
-- Přidat global.isTestBranch boolean pro snadné testování kdekoli v kódu
-- Nahradit process.env.IVY_GIT_BRANCH kontroly za global.isTestBranch
-- Opravit _selectUserForMainBranch() - používat getUserWithAvailableActions místo getOldestReadyUser
-- Main větev nyní vybírá jen uživatele s dostupnými akcemi (stejně jako produkční)
+- Odstranit lokální gitBranch konstantu z ivy.js
+- Přesunout global.isTestBranch definici na začátek (hned po konstantách)
+- Nahradit všechna použití gitBranch za global.isTestBranch ternary operátor
+- Centralizovat branch logiku do jedné globální proměnné

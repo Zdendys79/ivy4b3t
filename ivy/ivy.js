@@ -23,7 +23,6 @@ import { initIvyConfig } from './libs/iv_config.class.js';
 
 const hostname = os.hostname();
 const versionCode = getVersion();
-const gitBranch = process.env.IVY_GIT_BRANCH || 'production';
 
 // Globální proměnné systému
 global.systemState = {
@@ -32,7 +31,7 @@ global.systemState = {
   actionStartTime: null,
   restart_needed: false
 };
-global.isTestBranch = (gitBranch === 'main');
+global.isTestBranch = (process.env.IVY_GIT_BRANCH === 'main');
 global.uiCommandCache = null;
 
 // Initialize the console logger
@@ -47,13 +46,13 @@ let heartbeatInterval = null;
 
 Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode}`);
-Log.info('[IVY]', `Git branch: ${gitBranch}`);
+Log.info('[IVY]', `Git branch: ${global.isTestBranch ? 'main' : 'production'}`);
 Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
 
 // Záznam do systémového logu o spuštění
 const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
-await SystemLogger.logStartup(hostname, versionCode, gitBranch, consoleLogger.sessionId);
+await SystemLogger.logStartup(hostname, versionCode, global.isTestBranch ? 'main' : 'production', consoleLogger.sessionId);
 
 // Asynchronní heartbeat funkce
 async function backgroundHeartbeat() {
@@ -137,7 +136,7 @@ async function gracefulShutdown(signal) {
     
     // Záznam do systémového logu o ukončení - PŘED zavřením DB
     const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
-    await SystemLogger.logShutdown(hostname, versionCode, gitBranch, consoleLogger.sessionId, signal);
+    await SystemLogger.logShutdown(hostname, versionCode, global.isTestBranch ? 'main' : 'production', consoleLogger.sessionId, signal);
     
     // Zavři databázové spojení AŽ PO logování
     await closeDB();
