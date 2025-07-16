@@ -1,6 +1,5 @@
-fix: Odstranit zbývající importy iv_support.js a nahradit za TODO
+fix: Zjednodušit test mode v wheel.pick() - napevno vrátit quote_post
 
-- Odstranit import iv_support.js z post_utio_g.action.js a post_utio_gv.action.js
-- Nahradit support.pasteMsg() za throw error s TODO komentářem
-- Nahradit support.updatePostStats() za Log.info s TODO komentářem
-- Post utio akce budou přepsány později bez fallback mechanismů
+- Nahradit složitou logiku s config.cfg_test_action za jednoduché vrácení quote_post
+- Na main větvi vždy vrací quote_post akci pro testování
+- Odstranit závislost na cfg_test_action proměnné z databáze

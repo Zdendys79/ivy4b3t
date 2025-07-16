@@ -34,12 +34,9 @@ class Wheel {
   pick() {
     // Test mode: main branch = testovací, production = ostrá verze
     const gitBranch = process.env.IVY_GIT_BRANCH || 'production';
-    if (gitBranch === 'main' && config.cfg_test_action) {
-      const testAction = this.activities.find(a => a.code === config.cfg_test_action);
-      if (testAction) {
-        Log.debug('[WHEEL]', `Test mode (${gitBranch}): vracím ${config.cfg_test_action}`);
-        return testAction;
-      }
+    if (gitBranch === 'main') {
+      Log.debug('[WHEEL]', `Test mode (${gitBranch}): vracím quote_post`);
+      return this.activities.find(a => a.code === 'quote_post');
     }
     
     if (this.totalWeight === 0) return null;
