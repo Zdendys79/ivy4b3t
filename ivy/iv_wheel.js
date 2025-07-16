@@ -15,7 +15,7 @@ import { Log } from './libs/iv_log.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
 import { InvasiveLock } from './libs/iv_invasive_lock.class.js';
 import { ActionRouter } from './libs/action_router.class.js';
-import { FBBot } from './libs/iv_fbbot.class.js';
+import { FBBot } from './libs/iv_fb.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { IvMath } from './libs/iv_math.class.js';
 import * as wait from './iv_wait.js';

@@ -1,9 +1,4 @@
-refactor: Implementovat novou architekturu akcí s FBBot managementem
+fix: Opravit import FBBot v iv_wheel.js
 
-- Odstraněny soubory iv_actions.class.js a iv_actions_new.class.js
-- Přejmenován quote_post_simple.action.js na quote_post.action.js
-- Přidán QuotePostAction do action_router.class.js
-- Upravena iv_wheel.js: iniciace FBBot před losováním
-- FBBot se předává akcím přes kontext
-- FBBot se ukončuje v finally bloku po dokončení práce s uživatelem
-- Testovací bypass v wheel pro quote_post akci zůstává aktivní
+- Opravena cesta importu z iv_fbbot.class.js na iv_fb.class.js
+- FBBot třída se nachází v iv_fb.class.js
