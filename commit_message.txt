@@ -1,9 +1,7 @@
-refactor: Opravit všechny Code Bloat problémy zavedené AI
+fix: Opravit TimeoutNaNWarning a debugging
 
-- Přesunout waitForBrowserCloseOrTimeout do BrowserManager s podporou okamžitého ukončení
-- Vytvořit humanDelay utility funkci pro nahrazení duplicitních random delays  
-- Vytvořit SystemLogger třídu pro centralizaci duplicitního system log kódu
-- Refaktorovat worker tick na menší funkce s jasnými odpovědnostmi
-- Opravit UIBot close logování jen při skutečném zavírání zdrojů
-- Odstranit všechny fallback mechanismy podle KISS principů
-- Implementovat asynchronní heartbeat s monitoringem a restart detekcí
+- Přidat stack trace do Log.error pro lepší debugging
+- Přidat sloupec type do tabulky variables
+- Opravit SQL dotazy pro načítání variables s typem
+- Nastavit správný typ number pro wheel_action_delay hodnoty
+- Přidat validaci vstupů do wait.delay a IvMath.randInterval

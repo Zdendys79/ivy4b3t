@@ -26,7 +26,8 @@ export class IvMath {
   static randInterval(min, max) {
     // Validace vstupů
     if (isNaN(min) || isNaN(max) || min < 0 || max < 0) {
-      console.error(`[MATH] Neplatné hodnoty pro randInterval: min=${min}, max=${max}. Používám 1000-3000ms jako fallback.`);
+      const error = new Error(`Neplatné hodnoty pro randInterval: min=${min}, max=${max}. Používám 1000-3000ms jako fallback.`);
+      console.error(`[MATH] Stack trace:`, error.stack);
       min = 1000;
       max = 3000;
     }

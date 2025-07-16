@@ -199,13 +199,13 @@ export const SYSTEM = {
   `,
 
   setVariable: `
-    INSERT INTO variables (name, value, changed)
-    VALUES (?, ?, NOW())
-    ON DUPLICATE KEY UPDATE value = VALUES(value), changed = NOW()
+    INSERT INTO variables (name, value, type, changed)
+    VALUES (?, ?, ?, NOW())
+    ON DUPLICATE KEY UPDATE value = VALUES(value), type = VALUES(type), changed = NOW()
   `,
 
   getAllVariables: `
-    SELECT name, value, changed
+    SELECT name, value, type, changed
     FROM variables
     ORDER BY name
   `,
