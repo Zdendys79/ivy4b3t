@@ -82,7 +82,17 @@ export class FBBot {
         onlyVisible: true
       });
       
-      Log.debug('[DIAGNOSTIC]', 'PageAnalyzer instance created with auto-tracking enabled.');
+      // NOVĚ: Okamžitě spusť první hledání elementů
+      Log.info('[FB]', 'Spouštím první hledání elementů...');
+      await this.pageAnalyzer.startElementTracking({
+        updateInterval: 10000,
+        maxWords: 10,
+        includeInputs: true,
+        includeButtons: true,
+        onlyVisible: true
+      });
+      
+      Log.success('[FB]', 'PageAnalyzer inicializován a elementy nalezeny');
       return true;
     }
     Log.warn('[DIAGNOSTIC]', 'PageAnalyzer could not be initialized (page not ready).');

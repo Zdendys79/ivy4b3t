@@ -1,5 +1,6 @@
-fix: Použít process.env.IVY_GIT_BRANCH místo ternary operátoru
+fix: Opravit PageAnalyzer timing - spustit hledání elementů při inicializaci
 
-- Nahradit (global.isTestBranch ? 'main' : 'production') za process.env.IVY_GIT_BRANCH
-- Jednodušší a čitelnější informace v lozích a system loggeru
-- Zachovat global.isTestBranch pouze pro boolean testovací logiku
+- Přidat await před fbBot.initializeAnalyzer() v quote_post akci
+- Upravit initializeAnalyzer() aby okamžitě spustil startElementTracking()
+- Zajistit naplnění element cache před prvním použitím clickElementWithText()
+- Vyřešit problém kdy se kliká na elementy před jejich nalezením

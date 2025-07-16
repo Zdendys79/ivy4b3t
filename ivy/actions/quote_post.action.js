@@ -92,7 +92,7 @@ export class QuotePostAction extends BaseAction {
     });
 
     // Reinicializace analyzátoru (spustí se hned po networkidle2)
-    fbBot.initializeAnalyzer();
+    await fbBot.initializeAnalyzer();
 
     // Jedna lidská pauza (2-5 sekund)
     const pauseTime = 2000 + Math.random() * 3000;
