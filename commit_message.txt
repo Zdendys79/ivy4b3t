@@ -1,7 +1,9 @@
-refactor: Opravit test bypass v pickAction - přesunout do wheel.pick()
+refactor: Opravit všechny Code Bloat problémy zavedené AI
 
-- Odstraněn Code Bloat z pickAction funkce (komentovaný kód)
-- Přesunut testovací bypass přímo do wheel.pick() metody
-- Jednodušší DEBUG řešení: log + přímý return quote_post
-- Aplikovány KISS principy - nejjednodušší možné řešení
-- Snadné odstranění - jen 2 řádky kódu
+- Přesunout waitForBrowserCloseOrTimeout do BrowserManager s podporou okamžitého ukončení
+- Vytvořit humanDelay utility funkci pro nahrazení duplicitních random delays  
+- Vytvořit SystemLogger třídu pro centralizaci duplicitního system log kódu
+- Refaktorovat worker tick na menší funkce s jasnými odpovědnostmi
+- Opravit UIBot close logování jen při skutečném zavírání zdrojů
+- Odstranit všechny fallback mechanismy podle KISS principů
+- Implementovat asynchronní heartbeat s monitoringem a restart detekcí
