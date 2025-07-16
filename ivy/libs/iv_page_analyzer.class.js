@@ -1496,9 +1496,9 @@ export class PageAnalyzer {
       const element = await this._findElementInCache(text, { matchType, elementType });
       
       if (!element) {
-        // Pokud není v cache, zkus přímé hledání na stránce
-        Log.warn('[ANALYZER]', `Element "${text}" nenalezen v cache, zkouším přímé hledání`);
-        return await this._directClickByText(text, options);
+        // Pokud není v cache, vrať chybu - žádné fallbacky!
+        Log.error('[ANALYZER]', `Element "${text}" nenalezen v cache - akce selhala`);
+        return false;
       }
 
       // Přirozená pauza před kliknutím
@@ -1781,30 +1781,6 @@ export class PageAnalyzer {
     }
   }
 
-  /**
-   * Přímé kliknutí podle textu (fallback)
-   * @private
-   */
-  async _directClickByText(text, options) {
-    try {
-      // Použij existující fbSupport funkci jako fallback
-      const elements = await fbSupport.findByText(this.page, text, { 
-        match: options.matchType || 'exact' 
-      });
-      
-      if (elements.length > 0) {
-        Log.info('[ANALYZER]', `Fallback: použito fbSupport.findByText pro "${text}"`);
-        await fbSupport.clickByTextJS(this.page, text, options);
-        return true;
-      }
-
-      return false;
-
-    } catch (err) {
-      Log.warn('[ANALYZER]', `Fallback kliknutí selhalo: ${err.message}`);
-      return false;
-    }
-  }
 
   /**
    * Vymaže cache analýz

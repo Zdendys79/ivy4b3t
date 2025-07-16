@@ -1,5 +1,8 @@
-fix: Opravit matchType pro clickElementWithText v quote_post
+fix: Opravit lifecycle FBBot a odstranit fallback mechanismy
 
-- Změněn matchType z 'exact' na 'startsWith' pro text "Co se vám honí hlavou"
-- Metoda clickElementWithText používá defaultně exact match
-- Quote_post potřebuje startsWith pro správné vyhledání elementu
+- Přesunut FBBot.close() do finally bloku - jediné místo ukončení
+- Odstraněn fallback "přímé hledání" z PageAnalyzer.clickElementWithText
+- Odstraněna celá metoda _directClickByText (fallback mechanismus)
+- Vyřešeno cyklické otevírání FB kvůli předčasnému ukončení FBBot
+- Aplikovány KISS, DRY principy - žádné duplikace kódu
+- FBBot se ukončuje pouze na konci wheel cyklu, ne při selhání akcí

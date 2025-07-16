@@ -83,6 +83,7 @@ export async function runWheelOfFortune(user, browser, context) {
         // Pro ukončovací akce nepotřebujeme FBBot
         const endingContext = { browser, ...context };
         await actionRouter.executeAction('account_delay', user, endingContext, {});
+        
         break;
       }
 
@@ -96,6 +97,7 @@ export async function runWheelOfFortune(user, browser, context) {
           // Pro ukončovací akce nepotřebujeme FBBot
           const endingContext = { browser, ...context };
           await actionRouter.executeAction(endingAction.code, user, endingContext, {});
+          
         }
         break;
       }
@@ -141,7 +143,7 @@ export async function runWheelOfFortune(user, browser, context) {
       
       if (uiCommand) {
         Log.info(`[${user.id}]`, 'Detekován UI příkaz - ukončuji kolo štěstí');
-        // FBBot se ukončí v finally bloku
+        
         return { stoppedByUI: true };
       }
 
@@ -156,11 +158,11 @@ export async function runWheelOfFortune(user, browser, context) {
     await Log.error(`[${user.id}]`, `Chyba v kole štěstí: ${err.message}`);
     throw err;
   } finally {
-    // Ukončení FBBot na konci práce s uživatelem
+    // Jediné místo kde se FBBot ukončuje
     if (fbBot) {
       try {
         await fbBot.close();
-        Log.info(`[${user.id}]`, 'FBBot úspěšně ukončen');
+        Log.info(`[${user.id}]`, 'FBBot ukončen');
       } catch (err) {
         Log.warn(`[${user.id}]`, `Chyba při ukončování FBBot: ${err.message}`);
       }
