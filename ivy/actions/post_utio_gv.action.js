@@ -11,7 +11,6 @@
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
 import * as wait from '../iv_wait.js';
-import * as support from '../iv_support.js';
 import { getAvailableGroupsForUser, blockUserGroup } from '../user_group_escalation.js';
 
 export class PostUtioGvAction extends BaseAction {
@@ -204,14 +203,18 @@ export class PostUtioGvAction extends BaseAction {
     
     try {
       // Získej zprávu z UTIO a publikuj
-      const message = await support.pasteMsg(user, group, fbBot, utioBot);
+      // TODO: Implementovat pasteMsg bez fallback mechanismů
+      const error = new Error('support.pasteMsg() byla odstraněna kvůli fallback mechanismům. Nutné přepsat bez fallbacků.');
+      Log.error(`[${user.id}]`, error);
+      throw error;
       if (!message) {
         Log.warn(`[${user.id}]`, '❌ Publikace selhala (pasteMsg vrátilo false)');
         return false;
       }
 
       await this.logAction(user, group.id, `Post do vlastní skupiny: ${group.name}`);
-      await support.updatePostStats(group, user, this.actionCode);
+      // TODO: Implementovat updatePostStats bez fallback mechanismů
+      Log.info(`[${user.id}]`, 'TODO: updatePostStats() byla odstraněna kvůli fallback mechanismům.');
       Log.success(`[${user.id}]`, `✅ Úspěšně publikováno do vlastní skupiny ${group.name}!`);
       return true;
 

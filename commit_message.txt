@@ -1,5 +1,6 @@
-fix: Opravit heartBeatExtended SQL chybu s DATETIME formátem
+fix: Odstranit zbývající importy iv_support.js a nahradit za TODO
 
-- Konvertovat timestamp na DATETIME formát pro action_started_at
-- Použít .toISOString().slice(0, 19).replace('T', ' ') pro MySQL DATETIME
-- Opravit "Incorrect datetime value" chybu v heartbeat tabulce
+- Odstranit import iv_support.js z post_utio_g.action.js a post_utio_gv.action.js
+- Nahradit support.pasteMsg() za throw error s TODO komentářem
+- Nahradit support.updatePostStats() za Log.info s TODO komentářem
+- Post utio akce budou přepsány později bez fallback mechanismů
