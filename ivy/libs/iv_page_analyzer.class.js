@@ -8,6 +8,7 @@ import { Log } from './iv_log.class.js';
 import * as fbSupport from '../iv_fb_support.js';
 import { getAllConfig } from '../iv_config.js';
 import { getIvyConfig } from './iv_config.class.js';
+import * as wait from '../iv_wait.js';
 
 const config = getIvyConfig();
 
@@ -1489,7 +1490,7 @@ export class PageAnalyzer {
 
       // Přirozená pauza před hledáním
       if (naturalDelay) {
-        await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 700)); // 0.3-1s
+        await wait.humanDelay(300, 1000); // 0.3-1s
       }
 
       // Najdi element v cache
@@ -1503,7 +1504,7 @@ export class PageAnalyzer {
 
       // Přirozená pauza před kliknutím
       if (naturalDelay) {
-        await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 500)); // 0.2-0.7s
+        await wait.humanDelay(200, 700); // 0.2-0.7s
       }
 
       // Klikni na element pomocí XPath nebo selektoru
@@ -1515,7 +1516,7 @@ export class PageAnalyzer {
         // Počkej na reakci stránky po kliknutí
         if (waitAfterClick) {
           Log.debug('[ANALYZER]', 'Čekám na reakci stránky po kliknutí...');
-          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000)); // 1-3s
+          await wait.humanDelay(1000, 3000); // 1-3s
           
           // Aktualizuj element cache po změnách
           await this._updateElementCache(this.autoTrackingOptions);

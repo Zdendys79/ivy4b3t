@@ -30,6 +30,25 @@ export class UIBot {
   }
 
   /**
+   * Statická metoda pro rychlou kontrolu UI příkazu
+   * @returns {Promise<Object|null>} UI příkaz nebo null
+   */
+  static async quickCheck() {
+    try {
+      const hostname = os.hostname();
+      const command = await db.getUICommand();
+      if (command && command.host === hostname) {
+        Log.info('[UI]', `Nalezen UI příkaz: ${command.command} (ID: ${command.id})`);
+        return command;
+      }
+      return null;
+    } catch (err) {
+      await Log.error('[UI] quickCheck', err);
+      return null;
+    }
+  }
+
+  /**
    * Zkontroluje, zda existuje UI příkaz pro tento host
    * @returns {Promise<Object|null>} UI příkaz nebo null
    */
@@ -197,8 +216,8 @@ export class UIBot {
    * @returns {Promise<void>}
    */
   async close() {
-    Log.info('[UI]', 'Zavírám UIBot zdroje...');
     if (this.intervalHandle) {
+      Log.info('[UI]', 'Zavírám UIBot zdroje...');
       clearInterval(this.intervalHandle);
       this.intervalHandle = null;
     }

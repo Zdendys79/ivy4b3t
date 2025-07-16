@@ -188,6 +188,62 @@ export class BrowserManager {
     return this.activeBrowsers.size;
   }
 
+  /**
+   * Čeká na timeout nebo zavření prohlížeče (s podporou okamžitého ukončení)
+   * @param {Object} user - Uživatelská data
+   * @param {Object} browser - Browser instance
+   * @param {number} timeoutMs - Timeout v ms
+   * @returns {Promise<string>} 'timeout' nebo 'closed' nebo 'restart' nebo 'ui_command'
+   */
+  async waitForBrowserCloseOrTimeout(user, browser, timeoutMs) {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      let resolved = false;
+      
+      const checkInterval = setInterval(() => {
+        if (resolved) return;
+        
+        const elapsed = Date.now() - startTime;
+        
+        // Kontrola restart_needed - okamžité ukončení
+        if (global.systemState?.restart_needed) {
+          resolved = true;
+          clearInterval(checkInterval);
+          Log.info(`[${user.id}]`, 'Čekání ukončeno kvůli restart_needed');
+          resolve('restart');
+          return;
+        }
+        
+        // Kontrola UI příkazu - okamžité ukončení
+        if (global.uiCommandCache) {
+          resolved = true;
+          clearInterval(checkInterval);
+          Log.info(`[${user.id}]`, 'Čekání ukončeno kvůli UI příkazu');
+          resolve('ui_command');
+          return;
+        }
+        
+        // Timeout dosažen
+        if (elapsed >= timeoutMs) {
+          resolved = true;
+          clearInterval(checkInterval);
+          Log.info(`[${user.id}]`, `Timeout ${timeoutMs/1000}s dosažen`);
+          resolve('timeout');
+          return;
+        }
+        
+        // Kontrola, zda je prohlížeč stále připojen
+        if (!browser || !browser.isConnected()) {
+          resolved = true;
+          clearInterval(checkInterval);
+          Log.info(`[${user.id}]`, 'Prohlížeč byl zavřen');
+          resolve('closed');
+          return;
+        }
+      }, 500);
+    });
+  }
+
   // ==========================================
   // PRIVATE METODY
   // ==========================================

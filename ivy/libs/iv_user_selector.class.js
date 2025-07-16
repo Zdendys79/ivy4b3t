@@ -25,15 +25,7 @@ export class UserSelector {
    * @returns {Promise<Object|null>} UI příkaz nebo null
    */
   async checkForUICommand() {
-    const uiBot = new UIBot();
-    try {
-      return await uiBot.checkForCommand();
-    } catch (err) {
-      await Log.error('[USER_SELECTOR]', `Chyba při kontrole UI příkazů: ${err.message}`);
-      return null;
-    } finally {
-      await uiBot.close();
-    }
+    return await UIBot.quickCheck();
   }
 
   /**

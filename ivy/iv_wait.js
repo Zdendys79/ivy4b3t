@@ -50,6 +50,17 @@ export function toTime(minutes) {
     return new Promise(resolve => setTimeout(resolve, time));
 }
 
+/**
+ * Přirozené lidské pauzy s randomizací
+ * @param {number} min - Minimální čas v ms
+ * @param {number} max - Maximální čas v ms
+ * @returns {Promise<void>}
+ */
+export function humanDelay(min, max) {
+    const delay = min + Math.random() * (max - min);
+    return new Promise(resolve => setTimeout(resolve, delay));
+}
+
 export async function delay(delay_time, verbose = true) { // wait delay_time ms
     if (verbose) {
         const minutes = Math.floor(delay_time / 60000);

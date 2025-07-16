@@ -23,6 +23,18 @@ import { initIvyConfig } from './libs/iv_config.class.js';
 
 const hostname = os.hostname();
 const versionCode = getVersion();
+const gitBranch = process.env.IVY_GIT_BRANCH || 'production';
+
+// Globální stav systému pro monitoring
+global.systemState = {
+  currentUserId: null,
+  currentAction: null,
+  actionStartTime: null,
+  restart_needed: false
+};
+
+// Cache pro UI příkazy
+global.uiCommandCache = null;
 
 // Initialize the console logger
 consoleLogger.init();
@@ -32,43 +44,58 @@ initIvyConfig();
 Log.info('[IVY]', 'Globální konfigurace inicializována');
 
 let isShuttingDown = false;
+let heartbeatInterval = null;
 
 Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode}`);
+Log.info('[IVY]', `Git branch: ${gitBranch}`);
 Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
 
 // Záznam do systémového logu o spuštění
-try {
-  const queryBuilder = await import('./libs/iv_querybuilder.class.js');
-  const dbInstance = new queryBuilder.QueryBuilder();
-  
-  await dbInstance.logSystemEvent(
-    'STARTUP',
-    'INFO',
-    `Ivy client started on ${hostname}`,
-    { 
+const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
+await SystemLogger.logStartup(hostname, versionCode, gitBranch, consoleLogger.sessionId);
+
+// Asynchronní heartbeat funkce
+async function backgroundHeartbeat() {
+  try {
+    const result = await db.heartBeatExtended({
+      hostname: hostname,
       version: versionCode,
-      session_id: consoleLogger.sessionId,
-      node_version: process.version,
-      platform: process.platform,
-      arch: process.arch
+      userId: global.systemState.currentUserId,
+      action: global.systemState.currentAction,
+      actionStartedAt: global.systemState.actionStartTime
+    });
+    
+    // Cache UI příkaz z odpovědi
+    global.uiCommandCache = result?.uiCommand || null;
+    
+    // Kontrola verze - pokud se liší, nastavit restart_needed
+    if (result?.dbVersion && result.dbVersion !== versionCode) {
+      Log.info(`[HEARTBEAT]`, `Rozdílná verze: DB=${result.dbVersion}, Lokálně=${versionCode}. Nastavuji restart_needed.`);
+      global.systemState.restart_needed = true;
     }
-  );
-} catch (err) {
-  Log.debug('[IVY]', `System log startup error: ${err.message}`);
+    
+  } catch (err) {
+    Log.debug('[HEARTBEAT]', `Background heartbeat error: ${err.message}`);
+  }
 }
+
+// Spustit heartbeat interval
+heartbeatInterval = setInterval(backgroundHeartbeat, 10000); // Každých 10s
+Log.info('[IVY]', 'Asynchronní heartbeat spuštěn (interval 10s)');
 
 (async () => {
   while (!isShuttingDown) {
     try {
-      await db.heartBeat(0, 0, versionCode);
-      const dbVersion = await db.getVersionCode();
-      if (dbVersion.code !== versionCode) {
-        Log.info(`[IVY] Rozdílná verze: DB=${dbVersion.code}, Lokálně=${versionCode}. Ukončuji.`);
+      // Kontrola restart_needed z heartbeat
+      if (global.systemState.restart_needed) {
+        Log.info(`[IVY] Heartbeat detekoval změnu verze. Ukončuji.`);
         process.exit(1);
       }
+      
       await workerTick();
+      await delay(100); // Malá pauza pro CPU
     } catch (err) {
       await Log.error('[IVY]', err);
       await delay(60000);
@@ -84,6 +111,22 @@ async function gracefulShutdown(signal) {
   Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
   
   try {
+    // Zastavit heartbeat interval
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      
+      // Poslední heartbeat s vyčištěným stavem
+      await db.heartBeatExtended({
+        hostname: hostname,
+        version: versionCode,
+        userId: null,
+        action: null,
+        actionStartedAt: null
+      });
+      
+      Log.info('[IVY]', 'Heartbeat ukončen a stav vyčištěn');
+    }
+    
     // Importuj worker pro přístup k browser shutdown
     const worker = await import('./iv_worker.js');
     
@@ -94,28 +137,8 @@ async function gracefulShutdown(signal) {
     await consoleLogger.flush();
     
     // Záznam do systémového logu o ukončení - PŘED zavřením DB
-    try {
-      const logResult = await db.logSystemEvent(
-        'SHUTDOWN',
-        'INFO',
-        `Ivy client shutting down on ${hostname} (signal: ${signal})`,
-        { 
-          signal: signal,
-          version: versionCode,
-          session_id: consoleLogger.sessionId,
-          shutdown_type: 'graceful'
-        }
-      );
-      
-      if (logResult) {
-        Log.debug('[IVY]', 'Shutdown event successfully logged to log_system');
-      } else {
-        Log.debug('[IVY]', 'Shutdown event logging returned false');
-      }
-      
-    } catch (err) {
-      Log.debug('[IVY]', `System log shutdown error: ${err.message}`);
-    }
+    const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
+    await SystemLogger.logShutdown(hostname, versionCode, gitBranch, consoleLogger.sessionId, signal);
     
     // Zavři databázové spojení AŽ PO logování
     await closeDB();

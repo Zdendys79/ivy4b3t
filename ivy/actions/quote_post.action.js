@@ -40,7 +40,7 @@ export class QuotePostAction extends BaseAction {
    * Provedení quote post - krok po kroku
    */
   async execute(user, context, pickedAction) {
-    const { fbBot } = context;
+    const { fbBot, browser } = context;
 
     try {
       Log.info(`[${user.id}]`, 'Spouštím jednoduchý quote post...');
@@ -54,9 +54,19 @@ export class QuotePostAction extends BaseAction {
       // Prozatím končíme po kroku 2 - akce není dokončena
       Log.success(`[${user.id}]`, 'Krok 2 dokončen - kliknuto na vstupní pole');
       
-      // Čekání 60s nebo do zavření prohlížeče
+      // Čekání 60s nebo do zavření prohlížeče - použít browser management
       Log.info(`[${user.id}]`, 'Čekám 60s nebo do zavření prohlížeče...');
-      await this.waitForBrowserCloseOrTimeout(user, fbBot, 60000);
+      
+      // Import BrowserManager
+      const { BrowserManager } = await import('../libs/iv_browser_manager.class.js');
+      const browserManager = new BrowserManager();
+      
+      const result = await browserManager.waitForBrowserCloseOrTimeout(user, browser, 60000);
+      
+      if (result === 'restart' || result === 'ui_command') {
+        Log.info(`[${user.id}]`, `Akce ukončena kvůli: ${result}`);
+        return false;
+      }
       
       await Log.warn(`[${user.id}]`, 'Nedokončený Programový kód akce.');
       return false;
@@ -106,33 +116,4 @@ export class QuotePostAction extends BaseAction {
     }
   }
 
-  /**
-   * Čekání na timeout nebo zavření prohlížeče
-   */
-  async waitForBrowserCloseOrTimeout(user, fbBot, timeoutMs) {
-    return new Promise((resolve) => {
-      const startTime = Date.now();
-      
-      // Kontrola každých 500ms
-      const checkInterval = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        
-        // Timeout dosažen
-        if (elapsed >= timeoutMs) {
-          clearInterval(checkInterval);
-          Log.info(`[${user.id}]`, `Timeout ${timeoutMs/1000}s dosažen`);
-          resolve();
-          return;
-        }
-        
-        // Kontrola, zda je prohlížeč stále připojen
-        if (!fbBot.page || fbBot.page.isClosed()) {
-          clearInterval(checkInterval);
-          Log.info(`[${user.id}]`, 'Prohlížeč byl zavřen');
-          resolve();
-          return;
-        }
-      }, 500);
-    });
-  }
 }

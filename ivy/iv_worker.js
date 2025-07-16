@@ -43,107 +43,149 @@ export async function tick() {
   Log.info('[WORKER]', '🐛 Interactive debugging ENABLED - errors will pause for analysis');
 
   try {
-    // KROK 1: Kontrola UI příkazů
-    const uiCommand = await userSelector.checkForUICommand();
+    // Kontrola restart_needed
+    if (await checkRestartNeeded()) return;
     
-    if (uiCommand) {
-      // VARIANTA A: UI příkaz na začátku
-      const user = await userSelector.getUserForUICommand(uiCommand);
-      if (!user) {
-        await Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
-        await waitWithHeartbeat(1);
-        return;
-      }
-
-      const { instance: browser, context } = await browserManager.openForUser(user);
-      
-      const uiBot = new UIBot();
-      await uiBot.handleUICommandComplete(uiCommand, user, browser, context);
-      return; // Konec cyklu
-    }
+    // Zpracování UI příkazů
+    if (await handleUICommands()) return;
     
-    // KROK 2: Kontrola hostname ochrany
-    if (await hostnameProtection.isBlocked()) {
-      await waitWithHeartbeat(5);
-      return;
-    }
-
-    // KROK 3: Výběr uživatele pro běžnou práci
-    const user = await userSelector.selectUser();
-    if (!user) {
-      await userSelector.showAccountLockStats();
-      await waitWithHeartbeat();
-      return;
-    }
-
-    Log.success(`[${user.id}]`, `🚀 Vybrán uživatel ${user.name} ${user.surname}`);
-
-    // KROK 4: Otevření FB a předání kolu štěstí
-    const { instance: browser, context } = await browserManager.openForUser(user);
+    // Kontrola hostname ochrany
+    if (await checkHostnameProtection()) return;
     
-    // KROK 5: Předání kolu štěstí (obsahuje FB check)
-    const wheelResult = await runWheelOfFortune(user, browser, context);
-    
-    // KROK 6: Kontrola UI přerušení
-    if (wheelResult.stoppedByUI) {
-      const postUICommand = await userSelector.checkForUICommand();
-      
-      if (postUICommand && postUICommand.user_id === user.id) {
-        // VARIANTA B: UI příkaz pro stejného uživatele
-        const uiBot = new UIBot();
-        await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
-      }
-    } else {
-      // KROK 7: Zavření prohlížeče
-      await browserManager.closeBrowser(browser);
-      
-      // KROK 8: Pauza po zavření FB
-      const fbPauseSeconds = 60 + Math.random() * 120; // 60-180 sekund
-      Log.info('[WORKER]', `⏳ Pauza po zavření FB: ${Math.round(fbPauseSeconds)}s`);
-      await wait.delay(fbPauseSeconds * 1000);
-    }
+    // Výběr a zpracování uživatele
+    await processUserWork();
 
   } catch (err) {
-    const userChoice = await Log.errorInteractive('[WORKER]', err);
-    if (userChoice === 'quit' || userChoice === true) {
-      Log.info('[WORKER]', 'Ukončuji na požádání uživatele...');
-      process.exit(99);
-    }
-    await waitWithHeartbeat(2);
+    await handleWorkerError(err);
   }
+}
+
+/**
+ * Kontrola restart_needed flagu
+ * @returns {Promise<boolean>} true pokud má ukončit worker
+ */
+async function checkRestartNeeded() {
+  if (global.systemState.restart_needed) {
+    Log.info('[WORKER]', 'Heartbeat detekoval změnu verze. Ukončuji worker.');
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Zpracování UI příkazů
+ * @returns {Promise<boolean>} true pokud byl zpracován UI příkaz
+ */
+async function handleUICommands() {
+  const uiCommand = await UIBot.quickCheck();
+  
+  if (uiCommand) {
+    const user = await userSelector.getUserForUICommand(uiCommand);
+    if (!user) {
+      await Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
+      await waitWithHeartbeat(1);
+      return true;
+    }
+
+    const { instance: browser, context } = await browserManager.openForUser(user);
+    
+    const uiBot = new UIBot();
+    await uiBot.handleUICommandComplete(uiCommand, user, browser, context);
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Kontrola hostname ochrany
+ * @returns {Promise<boolean>} true pokud je hostname blokován
+ */
+async function checkHostnameProtection() {
+  if (await hostnameProtection.isBlocked()) {
+    await waitWithHeartbeat(5);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Zpracování práce uživatele
+ * @returns {Promise<void>}
+ */
+async function processUserWork() {
+  const user = await userSelector.selectUser();
+  if (!user) {
+    await userSelector.showAccountLockStats();
+    await waitWithHeartbeat();
+    return;
+  }
+
+  Log.success(`[${user.id}]`, `🚀 Vybrán uživatel ${user.name} ${user.surname}`);
+
+  const { instance: browser, context } = await browserManager.openForUser(user);
+  
+  const wheelResult = await runWheelOfFortune(user, browser, context);
+  
+  await handleWheelResult(wheelResult, user, browser, context);
+}
+
+/**
+ * Zpracování výsledku wheel
+ * @param {Object} wheelResult - Výsledek wheel
+ * @param {Object} user - Uživatel
+ * @param {Object} browser - Browser instance
+ * @param {Object} context - Context
+ * @returns {Promise<void>}
+ */
+async function handleWheelResult(wheelResult, user, browser, context) {
+  if (wheelResult.stoppedByUI) {
+    const postUICommand = await UIBot.quickCheck();
+    
+    if (postUICommand && postUICommand.user_id === user.id) {
+      const uiBot = new UIBot();
+      await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
+    }
+  } else if (wheelResult.stoppedByRestart) {
+    Log.info('[WORKER]', 'Wheel ukončen kvůli restart_needed. Ukončuji worker.');
+    await browserManager.closeBrowser(browser);
+    return;
+  } else {
+    await browserManager.closeBrowser(browser);
+    
+    const fbPauseSeconds = 60 + Math.random() * 120; // 60-180 sekund
+    Log.info('[WORKER]', `⏳ Pauza po zavření FB: ${Math.round(fbPauseSeconds)}s`);
+    await wait.delay(fbPauseSeconds * 1000);
+  }
+}
+
+/**
+ * Zpracování chyb workeru
+ * @param {Error} err - Chyba
+ * @returns {Promise<void>}
+ */
+async function handleWorkerError(err) {
+  const userChoice = await Log.errorInteractive('[WORKER]', err);
+  if (userChoice === 'quit' || userChoice === true) {
+    Log.info('[WORKER]', 'Ukončuji na požádání uživatele...');
+    process.exit(99);
+  }
+  await waitWithHeartbeat(2);
 }
 
 
 
 
 /**
- * Čekání s pravidelným heartBeat
+ * Čekání bez heartBeat (heartbeat běží asynchronně)
  */
 async function waitWithHeartbeat(waitMinutes = null) {
   const waitTime = waitMinutes || IvMath.randInterval(config.wait_min_minutes, config.wait_max_minutes);
   const waitMs = waitTime * 60 * 1000;
-  const heartBeatInterval = config.heartbeat_interval;
 
-  Log.info('[WORKER]', `Čekám ${waitTime} minut s heartBeat každých ${heartBeatInterval/1000}s...`);
+  Log.info('[WORKER]', `Čekám ${waitTime} minut...`);
 
-  let elapsed = 0;
-  while (elapsed < waitMs) {
-    try {
-      await db.heartBeat(0, 0, 'IVY4B3T');
-      Log.debug('[WORKER]', 'Heartbeat odeslán během čekání');
-    } catch (err) {
-      await Log.warn('[WORKER]', `Chyba při heartBeat: ${err.message}`);
-    }
-
-    const sleepTime = Math.min(heartBeatInterval, waitMs - elapsed);
-    await wait.delay(sleepTime);
-    elapsed += sleepTime;
-
-    if (elapsed % 60000 === 0) {
-      const remainingMinutes = Math.ceil((waitMs - elapsed) / 60000);
-      Log.debug('[WORKER]', `Zbývá ${remainingMinutes} minut čekání...`);
-    }
-  }
+  await wait.delay(waitMs);
 
   Log.info('[WORKER]', 'Čekání dokončeno, spouštím nový cyklus');
 }

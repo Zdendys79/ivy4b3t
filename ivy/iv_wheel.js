@@ -32,9 +32,15 @@ class Wheel {
   }
 
   pick() {
-    // DEBUG: Force specific action for testing
-    Log.debug('[WHEEL]', 'Force specific action for testing');
-    return this.activities.find(a => a.code === 'quote_post');
+    // Test mode: main branch = testovací, production = ostrá verze
+    const gitBranch = process.env.IVY_GIT_BRANCH || 'production';
+    if (gitBranch === 'main' && config.cfg_test_action) {
+      const testAction = this.activities.find(a => a.code === config.cfg_test_action);
+      if (testAction) {
+        Log.debug('[WHEEL]', `Test mode (${gitBranch}): vracím ${config.cfg_test_action}`);
+        return testAction;
+      }
+    }
     
     if (this.totalWeight === 0) return null;
 
@@ -62,6 +68,9 @@ export async function runWheelOfFortune(user, browser, context) {
   invasiveLock.init();
   await db.initUserActionPlan(user.id);
   
+  // Nastavit globální stav - wheel aktivní
+  global.systemState.currentUserId = user.id;
+  
   const initResult = await actionRouter.init();
   if (!initResult) {
     throw new Error('Nepodařilo se inicializovat ActionRouter');
@@ -80,6 +89,12 @@ export async function runWheelOfFortune(user, browser, context) {
   try {
     // Hlavní smyčka
     while (true) {
+      // 0. Kontrola restart_needed
+      if (global.systemState.restart_needed) {
+        Log.info(`[${user.id}]`, 'Heartbeat detekoval změnu verze. Ukončuji wheel.');
+        return { stoppedByRestart: true };
+      }
+      
       // 1. Kontrola consecutive failures
       if (consecutiveFailures >= config.consecutive_failures_limit) {
         await Log.error(`[${user.id}]`, `🚨 ${consecutiveFailures} neúspěšných akcí za sebou`);
@@ -121,7 +136,16 @@ export async function runWheelOfFortune(user, browser, context) {
         fbBot,
         ...context
       };
+      
+      // Nastavit globální stav před spuštěním akce
+      global.systemState.currentAction = pickedAction.code;
+      global.systemState.actionStartTime = Date.now();
+      
       const success = await actionRouter.executeAction(pickedAction.code, user, actionContext, pickedAction);
+      
+      // Vyčistit stav po dokončení akce
+      global.systemState.currentAction = null;
+      global.systemState.actionStartTime = null;
       
       if (!success) {
         consecutiveFailures++;
@@ -140,15 +164,19 @@ export async function runWheelOfFortune(user, browser, context) {
 
       actionCount++;
 
-      // 6. Kontrola UI příkazů
-      const uiBot = new UIBot();
-      const uiCommand = await uiBot.checkForCommand();
-      await uiBot.close();
+      // 6. Kontrola UI příkazů (nejprve cache, pak databáze)
+      const uiCommand = global.uiCommandCache || await UIBot.quickCheck();
       
       if (uiCommand) {
         Log.info(`[${user.id}]`, 'Detekován UI příkaz - ukončuji kolo štěstí');
         
         return { stoppedByUI: true };
+      }
+      
+      // 6b. Kontrola restart_needed (může se změnit během akcí)
+      if (global.systemState.restart_needed) {
+        Log.info(`[${user.id}]`, 'Heartbeat detekoval změnu verze. Ukončuji wheel.');
+        return { stoppedByRestart: true };
       }
 
       // 7. Pauza mezi akcemi
@@ -162,6 +190,11 @@ export async function runWheelOfFortune(user, browser, context) {
     await Log.error(`[${user.id}]`, `Chyba v kole štěstí: ${err.message}`);
     throw err;
   } finally {
+    // Vyčistit globální stav systému
+    global.systemState.currentUserId = null;
+    global.systemState.currentAction = null;
+    global.systemState.actionStartTime = null;
+    
     // Jediné místo kde se FBBot ukončuje
     if (fbBot) {
       try {
