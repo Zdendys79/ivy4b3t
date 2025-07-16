@@ -48,9 +48,18 @@ export class QuotePostAction extends BaseAction {
       // KROK 1: Otevřít prohlížeč na stránce facebook.com
       await this.step1_openFacebook(user, fbBot);
 
-      // Prozatím končíme po kroku 1
-      Log.success(`[${user.id}]`, 'Krok 1 dokončen - prohlížeč je na facebook.com');
-      return true;
+      // KROK 2: Kliknout na "Co se vám honí hlavou"
+      await this.step2_clickPostInput(user, fbBot);
+
+      // Prozatím končíme po kroku 2 - akce není dokončena
+      Log.success(`[${user.id}]`, 'Krok 2 dokončen - kliknuto na vstupní pole');
+      
+      // Čekání 60s nebo do zavření prohlížeče
+      Log.info(`[${user.id}]`, 'Čekám 60s nebo do zavření prohlížeče...');
+      await this.waitForBrowserCloseOrTimeout(user, fbBot, 60000);
+      
+      await Log.warn(`[${user.id}]`, 'Nedokončený Programový kód akce.');
+      return false;
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při quote post: ${err.message}`);
@@ -64,29 +73,66 @@ export class QuotePostAction extends BaseAction {
   async step1_openFacebook(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 1: Otevírám Facebook...');
 
-    // Kontrola, zda už nejsme na Facebooku
-    const currentUrl = fbBot.page.url();
-    Log.debug(`[${user.id}]`, `Aktuální URL: ${currentUrl}`);
-
-    if (currentUrl.includes('facebook.com')) {
-      Log.info(`[${user.id}]`, 'Prohlížeč už je na facebook.com');
-      return;
-    }
-
-    // Navigace na Facebook
+    // Navigace na Facebook - čekáme na networkidle2
     Log.info(`[${user.id}]`, 'Naviguji na facebook.com...');
     
     await fbBot.page.goto('https://www.facebook.com/', {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle2',
       timeout: 30000
     });
 
-    // Krátká pauza po načtení
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Reinicializace analyzátoru
+    // Reinicializace analyzátoru (spustí se hned po networkidle2)
     fbBot.initializeAnalyzer();
 
+    // Jedna lidská pauza (2-5 sekund)
+    const pauseTime = 2000 + Math.random() * 3000;
+    Log.info(`[${user.id}]`, `Čekám ${Math.round(pauseTime/1000)}s po analýze...`);
+    await new Promise(resolve => setTimeout(resolve, pauseTime));
+
     Log.success(`[${user.id}]`, 'KROK 1 DOKONČEN: Jsme na facebook.com');
+  }
+
+  /**
+   * KROK 2: Kliknout na "Co se vám honí hlavou"
+   */
+  async step2_clickPostInput(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 2: Klikám na "Co se vám honí hlavou"...');
+
+    try {
+      await fbBot.pageAnalyzer.clickElementStartingWithText('Co se vám honí hlavou');
+      Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
+    } catch (err) {
+      throw new Error(`Nepodařilo se kliknout na element: ${err.message}`);
+    }
+  }
+
+  /**
+   * Čekání na timeout nebo zavření prohlížeče
+   */
+  async waitForBrowserCloseOrTimeout(user, fbBot, timeoutMs) {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      
+      // Kontrola každých 500ms
+      const checkInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        
+        // Timeout dosažen
+        if (elapsed >= timeoutMs) {
+          clearInterval(checkInterval);
+          Log.info(`[${user.id}]`, `Timeout ${timeoutMs/1000}s dosažen`);
+          resolve();
+          return;
+        }
+        
+        // Kontrola, zda je prohlížeč stále připojen
+        if (!fbBot.page || fbBot.page.isClosed()) {
+          clearInterval(checkInterval);
+          Log.info(`[${user.id}]`, 'Prohlížeč byl zavřen');
+          resolve();
+          return;
+        }
+      }, 500);
+    });
   }
 }

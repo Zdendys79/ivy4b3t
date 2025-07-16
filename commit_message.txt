@@ -1,4 +1,8 @@
-fix: Opravit import FBBot v iv_wheel.js
+feat: Implementovat kroky 1-2 quote_post akce s čekáním
 
-- Opravena cesta importu z iv_fbbot.class.js na iv_fb.class.js
-- FBBot třída se nachází v iv_fb.class.js
+- Přidán krok 2: kliknutí na "Co se vám honí hlavou"
+- Upravena logika pauzy: networkidle2 → analyzer → jedna lidská pauza
+- Odstraněny zbytečné URL kontroly (spoléháme na analyzátor)
+- Přidáno čekání 60s nebo do zavření prohlížeče na konci
+- Akce vrací false (nezpůsobí invasive lock)
+- Přidán --trace-warnings do start skriptů

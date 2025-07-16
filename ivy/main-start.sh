@@ -188,7 +188,7 @@ main_loop() {
 
         # Spuštění aplikace
         # export DEBUG="puppeteer:*"  # pouze pro rozsáhlý debugging
-        node ivy.js
+        node --trace-warnings ivy.js
 
         local exit_code=$?
         echo ""
