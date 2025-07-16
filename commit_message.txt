@@ -1,7 +1,6 @@
-fix: Opravit TimeoutNaNWarning a debugging
+fix: Odstranit fallback mechanismy podle KRITICKÉHO PRAVIDLA
 
-- Přidat stack trace do Log.error pro lepší debugging
-- Přidat sloupec type do tabulky variables
-- Opravit SQL dotazy pro načítání variables s typem
-- Nastavit správný typ number pro wheel_action_delay hodnoty
-- Přidat validaci vstupů do wait.delay a IvMath.randInterval
+- Nahradit fallback hodnoty v wait.delay() za throw error
+- Nahradit fallback hodnoty v IvMath.randInterval() za throw error
+- Systém nyní selže s jasným stack trace místo skrývání chyb
+- Nucené řešení skutečného zdroje problému místo fallbacků

@@ -74,11 +74,11 @@ export async function delay(delay_time, verbose = true) { // wait delay_time ms
             Log.info('[WAIT]', `Waiting ${m}:${s} to time ${target_hours}.${target_minutes}`);
         }
     }
-    // Validace delay_time
+    // Validace delay_time - BEZ FALLBACK!
     if (isNaN(delay_time) || delay_time < 0) {
-        const error = new Error(`Neplatný delay_time: ${delay_time}. Používám 1000ms jako fallback.`);
+        const error = new Error(`Neplatný delay_time: ${delay_time}. Zdroj chyby musí být opraven!`);
         Log.error('[WAIT]', error);
-        delay_time = 1000;
+        throw error;
     }
     
     return new Promise(resolve => setTimeout(resolve, delay_time));

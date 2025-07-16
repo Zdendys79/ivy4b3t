@@ -24,12 +24,11 @@ export class IvMath {
    * IvMath.randInterval(24, 72) // vrátí číslo mezi 24-72
    */
   static randInterval(min, max) {
-    // Validace vstupů
+    // Validace vstupů - BEZ FALLBACK!
     if (isNaN(min) || isNaN(max) || min < 0 || max < 0) {
-      const error = new Error(`Neplatné hodnoty pro randInterval: min=${min}, max=${max}. Používám 1000-3000ms jako fallback.`);
+      const error = new Error(`Neplatné hodnoty pro randInterval: min=${min}, max=${max}. Zdroj chyby musí být opraven!`);
       console.error(`[MATH] Stack trace:`, error.stack);
-      min = 1000;
-      max = 3000;
+      throw error;
     }
     
     if (min > max) {
