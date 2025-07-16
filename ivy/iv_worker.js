@@ -28,7 +28,6 @@ import { UserSelector } from './libs/iv_user_selector.class.js';
 import { HostnameProtection } from './libs/iv_hostname_protection.class.js';
 
 import * as wait from './iv_wait.js';
-import * as support from './iv_support.js';
 
 const config = getIvyConfig();
 const browserManager = new BrowserManager();

@@ -13,7 +13,6 @@ import os from 'node:os';
 import { db } from '../iv_sql.js';
 import { Log } from './iv_log.class.js';
 import { UIBot } from './iv_ui.class.js';
-import * as support from '../iv_support.js';
 
 export class UserSelector {
   constructor() {
@@ -60,8 +59,7 @@ export class UserSelector {
    */
   async selectUser() {
     try {
-      const gitInfo = await support.getGitInfo();
-      const isMainBranch = gitInfo.branch === 'main';
+      const isMainBranch = process.env.IVY_GIT_BRANCH === 'main';
 
       let user;
       if (isMainBranch) {

@@ -10,7 +10,6 @@
 
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
-import * as support from '../iv_support.js';
 
 export class AccountDelayAction extends BaseAction {
   constructor() {
@@ -32,8 +31,7 @@ export class AccountDelayAction extends BaseAction {
    */
   async verifyReadiness(user, context) {
     // Account delay funguje jen v produkční verzi, na main větvi se nepoužívá
-    const gitInfo = await support.getGitInfo();
-    const isMainBranch = gitInfo.branch === 'main';
+    const isMainBranch = process.env.IVY_GIT_BRANCH === 'main';
     
     if (isMainBranch) {
       return {

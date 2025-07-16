@@ -132,7 +132,7 @@ export async function findByText(page, text, options = {}) {
 
 /**
  * Rychlé vyhledání a kliknutí na text pomocí JavaScript metody.
- * Podobné fallback metodě, ale s možností specifikace match typu.
+ * Poskytuje možnost specifikace match typu pro přesné hledání elementů.
  * @param {Page} page - Puppeteer page instance
  * @param {string} text - hledaný text
  * @param {object} options - volby (match: startsWith|exact|contains)
@@ -1055,26 +1055,10 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
             await fbBot.findDiscussionElement();
             await fbBot.findJoinGroupElement();
             
-            // Zkontroluj, zda je k dispozici alespoň jeden z fallback elementů
-            if (!fbBot.discussionElement && !fbBot.joinGroupElement) {
-              return {
-                ready: false,
-                reason: 'Ani element pro psaní příspěvku ani alternativní elementy nejsou k dispozici',
-                critical: false,
-                shouldNavigate: false,
-                analysisDetails: analysis
-              };
-            }
-            
-            Log.success(`[${user.id}]`, '✅ Skupina připravena s alternativními elementy (diskuze/přidání do skupiny)');
-            return {
-              ready: true,
-              reason: 'Skupina připravena s alternativními elementy',
-              critical: false,
-              shouldNavigate: false,
-              analysisDetails: analysis,
-              fallbackMode: true
-            };
+            // Kritická chyba - PageAnalyzer nenašel potřebné elementy
+            const error = new Error('PageAnalyzer nenašel žádné potřebné elementy pro posting - kritická chyba!');
+            Log.error(`[${user.id}]`, error);
+            throw error;
           }
           
           // Pokud je "Napište něco" k dispozici, nepotřebujeme alternativní elementy

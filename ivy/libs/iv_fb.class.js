@@ -192,46 +192,18 @@ export class FBBot {
   async _typeLikeHuman(text, context = 'neutral') {
     // Pokud máme userId, použij pokročilé chování
     if (this.userId) {
-      try {
-        if (!this.humanBehavior) {
-          this.humanBehavior = await getHumanBehavior(this.userId);
-        }
-
-        await this.humanBehavior.typeLikeHuman(this.page, text, context);
-        return;
-      } catch (error) {
-        await Log.warn(`[${this.userId}]`, `⚠️ Pokročilé psaní selhalo, používám fallback: ${error.message}`);
-        // Pokračuj fallback metodou
+      if (!this.humanBehavior) {
+        this.humanBehavior = await getHumanBehavior(this.userId);
       }
+
+      await this.humanBehavior.typeLikeHuman(this.page, text, context);
+      return;
     }
 
-    // Fallback na původní metodu
-    const el = await this.page.evaluateHandle(() => document.activeElement);
-    const chars = text.split('');
-
-    for (let i = 0; i < chars.length; i++) {
-      const char = chars[i];
-
-      // 📉 5–10 % šance na překlep
-      if (Math.random() < 0.07 && /[a-zá-ž]/i.test(char)) {
-        const typo = String.fromCharCode(char.charCodeAt(0) + 1); // např. o -> p
-        await el.type(typo);
-        await new Promise(resolve => setTimeout(resolve, wait.type()));
-
-        await el.press('Backspace'); // oprava
-        await new Promise(resolve => setTimeout(resolve, wait.type()));
-      }
-
-      await el.type(char);
-      await new Promise(resolve => setTimeout(resolve, wait.type()));
-
-      // ⌛️ Pauza po některých slovech
-      if (char === ' ' && Math.random() < 0.4) {
-        await wait.pauseBetweenWords();
-      }
-    }
-
-    // Log.info(`[FB] Text napsán: ${text}`);
+    // Kritická chyba - userId je povinný pro typing
+    const error = new Error('userId je povinný pro _typeLikeHuman funkci');
+    Log.error(`[FB]`, error);
+    throw error;
   }
 
   async _verifyTargetGroup(targetGroup) {
@@ -973,36 +945,6 @@ export class FBBot {
     }
   }
 
-  async findPostElementFallback() {
-    try {
-      Log.info('[FB]', 'Zkouším fallback: hledám klikatelné span elementy...');
-      
-      // Hledáme span elementy které mohou být klikatelné (mají cursor pointer nebo jsou uvnitř klikatelného elementu)
-      const fallbackSelectors = [
-        'xpath=//span[contains(@class, "x1lliihq") and contains(text(), "Napište")]',
-        'xpath=//span[contains(@style, "cursor") and contains(text(), "něco")]',
-        'xpath=//div[contains(@role, "textbox")]//span',
-        'xpath=//div[@data-testid="status-attachment-mentions-input"]//span'
-      ];
-
-      for (const selector of fallbackSelectors) {
-        try {
-          const handle = await this.page.waitForSelector(selector, { timeout: 2000 });
-          if (handle) {
-            Log.info('[FB]', `Fallback nalezl element s selektorem: ${selector}`);
-            return { handle, text: 'fallback' };
-          }
-        } catch (err) {
-          // Pokračuj s dalším selektorem
-        }
-      }
-      
-      return null;
-    } catch (err) {
-      Log.debug('[FB]', `Fallback selhal: ${err.message}`);
-      return null;
-    }
-  }
 
   async clickNewThing() {
     try {
