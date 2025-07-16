@@ -1,8 +1,8 @@
 /**
- * Název souboru: quote_post_simple.action.js
- * Umístění: ~/ivy/actions/quote_post_simple.action.js
+ * Název souboru: quote_post.action.js
+ * Umístění: ~/ivy/actions/quote_post.action.js
  *
- * Popis: Jednoduchá implementace quote post akce
+ * Popis: Implementace quote post akce
  * - Krok za krokem
  * - Bez fallbacků
  * - Minimalistické řešení
@@ -11,7 +11,7 @@
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
 
-export class QuotePostSimpleAction extends BaseAction {
+export class QuotePostAction extends BaseAction {
   constructor() {
     super('quote_post');
   }

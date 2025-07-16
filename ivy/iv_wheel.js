@@ -5,7 +5,8 @@
  * Popis: Zjednodušené kolo štěstí - pouze losování a orchestrace
  * - Losuje akce podle vah a limitů
  * - Spravuje invasive lock
- * - Deleguje provedení na IvActions
+ * - Iniciuje FBBot pro běžné akce
+ * - Deleguje provedení na ActionRouter
  * - Kontroluje consecutive failures
  */
 
@@ -13,7 +14,8 @@ import { db } from './iv_sql.js';
 import { Log } from './libs/iv_log.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
 import { InvasiveLock } from './libs/iv_invasive_lock.class.js';
-import { IvActions } from './libs/iv_actions.class.js';
+import { ActionRouter } from './libs/action_router.class.js';
+import { FBBot } from './libs/iv_fbbot.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { IvMath } from './libs/iv_math.class.js';
 import * as wait from './iv_wait.js';
@@ -47,17 +49,28 @@ class Wheel {
  */
 export async function runWheelOfFortune(user, browser, context) {
   const invasiveLock = new InvasiveLock();
-  const actions = new IvActions();
+  const actionRouter = new ActionRouter();
   let consecutiveFailures = 0;
   let actionCount = 0;
+  let fbBot = null;
 
   // Inicializace
   invasiveLock.init();
   await db.initUserActionPlan(user.id);
   
-  const initResult = await actions.init();
+  const initResult = await actionRouter.init();
   if (!initResult) {
-    throw new Error('Nepodařilo se inicializovat IvActions');
+    throw new Error('Nepodařilo se inicializovat ActionRouter');
+  }
+
+  // Iniciuj FBBot pro všechny akce (kromě ukončovacích)
+  try {
+    fbBot = new FBBot(browser, user.id);
+    await fbBot.init();
+    Log.info(`[${user.id}]`, 'FBBot úspěšně inicializován');
+  } catch (err) {
+    Log.error(`[${user.id}]`, `Chyba při inicializaci FBBot: ${err.message}`);
+    throw err;
   }
 
   try {
@@ -66,7 +79,10 @@ export async function runWheelOfFortune(user, browser, context) {
       // 1. Kontrola consecutive failures
       if (consecutiveFailures >= config.consecutive_failures_limit) {
         await Log.error(`[${user.id}]`, `🚨 ${consecutiveFailures} neúspěšných akcí za sebou`);
-        await actions.runAction(user, 'account_delay', { browser, context });
+        
+        // Pro ukončovací akce nepotřebujeme FBBot
+        const endingContext = { browser, ...context };
+        await actionRouter.executeAction('account_delay', user, endingContext, {});
         break;
       }
 
@@ -77,7 +93,9 @@ export async function runWheelOfFortune(user, browser, context) {
       if (isWheelEmpty(availableActions)) {
         const endingAction = await handleEmptyWheel(user, availableActions);
         if (endingAction) {
-          await actions.runAction(user, endingAction.code, { browser, context });
+          // Pro ukončovací akce nepotřebujeme FBBot
+          const endingContext = { browser, ...context };
+          await actionRouter.executeAction(endingAction.code, user, endingContext, {});
         }
         break;
       }
@@ -92,7 +110,12 @@ export async function runWheelOfFortune(user, browser, context) {
       Log.info(`[${user.id}]`, `Vylosována akce #${actionCount + 1}: ${pickedAction.code}`);
 
       // 5. Provedení akce
-      const success = await actions.runAction(user, pickedAction.code, { browser, context }, pickedAction);
+      const actionContext = {
+        browser,
+        fbBot,
+        ...context
+      };
+      const success = await actionRouter.executeAction(pickedAction.code, user, actionContext, pickedAction);
       
       if (!success) {
         consecutiveFailures++;
@@ -118,6 +141,7 @@ export async function runWheelOfFortune(user, browser, context) {
       
       if (uiCommand) {
         Log.info(`[${user.id}]`, 'Detekován UI příkaz - ukončuji kolo štěstí');
+        // FBBot se ukončí v finally bloku
         return { stoppedByUI: true };
       }
 
@@ -131,6 +155,16 @@ export async function runWheelOfFortune(user, browser, context) {
   } catch (err) {
     await Log.error(`[${user.id}]`, `Chyba v kole štěstí: ${err.message}`);
     throw err;
+  } finally {
+    // Ukončení FBBot na konci práce s uživatelem
+    if (fbBot) {
+      try {
+        await fbBot.close();
+        Log.info(`[${user.id}]`, 'FBBot úspěšně ukončen');
+      } catch (err) {
+        Log.warn(`[${user.id}]`, `Chyba při ukončování FBBot: ${err.message}`);
+      }
+    }
   }
 }
 
