@@ -99,7 +99,7 @@ export class QuotePostAction extends BaseAction {
     Log.info(`[${user.id}]`, 'KROK 2: Klikám na "Co se vám honí hlavou"...');
 
     try {
-      await fbBot.pageAnalyzer.clickElementWithText('Co se vám honí hlavou');
+      await fbBot.pageAnalyzer.clickElementWithText('Co se vám honí hlavou', { matchType: 'startsWith' });
       Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
     } catch (err) {
       throw new Error(`Nepodařilo se kliknout na element: ${err.message}`);

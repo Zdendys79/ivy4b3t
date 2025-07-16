@@ -1,8 +1,5 @@
-feat: Implementovat kroky 1-2 quote_post akce s čekáním
+fix: Opravit matchType pro clickElementWithText v quote_post
 
-- Přidán krok 2: kliknutí na "Co se vám honí hlavou"
-- Upravena logika pauzy: networkidle2 → analyzer → jedna lidská pauza
-- Odstraněny zbytečné URL kontroly (spoléháme na analyzátor)
-- Přidáno čekání 60s nebo do zavření prohlížeče na konci
-- Akce vrací false (nezpůsobí invasive lock)
-- Přidán --trace-warnings do start skriptů
+- Změněn matchType z 'exact' na 'startsWith' pro text "Co se vám honí hlavou"
+- Metoda clickElementWithText používá defaultně exact match
+- Quote_post potřebuje startsWith pro správné vyhledání elementu
