@@ -276,6 +276,24 @@ export class QueryBuilder {
     ]);
   }
 
+  async heartBeatExtended(params) {
+    const { hostname, version, userId, action, actionStartedAt } = params;
+    
+    // Aktualizovat heartbeat
+    await this.safeExecute('system.heartBeatExtended', [
+      hostname, userId, version, action, actionStartedAt, userId, version, action, actionStartedAt
+    ]);
+    
+    // Získat UI příkaz a verzi z databáze
+    const uiCommand = await this.getUICommand();
+    const dbVersion = await this.getVersionCode();
+    
+    return {
+      uiCommand,
+      dbVersion: dbVersion?.code || null
+    };
+  }
+
   async getVersionCode() {
     return await this.safeQueryFirst('system.getVersionCode');
   }

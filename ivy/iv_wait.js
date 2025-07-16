@@ -74,6 +74,12 @@ export async function delay(delay_time, verbose = true) { // wait delay_time ms
             Log.info('[WAIT]', `Waiting ${m}:${s} to time ${target_hours}.${target_minutes}`);
         }
     }
+    // Validace delay_time
+    if (isNaN(delay_time) || delay_time < 0) {
+        Log.error('[WAIT]', `Neplatný delay_time: ${delay_time}. Používám 1000ms jako fallback.`);
+        delay_time = 1000;
+    }
+    
     return new Promise(resolve => setTimeout(resolve, delay_time));
 }
 

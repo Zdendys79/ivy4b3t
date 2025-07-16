@@ -24,22 +24,20 @@ export class SystemLogger {
    */
   static async logEvent(eventType, level, message, metadata, hostname, versionCode, gitBranch, sessionId) {
     try {
-      const queryBuilder = await import('./iv_querybuilder.class.js');
-      const dbInstance = new queryBuilder.QueryBuilder();
-      
-      const eventData = {
-        version: versionCode,
-        git_branch: gitBranch,
-        session_id: sessionId,
-        ...metadata
-      };
-      
-      const result = await dbInstance.logSystemEvent(
+      const result = await db.safeExecute('system.insertSystemLog', [
+        hostname,
         eventType,
         level,
         message,
-        eventData
-      );
+        JSON.stringify({
+          version: versionCode,
+          git_branch: gitBranch,
+          session_id: sessionId,
+          ...metadata
+        }),
+        null,
+        process.pid
+      ]);
       
       if (result) {
         Log.debug('[SYSTEM_LOGGER]', `${eventType} event successfully logged to log_system`);

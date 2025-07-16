@@ -24,6 +24,18 @@ export class IvMath {
    * IvMath.randInterval(24, 72) // vrátí číslo mezi 24-72
    */
   static randInterval(min, max) {
+    // Validace vstupů
+    if (isNaN(min) || isNaN(max) || min < 0 || max < 0) {
+      console.error(`[MATH] Neplatné hodnoty pro randInterval: min=${min}, max=${max}. Používám 1000-3000ms jako fallback.`);
+      min = 1000;
+      max = 3000;
+    }
+    
+    if (min > max) {
+      console.error(`[MATH] min (${min}) je větší než max (${max}). Prohazuji hodnoty.`);
+      [min, max] = [max, min];
+    }
+    
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
