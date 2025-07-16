@@ -25,15 +25,14 @@ const hostname = os.hostname();
 const versionCode = getVersion();
 const gitBranch = process.env.IVY_GIT_BRANCH || 'production';
 
-// Globální stav systému pro monitoring
+// Globální proměnné systému
 global.systemState = {
   currentUserId: null,
   currentAction: null,
   actionStartTime: null,
   restart_needed: false
 };
-
-// Cache pro UI příkazy
+global.isTestBranch = (gitBranch === 'main');
 global.uiCommandCache = null;
 
 // Initialize the console logger

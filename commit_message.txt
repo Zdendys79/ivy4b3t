@@ -1,5 +1,6 @@
-fix: Zjednodušit test mode v wheel.pick() - napevno vrátit quote_post
+fix: Vytvořit global.isTestBranch a opravit výběr uživatele na main větvi
 
-- Nahradit složitou logiku s config.cfg_test_action za jednoduché vrácení quote_post
-- Na main větvi vždy vrací quote_post akci pro testování
-- Odstranit závislost na cfg_test_action proměnné z databáze
+- Přidat global.isTestBranch boolean pro snadné testování kdekoli v kódu
+- Nahradit process.env.IVY_GIT_BRANCH kontroly za global.isTestBranch
+- Opravit _selectUserForMainBranch() - používat getUserWithAvailableActions místo getOldestReadyUser
+- Main větev nyní vybírá jen uživatele s dostupnými akcemi (stejně jako produkční)

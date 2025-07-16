@@ -33,9 +33,8 @@ class Wheel {
 
   pick() {
     // Test mode: main branch = testovací, production = ostrá verze
-    const gitBranch = process.env.IVY_GIT_BRANCH || 'production';
-    if (gitBranch === 'main') {
-      Log.debug('[WHEEL]', `Test mode (${gitBranch}): vracím quote_post`);
+    if (global.isTestBranch) {
+      Log.debug('[WHEEL]', 'Test mode: vracím quote_post');
       return this.activities.find(a => a.code === 'quote_post');
     }
     
@@ -106,8 +105,8 @@ export async function runWheelOfFortune(user, browser, context) {
       // 2. Získání dostupných akcí
       const availableActions = await getAvailableActions(user.id, invasiveLock);
       
-      // 3. Kontrola prázdného kola
-      if (isWheelEmpty(availableActions)) {
+      // 3. Kontrola prázdného kola (kromě test módu)
+      if (!global.isTestBranch && isWheelEmpty(availableActions)) {
         const endingAction = await handleEmptyWheel(user, availableActions);
         if (endingAction) {
           // Pro ukončovací akce nepotřebujeme FBBot

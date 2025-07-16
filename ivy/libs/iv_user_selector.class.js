@@ -116,9 +116,9 @@ export class UserSelector {
    * @returns {Promise<Object|null>}
    */
   async _selectUserForMainBranch() {
-    Log.info('[USER_SELECTOR]', '🌿 MAIN větev - používám rotační výběr uživatele');
+    Log.info('[USER_SELECTOR]', '🌿 MAIN větev - používám rotační výběr uživatele s dostupnými akcemi');
     
-    const user = await db.getOldestReadyUser(this.hostname);
+    const user = await db.getUserWithAvailableActions(this.hostname);
     if (user) {
       await db.updateUserWorktime(user.id, 15);
       Log.info('[USER_SELECTOR]', `🌿 MAIN větev: Čas aktivity uživatele ${user.id} posunut o 15 minut`);
