@@ -24,8 +24,8 @@ export class IvyConfig {
     this.cache = {
       // Worker konfigurace
       heartbeat_interval: 30000,
-      wait_min_minutes: 1,
-      wait_max_minutes: 5,
+      wait_min_minutes: 0.33,  // 20 sekund
+      wait_max_minutes: 0.67,  // 40 sekund
       consecutive_failures_limit: 5,
       
       // UI konfigurace
@@ -266,8 +266,8 @@ export class IvyConfig {
     this.cache = {
       // Worker konfigurace
       heartbeat_interval: 30000,
-      wait_min_minutes: 1,
-      wait_max_minutes: 5,
+      wait_min_minutes: 0.33,  // 20 sekund
+      wait_max_minutes: 0.67,  // 40 sekund
       consecutive_failures_limit: 5,
       
       // UI konfigurace
@@ -323,8 +323,8 @@ export class IvyConfig {
     this.cache = {
       // Worker konfigurace
       heartbeat_interval: 30000,
-      wait_min_minutes: 1,
-      wait_max_minutes: 5,
+      wait_min_minutes: 0.33,  // 20 sekund
+      wait_max_minutes: 0.67,  // 40 sekund
       consecutive_failures_limit: 5,
       
       // UI konfigurace

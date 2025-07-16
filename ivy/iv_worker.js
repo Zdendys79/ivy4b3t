@@ -96,6 +96,11 @@ export async function tick() {
     } else {
       // KROK 7: Zavření prohlížeče
       await browserManager.closeBrowser(browser);
+      
+      // KROK 8: Pauza po zavření FB
+      const fbPauseSeconds = 60 + Math.random() * 120; // 60-180 sekund
+      Log.info('[WORKER]', `⏳ Pauza po zavření FB: ${Math.round(fbPauseSeconds)}s`);
+      await wait.delay(fbPauseSeconds * 1000);
     }
 
   } catch (err) {
