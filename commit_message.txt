@@ -1,8 +1,7 @@
-fix: Opravit lifecycle FBBot a odstranit fallback mechanismy
+refactor: Opravit test bypass v pickAction - přesunout do wheel.pick()
 
-- Přesunut FBBot.close() do finally bloku - jediné místo ukončení
-- Odstraněn fallback "přímé hledání" z PageAnalyzer.clickElementWithText
-- Odstraněna celá metoda _directClickByText (fallback mechanismus)
-- Vyřešeno cyklické otevírání FB kvůli předčasnému ukončení FBBot
-- Aplikovány KISS, DRY principy - žádné duplikace kódu
-- FBBot se ukončuje pouze na konci wheel cyklu, ne při selhání akcí
+- Odstraněn Code Bloat z pickAction funkce (komentovaný kód)
+- Přesunut testovací bypass přímo do wheel.pick() metody
+- Jednodušší DEBUG řešení: log + přímý return quote_post
+- Aplikovány KISS principy - nejjednodušší možné řešení
+- Snadné odstranění - jen 2 řádky kódu

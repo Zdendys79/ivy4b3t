@@ -32,6 +32,10 @@ class Wheel {
   }
 
   pick() {
+    // DEBUG: Force specific action for testing
+    Log.debug('[WHEEL]', 'Force specific action for testing');
+    return this.activities.find(a => a.code === 'quote_post');
+    
     if (this.totalWeight === 0) return null;
 
     let r = Math.random() * this.totalWeight;
@@ -243,10 +247,7 @@ function pickAction(actions) {
   if (normalActions.length === 0) return null;
   
   const wheel = new Wheel(normalActions);
-  //return wheel.pick();
-  // Z důvodu testování volíme právě jednu akci:
-  const quotePostAction = normalActions.find(a => a.code === 'quote_post');
-  return quotePostAction;
+  return wheel.pick();
 }
 
 /**
