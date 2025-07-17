@@ -5,6 +5,7 @@ import readline from 'readline';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { Wait } from './libs/iv_wait.class.js';
 
 const isLinux = process.platform === 'linux';
 
@@ -189,7 +190,7 @@ async function main() {
   await page.goto('https://www.facebook.com', { waitUntil: 'networkidle2' });
   
   // Počkání na načtení stránky
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  await Wait.toSeconds(3, 'Načtení FB stránky');
   
   // Injekce stylů
   await injectStyles();
@@ -268,7 +269,7 @@ async function main() {
         console.log('Kliknutí provedeno!');
         
         // Počkat chvíli na případné změny na stránce
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await Wait.toSeconds(2, 'Čekání na změny na stránce');
         
         // Znovu načíst elementy
         console.log('\nObnovuji seznam elementů...');

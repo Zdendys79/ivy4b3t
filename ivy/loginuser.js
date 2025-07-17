@@ -16,7 +16,7 @@ import { db } from './iv_sql.js'
 import { FBBot } from './libs/iv_fb.class.js';
 import { Log } from './libs/iv_log.class.js';
 
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 
 const isLinux = process.platform === 'linux';
 const hostname = os.hostname();
@@ -109,7 +109,7 @@ process.on('SIGINT', async () => {
     Log.info('[LOGINUSER]', 'Pro předčasné ukončení použijte Ctrl+C');
 
     await Promise.race([
-      wait.delay(60 * 60 * 1000), // 1 hodina
+      Wait.toMinutes(60, '1 hodina timeout'), // 1 hodina
       new Promise(resolve => browser.on('disconnected', resolve))
     ]);
 

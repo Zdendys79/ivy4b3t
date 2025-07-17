@@ -27,7 +27,7 @@ import { BrowserManager } from './libs/iv_browser_manager.class.js';
 import { UserSelector } from './libs/iv_user_selector.class.js';
 import { HostnameProtection } from './libs/iv_hostname_protection.class.js';
 
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 
 const config = getIvyConfig();
 const browserManager = new BrowserManager();
@@ -153,8 +153,7 @@ async function handleWheelResult(wheelResult, user, browser, context) {
     await browserManager.closeBrowser(browser);
     
     const fbPauseSeconds = 60 + Math.random() * 120; // 60-180 sekund
-    Log.info('[WORKER]', `⏳ Pauza po zavření FB: ${Math.round(fbPauseSeconds)}s`);
-    await wait.delay(fbPauseSeconds * 1000);
+    await Wait.toSeconds(fbPauseSeconds, 'Pauza po zavření FB');
   }
 }
 
@@ -184,7 +183,7 @@ async function waitWithHeartbeat(waitMinutes = null) {
 
   Log.info('[WORKER]', `Čekám ${waitTime} minut...`);
 
-  await wait.delay(waitMs);
+  await Wait.toSeconds(waitMs / 1000, 'Čekání na další cyklus');
 
   Log.info('[WORKER]', 'Čekání dokončeno, spouštím nový cyklus');
 }

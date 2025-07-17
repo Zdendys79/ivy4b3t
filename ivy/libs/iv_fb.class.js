@@ -10,7 +10,7 @@ import { getIvyConfig } from './iv_config.class.js';
 
 const config = getIvyConfig();
 
-import * as wait from '../iv_wait.js';
+import { Wait } from './iv_wait.class.js';
 
 export class FBBot {
   constructor(context, userId = null) {
@@ -173,7 +173,7 @@ export class FBBot {
     return exists1 && exists2;
   }
 
-  async _clickByText(text, timeout = wait.timeout()) {
+  async _clickByText(text, timeout = 1000) {
     if (!this.pageAnalyzer) {
       await Log.warn('[FB]', 'PageAnalyzer není dostupný, používám fallback');
       const buttons = await fbSupport.findByText(this.page, text, { timeout, match: 'exact' });
@@ -357,10 +357,10 @@ export class FBBot {
       // Lidská pauza před navigací na Facebook
       const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
       Log.info('[FB]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na Facebook...`);
-      await wait.delay(navigationDelay, false);
+      await Wait.toSeconds(navigationDelay / 1000, 'Před navigací na FB');
       
       await this.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
-      await wait.delay(2000, 3000); // Krátká pauza na stabilizaci
+      await Wait.toSeconds(3, 'Stabilizace po otevření FB');
       Log.info('[FB]', 'Stránka FB byla úspěšně otevřena.');
       return true;
     } catch (err) {
@@ -379,15 +379,15 @@ export class FBBot {
       await this.acceptCookies();
 
       await this.page.waitForSelector('#email', { timeout: 5000 });
-      await this.page.type('#email', user.fb_login, { delay: wait.type() });
+      await this.page.type('#email', user.fb_login, { delay: Wait.charDelay() });
 
       await this.page.waitForSelector('#pass', { timeout: 5000 });
-      await this.page.type('#pass', user.fb_pass, { delay: wait.type() });
+      await this.page.type('#pass', user.fb_pass, { delay: Wait.charDelay() });
 
       const config = await getAllConfig();
       const loginText = config.cfg_login_text || 'Přihlásit se';
       await this._clickByText(loginText);
-      await wait.delay(15 * wait.timeout());
+      await Wait.toSeconds(15, 'Po přihlášení');
 
       if (await this.isProfileLoaded(user)) {
         Log.success(`[FB] Uživatel ${user.id} ${user.name} ${user.surname} je nyní přihlášen.`);
@@ -1505,7 +1505,7 @@ export class FBBot {
           if (!done || done.length === 0) throw `Tlačítko "${doneText}" nenalezeno.`;
           await wait.delay(3 * wait.timeout());
           await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done[0]);
-          await wait.delay(15 * wait.timeout());
+          await Wait.toSeconds(15, 'Po přihlášení');
           Log.info(`[FB] Výchozí okruh uživatelů nastaven.`);
         } else {
           throw `SPAN "${t2}" nenalezen.`;
@@ -1539,7 +1539,7 @@ export class FBBot {
       // Lidská pauza před navigací na skupinu
       const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
       Log.info('[FB]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na skupinu ${group.name}...`);
-      await wait.delay(navigationDelay, false);
+      await Wait.toSeconds(navigationDelay / 1000, 'Před navigací na FB');
 
       Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);
 
@@ -1609,7 +1609,7 @@ export class FBBot {
   async addMeToGroup() {
     try {
       await this._clickByText("Přidat se ke skupině", wait.timeout());
-      await wait.delay(15 * wait.timeout());
+      await Wait.toSeconds(15, 'Po přihlášení');
       Log.info(`[FB] Přidání do skupiny úspěšné.`);
       return true;
     } catch (err) {
@@ -2073,7 +2073,7 @@ export class FBBot {
       // Napsat slovo znak po znaku
       for (const char of word) {
         await this.page.keyboard.type(char);
-        await new Promise(resolve => setTimeout(resolve, Wait.charDelay()));
+        await Wait.toSeconds(Wait.charDelay() / 1000, 'Pauza mezi znaky');
       }
       
       // Přidat mezeru a čekat mezi slovy (kromě posledního slova)

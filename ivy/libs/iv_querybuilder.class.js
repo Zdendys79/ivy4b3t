@@ -336,10 +336,7 @@ export class QueryBuilder {
     return await this.safeQueryFirst('quotes.getRandomForUser', [userId]);
   }
 
-  async updateQuoteNextSeen(quoteId, days = 30) {
-    // Nastavit globální cooldown pro citát (bez logování uživatele)
-    return await this.safeExecute('quotes.markAsUsed', [days, quoteId]);
-  }
+  // updateQuoteNextSeen je duplicitní s quotes.markAsUsed - použij markQuoteAsUsed() místo toho
 
   async markQuoteAsUsed(quoteId, userId, days = 30) {
     // Zaznamenat použití citátu uživatelem do action_log

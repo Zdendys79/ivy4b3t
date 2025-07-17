@@ -286,12 +286,7 @@ export const ACTIONS = {
   `,
 
   // ===== QUOTE SYSTEM =====
-
-  updateQuoteNextSeen: `
-    UPDATE quotes
-    SET next_seen = NOW() + INTERVAL ? DAY
-    WHERE id = ?
-  `,
+  // Poznámka: updateQuoteNextSeen je duplicitní s quotes.markAsUsed - použij quotes.markAsUsed místo toho
 
   resetQuotePostDebug: `
     UPDATE user_action_plan

@@ -9,7 +9,7 @@
 import { Log } from './libs/iv_log.class.js';
 import { FBGroupAnalyzer } from './iv_fb_group_analyzer.js';
 import { db } from './iv_sql.js';
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 
 export class GroupExploreAction {
   constructor() {
@@ -57,7 +57,7 @@ export class GroupExploreAction {
       Log.info(`[${user.id}]`, `📊 Analyzována skupina: ${groupInfo.name} (${groupInfo.member_count} členů)`);
 
       // Náhodné čekání pro simulaci lidského chování
-      await wait.delay(3000, 8000);
+      await Wait.toSeconds(8, 'Simulace lidského chování');
 
       // Rozhodnutí o další aktivitě
       const nextAction = await this.decideNextAction(user, analyzer, options);
@@ -68,7 +68,7 @@ export class GroupExploreAction {
           if (navigated) {
             Log.info(`[${user.id}]`, '🎯 Navigoval jsem na další skupinu');
             // Analyzuj i tu novou skupinu
-            await wait.delay(2000, 4000);
+            await Wait.toSeconds(4, 'Načtení skupiny');
             await analyzer.analyzeCurrentGroup(user.id);
           }
           break;
@@ -135,14 +135,14 @@ export class GroupExploreAction {
         
         Log.info(`[${user.id}]`, `🎯 Naviguji na skupinu: ${randomGroup.name}`);
         await fbBot.page.goto(groupUrl, { waitUntil: 'networkidle2' });
-        await wait.delay(2000, 4000);
+        await Wait.toSeconds(4, 'Načtení skupiny');
         return true;
       }
 
       // Fallback - zkus hledat přes FB search
       Log.info(`[${user.id}]`, '🔍 Hledám skupiny přes FB search...');
       await fbBot.page.goto('https://www.facebook.com/search/groups/', { waitUntil: 'networkidle2' });
-      await wait.delay(3000, 5000);
+      await Wait.toSeconds(5, 'Načtení search stránky');
       
       // Klikni na první dostupnou skupinu pomocí JavaScript evaluation
       const groupLinks = await fbBot.page.evaluate(() => {
@@ -167,7 +167,7 @@ export class GroupExploreAction {
         }, groupLinks[0].index);
         
         if (clickResult) {
-          await wait.delay(2000, 4000);
+          await Wait.toSeconds(4, 'Načtení skupiny');
           return true;
         }
       }
@@ -229,7 +229,7 @@ export class GroupExploreAction {
           window.scrollBy(0, Math.floor(Math.random() * 500) + 300);
         });
         
-        await wait.delay(2000, 4000); // Pauza na "čtení"
+        await Wait.toSeconds(4, 'Načtení skupiny'); // Pauza na "čtení"
       }
 
       Log.info(`[${user.id}]`, '✅ Dokončeno čtení příspěvků');
@@ -273,11 +273,11 @@ export class GroupExploreAction {
         }, selectedLink.index);
         
         if (clickResult) {
-          await wait.delay(3000, 6000); // Čas na "prohlédnutí" profilu
+          await Wait.toSeconds(6, 'Prohlédnutí profilu');
           
           // Návrat zpět
           await fbBot.page.goBack();
-          await wait.delay(1000, 2000);
+          await Wait.toSeconds(2, 'Návrat zpět');
           
           Log.info(`[${user.id}]`, '✅ Prozkoumán profil člena');
         }

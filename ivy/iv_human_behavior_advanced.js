@@ -6,7 +6,7 @@
  * Implementuje realistické psaní, váhání, emoce a adaptivní učení
  */
 
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 import { db } from './iv_sql.js';
 import { Log } from './libs/iv_log.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
@@ -147,12 +147,12 @@ export class AdvancedHumanBehavior {
       
       // Pauza mezi znaky
       const charDelay = this.calculateCharDelay(profile, context);
-      await wait.delay(charDelay, false);
+      await Wait.toSeconds(charDelay / 1000, 'Pauza mezi znaky');
       
       // Občasný dvojitý stisk
       if (Math.random() < profile.double_key_chance) {
         await page.keyboard.type(char);
-        await wait.delay(profile.backspace_delay || 200, false);
+        await Wait.toSeconds((profile.backspace_delay || 200) / 1000, 'Pauza před backspace');
         await page.keyboard.press('Backspace');
       }
     }
@@ -183,9 +183,9 @@ export class AdvancedHumanBehavior {
         
         // Rozhodnutí o opravě podle correction_style
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          await wait.delay(backspaceDelay * (0.8 + Math.random() * 0.4), false);
+          await Wait.toSeconds((backspaceDelay * (0.8 + Math.random() * 0.4)) / 1000, 'Pauza před opravou');
           await page.keyboard.press('Backspace');
-          await wait.delay(50 + Math.random() * 100, false);
+          await Wait.toSeconds((50 + Math.random() * 100) / 1000, 'Pauza před napsáním opravy');
           await page.keyboard.type(correctChar);
         }
         break;
@@ -194,7 +194,7 @@ export class AdvancedHumanBehavior {
         await page.keyboard.type(correctChar);
         await page.keyboard.type(correctChar);
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          await wait.delay(backspaceDelay, false);
+          await Wait.toSeconds(backspaceDelay / 1000, 'Pauza před backspace');
           await page.keyboard.press('Backspace');
         }
         break;
@@ -202,7 +202,7 @@ export class AdvancedHumanBehavior {
       case 'missing_key':
         // Prostě nepíše znak - uživatel to možná zpětně opraví
         if (Math.random() < 0.7 && profile.correction_style === 'perfectionist') {
-          await wait.delay(200 + Math.random() * 300, false);
+          await Wait.toSeconds((200 + Math.random() * 300) / 1000, 'Pauza před perfekcionistickou opravou');
           await page.keyboard.type(correctChar);
         }
         break;
@@ -215,7 +215,7 @@ export class AdvancedHumanBehavior {
           await page.keyboard.type(wrongCase);
           
           if (this.shouldCorrectMistake(profile.correction_style)) {
-            await wait.delay(profile.backspace_delay, false);
+            await Wait.toSeconds((profile.backspace_delay || 200) / 1000, 'Pauza před backspace');
             await page.keyboard.press('Backspace');
             await page.keyboard.type(correctChar);
           }
@@ -252,7 +252,7 @@ export class AdvancedHumanBehavior {
     if (this.profile.impatience_level > 0.7) duration *= 0.6;
     
     Log.debug(`[${this.userId}]`, `🤔 Váhání typu ${type} na ${Math.round(duration)}ms`);
-    await wait.delay(duration, false);
+    await Wait.toSeconds(duration / 1000, 'Váhání při psaní');
   }
 
   /**
@@ -272,7 +272,7 @@ export class AdvancedHumanBehavior {
         const duration = minDur + Math.random() * (maxDur - minDur);
         
         Log.debug(`[${this.userId}]`, `🔄 Rozptýlení typu ${distraction.type} na ${Math.round(duration)}ms`);
-        await wait.delay(duration, false);
+        await Wait.toSeconds(duration / 1000, 'Váhání při psaní');
         
         // Někdy uživatel úplně abandone akci
         if (distraction.type === 'external_interruption' && Math.random() < 0.3) {
@@ -369,7 +369,7 @@ export class AdvancedHumanBehavior {
     const personalityMultiplier = 0.5 + impatienceLevel;
     
     const finalPause = basePause * contextMultiplier * personalityMultiplier;
-    await wait.delay(finalPause, false);
+    await Wait.toSeconds(finalPause / 1000, 'Finalizace psaní');
   }
 
   /**

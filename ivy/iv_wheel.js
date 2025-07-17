@@ -18,7 +18,7 @@ import { ActionRouter } from './libs/action_router.class.js';
 import { FBBot } from './libs/iv_fb.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { IvMath } from './libs/iv_math.class.js';
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 
 const config = getIvyConfig();
 
@@ -176,7 +176,8 @@ export async function runWheelOfFortune(user, browser, context) {
       }
 
       // 7. Pauza mezi akcemi
-      await wait.delay(IvMath.randInterval(config.wheel_action_delay_min, config.wheel_action_delay_max));
+      const delayMinutes = IvMath.randInterval(config.wheel_action_delay_min, config.wheel_action_delay_max) / 60000;
+      await Wait.toMinutes(delayMinutes, 'Pauza mezi akcemi');
     }
 
     Log.success(`[${user.id}]`, `Kolo štěstí dokončeno. Provedeno ${actionCount} akcí`);
@@ -290,7 +291,7 @@ async function handleNoAction(user, invasiveLock) {
     Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce');
   }
   
-  await wait.delay(IvMath.randInterval(5000, 10000));
+  await Wait.toSeconds(10, 'Pauza po selhání');
 }
 
 /**

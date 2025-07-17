@@ -15,7 +15,7 @@ import puppeteer from 'puppeteer';
 
 import { Log } from './iv_log.class.js';
 import { getIvyConfig } from './iv_config.class.js';
-import * as wait from '../iv_wait.js';
+import { Wait } from './iv_wait.class.js';
 
 const config = getIvyConfig();
 
@@ -82,7 +82,7 @@ export class BrowserManager {
     try {
       // Krátká pauza před zavřením
       Log.debug('[BROWSER]', 'Čekám 1s před zavřením prohlížeče...');
-      await wait.delay(1000, false);
+      await Wait.toSeconds(1);
 
       // Nejdřív zavři všechny stránky
       try {

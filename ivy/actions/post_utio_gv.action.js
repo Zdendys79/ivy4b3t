@@ -10,7 +10,7 @@
 
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
-import * as wait from '../iv_wait.js';
+import { Wait } from '../libs/iv_wait.class.js';
 import { getAvailableGroupsForUser, blockUserGroup } from '../user_group_escalation.js';
 
 export class PostUtioGvAction extends BaseAction {
@@ -77,7 +77,7 @@ export class PostUtioGvAction extends BaseAction {
 
       // Otevři skupinu
       await fbBot.openGroup(group);
-      await wait.delay(300 + Math.random() * 700);
+      await Wait.toSeconds(1, 'Po otevření skupiny');
 
       // Rychlá kontrola na "Obsah teď není dostupný"
       const pageContent = await fbBot.page.evaluate(() => document.body.textContent);
@@ -89,7 +89,7 @@ export class PostUtioGvAction extends BaseAction {
 
       // Inicializuj analyzer
       fbBot.initializeAnalyzer();
-      await wait.delay(500);
+      await Wait.toSeconds(1, 'Po inicializaci analyzátoru');
 
       // Zkus kliknout na "Napište něco"
       Log.info(`[${user.id}]`, '🔍 Pokouším se kliknout na "Napište něco"...');
@@ -121,7 +121,7 @@ export class PostUtioGvAction extends BaseAction {
         
         if (canDiscuss) {
           Log.info(`[${user.id}]`, '✅ Úspěšně kliknuto na "Diskuze", zkouším "Napište něco" znovu...');
-          await wait.delay(2000 + Math.random() * 1000);
+          await Wait.toSeconds(3, 'Po kliknutí na Diskuze');
           
           // Po kliknutí na diskuze zkus "Napište něco" znovu
           const postClickedAfterDiscussion = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
@@ -166,7 +166,7 @@ export class PostUtioGvAction extends BaseAction {
             const joinResult = await fbBot.joinToGroup();
             
             if (joinResult) {
-              await wait.delay(2000 + Math.random() * 2000);
+              await Wait.toSeconds(4, 'Po přidání do skupiny');
               
               // Zapiš do action_log (pro 8h limit)
               await this.logAction(user, group.id, `Žádost o členství: ${group.name}`);

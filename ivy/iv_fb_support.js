@@ -83,8 +83,7 @@ export async function findByText(page, text, options = {}) {
         break;
       }
 
-      // Krátká pauza před dalším pokusem
-      await Wait.toSeconds(1);
+      await Wait.toSeconds(1, 'Krátká pauza před dalším pokusem');
     }
 
     if (elements.length === 0) {
@@ -820,8 +819,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
           Log.info(`[${user.id}]`, `📍 Navigace na standardní skupinu: ${targetUrl}`);
         }
         
-        // Lidská pauza před navigací na skupinu
-        await Wait.toSeconds(15, 'Před navigací na skupinu');
+        await Wait.toSeconds(15, 'Lidská pauza před navigací na skupinu');
         
         await fbBot.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await Wait.toSeconds(3, 'Načtení stránky skupiny');
@@ -907,8 +905,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
                 Log.info('[FB]', `✅ Nalezeno tlačítko: "Přidat se ke skupině"`);
                 await joinButtons[0].click();
                 
-                // Čekání na zpracování
-                await wait.delay(5000);
+                await Wait.toSeconds(5, 'Čekání na zpracování');
                 
                 // Ověření zda tlačítko zmizelo (použij stejný text jako předtím)
                 const buttonsAfter = await fbBot._findByText(buttonText, { timeout: 1000 });
@@ -984,7 +981,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
             await Log.warn(`[${user.id}]`, '⚠️ Pole pro psaní není dostupné, zkouším přejít do diskuze...');
             const clickedDiscus = await fbBot.clickDiscus();
             if (clickedDiscus) {
-              await wait.delay(3000); // Počkat na načtení
+              await Wait.toSeconds(3, 'Načtení po kliknutí na Diskuze');
               const recheck = await fbBot.newThing();
               if (recheck) {
                 Log.success(`[${user.id}]`, '✅ Pole pro psaní nalezeno po přechodu do diskuze.');

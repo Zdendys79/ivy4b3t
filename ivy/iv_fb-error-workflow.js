@@ -8,6 +8,7 @@
 
 import { Log } from './libs/iv_log.class.js';
 import { waitForUserIntervention, advancedUserIntervention } from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 import { ErrorReportBuilder } from './libs/iv_ErrorReportBuilder.class.js';
 
 /**

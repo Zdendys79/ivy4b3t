@@ -13,7 +13,7 @@
 import os from 'node:os';
 
 // Local modules - named imports (UPDATED)
-import { delay } from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 import { db, closeConnection as closeDB } from './iv_sql.js'
 import { get as getVersion } from './iv_version.js';
 import { tick as workerTick } from './iv_worker.js';
@@ -93,10 +93,10 @@ Log.info('[IVY]', 'Asynchronní heartbeat spuštěn (interval 10s)');
       }
       
       await workerTick();
-      await delay(100); // Malá pauza pro CPU
+      await Wait.toSeconds(1, 'Malá pauza pro CPU');
     } catch (err) {
       await Log.error('[IVY]', err);
-      await delay(60000);
+      await Wait.toMinutes(1, 'Čekání na další heartbeat');
     }
   }
 })();
