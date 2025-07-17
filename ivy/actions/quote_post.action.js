@@ -116,15 +116,15 @@ export class QuotePostAction extends BaseAction {
   async step1_openFacebook(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 1: Otevírám Facebook...');
 
-    // Navigace na Facebook - čekáme na networkidle2
+    // Navigace na Facebook - čekáme na networkidle
     Log.info(`[${user.id}]`, 'Naviguji na facebook.com...');
     
     await fbBot.page.goto('https://www.facebook.com/', {
-      waitUntil: 'networkidle2',
+      waitUntil: 'networkidle',
       timeout: 30 * 1000 // 30s
     });
 
-    // Reinicializace analyzátoru (spustí se hned po networkidle2)
+    // Reinicializace analyzátoru (spustí se hned po networkidle)
     await fbBot.initializeAnalyzer();
 
     // Jedna lidská pauza

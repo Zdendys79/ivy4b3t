@@ -1,6 +1,6 @@
-fix: Opraveny kritické chyby při spuštění
+refactor: Sjednotit networkidle na novější verzi
 
-- Opraven překlep 'typeing_variance' na 'typing_variance' v SQL dotazech
-- Opravena chyba Log.warning na Log.warn v AdvancedHumanBehavior
-- Opravena chyba waitForLoadState na waitForTimeout v PageAnalyzer
-- Systém nyní funguje s behavioral profiles a pokročilým psaním
+- Změněn networkidle2 na networkidle ve všech goto() voláních
+- Opravena PageAnalyzer metoda na waitForNavigation({ waitUntil: 'networkidle' })
+- Aktualizovány komentáře a logy pro konzistenci
+- Používáme novější Puppeteer networkidle namísto zastaralého networkidle2
