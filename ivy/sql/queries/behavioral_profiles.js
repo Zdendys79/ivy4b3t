@@ -12,7 +12,7 @@ export const BEHAVIORAL_PROFILES = {
   getUserProfile: `
     SELECT 
       user_id,
-      avg_typing_speed, typeing_variance,
+      avg_typing_speed, typing_variance,
       mistake_rate,
       correction_style,
       double_key_chance,
@@ -47,7 +47,7 @@ export const BEHAVIORAL_PROFILES = {
   createDefaultProfile: `
     INSERT INTO user_behavioral_profiles (
       user_id,
-      avg_typing_speed, typeing_variance,
+      avg_typing_speed, typing_variance,
       mistake_rate,
       correction_style,
       double_key_chance,
@@ -106,7 +106,7 @@ export const BEHAVIORAL_PROFILES = {
   updateTypingCharacteristics: `
     UPDATE user_behavioral_profiles
     SET 
-      avg_typing_speed = ?, typeing_variance = ?,
+      avg_typing_speed = ?, typing_variance = ?,
       mistake_rate = ?,
       correction_style = ?,
       double_key_chance = ?,

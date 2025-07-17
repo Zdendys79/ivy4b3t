@@ -42,7 +42,7 @@ export class AdvancedHumanBehavior {
       
       // Fallback pokud databáze stále nevrátí profil
       if (!this.profile) {
-        Log.warning(`[${this.userId}]`, '⚠️  Používám výchozí behavioral profil (databáze nedostupná)');
+        Log.warn(`[${this.userId}]`, '⚠️  Používám výchozí behavioral profil (databáze nedostupná)');
         this.profile = this._createDefaultProfile();
       }
 
@@ -54,7 +54,7 @@ export class AdvancedHumanBehavior {
       return true;
     } catch (error) {
       await Log.error(`[${this.userId}] AdvancedHumanBehavior.initialize`, error);
-      Log.warning(`[${this.userId}]`, '⚠️  Chyba při načítání behavioral profilu, používám výchozí hodnoty');
+      Log.warn(`[${this.userId}]`, '⚠️  Chyba při načítání behavioral profilu, používám výchozí hodnoty');
       this.profile = this._createDefaultProfile();
       return false;
     }

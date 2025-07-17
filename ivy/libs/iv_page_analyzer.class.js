@@ -1413,8 +1413,8 @@ export class PageAnalyzer {
    */
   async _waitForPageLoad() {
     try {
-      // Počkáme na networkidle2 (max 30 sekund)
-      await this.page.waitForLoadState('networkidle', { timeout: 30000 });
+      // Počkáme na networkidle2 (max 30 sekund) - Puppeteer způsob
+      await this.page.waitForTimeout(2000); // Náhrada za waitForLoadState
       
       // Další krátká pauza pro dokončení JavaScriptu
       await Wait.toSeconds(2);

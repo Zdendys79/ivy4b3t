@@ -1,10 +1,6 @@
-refactor: Konzistentní časové jednotky - ms převedeny na sekundy
+fix: Opraveny kritické chyby při spuštění
 
-- Přidána Wait.toMS() metoda pro krátké čekání bez logování
-- Opraveny všechny chyby s Wait.toSeconds(ms_hodnota, komentář)
-- Config konstanty převedeny z ms na sekundy s _s sufixem
-- Zjednodušeny komplikované delay výpočty na Wait.toSeconds(max)
-- Používá pokročilé human behavior typing místo základního
-- Databáze aktualizována s novými config názvy
-- Opraveny PageAnalyzer spam logy - pouze změny stavu
-- Heartbeat interval používá config metodu
+- Opraven překlep 'typeing_variance' na 'typing_variance' v SQL dotazech
+- Opravena chyba Log.warning na Log.warn v AdvancedHumanBehavior
+- Opravena chyba waitForLoadState na waitForTimeout v PageAnalyzer
+- Systém nyní funguje s behavioral profiles a pokročilým psaním
