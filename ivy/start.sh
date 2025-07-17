@@ -217,8 +217,8 @@ main_loop() {
                 ;;
         esac
 
-        echo "[START] ⏳ Čekám 5 sekund před dalším pokusem..."
-        sleep 5
+        echo "[START] ⏳ Čekám 15 sekund před dalším pokusem..."
+        sleep 15
     done
 }
 

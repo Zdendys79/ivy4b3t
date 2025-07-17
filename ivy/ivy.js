@@ -19,10 +19,11 @@ import { get as getVersion } from './iv_version.js';
 import { tick as workerTick } from './iv_worker.js';
 import { Log } from './libs/iv_log.class.js';
 import { consoleLogger } from './libs/iv_console_logger.class.js';
-import { initIvyConfig } from './libs/iv_config.class.js';
+import { initIvyConfig, getIvyConfig } from './libs/iv_config.class.js';
 
 const hostname = os.hostname();
 const versionCode = getVersion();
+const config = getIvyConfig();
 
 // Globální proměnné systému
 global.systemState = {
