@@ -122,61 +122,28 @@ export class GroupExploreAction {
   }
 
   /**
-   * Naviguje na náhodnou skupinu pokud nejsme v žádné
+   * Naviguje na náhodnou skupinu z databáze
    */
   async navigateToRandomGroup(user, fbBot) {
     try {
       // Získej nějaké známé skupiny z databáze
       const knownGroups = await db.getGroupsForExploration(5);
       
-      if (knownGroups.length > 0) {
-        const randomGroup = knownGroups[Math.floor(Math.random() * knownGroups.length)];
-        const groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_group_id}`;
-        
-        Log.info(`[${user.id}]`, `🎯 Naviguji na skupinu: ${randomGroup.name}`);
-        await fbBot.page.goto(groupUrl, { waitUntil: 'networkidle2' });
-        await Wait.toSeconds(4, 'Načtení skupiny');
-        return true;
+      if (knownGroups.length === 0) {
+        throw new Error('Žádné skupiny v databázi! Musíme přidat skupiny do databáze.');
       }
-
-      // Fallback - zkus hledat přes FB search
-      Log.info(`[${user.id}]`, '🔍 Hledám skupiny přes FB search...');
-      await fbBot.page.goto('https://www.facebook.com/search/groups/', { waitUntil: 'networkidle2' });
-      await Wait.toSeconds(5, 'Načtení search stránky');
       
-      // Klikni na první dostupnou skupinu pomocí JavaScript evaluation
-      const groupLinks = await fbBot.page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('a[href*="/groups/"]'));
-        return links.map((link, index) => ({
-          index,
-          href: link.href,
-          text: link.textContent?.trim() || '',
-          isVisible: link.offsetParent !== null
-        })).filter(link => link.isVisible);
-      });
+      const randomGroup = knownGroups[Math.floor(Math.random() * knownGroups.length)];
+      const groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_group_id}`;
       
-      if (groupLinks.length > 0) {
-        const clickResult = await fbBot.page.evaluate((linkIndex) => {
-          const allLinks = document.querySelectorAll('a[href*="/groups/"]');
-          const targetLink = allLinks[linkIndex];
-          if (targetLink && targetLink.offsetParent !== null) {
-            targetLink.click();
-            return true;
-          }
-          return false;
-        }, groupLinks[0].index);
-        
-        if (clickResult) {
-          await Wait.toSeconds(4, 'Načtení skupiny');
-          return true;
-        }
-      }
-
-      return false;
+      Log.info(`[${user.id}]`, `🎯 Naviguji na skupinu: ${randomGroup.name}`);
+      await fbBot.page.goto(groupUrl, { waitUntil: 'networkidle2' });
+      await Wait.toSeconds(4, 'Načtení skupiny');
+      return true;
 
     } catch (err) {
-      Log.warn(`[${user.id}]`, `Chyba při navigaci na skupinu: ${err.message}`);
-      return false;
+      Log.error(`[${user.id}]`, `Chyba při navigaci na skupinu: ${err.message}`);
+      throw err; // Předej chybu výše - nepokračuj s fallbackem
     }
   }
 

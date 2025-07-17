@@ -1,6 +1,6 @@
-fix: Opravit nevalidní 'networkidle' na 'networkidle2' 
+refactor: Odstranit fallback logiku v group exploration
 
-- Opravena nevalidní hodnota 'networkidle' zpět na 'networkidle2'
-- V Puppeteer existuje pouze networkidle0 a networkidle2, ne networkidle
-- Networkidle2 je vhodné pro Facebook kvůli tracking skriptům
-- Opraveny všechny goto() volání a waitForNavigation() volání
+- Odstraněn fallback search mechanismus z iv_group_explore_action.js
+- Pokud nejsou skupiny v databázi, vyhodí chybu místo fallbacku
+- Chyby musí být řešeny, ne obcházeny fallbacky
+- Použije se pouze databáze známých skupin
