@@ -1,6 +1,6 @@
-refactor: Odstranit fallback logiku v group exploration
+fix: Opravit group exploration - hledat nové skupiny z URL
 
-- Odstraněn fallback search mechanismus z iv_group_explore_action.js
-- Pokud nejsou skupiny v databázi, vyhodí chybu místo fallbacku
-- Chyby musí být řešeny, ne obcházeny fallbacky
-- Použije se pouze databáze známých skupin
+- Group exploration nyní hledá NOVÉ skupiny z nalezených URL na stránce
+- Používá PageAnalyzer pro získání všech facebook.com/groups odkazů
+- Pokud nejsou nalezeny žádné group URL, vyhodí chybu
+- Odstraněn mechanismus využívající pouze známé skupiny z databáze

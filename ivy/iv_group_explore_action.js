@@ -122,28 +122,30 @@ export class GroupExploreAction {
   }
 
   /**
-   * Naviguje na náhodnou skupinu z databáze
+   * Najde a naviguje na novou neznámou skupinu z nalezených URL
    */
   async navigateToRandomGroup(user, fbBot) {
     try {
-      // Získej nějaké známé skupiny z databáze
-      const knownGroups = await db.getGroupsForExploration(5);
+      // Získej analýzu aktuální stránky včetně všech group URL
+      const pageAnalysis = await fbBot.pageAnalyzer.analyzeFullPage();
       
-      if (knownGroups.length === 0) {
-        throw new Error('Žádné skupiny v databázi! Musíme přidat skupiny do databáze.');
+      if (!pageAnalysis.links?.groups || pageAnalysis.links.groups.length === 0) {
+        throw new Error('Na aktuální stránce nejsou nalezeny žádné odkazy na skupiny. Nelze pokračovat v exploration.');
       }
       
-      const randomGroup = knownGroups[Math.floor(Math.random() * knownGroups.length)];
-      const groupUrl = `https://www.facebook.com/groups/${randomGroup.fb_group_id}`;
+      Log.info(`[${user.id}]`, `🔍 Nalezeno ${pageAnalysis.links.groups.length} odkazů na skupiny`);
       
-      Log.info(`[${user.id}]`, `🎯 Naviguji na skupinu: ${randomGroup.name}`);
-      await fbBot.page.goto(groupUrl, { waitUntil: 'networkidle2' });
-      await Wait.toSeconds(4, 'Načtení skupiny');
+      // Vyber náhodnou skupinu z nalezených
+      const randomGroupUrl = pageAnalysis.links.groups[Math.floor(Math.random() * pageAnalysis.links.groups.length)];
+      
+      Log.info(`[${user.id}]`, `🎯 Naviguji na novou skupinu: ${randomGroupUrl}`);
+      await fbBot.page.goto(randomGroupUrl, { waitUntil: 'networkidle2' });
+      await Wait.toSeconds(4, 'Načtení nové skupiny');
       return true;
 
     } catch (err) {
-      Log.error(`[${user.id}]`, `Chyba při navigaci na skupinu: ${err.message}`);
-      throw err; // Předej chybu výše - nepokračuj s fallbackem
+      Log.error(`[${user.id}]`, `Chyba při navigaci na novou skupinu: ${err.message}`);
+      throw err; // Předej chybu výše - nedostatek URL je problém
     }
   }
 
