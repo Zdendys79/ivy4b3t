@@ -486,7 +486,7 @@ export class FBBot {
           Log.info(`[FB][AdConsent] Klikám na tlačítko: "${buttonText}"`);
           await actionButton.click();
           await this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }).catch(() => {});
-          await wait.delay(2000, 3000); // Počkat na stabilizaci stránky
+          await Wait.toSeconds(3, 'Počkat na stabilizaci stránky');
         } else {
           Log.warn('[FB][AdConsent] Nenalezeno žádné pokračovací tlačítko, proces končí.');
           inConsentFlow = false;
@@ -1003,7 +1003,7 @@ export class FBBot {
       
       const delay = 2000 + Math.random() * 3000; // 2-5 sekund místo 10+
       Log.debug('[FB]', `Čekám ${delay.toFixed(0)}ms před vložením textu...`);
-      await wait.delay(delay);
+      await Wait.toSeconds(delay / 1000, 'Čekání před vložením textu');
       
       if (useClipboard) {
         // Použij vkládání přes schránku (rychlejší pro UTIO a RSS)
@@ -1045,7 +1045,7 @@ export class FBBot {
       await this.page.keyboard.press('KeyV');
       await this.page.keyboard.up('Control');
 
-      await wait.delay(wait.timeout() * 2); // Počkáme na vložení
+      await Wait.toSeconds(2, 'Počkáme na vložení');
 
       Log.info('[FB] Text vložen ze schránky pomocí Ctrl+V');
       return true;
@@ -1062,14 +1062,14 @@ export class FBBot {
 
       // Ujisti se, že má stránka focus pro přístup ke schránce
       await this.bringToFront();
-      await wait.delay(500); // Krátká pauza po focus
+      await Wait.toSeconds(0.5, 'Krátká pauza po focus');
 
       // Zkopíruj text do schránky
       await this.page.evaluate((textToCopy) => {
         return navigator.clipboard.writeText(textToCopy);
       }, text);
 
-      await wait.delay(wait.timeout()); // Krátká pauza po kopírování
+      await Wait.toSeconds(1, 'Krátká pauza po kopírování');
 
       // Vloží text pomocí Ctrl+V
       const success = await this.pasteFromClipboard();
@@ -1137,10 +1137,10 @@ export class FBBot {
       await this.bringToFront();
 
       Log.info('[FB] Kontrolujem napsaný text...');
-      await wait.delay(wait.timeout() * 2);
+      await Wait.toSeconds(2, 'Čekání na aktivaci tlačítka/reakci');
 
       Log.info('[FB] Čekám než se tlačítko aktivuje...');
-      await wait.delay(2000 + Math.random() * 3000); // Náhodná pauza 2-5s
+      await Wait.toSeconds(5, 'Náhodná pauza 2-5s');
 
       Log.info('[FB] Klikám na tlačítko "Zveřejnit"');
 
@@ -1431,7 +1431,7 @@ export class FBBot {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, element);
 
-      await wait.delay(500);
+      await Wait.toSeconds(0.5, 'Krátká pauza');
 
       // Zkusíme několik metod kliknutí
       const clickMethods = [
@@ -1458,7 +1458,7 @@ export class FBBot {
       for (const [index, clickMethod] of clickMethods.entries()) {
         try {
           await clickMethod();
-          await wait.delay(2000);
+          await Wait.toSeconds(2, 'Čekání na aktivaci tlačítka/reakci');
 
           // Kontrola úspěchu - hledáme zda se objevilo nějaké potvrzení nebo zmizely elementy
           const success = await this.page.evaluate(() => {
@@ -1501,9 +1501,9 @@ export class FBBot {
         const friends = await fbSupport.findByText(this.page, t2, { timeout: 2000 });
         if (friends.length) {
           await friends[friends.length - 2].click();
-          const done = await fbSupport.findByText(this.page, doneText, { timeout: wait.timeout() });
+          const done = await fbSupport.findByText(this.page, doneText, { timeout: 5000 });
           if (!done || done.length === 0) throw `Tlačítko "${doneText}" nenalezeno.`;
-          await wait.delay(3 * wait.timeout());
+          await Wait.toSeconds(3, 'Dlouhé čekání');
           await this.page.evaluate(el => { el.click({ clickCount: 2 }); }, done[0]);
           await Wait.toSeconds(15, 'Po přihlášení');
           Log.info(`[FB] Výchozí okruh uživatelů nastaven.`);
@@ -1548,7 +1548,7 @@ export class FBBot {
         timeout: 30000
       });
 
-      await wait.delay(5000 + Math.random() * 3000);
+      await Wait.toSeconds(8, 'Náhodná pauza 5-8s');
 
       // NOVÉ - Analýza skupiny po načtení
       if (this.pageAnalyzer) {
@@ -1608,7 +1608,7 @@ export class FBBot {
 
   async addMeToGroup() {
     try {
-      await this._clickByText("Přidat se ke skupině", wait.timeout());
+      await this._clickByText("Přidat se ke skupině", 1000);
       await Wait.toSeconds(15, 'Po přihlášení');
       Log.info(`[FB] Přidání do skupiny úspěšné.`);
       return true;
@@ -1623,12 +1623,12 @@ export class FBBot {
       try {
         const config = await getAllConfig();
         const likeText = config.cfg_like_text || "To se mi líbí";
-        const likes = await fbSupport.findByText(this.page, likeText, { timeout: wait.timeout() });
+        const likes = await fbSupport.findByText(this.page, likeText, { timeout: 5000 });
         if (!likes.length) throw `Tlačítko "${likeText}" nenalezeno.`;
         const randomLike = likes[Math.floor(Math.random() * likes.length)];
         await randomLike.click();
         Log.info(`[FB] Kliknuto na tlačítko "${likeText}".`);
-        await wait.delay(5 * wait.timeout());
+        await Wait.toSeconds(5, 'Dlouhé čekání na like');
         return true;
       } catch (err) {
         await Log.error(`[FB] Chyba při klikání na lajk tlačítko: ${err}`);
@@ -1836,7 +1836,7 @@ export class FBBot {
       
       if (button) {
         await button.click();
-        await wait.delay(2000, 3000); // Počkat na reakci
+        await Wait.toSeconds(2000, 3000); // Počkat na reakci
         Log.success('[FB]', '✅ Pozvánka pro experta byla přijata.');
         return true;
       }

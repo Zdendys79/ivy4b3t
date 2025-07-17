@@ -17,7 +17,7 @@ import { getIvyConfig } from './iv_config.class.js';
 
 const config = getIvyConfig();
 
-import * as wait from '../iv_wait.js';
+import { Wait } from './iv_wait.class.js';
 
 export class UIBot {
   constructor() {
@@ -244,7 +244,7 @@ export class UIBot {
   async _handlePause(data) {
     const minutes = data.min || 1;
     Log.info('[UI]', `Pauza na ${minutes} minut`);
-    await wait.delay(minutes * 60 * 1000);
+    await Wait.toMinutes(minutes, 'Pauza na oběd');
     Log.info('[UI][pause]', 'Pauza dokončena');
     return true;
   }
@@ -365,7 +365,7 @@ export class UIBot {
 
     try {
       Log.debug('[UI]', 'Čekám 2s před zavřením prohlížeče...');
-      await wait.delay(2000, false);
+      await Wait.toSeconds(2, 'Čekání před zavřením prohlížeče');
       
       Log.info('[UI]', 'Zavírám prohlížeč...');
       await browser.close();

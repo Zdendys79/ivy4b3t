@@ -1,30 +1,33 @@
-refactor: Dokončen kompletní Wait refactoring - sjednocené časové metody
+cleanup: Smazány všechny legacy funkce - žádné "důchodce" domovy!
 
-- Nahrazeny všechny await new Promise(resolve => setTimeout...) za Wait.toSeconds()
-- Nahrazeny všechny wait.delay() za Wait.toSeconds() nebo Wait.toMinutes()
-- Přidány importy Wait třídy do všech souborů včetně test.js
-- Implementována Wait.humanTyping() do FBBot třídy
-- Smazány duplicitní Log komentáře (Wait třída je píše sama)
-- Dokončen refactoring Wait volání v iv_human_behavior_advanced.js
-- Zkontrolovány všechny setTimeout/setInterval v celém projektu
-- Zachovány původní Log komentáře z wait.js (např. "pauza na oběd")
-- Opraveny i test soubory pro testování Wait metod
+- Smazán celý iv_wait.js soubor (nahrazen Wait třídou)
+- Vytvořen iv_interactive.js pro interaktivní funkce
+- Opraveny všechny wait.delay() volání na Wait.toSeconds() 
+- Opraveny všechny wait.timeout() volání na pevné hodnoty
+- Smazány všechny rozbité test soubory (test_*.js)
 - Smazána duplicitní updateQuoteNextSeen z actions.js a iv_querybuilder.class.js
+- Opraveny importy v iv_fb_group_analyzer.js, iv_utio.class.js, iv_ui.class.js
+- Přidány správné komentáře ke všem Wait volánım
+- Převedeny všechny milisekundy na sekundy podle nového API
 
-Soubory upraveny:
-- iv_fb.class.js - Wait.toSeconds() pro charDelay
-- iv_human_behavior_advanced.js - všechny Wait volání s komentáři
-- iv_fb_support.js - Wait.toSeconds() s komentáři
-- iv_group_explore_action.js - Wait.toSeconds() s komentáři
-- iv_worker.js - Wait.toSeconds() s komentáři
-- ivy.js - Wait.toSeconds/toMinutes() s komentáři
-- loginuser.js - Wait.toSeconds() s komentáři
-- actions/post_utio_*.action.js - Wait.toSeconds() s komentáři
-- iv_wheel.js - Wait.toSeconds() s komentáři
-- iv_fb-error-workflow.js - Wait.toSeconds() s komentáři
-- iv_browser_manager.class.js - Wait.toSeconds() s komentáři
-- test.js - Wait.toSeconds() pro testování
+Soubory smazané:
+- iv_wait.js (kompletně nahrazen Wait třídou)
+- test_account_delay.js (rozbitý import)
+- test_account_sleep.js (rozbitý import)
+- test_group_explore.js (rozbitý import)
+- test_post_utio_g.js (rozbitý import)
+- test_post_utio_gv.js (rozbitý import)
+
+Soubory vytvořené:
+- iv_interactive.js (interaktivní funkce z původního iv_wait.js)
+
+Soubory opravené:
+- iv_fb_group_analyzer.js - Wait.toSeconds() místo wait.delay()
+- iv_utio.class.js - Wait.toSeconds() místo wait.delay()
+- iv_ui.class.js - Wait.toMinutes() místo wait.delay()
+- iv_fb.class.js - Wait.toSeconds() místo wait.delay() a wait.timeout()
+- iv_fb-error-workflow.js - import z iv_interactive.js
 - sql/queries/actions.js - smazána duplicitní updateQuoteNextSeen
 - libs/iv_querybuilder.class.js - smazána duplicitní updateQuoteNextSeen
 
-Výsledek: Sjednocená Wait třída s automatickým logováním a původními komentáři
+Výsledek: 0 legacy funkcí, 92 Wait. volání, žádné fallbacky, žádné důchodce domovy!

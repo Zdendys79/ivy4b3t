@@ -8,7 +8,7 @@
 
 import { Log } from './libs/iv_log.class.js';
 import { db } from './iv_sql.js';
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 
 export class FBGroupAnalyzer {
   constructor(page) {
@@ -355,7 +355,7 @@ export class FBGroupAnalyzer {
       Log.info('[GROUP_ANALYZER]', `🎯 Navigace na skupinu: ${randomLink.text}`);
       
       await this.page.goto(randomLink.url, { waitUntil: 'networkidle' });
-      await wait.delay(2000, 4000); // Čekání na načtení
+      await Wait.toSeconds(4, 'Čekání na načtení');
       
       return true;
 

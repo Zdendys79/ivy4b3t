@@ -1,93 +1,12 @@
 /**
- * Název souboru: iv_wait.js
- * Umístění: ~/ivy/iv_wait.js
+ * Název souboru: iv_interactive.js
+ * Umístění: ~/ivy/iv_interactive.js
  *
- * Popis: Generuje náhodné časové intervaly pro různé typy lidského zpoždění,
- *         včetně zadávání textu, čekání mezi akcemi, výpočtu pracovní doby atd.
+ * Popis: Interaktivní funkce pro uživatelské zásahy a countdown timery
+ * Původně byly v iv_wait.js, ale ty se týkají interakce, ne čekání
  */
 
-import readline from 'readline';
 import { Log } from './libs/iv_log.class.js';
-
-export function type() { // wait-time between typed chars on keyboard [ms]
-    const min = 30;
-    const max = 60;
-    return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-export function pauseBetweenWords() {
-    const min = 150;
-    const max = 450;
-    return new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * (max - min + 1)) + min));
-}
-
-export function timeout() { // wait between actions on elements or pages [ms]
-    const min = 500;
-    const max = 1200;
-    return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-export function worktime() { // generate new time to work [minutes]
-    const now = new Date();
-    const h = now.getHours();
-    const h_base = (h < 5) ? 5 : (h > 21) ? 27 : 0;
-    const h_add = 2 + Math.random() * 4;
-    const add_minutes = Math.floor(60 * ((h_base + h_add) % 24));
-    const hours = Math.floor(add_minutes / 60);
-    const minutes = ('0' + add_minutes % 60).slice(-2);
-    Log.info('[WORKTIME]', `Add work pause: ${hours}:${minutes}`);
-    return add_minutes;
-}
-
-export function waittime() { // generate time to cycle pause [s]
-    const min = 300;
-    const max = 600;
-    return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-export function toTime(minutes) {
-    const time = minutes * 60000;
-    return new Promise(resolve => setTimeout(resolve, time));
-}
-
-/**
- * Přirozené lidské pauzy s randomizací
- * @param {number} min - Minimální čas v ms
- * @param {number} max - Maximální čas v ms
- * @returns {Promise<void>}
- */
-export function humanDelay(min, max) {
-    const delay = min + Math.random() * (max - min);
-    return new Promise(resolve => setTimeout(resolve, delay));
-}
-
-export async function delay(delay_time, verbose = true) { // wait delay_time ms
-    if (verbose) {
-        const minutes = Math.floor(delay_time / 60000);
-        // Vypisuj pouze pokud čekání trvá 1 minutu nebo více
-        if (minutes >= 1) {
-            const shifted_time = new Date(Date.now() + delay_time);
-            const m = Math.floor(delay_time / 60000);
-            const s = ('0' + Math.floor((delay_time / 1000) % 60)).slice(-2);
-            const target_hours = shifted_time.getHours();
-            const target_minutes = ('0' + shifted_time.getMinutes()).slice(-2);
-            Log.info('[WAIT]', `Waiting ${m}:${s} to time ${target_hours}.${target_minutes}`);
-        }
-    }
-    // Validace delay_time - BEZ FALLBACK!
-    if (isNaN(delay_time) || delay_time < 0) {
-        const error = new Error(`Neplatný delay_time: ${delay_time}. Zdroj chyby musí být opraven!`);
-        Log.error('[WAIT]', error);
-        throw error;
-    }
-    
-    return new Promise(resolve => setTimeout(resolve, delay_time));
-}
-
-/**
- * Rozšíření pro iv_wait.js
- * Přidává funkci waitForUserIntervention() pro 60s countdown s možností přerušení
- */
 
 /**
  * Čeká 60 sekund s countdown a možností přerušit stiskem klávesy 'a'
@@ -176,7 +95,7 @@ export async function simpleCountdown(message = 'Čekám', seconds = 10) {
     if (i <= 5 || i % 5 === 0) {
       Log.info('[COUNTDOWN]', `⏰ ${i}s`);
     }
-    await delay(1000, false);
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   Log.info('[COUNTDOWN]', '✅ Countdown dokončen');
