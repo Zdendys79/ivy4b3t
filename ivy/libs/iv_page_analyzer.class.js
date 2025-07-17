@@ -1557,7 +1557,11 @@ export class PageAnalyzer {
       const element = await this._findElementInCache(text, { matchType, elementType });
       const exists = element !== null;
       
-      Log.debug('[ANALYZER]', `Element "${text}" ${exists ? 'existuje' : 'neexistuje'}`);
+      // Loguj pouze změny stavu, ne každou kontrolu
+      if (this.lastElementState !== exists) {
+        Log.debug('[ANALYZER]', `Element "${text}" ${exists ? 'existuje' : 'neexistuje'}`);
+        this.lastElementState = exists;
+      }
       return exists;
 
     } catch (err) {

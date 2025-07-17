@@ -12,6 +12,7 @@ import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
 import { db } from '../iv_sql.js';
 import { Wait } from '../libs/iv_wait.class.js';
+import { getHumanBehavior } from '../iv_human_behavior_advanced.js';
 
 export class QuotePostAction extends BaseAction {
   constructor() {
@@ -93,7 +94,7 @@ export class QuotePostAction extends BaseAction {
       const { BrowserManager } = await import('../libs/iv_browser_manager.class.js');
       const browserManager = new BrowserManager();
       
-      const result = await browserManager.waitForBrowserCloseOrTimeout(user, browser, 60000);
+      const result = await browserManager.waitForBrowserCloseOrTimeout(user, browser, 60 * 1000); // 60s
       
       if (result === 'restart' || result === 'ui_command') {
         Log.info(`[${user.id}]`, `Akce ukončena kvůli: ${result}`);
@@ -120,7 +121,7 @@ export class QuotePostAction extends BaseAction {
     
     await fbBot.page.goto('https://www.facebook.com/', {
       waitUntil: 'networkidle2',
-      timeout: 30000
+      timeout: 30 * 1000 // 30s
     });
 
     // Reinicializace analyzátoru (spustí se hned po networkidle2)
@@ -167,8 +168,9 @@ export class QuotePostAction extends BaseAction {
   async step3_writeQuote(user, fbBot, quote) {
     Log.info(`[${user.id}]`, 'KROK 3: Píšu citát...');
     
-    // Lidské psaní pomocí FBBot
-    await fbBot.humanTyping(quote.text);
+    // Pokročilé lidské psaní s chybami a databázovými profily
+    const humanBehavior = await getHumanBehavior(user.id);
+    await humanBehavior.typeLikeHuman(fbBot.page, quote.text, 'quote_writing');
     
     Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Citát napsán');
   }
@@ -183,8 +185,9 @@ export class QuotePostAction extends BaseAction {
     await fbBot.page.keyboard.press('Enter');
     await fbBot.page.keyboard.press('Enter');
     
-    // Napsat autora zvýrazněně
-    await fbBot.humanTyping(`- ${author}`);
+    // Pokročilé lidské psaní autora
+    const humanBehavior = await getHumanBehavior(user.id);
+    await humanBehavior.typeLikeHuman(fbBot.page, `- ${author}`, 'author_writing');
     
     Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Autor přidán');
   }
@@ -221,7 +224,7 @@ export class QuotePostAction extends BaseAction {
     Log.info(`[${user.id}]`, 'KROK 7: Čekám na zmizení tlačítka "Přidat"...');
     
     const startTime = Date.now();
-    const maxWait = 5000; // 5 sekund
+    const maxWait = 5 * 1000; // 5 sekund
     
     while (Date.now() - startTime < maxWait) {
       const buttonExists = await fbBot.pageAnalyzer.elementExists('Přidat', { matchType: 'exact' });
@@ -248,7 +251,7 @@ export class QuotePostAction extends BaseAction {
     await db.safeExecute('quotes.markAsUsed', [30, quote.id]);
     
     // Zapsat úspěšnou akci do action_log
-    await db.safeExecute('actions.logSuccess', [
+    await db.safeExecute('actions.logAction', [
       user.id,
       'quote_post',
       `Quote ID: ${quote.id}`,

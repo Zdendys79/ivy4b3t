@@ -101,12 +101,12 @@ export class BrowserManager {
       }
 
       // Pak zavři browser s timeoutem
-      const timeoutMs = config.browser_close_timeout;
-      Log.info('[BROWSER]', `Zavírám browser s timeout ${timeoutMs}ms...`);
+      const timeoutSeconds = config.getBrowserCloseTimeoutSeconds();
+      Log.info('[BROWSER]', `Zavírám browser s timeout ${timeoutSeconds}s...`);
       
       const closePromise = browser.close();
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`Browser close timeout after ${timeoutMs}ms`)), timeoutMs)
+        setTimeout(() => reject(new Error(`Browser close timeout after ${timeoutSeconds}s`)), timeoutSeconds * 1000)
       );
 
       await Promise.race([closePromise, timeoutPromise]);
@@ -163,13 +163,13 @@ export class BrowserManager {
     });
 
     try {
-      const timeoutMs = config.shutdown_timeout;
-      Log.info('[BROWSER]', `Čekám na shutdown všech browsers s timeout ${timeoutMs}ms...`);
+      const timeoutSeconds = config.getShutdownTimeoutSeconds();
+      Log.info('[BROWSER]', `Čekám na shutdown všech browsers s timeout ${timeoutSeconds}s...`);
       
       await Promise.race([
         Promise.all(shutdownPromises),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error(`Shutdown timeout after ${timeoutMs}ms`)), timeoutMs)
+          setTimeout(() => reject(new Error(`Shutdown timeout after ${timeoutSeconds}s`)), timeoutSeconds * 1000)
         )
       ]);
       Log.success('[BROWSER]', 'Všechny browser instances úspěšně uzavřeny');

@@ -64,7 +64,7 @@ export async function waitForUserIntervention(reason = 'Error detected', timeout
         Log.info('[INTERVENTION]', '⏱️  Timeout dokončen - pokračuji automaticky');
         resolve(false);
       }
-    }, 1000);
+    }, 1 * 1000);
 
     // Cleanup funkce
     const cleanup = () => {
@@ -95,7 +95,7 @@ export async function simpleCountdown(message = 'Čekám', seconds = 10) {
     if (i <= 5 || i % 5 === 0) {
       Log.info('[COUNTDOWN]', `⏰ ${i}s`);
     }
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1 * 1000));
   }
 
   Log.info('[COUNTDOWN]', '✅ Countdown dokončen');
@@ -172,7 +172,7 @@ export async function advancedUserIntervention(options = {}) {
         Log.info('[INTERVENTION]', '⏱️  Timeout dokončen - žádná akce');
         resolve(null);
       }
-    }, 1000);
+    }, 1 * 1000);
 
     const cleanup = () => {
       clearInterval(countdownInterval);

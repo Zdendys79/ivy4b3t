@@ -147,12 +147,12 @@ export class AdvancedHumanBehavior {
       
       // Pauza mezi znaky
       const charDelay = this.calculateCharDelay(profile, context);
-      await Wait.toSeconds(charDelay / 1000, 'Pauza mezi znaky');
+      await new Promise(resolve => setTimeout(resolve, charDelay));
       
       // Občasný dvojitý stisk
       if (Math.random() < profile.double_key_chance) {
         await page.keyboard.type(char);
-        await Wait.toSeconds((profile.backspace_delay || 200) / 1000, 'Pauza před backspace');
+        await Wait.toMS(profile.backspace_delay || 200);
         await page.keyboard.press('Backspace');
       }
     }
@@ -183,9 +183,9 @@ export class AdvancedHumanBehavior {
         
         // Rozhodnutí o opravě podle correction_style
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          await Wait.toSeconds((backspaceDelay * (0.8 + Math.random() * 0.4)) / 1000, 'Pauza před opravou');
+          await Wait.toMS(backspaceDelay * (0.8 + Math.random() * 0.4));
           await page.keyboard.press('Backspace');
-          await Wait.toSeconds((50 + Math.random() * 100) / 1000, 'Pauza před napsáním opravy');
+          await Wait.toMS(50 + Math.random() * 100);
           await page.keyboard.type(correctChar);
         }
         break;
@@ -194,7 +194,7 @@ export class AdvancedHumanBehavior {
         await page.keyboard.type(correctChar);
         await page.keyboard.type(correctChar);
         if (this.shouldCorrectMistake(profile.correction_style)) {
-          await Wait.toSeconds(backspaceDelay / 1000, 'Pauza před backspace');
+          await Wait.toMS(backspaceDelay);
           await page.keyboard.press('Backspace');
         }
         break;
@@ -202,7 +202,7 @@ export class AdvancedHumanBehavior {
       case 'missing_key':
         // Prostě nepíše znak - uživatel to možná zpětně opraví
         if (Math.random() < 0.7 && profile.correction_style === 'perfectionist') {
-          await Wait.toSeconds((200 + Math.random() * 300) / 1000, 'Pauza před perfekcionistickou opravou');
+          await Wait.toMS(200 + Math.random() * 300);
           await page.keyboard.type(correctChar);
         }
         break;
@@ -215,7 +215,7 @@ export class AdvancedHumanBehavior {
           await page.keyboard.type(wrongCase);
           
           if (this.shouldCorrectMistake(profile.correction_style)) {
-            await Wait.toSeconds((profile.backspace_delay || 200) / 1000, 'Pauza před backspace');
+            await Wait.toMS(profile.backspace_delay || 200);
             await page.keyboard.press('Backspace');
             await page.keyboard.type(correctChar);
           }
@@ -241,7 +241,7 @@ export class AdvancedHumanBehavior {
     ];
     
     const type = hesitationTypes[Math.floor(Math.random() * hesitationTypes.length)];
-    let duration = 1000 + Math.random() * 3000; // 1-4s základní váhání
+    let duration = 1 + Math.random() * 3; // 1-4s základní váhání (v sekundách)
     
     // Úprava podle kontextu
     if (context === 'selling') duration *= 1.5; // Více váhání u prodeje
@@ -251,8 +251,8 @@ export class AdvancedHumanBehavior {
     if (this.profile.perfectionism > 0.7) duration *= 1.3;
     if (this.profile.impatience_level > 0.7) duration *= 0.6;
     
-    Log.debug(`[${this.userId}]`, `🤔 Váhání typu ${type} na ${Math.round(duration)}ms`);
-    await Wait.toSeconds(duration / 1000, 'Váhání při psaní');
+    Log.debug(`[${this.userId}]`, `🤔 Váhání typu ${type} na ${Math.round(duration)}s`);
+    await Wait.toSeconds(duration, 'Váhání při psaní');
   }
 
   /**
@@ -260,10 +260,10 @@ export class AdvancedHumanBehavior {
    */
   async simulateDistraction(context) {
     const distractionTypes = [
-      { type: 'notification_check', chance: 0.15, duration: [2000, 8000] },
-      { type: 'second_thoughts', chance: 0.08, duration: [3000, 10000] },
-      { type: 'perfectionist_rewrite', chance: 0.12, duration: [5000, 15000] },
-      { type: 'external_interruption', chance: 0.05, duration: [10000, 30000] }
+      { type: 'notification_check', chance: 0.15, duration: [2, 8] },
+      { type: 'second_thoughts', chance: 0.08, duration: [3, 10] },
+      { type: 'perfectionist_rewrite', chance: 0.12, duration: [5, 15] },
+      { type: 'external_interruption', chance: 0.05, duration: [10, 30] }
     ];
     
     for (const distraction of distractionTypes) {
@@ -271,8 +271,8 @@ export class AdvancedHumanBehavior {
         const [minDur, maxDur] = distraction.duration;
         const duration = minDur + Math.random() * (maxDur - minDur);
         
-        Log.debug(`[${this.userId}]`, `🔄 Rozptýlení typu ${distraction.type} na ${Math.round(duration)}ms`);
-        await Wait.toSeconds(duration / 1000, 'Váhání při psaní');
+        Log.debug(`[${this.userId}]`, `🔄 Rozptýlení typu ${distraction.type} na ${Math.round(duration)}s`);
+        await Wait.toSeconds(duration, 'Rozptýlení při psaní');
         
         // Někdy uživatel úplně abandone akci
         if (distraction.type === 'external_interruption' && Math.random() < 0.3) {
@@ -369,7 +369,7 @@ export class AdvancedHumanBehavior {
     const personalityMultiplier = 0.5 + impatienceLevel;
     
     const finalPause = basePause * contextMultiplier * personalityMultiplier;
-    await Wait.toSeconds(finalPause / 1000, 'Finalizace psaní');
+    await Wait.toMS(finalPause);
   }
 
   /**

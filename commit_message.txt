@@ -1,7 +1,10 @@
-fix: Oprava chybného importu v quote_post.action.js
+refactor: Konzistentní časové jednotky - ms převedeny na sekundy
 
-- Opravený import db z '../iv_sql.js' místo '../libs/iv_db.class.js'
-- Soubor iv_db.class.js neexistuje, správný import je z iv_sql.js
-- Řešeno podle chyby: Cannot find module 'iv_db.class.js' 
-
-Poznámka: Produkční prostředí má jinou strukturu cest než vývojové PC
+- Přidána Wait.toMS() metoda pro krátké čekání bez logování
+- Opraveny všechny chyby s Wait.toSeconds(ms_hodnota, komentář)
+- Config konstanty převedeny z ms na sekundy s _s sufixem
+- Zjednodušeny komplikované delay výpočty na Wait.toSeconds(max)
+- Používá pokročilé human behavior typing místo základního
+- Databáze aktualizována s novými config názvy
+- Opraveny PageAnalyzer spam logy - pouze změny stavu
+- Heartbeat interval používá config metodu

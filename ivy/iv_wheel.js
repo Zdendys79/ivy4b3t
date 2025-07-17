@@ -176,8 +176,7 @@ export async function runWheelOfFortune(user, browser, context) {
       }
 
       // 7. Pauza mezi akcemi
-      const delayMinutes = IvMath.randInterval(config.wheel_action_delay_min, config.wheel_action_delay_max) / 60000;
-      await Wait.toMinutes(delayMinutes, 'Pauza mezi akcemi');
+      await Wait.toSeconds(config.getWheelActionDelaySeconds().max, 'Pauza mezi akcemi');
     }
 
     Log.success(`[${user.id}]`, `Kolo štěstí dokončeno. Provedeno ${actionCount} akcí`);

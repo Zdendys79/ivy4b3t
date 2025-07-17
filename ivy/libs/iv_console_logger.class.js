@@ -25,7 +25,7 @@ class ConsoleLogger {
         this.processingDir = './logs/processing';
         this.failedDir = './logs/failed';
         this.retryAttempts = 3;
-        this.retryDelay = 5000; // 5 seconds
+        this.retryDelay = 5; // 5 seconds
         
         this.ensureDirectories();
         this.scheduleRecovery();
@@ -46,7 +46,7 @@ class ConsoleLogger {
             };
         });
 
-        this.flushInterval = setInterval(() => this.flush(), 10000); // Flush every 10 seconds
+        this.flushInterval = setInterval(() => this.flush(), 10 * 1000); // Flush every 10 seconds
         process.on('beforeExit', () => this.flush());
         
         this.isInitialized = true;
@@ -138,7 +138,7 @@ class ConsoleLogger {
             // If database recovered, try to process pending files
             if (this.offlineMode) {
                 this.offlineMode = false;
-                setTimeout(() => this.processPendingFiles(), 1000);
+                setTimeout(() => this.processPendingFiles(), 1 * 1000);
             }
         }
         
@@ -177,8 +177,7 @@ class ConsoleLogger {
             } catch (err) {
                 retries--;
                 if (retries > 0) {
-                    this.originalConsole.log(`[CONSOLE] DB retry in ${this.retryDelay}ms, attempts left: ${retries}`);
-                    await Wait.toSeconds(this.retryDelay / 1000);
+                    await Wait.toSeconds(5, `DB retry, attempts left: ${retries}`);
                 } else {
                     this.originalConsole.error(`[CONSOLE] DB failed after ${this.retryAttempts} attempts:`, err.message);
                 }
@@ -209,10 +208,10 @@ class ConsoleLogger {
 
     async scheduleRecovery() {
         // Start recovery after 2 seconds
-        setTimeout(() => this.processPendingFiles(), 2000);
+        setTimeout(() => this.processPendingFiles(), 2 * 1000);
         
         // Then check every 30 seconds for pending files
-        setInterval(() => this.processPendingFiles(), 30000);
+        setInterval(() => this.processPendingFiles(), 30 * 1000);
     }
 
     async processPendingFiles() {

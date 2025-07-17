@@ -166,13 +166,12 @@ export class UIBot {
       // Zpracuj UI příkaz s timeoutem
       let uiSuccess = false;
       try {
-        const timeoutMinutes = config.ui_timeout_minutes;
-        const timeoutMs = timeoutMinutes * 60 * 1000;
-        Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command} s timeout ${timeoutMinutes} minut (${timeoutMs}ms)`);
+        const timeoutMs = config.ui_timeout_minutes * 60 * 1000;
+        Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command} s timeout ${config.ui_timeout_minutes} minut (${timeoutMs}ms)`);
         
         const uiPromise = this.processCommand(command, fbBot);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`UI command timeout after ${timeoutMinutes} minutes (${timeoutMs}ms)`)), timeoutMs)
+          setTimeout(() => reject(new Error(`UI command timeout after ${config.ui_timeout_minutes} minutes (${timeoutMs}ms)`)), timeoutMs)
         );
 
         uiSuccess = await Promise.race([uiPromise, timeoutPromise]);

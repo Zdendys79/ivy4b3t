@@ -23,7 +23,7 @@ export class IvyConfig {
     // Cache - inicializovaná s default hodnotami
     this.cache = {
       // Worker konfigurace
-      heartbeat_interval: 30000,
+      heartbeat_interval_s: 30,
       wait_min_minutes: 0.33,  // 20 sekund
       wait_max_minutes: 0.67,  // 40 sekund
       consecutive_failures_limit: 5,
@@ -33,21 +33,21 @@ export class IvyConfig {
       ui_wait_timeout_minutes: 20,
       
       // Browser konfigurace
-      browser_close_timeout: 30000,
-      browser_launch_timeout: 30000,
+      browser_close_to_s: 30,
+      browser_launch_to_s: 30,
       
       // Systémové timeouty
-      shutdown_timeout: 10000,
+      shutdown_timeout_s: 10,
       
       // Wheel konfigurace
       invasive_lock_default_minutes: 30,
-      wheel_action_delay_min: 2000,
-      wheel_action_delay_max: 5000,
+      wheel_delay_min_s: 2,
+      wheel_delay_max_s: 5,
       
       // Actions konfigurace
       action_timeout_minutes: 10,
-      fb_page_load_timeout: 15000,
-      utio_page_load_timeout: 30000,
+      fb_page_load_to_s: 15,
+      utio_page_load_to_s: 30,
       
       // Logging konfigurace
       log_level: 'info',
@@ -56,13 +56,13 @@ export class IvyConfig {
       // Human behavior
       typing_mistakes_chance: 0.07,
       hesitation_chance: 0.3,
-      reading_time_min: 2000,
-      reading_time_max: 5000
+      reading_time_min_s: 2,
+      reading_time_max_s: 5
     };
     
     // Throttling pro DB update
     this.lastUpdateTime = 0;
-    this.updateInterval = 60000; // 1 minuta
+    this.updateIntervalSeconds = 60; // 1 minuta
     this.pendingUpdate = false;
   }
 
@@ -134,8 +134,8 @@ export class IvyConfig {
    */
   
   // Worker konfigurace
-  getHeartbeatInterval() {
-    return this.cache.heartbeat_interval;
+  getHeartbeatIntervalSeconds() {
+    return this.cache.heartbeat_interval_s;
   }
 
   getWaitMinutes() {
@@ -159,17 +159,17 @@ export class IvyConfig {
   }
 
   // Browser konfigurace
-  getBrowserCloseTimeout() {
-    return this.cache.browser_close_timeout;
+  getBrowserCloseTimeoutSeconds() {
+    return this.cache.browser_close_to_s;
   }
 
-  getBrowserLaunchTimeout() {
-    return this.cache.browser_launch_timeout;
+  getBrowserLaunchTimeoutSeconds() {
+    return this.cache.browser_launch_to_s;
   }
 
   // Systémové timeouty
-  getShutdownTimeout() {
-    return this.cache.shutdown_timeout;
+  getShutdownTimeoutSeconds() {
+    return this.cache.shutdown_timeout_s;
   }
 
   // Wheel konfigurace
@@ -177,10 +177,10 @@ export class IvyConfig {
     return this.cache.invasive_lock_default_minutes;
   }
 
-  getWheelActionDelay() {
+  getWheelActionDelaySeconds() {
     return {
-      min: this.cache.wheel_action_delay_min,
-      max: this.cache.wheel_action_delay_max
+      min: this.cache.wheel_delay_min_s,
+      max: this.cache.wheel_delay_max_s
     };
   }
 
@@ -265,7 +265,7 @@ export class IvyConfig {
     // Resetuje cache na defaults a spustí update
     this.cache = {
       // Worker konfigurace
-      heartbeat_interval: 30000,
+      heartbeat_interval_s: 30,
       wait_min_minutes: 0.33,  // 20 sekund
       wait_max_minutes: 0.67,  // 40 sekund
       consecutive_failures_limit: 5,
@@ -275,21 +275,21 @@ export class IvyConfig {
       ui_wait_timeout_minutes: 20,
       
       // Browser konfigurace
-      browser_close_timeout: 30000,
-      browser_launch_timeout: 30000,
+      browser_close_to_s: 30,
+      browser_launch_to_s: 30,
       
       // Systémové timeouty
-      shutdown_timeout: 10000,
+      shutdown_timeout_s: 10,
       
       // Wheel konfigurace
       invasive_lock_default_minutes: 30,
-      wheel_action_delay_min: 2000,
-      wheel_action_delay_max: 5000,
+      wheel_delay_min_s: 2,
+      wheel_delay_max_s: 5,
       
       // Actions konfigurace
       action_timeout_minutes: 10,
-      fb_page_load_timeout: 15000,
-      utio_page_load_timeout: 30000,
+      fb_page_load_to_s: 15,
+      utio_page_load_to_s: 30,
       
       // Logging konfigurace
       log_level: 'info',
@@ -298,8 +298,8 @@ export class IvyConfig {
       // Human behavior
       typing_mistakes_chance: 0.07,
       hesitation_chance: 0.3,
-      reading_time_min: 2000,
-      reading_time_max: 5000
+      reading_time_min_s: 2,
+      reading_time_max_s: 5
     };
     
     this.lastUpdateTime = 0;
@@ -322,7 +322,7 @@ export class IvyConfig {
   clearCache() {
     this.cache = {
       // Worker konfigurace
-      heartbeat_interval: 30000,
+      heartbeat_interval_s: 30,
       wait_min_minutes: 0.33,  // 20 sekund
       wait_max_minutes: 0.67,  // 40 sekund
       consecutive_failures_limit: 5,
@@ -332,21 +332,21 @@ export class IvyConfig {
       ui_wait_timeout_minutes: 20,
       
       // Browser konfigurace
-      browser_close_timeout: 30000,
-      browser_launch_timeout: 30000,
+      browser_close_to_s: 30,
+      browser_launch_to_s: 30,
       
       // Systémové timeouty
-      shutdown_timeout: 10000,
+      shutdown_timeout_s: 10,
       
       // Wheel konfigurace
       invasive_lock_default_minutes: 30,
-      wheel_action_delay_min: 2000,
-      wheel_action_delay_max: 5000,
+      wheel_delay_min_s: 2,
+      wheel_delay_max_s: 5,
       
       // Actions konfigurace
       action_timeout_minutes: 10,
-      fb_page_load_timeout: 15000,
-      utio_page_load_timeout: 30000,
+      fb_page_load_to_s: 15,
+      utio_page_load_to_s: 30,
       
       // Logging konfigurace
       log_level: 'info',
@@ -355,8 +355,8 @@ export class IvyConfig {
       // Human behavior
       typing_mistakes_chance: 0.07,
       hesitation_chance: 0.3,
-      reading_time_min: 2000,
-      reading_time_max: 5000
+      reading_time_min_s: 2,
+      reading_time_max_s: 5
     };
   }
 

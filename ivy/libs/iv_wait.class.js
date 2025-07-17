@@ -21,11 +21,23 @@ export class Wait {
     const min_time = Math.round(max_time * 0.6);
     const wait_time = min_time + Math.random() * (max_time - min_time);
     
-    if (comment) {
+    if (comment && wait_time >= 0.1) {
       Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s`);
     }
     
     return new Promise(resolve => setTimeout(resolve, wait_time * 1000));
+  }
+
+  /**
+   * Čeká náhodný čas v milisekundách (min je 60% z max) - BEZ LOGOVÁNÍ
+   * @param {number} max_time - Maximální čas v milisekundách
+   * @returns {Promise<void>}
+   */
+  static async toMS(max_time) {
+    const min_time = Math.round(max_time * 0.6);
+    const wait_time = min_time + Math.random() * (max_time - min_time);
+    
+    return new Promise(resolve => setTimeout(resolve, wait_time));
   }
 
   /**
@@ -83,15 +95,16 @@ export class Wait {
   }
 
   /**
-   * Čekání mezi znaky při psaní - vrací čas v ms
-   * @returns {number} Čas v ms
+   * Čekání mezi znaky při psaní
+   * @returns {Promise<void>}
    */
-  static charDelay() {
-    return 30 + Math.random() * 30; // 30-60ms
+  static async charDelay() {
+    const delay_ms = 30 + Math.random() * 30; // 30-60ms
+    return new Promise(resolve => setTimeout(resolve, delay_ms));
   }
 
   /**
-   * Čekání mezi slovy při psaní - vrací Promise
+   * Čekání mezi slovy při psaní
    * @returns {Promise<void>}
    */
   static async wordDelay() {

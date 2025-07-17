@@ -352,7 +352,7 @@ export class InteractiveDebugger {
       setTimeout(() => {
         rl.close();
         resolve(comment.trim());
-      }, 120000);
+      }, 120 * 1000); // 2 minutes
     });
   }
 
@@ -390,7 +390,7 @@ export class InteractiveDebugger {
       setTimeout(() => {
         rl.close();
         resolve(request.trim());
-      }, 60000);
+      }, 60 * 1000); // 1 minute
     });
   }
 

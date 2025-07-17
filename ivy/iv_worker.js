@@ -178,12 +178,7 @@ async function handleWorkerError(err) {
  * Čekání bez heartBeat (heartbeat běží asynchronně)
  */
 async function waitWithHeartbeat(waitMinutes = null) {
-  const waitTime = waitMinutes || IvMath.randInterval(config.wait_min_minutes, config.wait_max_minutes);
-  const waitMs = waitTime * 60 * 1000;
-
-  Log.info('[WORKER]', `Čekám ${waitTime} minut...`);
-
-  await Wait.toSeconds(waitMs / 1000, 'Čekání na další cyklus');
+  await Wait.toMinutes(waitMinutes || config.wait_max_minutes, 'Čekání na další cyklus');
 
   Log.info('[WORKER]', 'Čekání dokončeno, spouštím nový cyklus');
 }

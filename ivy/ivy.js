@@ -80,8 +80,8 @@ async function backgroundHeartbeat() {
 }
 
 // Spustit heartbeat interval
-heartbeatInterval = setInterval(backgroundHeartbeat, 10000); // Každých 10s
-Log.info('[IVY]', 'Asynchronní heartbeat spuštěn (interval 10s)');
+heartbeatInterval = setInterval(backgroundHeartbeat, config.getHeartbeatIntervalSeconds() * 1000);
+Log.info('[IVY]', `Asynchronní heartbeat spuštěn (interval ${config.getHeartbeatIntervalSeconds()}s)`);
 
 (async () => {
   while (!isShuttingDown) {

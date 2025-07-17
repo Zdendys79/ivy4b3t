@@ -355,9 +355,7 @@ export class FBBot {
       await this.bringToFront();
       
       // Lidská pauza před navigací na Facebook
-      const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
-      Log.info('[FB]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na Facebook...`);
-      await Wait.toSeconds(navigationDelay / 1000, 'Před navigací na FB');
+      await Wait.toSeconds(15, 'Před navigací na Facebook');
       
       await this.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
       await Wait.toSeconds(3, 'Stabilizace po otevření FB');
@@ -379,10 +377,10 @@ export class FBBot {
       await this.acceptCookies();
 
       await this.page.waitForSelector('#email', { timeout: 5000 });
-      await this.page.type('#email', user.fb_login, { delay: Wait.charDelay() });
+      await this.page.type('#email', user.fb_login, { delay: 30 + Math.random() * 30 });
 
       await this.page.waitForSelector('#pass', { timeout: 5000 });
-      await this.page.type('#pass', user.fb_pass, { delay: Wait.charDelay() });
+      await this.page.type('#pass', user.fb_pass, { delay: 30 + Math.random() * 30 });
 
       const config = await getAllConfig();
       const loginText = config.cfg_login_text || 'Přihlásit se';
@@ -1001,9 +999,7 @@ export class FBBot {
       // Ujisti se, že má FB stránka focus před vkládáním
       await this.bringToFront();
       
-      const delay = 2000 + Math.random() * 3000; // 2-5 sekund místo 10+
-      Log.debug('[FB]', `Čekám ${delay.toFixed(0)}ms před vložením textu...`);
-      await Wait.toSeconds(delay / 1000, 'Čekání před vložením textu');
+      await Wait.toSeconds(5, 'Před vložením textu');
       
       if (useClipboard) {
         // Použij vkládání přes schránku (rychlejší pro UTIO a RSS)
@@ -1537,9 +1533,7 @@ export class FBBot {
       }
       
       // Lidská pauza před navigací na skupinu
-      const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
-      Log.info('[FB]', `Čekám ${Math.round(navigationDelay/1000)}s před navigací na skupinu ${group.name}...`);
-      await Wait.toSeconds(navigationDelay / 1000, 'Před navigací na FB');
+      await Wait.toSeconds(15, `Před navigací na skupinu ${group.name}`);
 
       Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);
 
@@ -1836,7 +1830,7 @@ export class FBBot {
       
       if (button) {
         await button.click();
-        await Wait.toSeconds(2000, 3000); // Počkat na reakci
+        await Wait.toSeconds(3, 'Počkat na reakci'); // Počkat na reakci
         Log.success('[FB]', '✅ Pozvánka pro experta byla přijata.');
         return true;
       }
@@ -2073,7 +2067,7 @@ export class FBBot {
       // Napsat slovo znak po znaku
       for (const char of word) {
         await this.page.keyboard.type(char);
-        await Wait.toSeconds(Wait.charDelay() / 1000, 'Pauza mezi znaky');
+        await Wait.charDelay();
       }
       
       // Přidat mezeru a čekat mezi slovy (kromě posledního slova)
