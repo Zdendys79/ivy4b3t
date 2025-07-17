@@ -1,33 +1,7 @@
-cleanup: Smazány všechny legacy funkce - žádné "důchodce" domovy!
+fix: Oprava chybného importu v quote_post.action.js
 
-- Smazán celý iv_wait.js soubor (nahrazen Wait třídou)
-- Vytvořen iv_interactive.js pro interaktivní funkce
-- Opraveny všechny wait.delay() volání na Wait.toSeconds() 
-- Opraveny všechny wait.timeout() volání na pevné hodnoty
-- Smazány všechny rozbité test soubory (test_*.js)
-- Smazána duplicitní updateQuoteNextSeen z actions.js a iv_querybuilder.class.js
-- Opraveny importy v iv_fb_group_analyzer.js, iv_utio.class.js, iv_ui.class.js
-- Přidány správné komentáře ke všem Wait volánım
-- Převedeny všechny milisekundy na sekundy podle nového API
+- Opravený import db z '../iv_sql.js' místo '../libs/iv_db.class.js'
+- Soubor iv_db.class.js neexistuje, správný import je z iv_sql.js
+- Řešeno podle chyby: Cannot find module 'iv_db.class.js' 
 
-Soubory smazané:
-- iv_wait.js (kompletně nahrazen Wait třídou)
-- test_account_delay.js (rozbitý import)
-- test_account_sleep.js (rozbitý import)
-- test_group_explore.js (rozbitý import)
-- test_post_utio_g.js (rozbitý import)
-- test_post_utio_gv.js (rozbitý import)
-
-Soubory vytvořené:
-- iv_interactive.js (interaktivní funkce z původního iv_wait.js)
-
-Soubory opravené:
-- iv_fb_group_analyzer.js - Wait.toSeconds() místo wait.delay()
-- iv_utio.class.js - Wait.toSeconds() místo wait.delay()
-- iv_ui.class.js - Wait.toMinutes() místo wait.delay()
-- iv_fb.class.js - Wait.toSeconds() místo wait.delay() a wait.timeout()
-- iv_fb-error-workflow.js - import z iv_interactive.js
-- sql/queries/actions.js - smazána duplicitní updateQuoteNextSeen
-- libs/iv_querybuilder.class.js - smazána duplicitní updateQuoteNextSeen
-
-Výsledek: 0 legacy funkcí, 92 Wait. volání, žádné fallbacky, žádné důchodce domovy!
+Poznámka: Produkční prostředí má jinou strukturu cest než vývojové PC

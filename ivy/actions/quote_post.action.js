@@ -10,7 +10,7 @@
 
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
-import { db } from '../libs/iv_db.class.js';
+import { db } from '../iv_sql.js';
 import { Wait } from '../libs/iv_wait.class.js';
 
 export class QuotePostAction extends BaseAction {
