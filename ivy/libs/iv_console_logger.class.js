@@ -5,6 +5,7 @@ import path from 'path';
 import { db, transaction } from '../iv_sql.js';
 import { get as getVersion } from '../iv_version.js';
 import { QueryUtils } from '../sql/queries/index.js';
+import { Wait } from './iv_wait.class.js';
 
 class ConsoleLogger {
     constructor() {
@@ -177,7 +178,7 @@ class ConsoleLogger {
                 retries--;
                 if (retries > 0) {
                     this.originalConsole.log(`[CONSOLE] DB retry in ${this.retryDelay}ms, attempts left: ${retries}`);
-                    await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+                    await Wait.toSeconds(this.retryDelay / 1000);
                 } else {
                     this.originalConsole.error(`[CONSOLE] DB failed after ${this.retryAttempts} attempts:`, err.message);
                 }

@@ -11,7 +11,7 @@
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
 import { db } from '../libs/iv_db.class.js';
-import * as wait from '../iv_wait.js';
+import { Wait } from '../libs/iv_wait.class.js';
 
 export class QuotePostAction extends BaseAction {
   constructor() {
@@ -126,10 +126,8 @@ export class QuotePostAction extends BaseAction {
     // Reinicializace analyzátoru (spustí se hned po networkidle2)
     await fbBot.initializeAnalyzer();
 
-    // Jedna lidská pauza (2-5 sekund)
-    const pauseTime = 2000 + Math.random() * 3000;
-    Log.info(`[${user.id}]`, `Čekám ${Math.round(pauseTime/1000)}s po analýze...`);
-    await new Promise(resolve => setTimeout(resolve, pauseTime));
+    // Jedna lidská pauza
+    await Wait.toSeconds(5, 'Po analýze');
 
     Log.success(`[${user.id}]`, 'KROK 1 DOKONČEN: Jsme na facebook.com');
   }
@@ -169,8 +167,8 @@ export class QuotePostAction extends BaseAction {
   async step3_writeQuote(user, fbBot, quote) {
     Log.info(`[${user.id}]`, 'KROK 3: Píšu citát...');
     
-    // Lidské psaní pomocí iv_wait.js
-    await wait.humanTyping(fbBot.page, quote.text);
+    // Lidské psaní pomocí FBBot
+    await fbBot.humanTyping(quote.text);
     
     Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Citát napsán');
   }
@@ -186,7 +184,7 @@ export class QuotePostAction extends BaseAction {
     await fbBot.page.keyboard.press('Enter');
     
     // Napsat autora zvýrazněně
-    await wait.humanTyping(fbBot.page, `- ${author}`);
+    await fbBot.humanTyping(`- ${author}`);
     
     Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Autor přidán');
   }
@@ -197,8 +195,7 @@ export class QuotePostAction extends BaseAction {
   async step5_pauseForReview(user) {
     Log.info(`[${user.id}]`, 'KROK 5: Pauza na kontrolu příspěvku...');
     
-    const pauseTime = 2000 + Math.random() * 3000; // 2-5 sekund
-    await new Promise(resolve => setTimeout(resolve, pauseTime));
+    await Wait.toSeconds(5); // Kontrola příspěvku
     
     Log.success(`[${user.id}]`, 'KROK 5 DOKONČEN: Kontrola dokončena');
   }
@@ -234,7 +231,7 @@ export class QuotePostAction extends BaseAction {
         return true;
       }
       
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await Wait.toSeconds(1);
     }
     
     Log.warn(`[${user.id}]`, 'KROK 7: Tlačítko nezmizelo po 5s');

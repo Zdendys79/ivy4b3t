@@ -8,7 +8,7 @@ import { Log } from './iv_log.class.js';
 import * as fbSupport from '../iv_fb_support.js';
 import { getAllConfig } from '../iv_config.js';
 import { getIvyConfig } from './iv_config.class.js';
-import * as wait from '../iv_wait.js';
+import { Wait } from './iv_wait.class.js';
 
 const config = getIvyConfig();
 
@@ -1417,7 +1417,7 @@ export class PageAnalyzer {
       await this.page.waitForLoadState('networkidle', { timeout: 30000 });
       
       // Další krátká pauza pro dokončení JavaScriptu
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await Wait.toSeconds(2);
       
       const newUrl = this.page.url();
       Log.info('[ANALYZER]', `Stránka načtena (networkidle2): ${newUrl}`);
@@ -1459,7 +1459,7 @@ export class PageAnalyzer {
           
           if (this.autoTrackingEnabled) {
             // Počkej chvíli na načtení nového obsahu
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await Wait.toSeconds(3);
             await this._updateElementCache(this.autoTrackingOptions);
           }
         }
@@ -1490,7 +1490,7 @@ export class PageAnalyzer {
 
       // Přirozená pauza před hledáním
       if (naturalDelay) {
-        await wait.humanDelay(300, 1000); // 0.3-1s
+        await Wait.toSeconds(1);
       }
 
       // Najdi element v cache
@@ -1504,7 +1504,7 @@ export class PageAnalyzer {
 
       // Přirozená pauza před kliknutím
       if (naturalDelay) {
-        await wait.humanDelay(200, 700); // 0.2-0.7s
+        await Wait.toSeconds(1);
       }
 
       // Klikni na element pomocí XPath nebo selektoru
@@ -1516,7 +1516,7 @@ export class PageAnalyzer {
         // Počkej na reakci stránky po kliknutí
         if (waitAfterClick) {
           Log.debug('[ANALYZER]', 'Čekám na reakci stránky po kliknutí...');
-          await wait.humanDelay(1000, 3000); // 1-3s
+          await Wait.toSeconds(3);
           
           // Aktualizuj element cache po změnách
           await this._updateElementCache(this.autoTrackingOptions);
@@ -1629,7 +1629,7 @@ export class PageAnalyzer {
         return true;
       }
 
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
+      await Wait.toSeconds(1);
     }
 
     Log.warn('[ANALYZER]', `Timeout při čekání na element "${text}"`);
@@ -1765,7 +1765,7 @@ export class PageAnalyzer {
         // Scroll do view (pouze pokud je explicitně požadováno)
         if (scroll) {
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await Wait.toSeconds(1);
         }
 
         // Klikni

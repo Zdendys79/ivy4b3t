@@ -1,9 +1,8 @@
-feat: Implementovat kompletní quote_post akci
+refactor: Nahradit await new Promise za Wait.toSeconds() ve 6 souborech
 
-- Přidat výběr citátu z databáze před kliknutím (krok 0)
-- Implementovat lidské psaní citátu pomocí humanTyping
-- Přidat zvýraznění autora citátu (pokud existuje)
-- Implementovat detekci úspěchu kontrolou zmizení tlačítka
-- Přidat zpracování úspěchu: timeout citátu + plánování další akce
-- Přidat zpracování selhání: debug_incidents + screenshot
-- Odstranit dočasné čekání 60s, nahradit plnou funkcionalitou
+- Nahradit všechny await new Promise(resolve => setTimeout...) za Wait.toSeconds()
+- Nahradit wait.humanDelay() za Wait.toSeconds() v PageAnalyzer
+- Přidat Wait importy do všech upravených souborů
+- Implementovat humanTyping() metodu do FBBot třídy
+- Jednoduché API - všechny pauzy teď v sekundách s automatickým logováním
+- Část velkého refactoringu Wait třídy podle "jednoduše" principu

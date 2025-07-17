@@ -2054,4 +2054,34 @@ export class FBBot {
 
   // Cache byla odstraněna - PageAnalyzer vždy vrací aktuální data
 
+  /**
+   * Lidské psaní textu znak po znaku
+   * @param {string} text - Text k napsání
+   * @returns {Promise<void>}
+   */
+  async humanTyping(text) {
+    if (!this.page) {
+      throw new Error('Page není k dispozici pro psaní');
+    }
+
+    const { Wait } = await import('./iv_wait.class.js');
+    const words = text.split(' ');
+    
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      
+      // Napsat slovo znak po znaku
+      for (const char of word) {
+        await this.page.keyboard.type(char);
+        await new Promise(resolve => setTimeout(resolve, Wait.charDelay()));
+      }
+      
+      // Přidat mezeru a čekat mezi slovy (kromě posledního slova)
+      if (i < words.length - 1) {
+        await this.page.keyboard.type(' ');
+        await Wait.wordDelay();
+      }
+    }
+  }
+
 }

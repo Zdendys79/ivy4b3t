@@ -11,6 +11,7 @@ import path from 'path';
 import readline from 'readline';
 import { Log } from './libs/iv_log.class.js';
 import { db } from './iv_sql.js';
+import { Wait } from './libs/iv_wait.class.js';
 
 process.stdin.setMaxListeners(20); // Zvýšení limitu pro posluchače kvůli interaktivnímu debuggeru
 
@@ -131,7 +132,7 @@ export class InteractiveDebugger {
     // Kontrola, zda máme TTY pro interaktivní vstup
     if (!process.stdin.isTTY) {
       await Log.warn('[DEBUGGER]', '🚫 No TTY available for interactive input - auto-continuing after timeout');
-      await new Promise(resolve => setTimeout(resolve, timeoutSeconds * 1000));
+      await Wait.toSeconds(timeoutSeconds);
       return 'timeout';
     }
 

@@ -9,7 +9,7 @@
 import { Log } from './libs/iv_log.class.js';
 import { handleFBError, quickErrorReport, analyzeErrorPatterns } from './iv_fb-error-workflow.js';
 import { db } from './iv_sql.js';
-import * as wait from './iv_wait.js';
+import { Wait } from './libs/iv_wait.class.js';
 import fs from 'fs/promises';
 import os from 'os';
 
@@ -84,7 +84,7 @@ export async function findByText(page, text, options = {}) {
       }
 
       // Krátká pauza před dalším pokusem
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await Wait.toSeconds(1);
     }
 
     if (elements.length === 0) {
@@ -821,12 +821,10 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
         }
         
         // Lidská pauza před navigací na skupinu
-        const navigationDelay = 5000 + Math.random() * 10000; // 5-15 sekund
-        Log.info(`[${user.id}]`, `Čekám ${Math.round(navigationDelay/1000)}s před navigací na skupinu...`);
-        await new Promise(resolve => setTimeout(resolve, navigationDelay));
+        await Wait.toSeconds(15, 'Před navigací na skupinu');
         
         await fbBot.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for page load
+        await Wait.toSeconds(3, 'Načtení stránky skupiny');
         
         Log.success(`[${user.id}]`, `✅ Úspěšně navigováno na skupinu ${group.name}`);
       } catch (navErr) {
