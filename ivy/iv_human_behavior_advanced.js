@@ -296,17 +296,17 @@ export class AdvancedHumanBehavior {
     
     const emotionEffects = {
       'frustrated': {
-        mistake_rate: 1.8, typeing_speed: 0.9,
+        mistake_rate: 1.8, typing_speed: 0.9,
         hesitation_chance: 1.5,
         impatience_level: 1.3
       },
       'tired': {
-        mistake_rate: 1.4, typeing_speed: 0.7,
+        mistake_rate: 1.4, typing_speed: 0.7,
         attention_span: 0.6,
         energy_level: 0.5
       },
       'energetic': {
-        mistake_rate: 0.8, typeing_speed: 1.3,
+        mistake_rate: 0.8, typing_speed: 1.3,
         hesitation_chance: 0.5,
         impatience_level: 0.7
       },

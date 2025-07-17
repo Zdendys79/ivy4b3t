@@ -264,9 +264,9 @@ export class QuotePostAction extends BaseAction {
     const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
     
     await db.safeExecute('actions.scheduleNext', [
+      Math.round(nextMinutes),
       user.id,
-      'quote_post',
-      Math.round(nextMinutes)
+      'quote_post'
     ]);
     
     Log.success(`[${user.id}]`, `Quote post úspěšný! Další akce za ${Math.round(nextMinutes)} minut`);

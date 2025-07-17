@@ -34,6 +34,10 @@ export class Wait {
    * @returns {Promise<void>}
    */
   static async toMS(max_time) {
+    if (typeof max_time !== 'number' || isNaN(max_time) || max_time < 0) {
+      throw new Error(`Wait.toMS(): max_time musí být platné číslo >= 0, dostáno: ${max_time}`);
+    }
+    
     const min_time = Math.round(max_time * 0.6);
     const wait_time = min_time + Math.random() * (max_time - min_time);
     

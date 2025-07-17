@@ -65,6 +65,12 @@ export const ACTIONS = {
     WHERE user_id = ? AND action_code = ?
   `,
 
+  scheduleNext: `
+    UPDATE user_action_plan
+    SET next_time = DATE_ADD(NOW(), INTERVAL ? MINUTE)
+    WHERE user_id = ? AND action_code = ?
+  `,
+
   insertToPlan: `
     INSERT INTO user_action_plan (user_id, action_code, next_time)
     VALUES (?, ?, ?)
