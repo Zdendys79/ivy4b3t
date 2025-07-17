@@ -187,7 +187,7 @@ async function main() {
   };
   
   console.log('Navigace na Facebook...');
-  await page.goto('https://www.facebook.com', { waitUntil: 'networkidle' });
+  await page.goto('https://www.facebook.com', { waitUntil: 'networkidle2' });
   
   // Počkání na načtení stránky
   await Wait.toSeconds(3, 'Načtení FB stránky');

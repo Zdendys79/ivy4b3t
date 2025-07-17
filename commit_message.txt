@@ -1,6 +1,6 @@
-refactor: Sjednotit networkidle na novější verzi
+fix: Opravit nevalidní 'networkidle' na 'networkidle2' 
 
-- Změněn networkidle2 na networkidle ve všech goto() voláních
-- Opravena PageAnalyzer metoda na waitForNavigation({ waitUntil: 'networkidle' })
-- Aktualizovány komentáře a logy pro konzistenci
-- Používáme novější Puppeteer networkidle namísto zastaralého networkidle2
+- Opravena nevalidní hodnota 'networkidle' zpět na 'networkidle2'
+- V Puppeteer existuje pouze networkidle0 a networkidle2, ne networkidle
+- Networkidle2 je vhodné pro Facebook kvůli tracking skriptům
+- Opraveny všechny goto() volání a waitForNavigation() volání

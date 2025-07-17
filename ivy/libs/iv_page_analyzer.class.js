@@ -1386,14 +1386,14 @@ export class PageAnalyzer {
       // Event listener pro navigation events
       this.page.on('domcontentloaded', async () => {
         if (this.autoTrackingEnabled) {
-          Log.debug('[ANALYZER]', 'DOMContentLoaded - čekám na networkidle');
+          Log.debug('[ANALYZER]', 'DOMContentLoaded - čekám na networkidle2');
           await this._waitForPageLoad();
         }
       });
 
       this.page.on('load', async () => {
         if (this.autoTrackingEnabled) {
-          Log.debug('[ANALYZER]', 'Page load - čekám na networkidle');
+          Log.debug('[ANALYZER]', 'Page load - čekám na networkidle2');
           await this._waitForPageLoad();
         }
       });
@@ -1408,19 +1408,19 @@ export class PageAnalyzer {
   }
 
   /**
-   * Čeká na networkidle a spustí tracking
+   * Čeká na networkidle2 a spustí tracking
    * @private
    */
   async _waitForPageLoad() {
     try {
-      // Počkáme na networkidle - Puppeteer způsob
-      await this.page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
+      // Počkáme na networkidle2 - Puppeteer způsob
+      await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 });
       
       // Další krátká pauza pro dokončení JavaScriptu
       await Wait.toSeconds(2);
       
       const newUrl = this.page.url();
-      Log.info('[ANALYZER]', `Stránka načtena (networkidle): ${newUrl}`);
+      Log.info('[ANALYZER]', `Stránka načtena (networkidle2): ${newUrl}`);
       
       // Spustí tracking pokud není již aktivní
       if (!this.isElementTrackingActive) {
@@ -1432,7 +1432,7 @@ export class PageAnalyzer {
       
     } catch (err) {
       // Timeout nebo jiná chyba - zkusíme spustit tracking i tak
-      Log.warn('[ANALYZER]', `Timeout při čekání na networkidle: ${err.message}`);
+      Log.warn('[ANALYZER]', `Timeout při čekání na networkidle2: ${err.message}`);
       
       if (this.autoTrackingEnabled && !this.isElementTrackingActive) {
         await this.startElementTracking(this.autoTrackingOptions);
