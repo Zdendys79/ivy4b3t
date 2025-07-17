@@ -1,6 +1,9 @@
-fix: Opravit PageAnalyzer timing - spustit hledání elementů při inicializaci
+feat: Implementovat kompletní quote_post akci
 
-- Přidat await před fbBot.initializeAnalyzer() v quote_post akci
-- Upravit initializeAnalyzer() aby okamžitě spustil startElementTracking()
-- Zajistit naplnění element cache před prvním použitím clickElementWithText()
-- Vyřešit problém kdy se kliká na elementy před jejich nalezením
+- Přidat výběr citátu z databáze před kliknutím (krok 0)
+- Implementovat lidské psaní citátu pomocí humanTyping
+- Přidat zvýraznění autora citátu (pokud existuje)
+- Implementovat detekci úspěchu kontrolou zmizení tlačítka
+- Přidat zpracování úspěchu: timeout citátu + plánování další akce
+- Přidat zpracování selhání: debug_incidents + screenshot
+- Odstranit dočasné čekání 60s, nahradit plnou funkcionalitou

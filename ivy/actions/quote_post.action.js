@@ -10,6 +10,8 @@
 
 import { BaseAction } from '../libs/base_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
+import { db } from '../libs/iv_db.class.js';
+import * as wait from '../iv_wait.js';
 
 export class QuotePostAction extends BaseAction {
   constructor() {
@@ -45,14 +47,44 @@ export class QuotePostAction extends BaseAction {
     try {
       Log.info(`[${user.id}]`, 'Spouštím jednoduchý quote post...');
 
+      // KROK 0: Vybrat citát z databáze
+      const quote = await this.step0_selectQuote(user);
+      if (!quote) {
+        await Log.error(`[${user.id}]`, 'Žádný dostupný citát pro uživatele');
+        return false;
+      }
+
       // KROK 1: Otevřít prohlížeč na stránce facebook.com
       await this.step1_openFacebook(user, fbBot);
 
       // KROK 2: Kliknout na "Co se vám honí hlavou"
       await this.step2_clickPostInput(user, fbBot);
 
-      // Prozatím končíme po kroku 2 - akce není dokončena
-      Log.success(`[${user.id}]`, 'Krok 2 dokončen - kliknuto na vstupní pole');
+      // KROK 3: Napsat citát
+      await this.step3_writeQuote(user, fbBot, quote);
+
+      // KROK 4: Přidat autora (pokud existuje)
+      if (quote.author) {
+        await this.step4_addAuthor(user, fbBot, quote.author);
+      }
+
+      // KROK 5: Krátká pauza na kontrolu
+      await this.step5_pauseForReview(user);
+
+      // KROK 6: Kliknout na tlačítko "Přidat"
+      await this.step6_clickSubmit(user, fbBot);
+
+      // KROK 7: Počkat na zmizení tlačítka (max 5s)
+      const success = await this.step7_waitForSuccess(user, fbBot);
+
+      // KROK 8: Zpracovat výsledek
+      if (success) {
+        await this.handleSuccess(user, quote, pickedAction);
+        return true;
+      } else {
+        await this.handleFailure(user, fbBot);
+        return false;
+      }
       
       // Čekání 60s nebo do zavření prohlížeče - použít browser management
       Log.info(`[${user.id}]`, 'Čekám 60s nebo do zavření prohlížeče...');
@@ -103,6 +135,21 @@ export class QuotePostAction extends BaseAction {
   }
 
   /**
+   * KROK 0: Vybrat citát z databáze
+   */
+  async step0_selectQuote(user) {
+    Log.info(`[${user.id}]`, 'KROK 0: Vybírám citát z databáze...');
+    
+    const quote = await db.safeQueryFirst('quotes.getRandomForUser', [user.id]);
+    
+    if (quote) {
+      Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrán citát ID ${quote.id}`);
+    }
+    
+    return quote;
+  }
+
+  /**
    * KROK 2: Kliknout na "Co se vám honí hlavou"
    */
   async step2_clickPostInput(user, fbBot) {
@@ -113,6 +160,146 @@ export class QuotePostAction extends BaseAction {
       Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
     } catch (err) {
       throw new Error(`Nepodařilo se kliknout na element: ${err.message}`);
+    }
+  }
+
+  /**
+   * KROK 3: Napsat citát (lidsky)
+   */
+  async step3_writeQuote(user, fbBot, quote) {
+    Log.info(`[${user.id}]`, 'KROK 3: Píšu citát...');
+    
+    // Lidské psaní pomocí iv_wait.js
+    await wait.humanTyping(fbBot.page, quote.text);
+    
+    Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Citát napsán');
+  }
+
+  /**
+   * KROK 4: Přidat autora
+   */
+  async step4_addAuthor(user, fbBot, author) {
+    Log.info(`[${user.id}]`, 'KROK 4: Přidávám autora...');
+    
+    // Přidat nový řádek
+    await fbBot.page.keyboard.press('Enter');
+    await fbBot.page.keyboard.press('Enter');
+    
+    // Napsat autora zvýrazněně
+    await wait.humanTyping(fbBot.page, `- ${author}`);
+    
+    Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Autor přidán');
+  }
+
+  /**
+   * KROK 5: Pauza na kontrolu
+   */
+  async step5_pauseForReview(user) {
+    Log.info(`[${user.id}]`, 'KROK 5: Pauza na kontrolu příspěvku...');
+    
+    const pauseTime = 2000 + Math.random() * 3000; // 2-5 sekund
+    await new Promise(resolve => setTimeout(resolve, pauseTime));
+    
+    Log.success(`[${user.id}]`, 'KROK 5 DOKONČEN: Kontrola dokončena');
+  }
+
+  /**
+   * KROK 6: Kliknout na "Přidat"
+   */
+  async step6_clickSubmit(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 6: Klikám na tlačítko "Přidat"...');
+    
+    try {
+      await fbBot.pageAnalyzer.clickElementWithText('Přidat', { matchType: 'exact' });
+      Log.success(`[${user.id}]`, 'KROK 6 DOKONČEN: Kliknuto na "Přidat"');
+    } catch (err) {
+      throw new Error(`Nepodařilo se kliknout na "Přidat": ${err.message}`);
+    }
+  }
+
+  /**
+   * KROK 7: Počkat na zmizení tlačítka
+   */
+  async step7_waitForSuccess(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 7: Čekám na zmizení tlačítka "Přidat"...');
+    
+    const startTime = Date.now();
+    const maxWait = 5000; // 5 sekund
+    
+    while (Date.now() - startTime < maxWait) {
+      const buttonExists = await fbBot.pageAnalyzer.elementExists('Přidat', { matchType: 'exact' });
+      
+      if (!buttonExists) {
+        Log.success(`[${user.id}]`, 'KROK 7 DOKONČEN: Tlačítko zmizelo - příspěvek odeslán!');
+        return true;
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    Log.warn(`[${user.id}]`, 'KROK 7: Tlačítko nezmizelo po 5s');
+    return false;
+  }
+
+  /**
+   * Zpracovat úspěch
+   */
+  async handleSuccess(user, quote, pickedAction) {
+    Log.info(`[${user.id}]`, 'Zpracovávám úspěšné odeslání...');
+    
+    // Nastavit timeout citátu na 30 dní
+    await db.safeExecute('quotes.markAsUsed', [30, quote.id]);
+    
+    // Zapsat úspěšnou akci do action_log
+    await db.safeExecute('actions.logSuccess', [
+      user.id,
+      'quote_post',
+      `Quote ID: ${quote.id}`,
+      quote.id
+    ]);
+    
+    // Naplánovat další akci
+    const minMinutes = pickedAction.min_minutes || 60;
+    const maxMinutes = pickedAction.max_minutes || 120;
+    const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
+    
+    await db.safeExecute('actions.scheduleNext', [
+      user.id,
+      'quote_post',
+      Math.round(nextMinutes)
+    ]);
+    
+    Log.success(`[${user.id}]`, `Quote post úspěšný! Další akce za ${Math.round(nextMinutes)} minut`);
+  }
+
+  /**
+   * Zpracovat selhání
+   */
+  async handleFailure(user, fbBot) {
+    Log.error(`[${user.id}]`, 'Quote post selhal - zapisuji debug informace...');
+    
+    try {
+      // Získat viditelné elementy
+      const visibleTexts = fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 100 });
+      
+      // Pořídit screenshot
+      const screenshot = await fbBot.page.screenshot({ encoding: 'base64' });
+      
+      // Zapsat do debug_incidents
+      await db.safeExecute('system.insertDebugIncident', [
+        user.id,
+        'quote_post_failed',
+        JSON.stringify({
+          visibleTexts: visibleTexts,
+          url: fbBot.page.url(),
+          timestamp: new Date().toISOString()
+        }),
+        screenshot
+      ]);
+      
+      Log.info(`[${user.id}]`, 'Debug informace uloženy do debug_incidents');
+    } catch (err) {
+      Log.error(`[${user.id}]`, `Chyba při ukládání debug informací: ${err.message}`);
     }
   }
 
