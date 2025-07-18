@@ -117,9 +117,28 @@ echo -e "\n📦 Instaluji závislosti..."
 cd "$IVY_DIR"
 npm install --omit=dev --no-audit --no-fund
 
-# === 11. SPUŠTĚNÍ START.SH ===
-echo -e "\n🚀 Spouštím start.sh..."
-chmod +x start.sh
-./start.sh
+# === 11. VÝBĚR A SPUŠTĚNÍ START SKRIPTU ===
+echo -e "\n🚀 Vyber start skript:"
+echo "1) start.sh (větev production)"
+echo "2) main-start.sh (větev main)"
+read -p "Zadej číslo [1-2]: " choice
+
+case $choice in
+    1)
+        echo "Spouštím start.sh (production)..."
+        chmod +x start.sh
+        ./start.sh
+        ;;
+    2)
+        echo "Spouštím main-start.sh (main)..."
+        chmod +x main-start.sh
+        ./main-start.sh
+        ;;
+    *)
+        echo "Neplatná volba. Spouštím výchozí start.sh..."
+        chmod +x start.sh
+        ./start.sh
+        ;;
+esac
 
 echo -e "\n🎉 Instalace dokončena. IVY klient je připraven."

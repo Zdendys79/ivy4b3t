@@ -34,8 +34,8 @@ REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
 SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
 TARGET_DIR=${TARGET_DIR:-~/ivy}
 
-# Vždy použij branch "main" - ignoruj config.json
-BRANCH="main"
+# Vždy použij branch "production"
+BRANCH="production"
 
 # Limity pro pokusy
 MAX_RETRIES=3
@@ -187,7 +187,7 @@ main_loop() {
 
         # Spuštění aplikace
         # export DEBUG="puppeteer:*"  # pouze pro rozsáhlý debugging
-        export IVY_GIT_BRANCH="main"
+        export IVY_GIT_BRANCH="production"
         node --trace-warnings ivy.js
 
         local exit_code=$?
