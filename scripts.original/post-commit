@@ -1,3 +1,0 @@
-#!/bin/sh
-echo "[POST-COMMIT] Zapisování verze do databáze ivy.versions"
-node ivy/git_commit_version.js post

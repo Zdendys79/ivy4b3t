@@ -49,12 +49,10 @@ curl -o- "$NVM_INSTALL_SCRIPT" | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# === 2. INSTALACE NEJNOVĚJŠÍ NODE.JS (nemusí být LTS) ===
-echo -e "\n🔍 Zjišťuji nejnovější verzi Node.js..."
-LATEST_NODE=$(nvm ls-remote | grep -v "iojs" | tail -1 | awk '{print $NF}' | tr -d ' ')
-echo "⬇️ Instaluji Node.js $LATEST_NODE ..."
-nvm install $LATEST_NODE
-nvm alias default $LATEST_NODE
+# === 2. INSTALACE STABILNÍ VERZE NODE.JS ===
+echo -e "\n🔍 Instaluji stabilní verzi Node.js..."
+nvm install stable
+nvm alias default stable
 nvm use default
 
 # === 3. AKTUALIZACE NPM ===

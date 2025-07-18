@@ -1,0 +1,20 @@
+#!/bin/bash
+echo "[POST-COMMIT] Zapisování verze do databáze ivy.versions"
+node ivy/git_commit_version.js post
+
+echo "[POST-COMMIT] Synchronizace scripts složky do Sync"
+# Smazat symlink pokud existuje
+if [ -L "/home/remotes/Sync/scripts" ]; then
+    rm "/home/remotes/Sync/scripts"
+fi
+
+# Vytvořit/aktualizovat skutečnou složku
+mkdir -p "/home/remotes/Sync/scripts"
+rsync -av --delete "/home/remotes/ivy4b3t/scripts/" "/home/remotes/Sync/scripts/"
+
+# Nastavit správná oprávnění
+chown -R remotes:remotes "/home/remotes/Sync/scripts"
+setfacl -R -m u:www-data:rwX "/home/remotes/Sync/scripts"
+setfacl -R -d -m u:www-data:rwX "/home/remotes/Sync/scripts"
+
+echo "[POST-COMMIT] Scripts synchronizace dokončena"
