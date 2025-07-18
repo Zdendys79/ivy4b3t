@@ -2,6 +2,7 @@
 
 # ------------------------------------------------------------------------
 # setup-ivy.sh – Kompletní instalace/aktualizace prostředí IVY4B3T klienta
+# ------------------------------------------------------------------------
 #
 # Provádí:
 #   - instalaci nebo aktualizaci NVM
@@ -15,6 +16,17 @@
 # ------------------------------------------------------------------------
 
 set -e
+
+# === IDENTIFIKACE SKRIPTU ===
+SCRIPT_PATH="$0"
+SCRIPT_NAME=$(basename "$SCRIPT_PATH")
+SCRIPT_MTIME=$(stat -c %y "$SCRIPT_PATH" 2>/dev/null | cut -d'.' -f1 || echo "neznámé datum")
+
+echo "========================================"
+echo "📄 Skript: $SCRIPT_NAME"
+echo "📅 Poslední úprava: $SCRIPT_MTIME"
+echo "========================================"
+echo ""
 
 # === DEFINICE PROMĚNNÝCH ===
 NVM_INSTALL_SCRIPT="https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh"
@@ -39,7 +51,7 @@ export NVM_DIR="$HOME/.nvm"
 
 # === 2. INSTALACE NEJNOVĚJŠÍ NODE.JS (nemusí být LTS) ===
 echo -e "\n🔍 Zjišťuji nejnovější verzi Node.js..."
-LATEST_NODE=$(nvm ls-remote | tail -1 | awk '{print $1}')
+LATEST_NODE=$(nvm ls-remote | grep -v "iojs" | tail -1 | awk '{print $NF}' | tr -d ' ')
 echo "⬇️ Instaluji Node.js $LATEST_NODE ..."
 nvm install $LATEST_NODE
 nvm alias default $LATEST_NODE
