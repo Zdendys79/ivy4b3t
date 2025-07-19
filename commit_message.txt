@@ -1,5 +1,0 @@
-feat: Add informative messages to pre-commit hook
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
