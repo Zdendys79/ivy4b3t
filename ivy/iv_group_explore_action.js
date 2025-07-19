@@ -139,7 +139,7 @@ export class GroupExploreAction {
       const randomGroupUrl = pageAnalysis.links.groups[Math.floor(Math.random() * pageAnalysis.links.groups.length)];
       
       Log.info(`[${user.id}]`, `🎯 Naviguji na novou skupinu: ${randomGroupUrl}`);
-      await fbBot.page.goto(randomGroupUrl, { waitUntil: 'networkidle2' });
+      await fbBot.navigateToPage(randomGroupUrl, { waitUntil: 'networkidle2' });
       await Wait.toSeconds(4, 'Načtení nové skupiny');
       return true;
 

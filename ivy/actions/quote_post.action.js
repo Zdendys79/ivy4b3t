@@ -119,13 +119,10 @@ export class QuotePostAction extends BaseAction {
     // Navigace na Facebook - čekáme na networkidle2
     Log.info(`[${user.id}]`, 'Naviguji na facebook.com...');
     
-    await fbBot.page.goto('https://www.facebook.com/', {
+    await fbBot.navigateToPage('https://www.facebook.com/', {
       waitUntil: 'networkidle2',
       timeout: 30 * 1000 // 30s
     });
-
-    // Reinicializace analyzátoru (spustí se hned po networkidle2)
-    await fbBot.initializeAnalyzer();
 
     // Jedna lidská pauza
     await Wait.toSeconds(5, 'Po analýze');

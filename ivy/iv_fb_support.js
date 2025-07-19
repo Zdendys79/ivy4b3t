@@ -548,97 +548,6 @@ export async function checkPageResponsiveness(user, fbBot) {
   }
 }
 
-/**
- * Ověří stav FB stránky po návratu z UTIO
- */
-export async function verifyStateAfterUtioReturn(user, group, fbBot, originalState) {
-  try {
-    Log.info(`[${user.id}]`, '🔄 Ověřuji stav FB po návratu z UTIO...');
-
-    // Kontrola URL
-    const currentUrl = fbBot.page.url();
-    const currentTitle = await fbBot.page.title().catch(() => 'Unknown');
-
-    // Ověř že jsme stále ve stejné skupině
-    if (!currentUrl.includes(group.fb_id)) {
-      return {
-        valid: false,
-        reason: `URL se změnila. Původní obsahovala: ${group.fb_id}, aktuální: ${currentUrl}`,
-        shouldReload: true
-      };
-    }
-
-    // Kontrola zda se stránka dramaticky nezměnila
-    if (Math.abs(currentTitle.length - originalState.title.length) > 50) {
-      await Log.warn(`[${user.id}]`, 'Titul stránky se významně změnil');
-    }
-
-    // Rychlá kontrola dostupnosti FB funkcí
-    const functionsCheck = await fbBot.page.evaluate(() => {
-      try {
-        const elementCount = document.querySelectorAll('*').length;
-        const bodyText = document.body.textContent.toLowerCase();
-        const hasErrors = bodyText.includes('something went wrong') ||
-                         bodyText.includes('něco se pokazilo') ||
-                         bodyText.includes('error occurred');
-
-        return {
-          accessible: elementCount > 100,
-          hasErrors: hasErrors,
-          elementCount: elementCount
-        };
-      } catch (err) {
-        return {
-          accessible: false,
-          hasErrors: true,
-          error: err.message
-        };
-      }
-    });
-
-    if (!functionsCheck.accessible) {
-      return {
-        valid: false,
-        reason: 'Stránka není přístupná nebo má málo elementů',
-        shouldReload: true
-      };
-    }
-
-    if (functionsCheck.hasErrors) {
-      return {
-        valid: false,
-        reason: 'Na stránce jsou chybové zprávy',
-        shouldReload: true
-      };
-    }
-
-    // Kontrola zda není účet zablokován
-    if (fbBot.pageAnalyzer) {
-      const quickCheck = await fbBot.pageAnalyzer.quickStatusCheck();
-      if (quickCheck.hasErrors) {
-        return {
-          valid: false,
-          reason: 'Detekován problém s účtem po návratu z UTIO',
-          shouldReload: false
-        };
-      }
-    }
-
-    Log.success(`[${user.id}]`, '✅ Stav FB stránky je v pořádku po návratu z UTIO');
-    return {
-      valid: true,
-      reason: 'Stav je konzistentní'
-    };
-
-  } catch (err) {
-    await Log.error(`[${user.id}]`, `Chyba při ověřování stavu: ${err.message}`);
-    return {
-      valid: false,
-      reason: `Chyba při ověřování: ${err.message}`,
-      shouldReload: true
-    };
-  }
-}
 
 
 /**
@@ -821,7 +730,7 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
         
         await Wait.toSeconds(15, 'Lidská pauza před navigací na skupinu');
         
-        await fbBot.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await fbBot.navigateToPage(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await Wait.toSeconds(3, 'Načtení stránky skupiny');
         
         Log.success(`[${user.id}]`, `✅ Úspěšně navigováno na skupinu ${group.name}`);

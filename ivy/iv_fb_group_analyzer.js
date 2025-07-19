@@ -11,8 +11,9 @@ import { db } from './iv_sql.js';
 import { Wait } from './libs/iv_wait.class.js';
 
 export class FBGroupAnalyzer {
-  constructor(page) {
+  constructor(page, fbBot = null) {
     this.page = page;
+    this.fbBot = fbBot; // Referenece na FBBot pro navigateToPage
     this.currentGroupInfo = null;
   }
 
@@ -354,7 +355,7 @@ export class FBGroupAnalyzer {
       
       Log.info('[GROUP_ANALYZER]', `🎯 Navigace na skupinu: ${randomLink.text}`);
       
-      await this.page.goto(randomLink.url, { waitUntil: 'networkidle' });
+      await this.fbBot.navigateToPage(randomLink.url, { waitUntil: 'networkidle' });
       await Wait.toSeconds(4, 'Čekání na načtení');
       
       return true;

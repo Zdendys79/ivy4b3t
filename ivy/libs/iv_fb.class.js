@@ -320,33 +320,68 @@ export class FBBot {
     }
   }
 
-  async _legacyComplexityAnalysis() {
-    // Původní implementace pro zpětnou kompatibilitu
+  /**
+   * Naviguje na URL a ověří zdraví stránky pomocí analýzy
+   * @param {string} url - cílová URL
+   * @param {object} options - Puppeteer goto options
+   * @returns {Promise<boolean>} true pokud je stránka zdravá nebo byl problém vyřešen
+   */
+  async navigateToPage(url, options = {}) {
     try {
-      const metrics = await this.page.evaluate(() => {
-        return {
-          elements: document.querySelectorAll('*').length,
-          images: document.querySelectorAll('img').length,
-          scripts: document.querySelectorAll('script').length,
-          links: document.querySelectorAll('a').length,
-          bodyText: document.body ? document.body.innerText.length : 0
-        };
-      });
-
-      const isNormal = metrics.elements > 500 &&
-        metrics.images > 10 &&
-        metrics.scripts > 20 &&
-        metrics.links > 50;
-
-      return {
-        isNormal,
-        metrics,
-        suspiciouslySimple: metrics.elements < 100 && metrics.images < 5
-      };
-
+      // a) Navigace na stránku
+      await this.page.goto(url, options);
+      
+      // Inicializace analyzeru pokud ještě není
+      if (!this.pageAnalyzer) {
+        await this.initializeAnalyzer();
+      }
+      
+      // b) Provedení analýzy komplexnosti
+      const analysis = await this.pageAnalyzer._performComplexityAnalysis();
+      
+      // c) Rozhodnutí na základě analýzy
+      if (analysis.isNormal && !analysis.suspiciouslySimple) {
+        // c ano) Stránka je komplexní - OK
+        Log.success('[FB]', `Navigace na ${url} úspěšná - stránka je v pořádku`);
+        return true;
+      } else {
+        // c ne) Stránka není komplexní - řešíme problémy
+        Log.warn('[FB]', `Stránka ${url} není v pořádku - elements: ${analysis.metrics?.elements || 0}, suspiciouslySimple: ${analysis.suspiciouslySimple}`);
+        
+        // Přejdeme do podmodulu pro řešení problémů
+        const resolved = await this.handlePageIssues(analysis);
+        return resolved;
+      }
+      
     } catch (err) {
-      await Log.error('[FB]', `Chyba při legacy analýze komplexnosti: ${err}`);
-      return { isNormal: true, metrics: null, suspiciouslySimple: false };
+      await Log.error('[FB]', `Chyba při navigaci na ${url}: ${err.message}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Řeší problémy s načtenou stránkou
+   * @param {object} analysis - výsledek analýzy z _performComplexityAnalysis
+   * @returns {Promise<boolean>} true pokud má stránka dostatek elementů, false pokud ne
+   */
+  async handlePageIssues(analysis) {
+    try {
+      // Přečti velikost cache
+      const cacheSize = this.pageAnalyzer.elementCache.size;
+      
+      if (cacheSize < 5) {
+        await Log.error('[FB]', `Cache má pouze ${cacheSize} elementů - pravděpodobně checkpoint nebo chyba`);
+        await Log.systemLog('PAGE_ISSUE', `URL: ${this.page.url()}, CacheSize: ${cacheSize}`);
+        
+        return false;
+      }
+      
+      // Cache má dostatek elementů - může pokračovat
+      return true;
+      
+    } catch (err) {
+      await Log.error('[FB]', `Chyba při řešení problémů: ${err.message}`);
+      return false;
     }
   }
 
@@ -357,9 +392,8 @@ export class FBBot {
       // Lidská pauza před navigací na Facebook
       await Wait.toSeconds(15, 'Před navigací na Facebook');
       
-      await this.page.goto('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
+      await this.navigateToPage('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
       await Wait.toSeconds(3, 'Stabilizace po otevření FB');
-      Log.info('[FB]', 'Stránka FB byla úspěšně otevřena.');
       return true;
     } catch (err) {
       await Log.error('[FB]', `Chyba při otevírání stránky Facebooku: ${err.message}`);
@@ -629,9 +663,9 @@ export class FBBot {
       return analysis.complexity;
     }
 
-    // Fallback na původní implementaci
-    await Log.warn('[FB]', 'Používám původní analyzePageComplexity - doporučuje se přejít na PageAnalyzer');
-    return await this._legacyComplexityAnalysis();
+    // Fallback - bez PageAnalyzer nelze provést analýzu
+    await Log.error('[FB]', 'PageAnalyzer není dostupný - nelze provést analýzu komplexnosti stránky');
+    return { isNormal: false, metrics: null, suspiciouslySimple: true };
   }
 
   /**
@@ -1537,7 +1571,7 @@ export class FBBot {
 
       Log.info('[FB]', `Otevírám skupinu: ${fbGroupUrl}`);
 
-      await this.page.goto(fbGroupUrl, {
+      await this.navigateToPage(fbGroupUrl, {
         waitUntil: 'domcontentloaded',
         timeout: 30000
       });
