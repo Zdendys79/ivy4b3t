@@ -1,7 +1,5 @@
-fix: Opravit quote_post chyby - scheduleNext a typing_speed NaN
+feat: Add informative messages to pre-commit hook
 
-- Přidán chybějící SQL dotaz actions.scheduleNext pro plánování dalších akcí
-- Opraveno pořadí parametrů v scheduleNext volání [minutes, user_id, action_code]
-- Přidána validace v Wait.toMS() pro NaN timeout hodnoty
-- Opraven překlep typeing_speed → typing_speed v AdvancedHumanBehavior
-- Quote post nyní úspěšně dokončuje celý proces bez NaN chyb
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
