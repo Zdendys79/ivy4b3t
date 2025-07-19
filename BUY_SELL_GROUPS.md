@@ -56,11 +56,11 @@ Pro aplikaci změn na stávající databázi spustit:
 
 ```bash
 # Použitím systémových proměnných (doporučeno)
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy < add_buy_sell_group_column.sql
+mysql -u $DB_USER -p$DB_PASS ivy < add_buy_sell_group_column.sql
 
 # Nebo direktně SQL příkazy
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "ALTER TABLE fb_groups ADD COLUMN IF NOT EXISTS is_buy_sell_group BOOLEAN NOT NULL DEFAULT FALSE;"
-mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "CREATE INDEX IF NOT EXISTS idx_is_buy_sell_group ON fb_groups(is_buy_sell_group);"
+mysql -u $DB_USER -p$DB_PASS ivy -e "ALTER TABLE fb_groups ADD COLUMN IF NOT EXISTS is_buy_sell_group BOOLEAN NOT NULL DEFAULT FALSE;"
+mysql -u $DB_USER -p$DB_PASS ivy -e "CREATE INDEX IF NOT EXISTS idx_is_buy_sell_group ON fb_groups(is_buy_sell_group);"
 ```
 
 ## Stav migrace
@@ -68,4 +68,4 @@ mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy -e "CREATE INDEX IF NOT EXISTS id
 ✅ **Sloupec byl úspěšně přidán do databáze** (2025-07-13)
 - Sloupec: `is_buy_sell_group BOOLEAN NOT NULL DEFAULT FALSE`
 - Index: `idx_is_buy_sell_group` pro optimalizaci dotazů
-- Database: `ivy` na localhost pomocí `$CLAUDE_DB_USER`
+- Database: `ivy` na localhost pomocí `$DB_USER`

@@ -35,13 +35,13 @@ echo "Všechny potřebné soubory nalezeny."
 # Načtení databázové konfigurace ze systémových proměnných
 # Použij systémové proměnné pro databázové připojení (localhost only)
 DB_HOST="localhost"
-DB_USER="$CLAUDE_DB_USER"
-DB_PASS="$CLAUDE_DB_PASS"
+DB_USER="$DB_USER"
+DB_PASS="$DB_PASS"
 DB_NAME="ivy"
 
 # Validace konfigurace
 if [[ -z "$DB_USER" || -z "$DB_PASS" ]]; then
-    echo "CHYBA: Systémové proměnné CLAUDE_DB_USER nebo CLAUDE_DB_PASS nejsou nastaveny."
+    echo "CHYBA: Systémové proměnné DB_USER nebo DB_PASS nejsou nastaveny."
     echo "Tyto proměnné jsou potřeba pro přístup k databázi."
     echo ""
     echo "Alternativně můžete vytvořit konfigurační soubor podle vzoru:"

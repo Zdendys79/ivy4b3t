@@ -1,4 +1,29 @@
 #!/bin/bash
-echo "[PRE-COMMIT] Zapisování verze do souboru package.json"
-node ivy/git_commit_version.js pre
+set -e
+
+# Generuj git hash
+VERSION_CODE=$(git rev-parse --short=7 HEAD)
+
+# Aktualizuj package.json
+node -e "
+const fs = require('fs');
+const pkg = JSON.parse(fs.readFileSync('ivy/package.json', 'utf8'));
+pkg.versionCode = '$VERSION_CODE';
+fs.writeFileSync('ivy/package.json', JSON.stringify(pkg, null, 2));
+"
+
+# Zápis do databáze
+HOSTNAME=$(hostname)
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+SQL="INSERT INTO ivy.versions (code, source, hostname, created) VALUES ('$VERSION_CODE', 'git', '$HOSTNAME', '$TIMESTAMP');"
+
+mysql -u "$DB_USER" -p"$DB_PASS" -e "$SQL"
+
+# Synchronizace scripts složky
+mkdir -p "/home/remotes/Sync/scripts"
+rsync -av "/home/remotes/ivy4b3t/scripts/" "/home/remotes/Sync/scripts/"
+chown -R remotes:remotes "/home/remotes/Sync/scripts"
+setfacl -R -m u:www-data:rwX "/home/remotes/Sync/scripts"
+setfacl -R -d -m u:www-data:rwX "/home/remotes/Sync/scripts"
+
 git add ivy/package.json

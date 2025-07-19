@@ -4,7 +4,7 @@
 # Vytvoří export struktury a dat databáze `ivy`, označí soubory verzí z tabulky `ivy.versions` (sloupec code),
 # zachová poslední 3 zálohy (starší smaže) a porovná aktuální strukturu s referenčním souborem `ivy_create_full.sql`.
 # Rozdíly zapíše do log souboru `backup_diff_{versionCode}.log`.
-# Přihlašovací údaje k DB jsou načítány ze systémových proměnných CLAUDE_DB_USER a CLAUDE_DB_PASS
+# Přihlašovací údaje k DB jsou načítány ze systémových proměnných DB_USER a DB_PASS
 # Zálohy jsou ukládány do: ~/ivy4b3t/web/restricted/backups
 
 # Dynamické určení cest na základě umístění skriptu
@@ -17,12 +17,12 @@ mkdir -p "$BACKUP_DIR"
 
 # Použij systémové proměnné pro databázové připojení (localhost only)
 DB_HOST="localhost"
-DB_USER="$CLAUDE_DB_USER"
-DB_PASS="$CLAUDE_DB_PASS"
+DB_USER="$DB_USER"
+DB_PASS="$DB_PASS"
 DB_NAME="ivy"
 
 if [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
-  echo "[ERROR] Systémové proměnné CLAUDE_DB_USER nebo CLAUDE_DB_PASS nejsou nastaveny."
+  echo "[ERROR] Systémové proměnné DB_USER nebo DB_PASS nejsou nastaveny."
   echo "[INFO] Tyto proměnné jsou potřeba pro přístup k databázi."
   exit 1
 fi

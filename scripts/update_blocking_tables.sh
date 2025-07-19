@@ -36,7 +36,7 @@ else
     echo "⚠️  jq není dostupné, používám výchozí hodnoty"
     DB_HOST="localhost"
     DB_USER="claude"
-    DB_PASS="$CLAUDE_DB_PASS"
+    DB_PASS="$DB_PASS"
     DB_NAME="ivy"
 fi
 

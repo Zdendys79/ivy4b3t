@@ -4,7 +4,7 @@
 -- Popis: Přidává boolean sloupec pro označení prodejních skupin,
 --        které podporují přímý přístup k diskuzi přes /buy_sell_discuss
 --
--- Použití: mysql -u $CLAUDE_DB_USER -p$CLAUDE_DB_PASS ivy < add_buy_sell_group_column.sql
+-- Použití: mysql -u $DB_USER -p$DB_PASS ivy < add_buy_sell_group_column.sql
 
 -- Přidání sloupce is_buy_sell_group (pokud neexistuje)
 ALTER TABLE fb_groups 

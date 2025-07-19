@@ -21,13 +21,13 @@ const __dirname = path.dirname(__filename);
 let sql_setup;
 
 // Prioritize environment variables for database connection
-if (process.env.CLAUDE_DB_USER && process.env.CLAUDE_DB_PASS) {
+if (process.env.DB_USER && process.env.DB_PASS) {
   Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
   sql_setup = {
-    host: process.env.CLAUDE_DB_HOST || 'localhost',
-    user: process.env.CLAUDE_DB_USER,
-    password: process.env.CLAUDE_DB_PASS,
-    database: process.env.CLAUDE_DB_NAME || 'ivy'
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME || 'ivy'
   };
 } else {
   Log.info('[SQL]', 'Systémové proměnné nenalezeny, zkouším sql_config.json.');
