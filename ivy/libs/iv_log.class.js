@@ -76,4 +76,23 @@ export class Log {
     const { pauseOnError } = await import('../iv_interactive_debugger.js');
     return await pauseOnError('ERROR', `${module}: ${message}`, { ...context, stack: error.stack });
   }
+
+  static async systemLog(eventType, message, metadata = {}) {
+    try {
+      const { SystemLogger } = await import('./iv_system_logger.class.js');
+      return await SystemLogger.logEvent(
+        eventType,
+        'INFO', 
+        message,
+        metadata,
+        process.env.HOSTNAME || 'unknown',
+        process.env.VERSION_CODE || 'dev',
+        process.env.GIT_BRANCH || 'main',
+        process.env.SESSION_ID || Date.now().toString()
+      );
+    } catch (err) {
+      this.error('[LOG]', `SystemLog failed: ${err.message}`);
+      return false;
+    }
+  }
 }
