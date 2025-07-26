@@ -1,0 +1,33 @@
+# NASTAVENÍ OPRÁVNĚNÍ PRO .HTACCESS - PŘÍSTUP PRO UŽIVATELE remotes
+
+# MOŽNOST 1: Přidat uživatele remotes do skupiny www-data
+sudo usermod -a -G www-data remotes
+
+# MOŽNOST 2: Změnit vlastníka souboru na remotes (ale zachovat skupinu www-data)
+sudo chown remotes:www-data /var/www/b3.web/admin/.htaccess
+
+# MOŽNOST 3: Nastavit group write permissions
+sudo chmod 664 /var/www/b3.web/admin/.htaccess
+
+# DOPORUČENÁ KOMBINACE (Možnost 2 + 3):
+# 1. Změnit vlastníka na remotes, ale zachovat skupinu www-data
+sudo chown remotes:www-data /var/www/b3.web/admin/.htaccess
+
+# 2. Nastavit oprávnění 664 (owner: read+write, group: read+write, others: read)
+sudo chmod 664 /var/www/b3.web/admin/.htaccess
+
+# 3. Ověřit oprávnění
+ls -la /var/www/b3.web/admin/.htaccess
+
+# OČEKÁVANÝ VÝSLEDEK:
+# -rw-rw-r-- 1 remotes www-data 1234 Jul 26 10:00 /var/www/b3.web/admin/.htaccess
+
+# VÝHODY:
+# - Claude (jako uživatel remotes) může soubor editovat
+# - Apache (jako www-data) může soubor číst
+# - Bezpečnost zachována (pouze remotes + www-data mají přístup)
+
+# ALTERNATIVA - symlink (pokud chceš mít soubor v ivy projektu):
+# sudo mv /var/www/b3.web/admin/.htaccess /home/remotes/ivy4b3t/web/restricted/admin_htaccess_live
+# sudo ln -s /home/remotes/ivy4b3t/web/restricted/admin_htaccess_live /var/www/b3.web/admin/.htaccess
+# sudo chown remotes:www-data /home/remotes/ivy4b3t/web/restricted/admin_htaccess_live

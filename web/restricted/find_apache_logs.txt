@@ -1,0 +1,39 @@
+# NAJÍT SPRÁVNÉ APACHE LOG SOUBORY
+
+# 1. Najít všechny Apache log soubory
+sudo find /var/log -name "*apache*" -type f 2>/dev/null
+sudo find /var/log -name "*access*" -type f 2>/dev/null
+sudo find /var/log -name "*error*" -type f 2>/dev/null
+
+# 2. Zkontrolovat Apache konfiguraci pro log cesty
+sudo apache2ctl -S | grep -i log
+sudo grep -r "ErrorLog\|CustomLog" /etc/apache2/ 2>/dev/null
+
+# 3. Zkontrolovat systemd logs pro Apache
+sudo journalctl -u apache2 --since "5 minutes ago"
+
+# 4. Test s detailnějším curl pro více informací
+curl -v http://127.0.0.1/admin/ 2>&1
+
+# 5. Zkontrolovat zda se IP 127.0.0.1 správně matchuje
+# Možný problém: Apache nerozpoznává 127.0.0.1 kvůli virtual host konfiguraci
+
+# 6. Zkontrolovat virtual host konfigurace
+sudo apache2ctl -S
+
+# 7. TEST - zkusit úplně povolit admin dočasně
+sudo cp /var/www/b3.web/admin/.htaccess /var/www/b3.web/admin/.htaccess.backup
+
+# Dočasně povolit vše:
+sudo tee /var/www/b3.web/admin/.htaccess > /dev/null <<'EOF'
+# DOČASNÝ TEST - povolit vše
+Require all granted
+EOF
+
+sudo systemctl reload apache2
+
+# Test:
+curl -I http://127.0.0.1/admin/
+
+# Pokud to funguje, pak je problém s IP matchingem
+# Pokud ne, pak je problém jinde

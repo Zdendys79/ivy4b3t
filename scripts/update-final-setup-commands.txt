@@ -1,0 +1,42 @@
+# FINÁLNÍ AKTUALIZACE setup-ivy.sh - BEZ JAKÝCHKOLI CITLIVÝCH ÚDAJŮ
+
+# 1. Zálohovat současný script
+cp /home/remotes/ivy4b3t/scripts/setup-ivy.sh /home/remotes/ivy4b3t/scripts/setup-ivy.sh.backup
+
+# 2. Nahradit finální verzí (bez výchozích hodnot)
+cp /home/remotes/ivy4b3t/scripts/setup-ivy-updated.sh /home/remotes/ivy4b3t/scripts/setup-ivy.sh
+
+# 3. Nastavit oprávnění
+chmod +x /home/remotes/ivy4b3t/scripts/setup-ivy.sh
+
+# FINÁLNÍ ZMĚNY:
+# ==============
+
+# ODSTRANĚNO ÚPLNĚ:
+# - [výchozí: localhost]
+# - [výchozí: remotes] 
+# - [výchozí: ivy]
+# - DB_HOST=${DB_HOST:-localhost}
+# - DB_USER=${DB_USER:-remotes}
+# - DB_NAME=${DB_NAME:-ivy}
+
+# NYNÍ SCRIPT VYŽADUJE:
+# - Uživatel MUSÍ zadat všechny údaje
+# - Žádné výchozí hodnoty
+# - Žádné hints na správné hodnoty
+# - Čisté dotazy: "DB Host: ", "DB User: ", "DB Name: "
+
+# UKÁZKA INTERAKCE:
+# =================
+# 📝 Zadej údaje pro připojení k databázi:
+# DB Host: [uživatel zadá]
+# DB User: [uživatel zadá]
+# DB Name: [uživatel zadá]  
+# 🔑 Zadej heslo pro databázového uživatele 'username':
+# Password: [SKRYTO]
+
+# BEZPEČNOST:
+# - Na GitHubu není vidět ŽÁDNÝ hint na servery
+# - Na GitHubu není vidět ŽÁDNÝ hint na uživatele
+# - Na GitHubu není vidět ŽÁDNÝ hint na databáze
+# - Script je univerzální pro jakékoli prostředí

@@ -1,0 +1,6 @@
+{
+    "host":"11.22.33.44",
+    "user":"claudedb_user",
+    "password":"any_complex_password",
+    "database":"ivy"
+}

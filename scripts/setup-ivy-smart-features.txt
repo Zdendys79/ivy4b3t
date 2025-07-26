@@ -1,0 +1,49 @@
+# NOVÉ CHYTRÉ FUNKCE setup-ivy.sh
+
+## 🎯 Hierarchie načítání původních údajů:
+
+1. **Systémové proměnné** (nejvyšší priorita)
+   - $DB_HOST, $DB_USER, $DB_NAME, $DB_PASS
+   - Pokud existují, použijí se jako první
+
+2. **Existující sql_config.json** (druhá priorita)
+   - Načte hodnoty které nejsou v env variables
+   - Zálohuje se před smazáním
+
+3. **Uživatelský vstup** (výchozí)
+   - Pro každou hodnotu nabídne původní (pokud existuje)
+   - Stačí stisknout ENTER pro použití původní hodnoty
+
+## 📋 Ukázka interakce s původními daty:
+
+```bash
+🔍 Hledám existující databázové údaje...
+✅ Nalezen DB_HOST v environment: localhost
+✅ Nalezen DB_USER v environment: remotes
+📁 Nalezen existující config soubor: ~/ivy/sql/sql_config.json
+✅ Načteno password z config: [SKRYTO]
+
+🔐 KONFIGURACE DATABÁZOVÉHO PŘIPOJENÍ
+======================================
+ℹ️  Pro použití původní hodnoty stiskni ENTER
+
+DB Host [localhost]: [ENTER = použít localhost]
+DB User [remotes]: [ENTER = použít remotes]
+DB Name: ivy
+🔑 Nalezeno existující heslo
+Použít původní heslo? [Y/n]: [ENTER = použít]
+```
+
+## ✅ Výhody:
+
+- **Zachovává všechny dostupné údaje** z env i config
+- **Minimalizuje ruční zadávání** při reinstalaci
+- **Zálohuje starý config** před smazáním
+- **Inteligentně kombinuje** zdroje dat
+- **Bezpečné pro GitHub** - žádné hardcoded údaje
+
+## 🔒 Bezpečnost:
+
+- Původní údaje se zobrazují jen při běhu scriptu
+- Hesla jsou vždy skrytá jako [SKRYTO]
+- Žádné citlivé údaje ve scriptu samotném

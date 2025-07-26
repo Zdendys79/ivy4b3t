@@ -1,0 +1,37 @@
+# AKTUALIZACE setup-ivy.sh SKRIPTU
+
+# 1. Zálohovat současný script
+cp /home/remotes/ivy4b3t/scripts/setup-ivy.sh /home/remotes/ivy4b3t/scripts/setup-ivy.sh.backup
+
+# 2. Nahradit novým scriptem (bez hardcoded údajů)
+cp /home/remotes/ivy4b3t/scripts/setup-ivy-updated.sh /home/remotes/ivy4b3t/scripts/setup-ivy.sh
+
+# 3. Nastavit oprávnění
+chmod +x /home/remotes/ivy4b3t/scripts/setup-ivy.sh
+
+# 4. Ověřit změny
+diff /home/remotes/ivy4b3t/scripts/setup-ivy.sh.backup /home/remotes/ivy4b3t/scripts/setup-ivy.sh || echo "Files differ - OK"
+
+# ZMĚNY V NOVÉM SKRIPTU:
+# =====================
+
+# PŘED (hardcoded):
+# DB_HOST="83.167.224.200"
+# DB_USER="B3.remotes"  
+# DB_NAME="ivy"
+
+# PO (interaktivní):
+# - Script se zeptá na všechny údaje
+# - Nabídne výchozí hodnoty v [závorkách]
+# - Umožní použít heslo z předchozí instalace
+# - Automaticky nastaví environment variables
+# - Vytvoří sql_config.json s task údaji
+
+# VÝHODY:
+# - Žádné hardcoded údaje v scriptu
+# - Flexibilní pro různé konfigurace  
+# - Bezpečnější (hesla nejsou ve scriptu)
+# - Uživatel má kontrolu nad všemi údaji
+
+# TEST SKRIPTU:
+# Před nasazením na produkci vyzkoušet na testovací stanici!

@@ -1,0 +1,57 @@
+# Apache 2.4+ IP Access Control pro /admin složku
+# KRITICKÉ: Adminer databázový nástroj - pouze vybrané IP adresy
+
+<RequireAll>
+    # Deny from all by default
+    Require all denied
+    
+    # Allow specific IP addresses
+    # Localhost access
+    Require ip 127.0.0.1
+    Require ip ::1
+    
+    # Server's own IP (pro lokální přístup)
+    Require ip 83.167.224.200
+    
+    # Přidej další IP adresy podle potřeby:
+    # Require ip 192.168.1.100
+    # Require ip 10.0.0.50
+    
+    # Pro rozsah IP (například celá lokální síť):
+    # Require ip 192.168.1.0/24
+    # Require ip 10.0.0.0/8
+</RequireAll>
+
+# Security headers
+Header always set X-Frame-Options "DENY"
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy "no-referrer"
+
+# Disable server signature
+ServerSignature Off
+
+# Custom 403 error message
+ErrorDocument 403 "
+<!DOCTYPE html>
+<html>
+<head>
+    <title>403 - Access Forbidden</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+        .error { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+        h1 { color: #d32f2f; margin-bottom: 20px; }
+        p { color: #666; line-height: 1.6; }
+        .ip { background: #f8f8f8; padding: 10px; border-radius: 4px; font-family: monospace; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class='error'>
+        <h1>403 - Access Forbidden</h1>
+        <p>Admin area is restricted to authorized IP addresses only.</p>
+        <div class='ip'>Your IP: <?php echo $_SERVER['REMOTE_ADDR'] ?? 'unknown'; ?></div>
+        <p>Contact system administrator if you need access.</p>
+    </div>
+</body>
+</html>
+"

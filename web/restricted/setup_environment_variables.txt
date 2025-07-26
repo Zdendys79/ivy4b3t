@@ -1,0 +1,75 @@
+# NASTAVENÍ SYSTÉMOVÝCH PROMĚNNÝCH PRO NOVÉ DATABÁZOVÉ UŽIVATELE
+
+# =============================================
+# 1. SOUČASNÉ PROMĚNNÉ (pro claude)
+# =============================================
+# DB_HOST=localhost
+# DB_USER=claude  
+# DB_PASS=xI4PIY99Yl0TyWJASLQrwd15+v9P3cY7eHba
+# DB_NAME=ivy
+
+# =============================================
+# 2. NOVÉ PROMĚNNÉ - LOKÁLNÍ SERVER
+# =============================================
+
+# Pro Claude (zachovat současné)
+export DB_HOST=localhost
+export DB_USER=claude
+export DB_PASS=xI4PIY99Yl0TyWJASLQrwd15+v9P3cY7eHba
+export DB_NAME=ivy
+
+# Pro PHP webové aplikace (nové)
+export PHP_DB_HOST=localhost  
+export PHP_DB_USER=php
+export PHP_DB_PASS=PHP_8k9mN2xR7qW3eT1vY6pL9zA4sF5hJ0dG
+export PHP_DB_NAME=ivy
+
+# =============================================
+# 3. PROMĚNNÉ PRO VZDÁLENÉ STANICE (remotes)
+# =============================================
+# Tyto nastaví setup-ivy.sh na každé stanici
+
+export DB_HOST=83.167.224.200  # IP hlavního serveru
+export DB_USER=remotes
+export DB_PASS=REM_7nQ4kP8wX2vB9mZ1sA6yF3cR5tE0jH9L
+export DB_NAME=ivy             # nebo ivy_main pro testovací
+
+# =============================================
+# 4. AKTUALIZACE setup-ivy.sh SKRIPTU
+# =============================================
+# Změnit v setup-ivy.sh:
+# DB_HOST="83.167.224.200"  # ← už je správně
+# DB_USER="remotes"         # ← změnit z "B3.remotes"  
+# DB_PASS="REM_7nQ4kP8wX2vB9mZ1sA6yF3cR5tE0jH9L"  # ← nové heslo
+
+# =============================================
+# 5. AKTUALIZACE PHP PŘIPOJENÍ
+# =============================================
+# Změnit v web/inc/db.php a web/app/core/Database.php:
+# - Používat PHP_DB_* proměnné místo DB_*
+# - Nebo vytvořit fallback na DB_* pokud PHP_DB_* neexistují
+
+# =============================================
+# 6. POSTUP IMPLEMENTACE
+# =============================================
+
+# 1. Spustit SQL script jako root:
+# mysql -u root -p < /home/remotes/ivy4b3t/web/restricted/create_database_users.sql
+
+# 2. Nastavit environment variables na serveru
+# 3. Aktualizovat PHP kód pro PHP_DB_* proměnné  
+# 4. Aktualizovat setup-ivy.sh pro nového remotes uživatele
+# 5. Otestovat všechna připojení
+
+# =============================================
+# 7. TESTOVÁNÍ PŘIPOJENÍ
+# =============================================
+
+# Test claude (lokální)
+mysql -h localhost -u claude -p'xI4PIY99Yl0TyWJASLQrwd15+v9P3cY7eHba' ivy -e "SELECT 'Claude works' AS test;"
+
+# Test php (lokální)  
+mysql -h localhost -u php -p'PHP_8k9mN2xR7qW3eT1vY6pL9zA4sF5hJ0dG' ivy -e "SELECT 'PHP works' AS test;"
+
+# Test remotes (vzdálený)
+mysql -h 83.167.224.200 -u remotes -p'REM_7nQ4kP8wX2vB9mZ1sA6yF3cR5tE0jH9L' ivy -e "SELECT 'Remotes works' AS test;"
