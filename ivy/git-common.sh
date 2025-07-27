@@ -76,9 +76,17 @@ update_git_repo() {
         return 1
     fi
 
+    # Pokus o normální pull
     if ! git pull origin "$branch" 2>/dev/null; then
-        log_error "Nepodařilo se aktualizovat větev $branch"
-        return 1
+        log_error "Normální pull selhal, zkouším force reset..."
+        
+        # Force reset na remote větev (řeší divergenci historie)
+        if ! git reset --hard "origin/$branch" 2>/dev/null; then
+            log_error "Force reset selhal - nepodařilo se aktualizovat větev $branch"
+            return 1
+        fi
+        
+        log_info "Úspěšně provedeno force reset na origin/$branch"
     fi
 
     log_success "Git repozitář úspěšně aktualizován"
