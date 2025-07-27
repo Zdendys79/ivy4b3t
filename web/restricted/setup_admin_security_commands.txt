@@ -1,0 +1,30 @@
+# SUDO PŘÍKAZY PRO NASTAVENÍ ADMIN BEZPEČNOSTI
+# Spusť tyto příkazy v terminálu pro zabezpečení /var/www/b3.web/admin/ složky
+
+# 1. Zkopírovat .htaccess soubor do admin složky
+sudo cp /home/remotes/ivy4b3t/web/restricted/admin_htaccess /var/www/b3.web/admin/.htaccess
+
+# 2. Nastavit správného vlastníka (www-data)
+sudo chown www-data:www-data /var/www/b3.web/admin/.htaccess
+
+# 3. Nastavit správná oprávnění (čitelné pro Apache)
+sudo chmod 644 /var/www/b3.web/admin/.htaccess
+
+# 4. Ověřit, že soubor byl vytvořen správně
+sudo ls -la /var/www/b3.web/admin/.htaccess
+
+# 5. Ověřit obsah souboru
+sudo cat /var/www/b3.web/admin/.htaccess
+
+# 6. Restartovat Apache pro aplikování změn
+sudo systemctl reload apache2
+
+# 7. Test - zkusit přístup z webového prohlížeče:
+#    http://server_ip/admin/
+#    Měl by zobrazit 403 Forbidden pokud nejste na povolené IP
+
+# POZNÁMKY:
+# - Adminer je VELMI citlivý nástroj - má přístup k celé databázi
+# - Pokud potřebuješ přidat další IP adresy, uprav řádky "Require ip"
+# - Pro celou síť použij CIDR notaci: Require ip 192.168.1.0/24
+# - Backup soubor zůstává v /home/remotes/ivy4b3t/web/restricted/admin_htaccess

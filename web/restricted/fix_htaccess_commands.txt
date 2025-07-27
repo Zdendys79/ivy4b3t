@@ -1,0 +1,25 @@
+# OPRAVA .HTACCESS CHYBY
+
+# PROBLÉM: RequireAll s "Require all denied" + "Require ip" je logicky špatně!
+# ŘEŠENÍ: Změnit na RequireAny
+
+# 1. Použít opravenou verzi
+sudo cp /home/remotes/ivy4b3t/web/restricted/admin_htaccess_corrected /var/www/b3.web/admin/.htaccess
+
+# 2. Nastavit oprávnění
+sudo chown www-data:www-data /var/www/b3.web/admin/.htaccess
+sudo chmod 644 /var/www/b3.web/admin/.htaccess
+
+# 3. Reload Apache
+sudo systemctl reload apache2
+
+# 4. Test z localhost
+curl -I http://127.0.0.1/admin/
+
+# 5. Ověřit obsah
+sudo cat /var/www/b3.web/admin/.htaccess
+
+# OČEKÁVANÝ VÝSLEDEK:
+# - http://127.0.0.1/admin/ → 200 OK nebo 302 redirect (funguje!)
+# - http://83.167.224.200/admin/ z tvé IP → 200 OK (funguje!)  
+# - Jiné IP adresy → 403 Forbidden

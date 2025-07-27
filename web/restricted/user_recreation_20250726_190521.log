@@ -1,0 +1,19 @@
+2025-07-26 19:05:21 🚀 Začíná rekreace databázových uživatelů
+2025-07-26 19:05:21 📝 Log soubor: /home/remotes/ivy4b3t/web/restricted/user_recreation_20250726_190521.log
+SUCCESS: Všechny požadované nástroje jsou dostupné
+SUCCESS: Připojení k databázi úspěšné
+2025-07-26 19:05:35 \n🔑 Generuji nová bezpečná hesla...
+SUCCESS: Vygenerována 3 nová hesla (32 znaků, min. 4 speciální znaky)
+2025-07-26 19:05:36 \n🗑️  Mažu všechny uživatele (kromě systémových)...
+2025-07-26 19:05:36 Mažu uživatele: 'B3.remotes'@'%'
+2025-07-26 19:05:37 Mažu uživatele: 'JakVe'@'localhost'
+2025-07-26 19:05:37 Mažu uživatele: 'Zdendys79'@'%'
+2025-07-26 19:05:37 Mažu uživatele: 'claude'@'localhost'
+2025-07-26 19:05:37 Mažu uživatele: 'google_sheets'@'%'
+2025-07-26 19:05:37 Mažu uživatele: 'metapupp'@'%'
+2025-07-26 19:05:37 Mažu uživatele: 'mysql'@'localhost'
+2025-07-26 19:05:37 Mažu uživatele: 'php_user'@'localhost'
+2025-07-26 19:05:37 Mažu uživatele: 'rss_reader'@'%'
+2025-07-26 19:05:37 Mažu uživatele: 'utiolite'@'%'
+SUCCESS: Všichni uživatelé smazáni
+2025-07-26 19:05:37 \n👥 Vytvářím nové uživatele s vygenerovanými hesly...

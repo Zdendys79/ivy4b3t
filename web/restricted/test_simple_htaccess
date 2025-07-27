@@ -1,0 +1,8 @@
+# Zjednodušený test .htaccess - pouze základní IP omezení
+<RequireAll>
+    Require all denied
+    Require ip 127.0.0.1
+    Require ip ::1
+    Require ip 83.167.224.200
+    Require ip 89.177.204.191
+</RequireAll>

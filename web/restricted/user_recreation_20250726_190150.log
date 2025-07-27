@@ -1,0 +1,7 @@
+2025-07-26 19:01:50 🚀 Začíná rekreace databázových uživatelů
+2025-07-26 19:01:50 📝 Log soubor: /home/remotes/ivy4b3t/web/restricted/user_recreation_20250726_190150.log
+SUCCESS: Všechny požadované nástroje jsou dostupné
+SUCCESS: Připojení k databázi úspěšné
+2025-07-26 19:01:59 \n🔑 Generuji nová bezpečná hesla...
+SUCCESS: Vygenerována 3 nová hesla (32 znaků, min. 4 speciální znaky)
+2025-07-26 19:02:01 \n📋 Vytváním zálohu současných uživatelů...

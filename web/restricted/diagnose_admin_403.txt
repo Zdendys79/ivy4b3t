@@ -1,0 +1,53 @@
+# DIAGNOSTIKA PROBLÉMU S ADMIN 403 - i pro localhost
+
+# PROBLÉM: Ani localhost/127.0.0.1 nemá přístup k /admin/ i když je v .htaccess povolený
+
+# 1. Zkontrolovat Apache error log pro podrobnosti
+sudo tail -30 /var/log/apache2/error.log
+
+# 2. Vytvořit debug script pro zjištění IP
+sudo tee /var/www/b3.web/debug_ip.php > /dev/null <<'EOF'
+<?php
+echo "REMOTE_ADDR: " . ($_SERVER['REMOTE_ADDR'] ?? 'NOT SET') . "\n";
+echo "All headers:\n";
+foreach($_SERVER as $key => $value) {
+    if(strpos($key, 'HTTP_') === 0 || in_array($key, ['REMOTE_ADDR', 'REMOTE_HOST'])) {
+        echo "$key: $value\n";
+    }
+}
+?>
+EOF
+
+# 3. Test debug scriptu z localhost
+curl http://127.0.0.1/debug_ip.php
+
+# 4. Zkusit zjednodušený .htaccess
+sudo cp /var/www/b3.web/admin/.htaccess /var/www/b3.web/admin/.htaccess.backup
+
+sudo tee /var/www/b3.web/admin/.htaccess > /dev/null <<'EOF'
+<RequireAll>
+    Require all denied
+    Require ip 127.0.0.1
+    Require ip ::1
+</RequireAll>
+EOF
+
+# 5. Reload Apache
+sudo systemctl reload apache2
+
+# 6. Test znovu
+curl -I http://127.0.0.1/admin/
+
+# 7. Zkontrolovat zda je authz_core modul aktivní
+sudo apache2ctl -M | grep authz
+
+# 8. Pokud stále nefunguje, zkus úplně povolit pro test:
+# sudo tee /var/www/b3.web/admin/.htaccess > /dev/null <<'EOF'
+# Require all granted
+# EOF
+
+# MOŽNÉ PŘÍČINY:
+# - Apache neinterpretuje 127.0.0.1 jako localhost
+# - Chybí authz_core modul
+# - Jiná .htaccess konfigurace výše v hierarchii
+# - Apache virtual host konfigurace

@@ -1,0 +1,46 @@
+# ANALÝZA CHYBY V .HTACCESS SYNTAXI
+
+PROBLÉM: RequireAll s "Require all denied" je LOGICKY ŠPATNĚ!
+
+## SOUČASNÁ CHYBNÁ SYNTAXE:
+<RequireAll>
+    Require all denied      # ← CHYBA! Deny all
+    Require ip 127.0.0.1    # ← Toto nikdy nebude matchovat!
+    Require ip ::1
+</RequireAll>
+
+## VYSVĚTLENÍ CHYBY:
+RequireAll znamená: "VŠECHNY podmínky musí být splněny"
+- Require all denied = NIKDY nepovolit
+- Require ip 127.0.0.1 = Povolit jen tuto IP
+
+To je logický rozpor! Nemůže být současně "denied" i "allowed"
+
+## SPRÁVNÁ SYNTAXE - MOŽNOST 1 (RequireAny):
+<RequireAny>
+    Require ip 127.0.0.1
+    Require ip ::1
+    Require ip 83.167.224.200
+    Require ip 89.177.204.191
+</RequireAny>
+
+## SPRÁVNÁ SYNTAXE - MOŽNOST 2 (Klasická):
+# Deny from all
+# Allow from 127.0.0.1
+# Allow from ::1
+# Allow from 83.167.224.200
+# Allow from 89.177.204.191
+
+## SPRÁVNÁ SYNTAXE - MOŽNOST 3 (Kombinace):
+<RequireAll>
+    Require all denied
+</RequireAll>
+<RequireAny>
+    Require ip 127.0.0.1
+    Require ip ::1
+    Require ip 83.167.224.200
+    Require ip 89.177.204.191
+</RequireAny>
+
+## NEJJEDNODUŠŠÍ OPRAVA:
+Změnit RequireAll na RequireAny!
