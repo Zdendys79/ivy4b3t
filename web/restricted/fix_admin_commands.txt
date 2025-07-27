@@ -1,0 +1,39 @@
+# OPRAVA APACHE ERROR - NOVÝ .HTACCESS SOUBOR
+
+# 1. Nejprve smazat poškozený .htaccess
+sudo rm -f /var/www/b3.web/admin/.htaccess
+
+# 2. Zkopírovat opravený soubor
+sudo cp /home/remotes/ivy4b3t/web/restricted/admin_htaccess_fixed /var/www/b3.web/admin/.htaccess
+
+# 3. Nastavit správná oprávnění
+sudo chown www-data:www-data /var/www/b3.web/admin/.htaccess
+sudo chmod 644 /var/www/b3.web/admin/.htaccess
+
+# 4. Testovat konfiguraci Apache
+sudo apache2ctl configtest
+
+# 5. Pokud je konfigurace OK, reload Apache
+sudo systemctl reload apache2
+
+# 6. Ověřit soubor
+sudo cat /var/www/b3.web/admin/.htaccess
+
+# ALTERNATIVA - pokud stále hlásí chybu:
+# Vytvořit ještě jednodušší verzi pouze s IP omezením:
+
+# sudo tee /var/www/b3.web/admin/.htaccess > /dev/null <<'EOF'
+# <RequireAll>
+#     Require all denied
+#     Require ip 127.0.0.1
+#     Require ip ::1
+#     Require ip 83.167.224.200
+# </RequireAll>
+# EOF
+
+# DIAGNOSTIKA:
+# Zkontrolovat Apache error log:
+# sudo tail -f /var/log/apache2/error.log
+# 
+# Zkontrolovat zda jsou potřebné moduly aktivní:
+# sudo apache2ctl -M | grep -E "(authz|headers)"

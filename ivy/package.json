@@ -1,0 +1,22 @@
+{
+  "name": "ivy",
+  "type": "module",
+  "version": "1.0.0",
+  "versionCode": "96415a8",
+  "description": "Hlavní klient Ivy4B3T pro automatizaci interakcí na FB",
+  "main": "ivy.js",
+  "scripts": {
+    "start": "node ivy.js",
+    "version": "node git_commit_version.js"
+  },
+  "author": "Zdeněk Jelínek",
+  "license": "MIT",
+  "dependencies": {
+    "md5": "2.3.0",
+    "mysql2": "3.14.1",
+    "puppeteer": "24.8.2",
+    "puppeteer-extra": "3.3.6",
+    "puppeteer-extra-plugin-stealth": "2.11.2",
+    "rss-parser": "3.13.0"
+  }
+}

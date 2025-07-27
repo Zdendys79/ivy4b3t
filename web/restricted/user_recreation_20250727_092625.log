@@ -1,0 +1,17 @@
+2025-07-27 09:26:25 🚀 Začíná rekreace databázových uživatelů
+2025-07-27 09:26:25 📝 Log soubor: /home/remotes/ivy4b3t/web/restricted/user_recreation_20250727_092625.log
+SUCCESS: Všechny požadované nástroje jsou dostupné
+SUCCESS: Připojení k databázi úspěšné
+2025-07-27 09:26:50 \n🔑 Generuji nová bezpečná hesla...
+SUCCESS: Vygenerována hesla:
+SUCCESS: - Lokální uživatelé: 40 znaků, 0 speciálních znaků
+SUCCESS: - Veřejní uživatelé: 40 znaků, 4 speciální znaky
+2025-07-27 09:27:05 \n🗑️  Mažu všechny uživatele (kromě systémových)...
+2025-07-27 09:27:05 Mažu uživatele: 'claude'@'localhost'
+2025-07-27 09:27:06 Mažu uživatele: 'google_sheets'@'%'
+2025-07-27 09:27:06 Mažu uživatele: 'php'@'localhost'
+2025-07-27 09:27:06 Mažu uživatele: 'remotes'@'%'
+SUCCESS: Všichni uživatelé smazáni
+2025-07-27 09:27:06 \n👥 Vytvářím nové uživatele s vygenerovanými hesly...
+SUCCESS: Noví uživatelé vytvořeni a oprávnění nastavena
+2025-07-27 09:27:06 \n🔍 Ověřuji vytvořené uživatele...

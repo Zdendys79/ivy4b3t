@@ -1,0 +1,19 @@
+.vscode/
+node_modules/
+/web/restricted/backups/
+/web/restricted/sql_config.json
+/web/config/database.json
+/ivy/sql/sql_config.json
+/scripts/maintenance/function-usage-report.xml
+
+*.bak
+*.code-workspace
+
+# Claude memory files
+CLAUDE.md
+CLAUDE.memory
+
+commit_message.txt
+
+# PHP Error Logs
+web/logs/

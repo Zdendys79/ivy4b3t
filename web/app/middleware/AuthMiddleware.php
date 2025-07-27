@@ -1,0 +1,129 @@
+<?php
+/**
+ * Authentication Middleware
+ * Protects all routes except login and OAuth
+ */
+
+// Security check
+if (!defined('IVY_FRAMEWORK')) {
+    http_response_code(403);
+    die('Direct access not allowed');
+}
+
+class AuthMiddleware
+{
+    /**
+     * Public routes that don't require authentication
+     */
+    private static $publicRoutes = [
+        '/login',
+        '/auth/google',
+        '/auth/google/callback'
+    ];
+    
+    /**
+     * Check if current route requires authentication
+     */
+    public static function requiresAuth($path)
+    {
+        return !in_array($path, self::$publicRoutes);
+    }
+    
+    /**
+     * Check if user is authenticated
+     */
+    public static function isAuthenticated()
+    {
+        error_log("=== AuthMiddleware::isAuthenticated() ===");
+        error_log("Session ID: " . session_id());
+        error_log("Session data: " . json_encode($_SESSION));
+        error_log("is_authenticated value: " . (isset($_SESSION['is_authenticated']) ? $_SESSION['is_authenticated'] : 'NOT_SET'));
+        
+        $authenticated = isset($_SESSION['is_authenticated']) && $_SESSION['is_authenticated'] === true;
+        error_log("Result: " . ($authenticated ? 'TRUE' : 'FALSE'));
+        
+        return $authenticated;
+    }
+    
+    /**
+     * Get current user info
+     */
+    public static function getCurrentUser()
+    {
+        if (!self::isAuthenticated()) {
+            return null;
+        }
+        
+        return [
+            'id' => $_SESSION['user_id'] ?? null,
+            'name' => $_SESSION['user_name'] ?? null,
+            'email' => $_SESSION['user_email'] ?? null,
+            'picture' => $_SESSION['user_picture'] ?? null,
+            'auth_method' => $_SESSION['auth_method'] ?? null,
+            'login_time' => $_SESSION['login_time'] ?? null
+        ];
+    }
+    
+    /**
+     * Protect route - redirect to login if not authenticated
+     */
+    public static function protect($path)
+    {
+        error_log("=== AuthMiddleware::protect($path) ===");
+        error_log("Requires auth: " . (self::requiresAuth($path) ? 'TRUE' : 'FALSE'));
+        
+        if (self::requiresAuth($path)) {
+            $isAuth = self::isAuthenticated();
+            error_log("User authenticated: " . ($isAuth ? 'TRUE' : 'FALSE'));
+            
+            if (!$isAuth) {
+                error_log("REDIRECTING TO LOGIN - user not authenticated");
+                
+                // BLOCK REDIRECT - show debug info instead
+                die("DEBUG: Session lost!<br><br>
+                Current Session ID: " . session_id() . "<br>
+                Session Data: " . htmlspecialchars(json_encode($_SESSION)) . "<br>
+                Requested Path: " . htmlspecialchars($path) . "<br>
+                Cookie Data: " . htmlspecialchars(json_encode($_COOKIE)) . "<br>
+                Session Save Path: " . session_save_path() . "<br>
+                Session Cookie Params: " . htmlspecialchars(json_encode(session_get_cookie_params())) . "<br>
+                <br><a href='/auth/google'>Try OAuth again</a>");
+                
+                // Store intended URL for redirect after login
+                $_SESSION['intended_url'] = $path;
+                
+                header('Location: /login');
+                exit;
+            } else {
+                error_log("ACCESS GRANTED - user is authenticated");
+            }
+        } else {
+            error_log("PUBLIC ROUTE - no auth required");
+        }
+    }
+    
+    /**
+     * Logout user
+     */
+    public static function logout()
+    {
+        // Clear all session data
+        $_SESSION = [];
+        
+        // Destroy session cookie
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+        
+        // Destroy session
+        session_destroy();
+        
+        // Start new session for flash messages
+        session_start();
+        $_SESSION['flash_success'] = 'Byl jste úspěšně odhlášen';
+    }
+}

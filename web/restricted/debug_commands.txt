@@ -1,0 +1,32 @@
+# DIAGNOSTIKA IP PROBLÉMU
+
+# 1. Zkopírovat debug script do dostupné složky (ne admin)
+sudo cp /home/remotes/ivy4b3t/web/restricted/debug_ip.php /var/www/b3.web/debug_ip.php
+sudo chown www-data:www-data /var/www/b3.web/debug_ip.php
+
+# 2. Navštiv v prohlížeči:
+# http://83.167.224.200/debug_ip.php
+# 
+# Podívej se jakou IP vidí Apache jako REMOTE_ADDR
+
+# 3. Zkontrolovat aktuální .htaccess
+sudo cat /var/www/b3.web/admin/.htaccess
+
+# 4. Zkontrolovat Apache error log pro IP informace
+sudo tail -20 /var/log/apache2/error.log | grep -i "client denied"
+
+# 5. Test s curl přímo ze serveru (měl by fungovat)
+curl -I http://127.0.0.1/admin/
+
+# MOŽNÉ PŘÍČINY:
+# - Tvá IP se mění (dynamická IP od ISP)
+# - Proxy/CDN mění IP adresu
+# - IPv6 vs IPv4 problém
+# - Apache cachování
+
+# DOČASNÉ ŘEŠENÍ - povolit širší rozsah:
+# Pokud máš IP 89.177.204.191, zkus povolit celý rozsah:
+# Require ip 89.177.204.0/24
+
+# NEBO povolit všechny dočasně pro test:
+# Require all granted
