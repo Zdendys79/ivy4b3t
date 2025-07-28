@@ -12,6 +12,7 @@ import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 // Removed messageHashes import - table no longer exists
+import { NEWS } from './news.js';
 import { QUOTES } from './quotes.js';
   
 import { SYSTEM } from './system.js';
@@ -26,6 +27,7 @@ export const SQL = {
   groups: GROUPS,
   limits: LIMITS,
   // Removed message_hashes and system_metrics - tables no longer exist
+  news: NEWS,
   quotes: QUOTES,
   system: SYSTEM,
   user_group_blocking: USER_GROUP_BLOCKING,

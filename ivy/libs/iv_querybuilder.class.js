@@ -90,6 +90,15 @@ export class QueryBuilder {
     return await this.safeQueryAll('actions.getUserActionsWithLimitsSimple', [userId, userId], true);
   }
 
+  // News post dotazy
+  async getAvailableNewsUrl() {
+    return await this.safeQueryFirst('news.getAvailableUrl');
+  }
+
+  async markNewsUrlAsUsed(urlId) {
+    return await this.safeExecute('news.markUrlAsUsed', [urlId]);
+  }
+
   async logAction(accountId, actionCode, referenceId, text) {
     return await this.safeExecute('actions.logAction', [accountId, actionCode, referenceId, text]);
   }
