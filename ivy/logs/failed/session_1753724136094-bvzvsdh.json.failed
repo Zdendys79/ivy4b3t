@@ -3,7 +3,7 @@
   "versionCode": "96415a8",
   "hostname": "d4689-6369",
   "timestamp": "2025-07-28T17:36:34.841Z",
-  "retryCount": 0,
+  "retryCount": 5,
   "logs": [
     {
       "level": "INFO",

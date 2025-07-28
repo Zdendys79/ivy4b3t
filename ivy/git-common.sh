@@ -89,7 +89,6 @@ update_git_repo() {
         log_info "Úspěšně provedeno force reset na origin/$branch"
     fi
 
-    log_success "Git repozitář úspěšně aktualizován"
     return 0
 }
 
@@ -119,7 +118,6 @@ sync_files() {
         --exclude .gitignore \
         "$source_path/" "$target_dir/"; then
 
-        log_success "Soubory úspěšně synchronizovány"
         return 0
     else
         log_error "Synchronizace souborů selhala"
@@ -148,7 +146,6 @@ update_and_sync() {
         return 1
     fi
 
-    log_success "Aktualizace a synchronizace dokončena"
     return 0
 }
 
@@ -170,8 +167,6 @@ get_git_info() {
         package_version=$(grep '"versionCode"' "$SOURCE_SUBFOLDER/package.json" | sed 's/.*"versionCode": *"\([^"]*\)".*/\1/')
     fi
 
-    echo "Git Hash: $git_hash"
-    echo "Short Hash: $git_short_hash"
     echo "Branch: $git_branch"
     echo "Last Commit: $git_commit_msg"
     echo "Commit Date: $git_commit_date"

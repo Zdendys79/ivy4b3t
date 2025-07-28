@@ -5,7 +5,6 @@
 #
 # Popis: Spuštění Ivy klienta VŽDY v GIT větvi "main".
 #        Ignoruje nastavení branch v config.json a vždy používá main branch.
-#        Limit maximálně 3 restartů během 60 sekund.
 
 # spuštění na Ubuntu pomocí:
 # cd ~/ivy && chmod +x main-start.sh && ./main-start.sh
@@ -38,64 +37,51 @@ TARGET_DIR=${TARGET_DIR:-~/ivy}
 # Vždy použij branch "main" - ignoruj config.json
 BRANCH="main"
 
-# Limity pro pokusy
-MAX_RETRIES=3
-TIME_WINDOW=60
+# Konfigurace pro časové omezení mezi spuštěními
+TIME_WINDOW=60  # sekund
+LAST_START_FILE="$TARGET_DIR/.last_start_time"
 
-# Pole pro uchovávání časů pokusů
-declare -a attempt_times=()
+
 
 # ===========================================
-# FUNKCE PRO SPRÁVU RESTARTŮ
+# HLAVNÍ FUNKCE
 # ===========================================
 
-# Přidá nový pokus do seznamu a zkontroluje limit
+# Funkce pro kontrolu času posledního spuštění (zabránění častému spouštění)
 check_restart_limit() {
     local current_time=$(date +%s)
-
-    # Odstraň pokusy starší než TIME_WINDOW
-    local filtered_times=()
-    for time in "${attempt_times[@]}"; do
-        if (( current_time - time < TIME_WINDOW )); then
-            filtered_times+=("$time")
+    
+    # Zkontroluj čas posledního spuštění
+    if [[ -f "$LAST_START_FILE" ]]; then
+        local last_start_time=$(cat "$LAST_START_FILE" 2>/dev/null || echo "0")
+        local time_diff=$((current_time - last_start_time))
+        
+        if (( time_diff < TIME_WINDOW )); then
+            local remaining_time=$((TIME_WINDOW - time_diff))
+            echo "[START] Od posledního spuštění uplynulo pouze ${time_diff}s"
+            echo "[START] Minimální interval je ${TIME_WINDOW}s, zbývá ${remaining_time}s"
+            echo "[START] Poslední spuštění: $(date -d "@$last_start_time" '+%Y-%m-%d %H:%M:%S')"
+            echo "[START] Čekám ${remaining_time} sekund do dalšího povoleného spuštění..."
+            
+            # Čekání na přesný zbývající čas
+            sleep $remaining_time
+            
+            # Aktualizuj čas po čekání
+            current_time=$(date +%s)
         fi
-    done
-    attempt_times=("${filtered_times[@]}")
-
-    # Přidej nový pokus
-    attempt_times+=("$current_time")
-
-    # Zkontroluj limit
-    if (( ${#attempt_times[@]} > MAX_RETRIES )); then
-        echo "[START] Překročen limit pokusů ($MAX_RETRIES za $TIME_WINDOW sekund)"
-        echo "[START] Posledních ${#attempt_times[@]} pokusů:"
-        for i in "${!attempt_times[@]}"; do
-            local time_str=$(date -d "@${attempt_times[i]}" '+%H:%M:%S')
-            echo "[START]   $((i + 1)). $time_str"
-        done
-        echo "[START] Ukončuji skript z bezpečnostních důvodů"
-        exit 1
     fi
-
-    local remaining=$((MAX_RETRIES - ${#attempt_times[@]} + 1))
-    if (( remaining <= 1 )); then
-        echo "[START]  VAROVÁNÍ: Zbývá pouze $remaining pokus před dosažením limitu!"
-    else
-        echo "[START] Pokus ${#attempt_times[@]}/$MAX_RETRIES (zbývá $remaining pokusů)"
-    fi
+    
+    # Zapiš čas aktuálního spuštění
+    echo "$current_time" > "$LAST_START_FILE"
+    
+    echo "[START] Časová kontrola OK - spouštím aplikaci"
 }
 
-# ===========================================
-# HLAVNÍ SMYČKA
-# ===========================================
-
-main_loop() {
-    while true; do
-        # Kontrola limitu restartů
-        check_restart_limit
-
-        echo ""
-        echo "[START] ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
+run_ivy() {
+    echo "[START] ===== SPUŠTĚNÍ ===== $(date '+%Y-%m-%d %H:%M:%S') ====='
+    
+    # Kontrola času posledního spuštění (zabránění častému spouštění)
+    check_restart_limit
 
         # ===========================================
         # SELF-UPDATE MECHANISMUS
@@ -107,8 +93,7 @@ main_loop() {
             # Pouze synchronizace souborů bez self-update kontroly
             if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
                 echo "[START] Aktualizace souborů selhala!"
-                sleep 5
-                continue
+                exit 1
             fi
             
             # Obnov execute permissions na skripty
@@ -121,8 +106,7 @@ main_loop() {
             # Git aktualizace a synchronizace souborů
             if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
                 echo "[START] Aktualizace souborů selhala!"
-                sleep 5
-                continue
+                exit 1
             fi
             
             # Obnov execute permissions na skripty
@@ -144,8 +128,7 @@ main_loop() {
         # Přejdi do cílového adresáře
         cd "$TARGET_DIR" || {
             echo "[START] Nepodařilo se přejít do $TARGET_DIR"
-            sleep 5
-            continue
+            exit 1
         }
 
         # Zobraz informace o verzi
@@ -155,36 +138,12 @@ main_loop() {
         # Kontrola hlavního souboru
         if [[ ! -f "ivy.js" ]]; then
             echo "[START] Hlavní soubor ivy.js nenalezen v $TARGET_DIR"
-            sleep 5
-            continue
+            exit 1
         fi
 
         echo "[START] Spouštím robota..."
         echo "[START] Pracovní adresář: $(pwd)"
-        echo ""
 
-        # Systémový log pro restart (pokud to není první pokus)
-        current_attempt=${#attempt_times[@]}
-        if [ $current_attempt -gt 1 ]; then
-            node -e "
-                import { QueryBuilder } from './iv_querybuilder.class.js';
-                import { get as getVersion } from './iv_version.js';
-                const db = new QueryBuilder();
-                const version = getVersion();
-                db.logSystemEvent(
-                    'RESTART',
-                    'WARN',
-                    'Ivy client restarted by start.sh',
-                    { 
-                        attempt: $current_attempt, 
-                        max_attempts: $MAX_RETRIES,
-                        version: version,
-                        git_pull: true,
-                        restart_reason: 'automatic'
-                    }
-                ).catch(err => console.error('System log error:', err.message));
-            " 2>/dev/null || true
-        fi
 
         # Spuštění aplikace
         # export DEBUG="puppeteer:*"  # pouze pro rozsáhlý debugging
@@ -192,7 +151,6 @@ main_loop() {
         node --trace-warnings ivy.js
 
         local exit_code=$?
-        echo ""
         echo "[START] Robot ukončen s kódem: $exit_code"
 
         # Analýza důvodu ukončení
@@ -201,7 +159,7 @@ main_loop() {
                 echo "[START] Normální ukončení"
                 ;;
             1)
-                echo "[START]  Obecná chyba nebo neočekávané ukončení"
+                echo "[START] Obecná chyba nebo neočekávané ukončení"
                 ;;
             99)
                 echo "[START] QUIT požadavek z interactive debuggeru"
@@ -217,10 +175,8 @@ main_loop() {
                 echo "[START] Neznámý exit kód: $exit_code"
                 ;;
         esac
-
-        echo "[START] Čekám 15 sekund před dalším pokusem..."
-        sleep 15
-    done
+        
+        exit $exit_code
 }
 
 # ===========================================
@@ -251,7 +207,6 @@ echo "Uživatel: $(whoami)"
 echo "Repozitář: $REPO_DIR"
 echo "Cíl: $TARGET_DIR"
 echo "Větev: $BRANCH"
-echo "Limit restartů: $MAX_RETRIES za $TIME_WINDOW sekund"
 echo "======================================================"
 
 # Kontrola základních závislostí
@@ -270,7 +225,6 @@ for cmd in git node rsync jq; do
 done
 
 echo "[START] Všechny závislosti jsou k dispozici"
-echo ""
 
 # Zkontroluj funkce z git-common.sh
 if ! command -v update_and_sync &>/dev/null; then
@@ -283,9 +237,5 @@ if ! command -v get_git_info &>/dev/null; then
     exit 1
 fi
 
-echo "[START] Git modul načten úspěšně"
-echo "[START] Pro ukončení použijte Ctrl+C"
-echo ""
-
-# Spuštění hlavní smyčky
-main_loop
+# Spuštění aplikace
+run_ivy
