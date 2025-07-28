@@ -87,8 +87,7 @@ main_loop() {
         # Kontrola limitu restartů
         check_restart_limit
 
-        echo ""
-        echo "[START] ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
+        echo "[START] ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====='
 
         # ===========================================
         # SELF-UPDATE MECHANISMUS
@@ -154,7 +153,6 @@ main_loop() {
 
         echo "[START] Spouštím robota..."
         echo "[START] Pracovní adresář: $(pwd)"
-        echo ""
 
 
         # Spuštění aplikace
@@ -163,7 +161,6 @@ main_loop() {
         node --trace-warnings ivy.js
 
         local exit_code=$?
-        echo ""
         echo "[START] Robot ukončen s kódem: $exit_code"
 
         # Analýza důvodu ukončení
@@ -241,7 +238,6 @@ for cmd in git node rsync jq; do
 done
 
 echo "[START] Všechny závislosti jsou k dispozici"
-echo ""
 
 # Zkontroluj funkce z git-common.sh
 if ! command -v update_and_sync &>/dev/null; then
@@ -256,7 +252,6 @@ fi
 
 echo "[START] Git modul načten úspěšně"
 echo "[START] Pro ukončení použijte Ctrl+C"
-echo ""
 
 # Spuštění hlavní smyčky
 main_loop
