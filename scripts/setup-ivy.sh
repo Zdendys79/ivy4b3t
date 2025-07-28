@@ -261,7 +261,24 @@ echo -e "\n📦 Instaluji závislosti..."
 cd "$IVY_DIR"
 npm install --omit=dev --no-audit --no-fund
 
-# === 11. VÝBĚR A SPUŠTĚNÍ START SKRIPTU ===
+# === 11. NAČTENÍ NOVÝCH PROMĚNNÝCH ===
+echo -e "\n🔄 Načítám nově přidané environment variables..."
+source ~/.bashrc
+echo "✅ Environment variables načteny"
+
+# Ověření že proměnné jsou dostupné
+echo -e "\n🔍 Ověřuji databázové proměnné:"
+echo "   DB_HOST: ${DB_HOST:-CHYBÍ}"
+echo "   DB_USER: ${DB_USER:-CHYBÍ}"
+echo "   DB_NAME: ${DB_NAME:-CHYBÍ}"
+echo "   DB_PASS: ${DB_PASS:+[NASTAVENO]}"
+
+if [ -z "$DB_HOST" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ]; then
+    echo "⚠️  VAROVÁNÍ: Některé databázové proměnné chybí!"
+    echo "   Možná bude potřeba restartovat terminál."
+fi
+
+# === 12. VÝBĚR A SPUŠTĚNÍ START SKRIPTU ===
 echo -e "\n🚀 Vyber start skript:"
 echo "1) start.sh (větev production)"
 echo "2) main-start.sh (větev main)"
