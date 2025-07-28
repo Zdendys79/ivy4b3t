@@ -35,7 +35,6 @@ export const BEHAVIORAL_PROFILES = {
       comment_tendency,
       hover_behavior,
       click_pattern,
-      // ODSTRANĚNO: learning_rate, pattern_memory, behavior_confidence - žádné učení
       last_mood_update,
       created,
       updated
