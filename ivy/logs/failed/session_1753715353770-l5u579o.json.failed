@@ -1,0 +1,219 @@
+{
+  "sessionId": "1753715353770-l5u579o",
+  "versionCode": "96415a8",
+  "hostname": "d4689-6369",
+  "timestamp": "2025-07-28T15:09:22.790Z",
+  "retryCount": 5,
+  "logs": [
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY_CONFIG] [DEBUG][iv_config.class.js:330] Načítám globální konfiguraci z databáze..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:62] Globální konfigurace inicializována"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:67] Spouštím klienta na hostu: d4689-6369"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:68] Verze klienta: 96415a8 (ze souboru package.json)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:69] Git branch: main (testing)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:70] Session ID: 1753715353770-l5u579o"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [CONFIG] [INFO][iv_config.js:29] Konfigurace úspěšně načtena. Počet klíčů: 47"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY_CONFIG] [INFO][iv_config.class.js:340] Načteno 47 proměnných z databáze"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY_CONFIG] [DEBUG][iv_config.class.js:84] Inicializace dokončena"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] STARTUP event successfully logged to log_system"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:110] Verze v databázi: 96415a8"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:117] Heartbeat inicializován - první ohlášení dokončeno"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [RSS_SCHEDULER] [INFO][rss_scheduler.class.js:32] Starting RSS Scheduler - will run every hour"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [RSS_SCHEDULER] [INFO][rss_scheduler.class.js:73] Starting RSS processing cycle #1"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [RSS] [INFO][rss_reader.js:184] Starting RSS processing cycle"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [IVY] [INFO][ivy.js:121] RSS Scheduler inicializován - načítání RSS každou hodinu"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 987 posunut o 15 minut"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 987 (Evžen Grunt)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [987] [OK][iv_worker.js:108] Vybrán uživatel Evžen Grunt"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:13 [RSS] [INFO][rss_reader.js:81] Processing RSS feed: Novinky.cz (https://www.novinky.cz/rss)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:14 [RSS] [INFO][rss_reader.js:120] Feed processed: 30 new URLs, 0 duplicates from Novinky.cz"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:14 [RSS] [INFO][rss_reader.js:206] RSS cycle completed in 398ms"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:14 [RSS] [INFO][rss_reader.js:207] Database stats: 60 total URLs, 60 unused, 60 from last 24h"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:14 [RSS_SCHEDULER] [INFO][rss_scheduler.class.js:79] RSS cycle #1 completed: 30 new URLs from Novinky.cz (398ms)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:14 [RSS_SCHEDULER] [INFO][rss_scheduler.class.js:84] Database stats: 60 total, 60 unused, 60 recent"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:15 [987] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile987"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:15 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:15 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:15 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][iv_wheel.js:128] Vylosována akce #1: quote_post"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][action_router.class.js:153] Spouštím akci: quote_post"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 106"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:16 [987] [INFO][quote_post.action.js:120] Naviguji na facebook.com..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:22 [IVY] Proces ukončen signálem SIGTERM - spouštím graceful shutdown... [INFO][ivy.js:145]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:22 [RSS_SCHEDULER] [INFO][rss_scheduler.class.js:61] RSS Scheduler stopped"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:09:22 [IVY] [INFO][ivy.js:150] RSS Scheduler ukončen"
+    }
+  ]
+}

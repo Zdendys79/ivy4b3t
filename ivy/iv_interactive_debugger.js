@@ -8,6 +8,7 @@
 
 import { Log } from './libs/iv_log.class.js';
 import { Wait } from './libs/iv_wait.class.js';
+import { db } from './iv_sql.js';
 
 process.stdin.setMaxListeners(20); // Zvýšení limitu pro posluchače kvůli interaktivnímu debuggeru
 
@@ -50,6 +51,11 @@ export class InteractiveDebugger {
    * Hlavní funkce pro zastavení při chybě/varování - ZJEDNODUŠENÁ
    */
   async pauseOnError(errorLevel, message, context = {}) {
+    // Automaticky loguj každou ERROR do databáze
+    if (errorLevel === 'ERROR') {
+      await this.saveToDatabase(errorLevel, message, context);
+    }
+    
     // Check for critical database errors that should trigger emergency shutdown
     const criticalDbErrors = ['ER_MALFORMED_PACKET', 'ECONNREFUSED', 'ENOTFOUND'];
     const isCriticalDbError = criticalDbErrors.some(error => message.includes(error));
@@ -132,7 +138,7 @@ export class InteractiveDebugger {
         
         const choice = key.toString().toLowerCase();
         Log.info('[DEBUGGER]', `Key received: "${choice}" (code: ${key[0]})`);
-        if (['s', 'c', 'q'].includes(choice)) {
+        if (['c', 'q'].includes(choice)) {
           resolved = true;
           cleanup();
           resolve(choice);
@@ -170,7 +176,43 @@ export class InteractiveDebugger {
     });
   }
 
-  // ODSTRANĚNO: Všechny balastní funkce pro debug reports
+  /**
+   * Uloží debug data do databáze - automaticky pro ERROR
+   */
+  async saveToDatabase(errorLevel, message, context = {}) {
+    try {
+      // Zabránit zacyklení - nelogovat SQL chyby debuggeru
+      if (message.includes('system.insertDebugIncident') || message.includes('Query failed: system.insertDebugIncident')) {
+        return;
+      }
+      
+      const incidentId = `debugger_auto_${Date.now()}`;
+      const userId = global.systemState?.currentUserId || null;
+      
+      await db.safeExecute('system.insertDebugIncident', [
+        incidentId,                     // incident_id
+        userId,                         // user_id  
+        errorLevel,                     // error_level
+        message,                        // error_message
+        JSON.stringify(context),        // error_context
+        null,                          // page_url
+        null,                          // page_title
+        null,                          // user_agent
+        null,                          // screenshot_data
+        null,                          // dom_html
+        null,                          // console_logs
+        null,                          // user_comment
+        null,                          // user_analysis_request
+        null,                          // system_info
+        context.stack || null,         // stack_trace
+        'NEW'                          // status
+      ]);
+      
+    } catch (err) {
+      // Nelogovat chyby logování aby nedošlo k zacyklení
+      console.log(`[DEBUGGER] DB logging failed silently`);
+    }
+  }
 
   /**
    * Jednoduchá funkce pro rychlé zastavení

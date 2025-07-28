@@ -20,6 +20,7 @@ import { tick as workerTick } from './iv_worker.js';
 import { Log } from './libs/iv_log.class.js';
 import { consoleLogger } from './libs/iv_console_logger.class.js';
 import { initIvyConfig, getIvyConfig } from './libs/iv_config.class.js';
+import { rssScheduler } from './libs/rss_scheduler.class.js';
 
 const hostname = os.hostname();
 const versionCode = getVersion();
@@ -115,6 +116,10 @@ async function backgroundHeartbeat() {
   heartbeatInterval = setInterval(backgroundHeartbeat, config.getHeartbeatIntervalSeconds() * 1000);
   Log.info('[IVY]', 'Heartbeat inicializován - první ohlášení dokončeno');
 
+  // Spustit RSS scheduler (hodinové načítání RSS kanálů)
+  rssScheduler.start();
+  Log.info('[IVY]', 'RSS Scheduler inicializován - načítání RSS každou hodinu');
+
   while (!isShuttingDown) {
     try {
       // Kontrola restart_needed z heartbeat
@@ -140,6 +145,10 @@ async function gracefulShutdown(signal) {
   Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
   
   try {
+    // Zastavit RSS scheduler
+    rssScheduler.stop();
+    Log.info('[IVY]', 'RSS Scheduler ukončen');
+    
     // Zastavit heartbeat interval
     if (heartbeatInterval) {
       clearInterval(heartbeatInterval);

@@ -255,7 +255,7 @@ export class QuotePostAction extends BaseAction {
         'Analyzovat jaké prvky se objevují po úspěšném odeslání', // user_analysis_request
         null, // system_info
         null, // stack_trace
-        'ANALYSIS_NEEDED' // status
+        'NEW' // status
       ]);
       
       Log.info(`[${user.id}]`, 'Data po odeslání uložena do debug_incidents pro analýzu');

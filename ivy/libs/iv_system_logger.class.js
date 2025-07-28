@@ -104,4 +104,29 @@ export class SystemLogger {
       sessionId
     );
   }
+
+  /**
+   * Loguje RSS události
+   * @param {string} hostname - Hostname
+   * @param {string} versionCode - Verze klienta
+   * @param {string} gitBranch - Git branch
+   * @param {string} sessionId - Session ID
+   * @param {string} level - Level (INFO, WARN, ERROR)
+   * @param {string} message - Zpráva
+   * @param {Object} rssData - RSS specifická data
+   * @returns {Promise<boolean>}
+   */
+  static async logRSS(hostname, versionCode, gitBranch, sessionId, level, message, rssData = {}) {
+    const branchDisplay = gitBranch + (global.isTestBranch ? ' (testing)' : '');
+    return this.logEvent(
+      'RSS',
+      level,
+      message,
+      rssData,
+      hostname,
+      versionCode,
+      branchDisplay,
+      sessionId
+    );
+  }
 }

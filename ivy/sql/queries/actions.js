@@ -172,6 +172,53 @@ export const ACTIONS = {
 
   // ===== POKROČILÉ DOTAZY PRO KOLO ŠTĚSTÍ =====
 
+  getEndingActions: `
+    SELECT
+      ad.action_code as code,
+      ad.weight,
+      ad.min_minutes,
+      ad.max_minutes,
+      ad.repeatable,
+      ad.invasive,
+      ad.weight as effective_weight
+    FROM action_definitions ad
+    JOIN user_action_plan uap ON ad.action_code = uap.action_code
+    WHERE uap.user_id = ?
+      AND ad.action_code IN ('account_sleep', 'account_delay')
+      AND (uap.next_time IS NULL OR uap.next_time <= NOW())
+      AND ad.active = 1
+  `,
+
+  checkEndingActions: `
+    SELECT action_code
+    FROM user_action_plan
+    WHERE user_id = ?
+      AND action_code IN ('account_sleep', 'account_delay')
+  `,
+
+  createEndingAction: `
+    INSERT IGNORE INTO user_action_plan (user_id, action_code, next_time)
+    VALUES (?, ?, NULL)
+  `,
+
+  getAllActiveActions: `
+    SELECT action_code
+    FROM action_definitions
+    WHERE active = 1
+  `,
+
+  createUserAction: `
+    INSERT IGNORE INTO user_action_plan (user_id, action_code, next_time)
+    VALUES (?, ?, NULL)
+  `,
+
+  getMissingActionsForUser: `
+    SELECT ad.action_code
+    FROM action_definitions ad
+    LEFT JOIN user_action_plan uap ON ad.action_code = uap.action_code AND uap.user_id = ?
+    WHERE ad.active = 1 AND uap.action_code IS NULL
+  `,
+
   getUserActionsWithLimitsSimple: `
     SELECT
       ad.action_code,

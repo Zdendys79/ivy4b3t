@@ -1,0 +1,49 @@
+{
+  "sessionId": "1753714922625-h7oqokq",
+  "versionCode": "96415a8",
+  "hostname": "d4689-6369",
+  "timestamp": "2025-07-28T15:02:31.913Z",
+  "retryCount": 5,
+  "logs": [
+    {
+      "level": "ERROR",
+      "prefix": null,
+      "message": "2025-07-28 15:02:23 [SQL] [ERROR][iv_sql.js:80] SQL: \n    INSERT INTO debug_incidents (\n      incident_id, user_id, error_level, error_message, error_context,\n      page_url, page_title, user_agent, screenshot_data, dom_html,\n      console_logs, user_comment, user_analysis_request, system_info,\n      stack_trace, status\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n  "
+    },
+    {
+      "level": "ERROR",
+      "prefix": null,
+      "message": "2025-07-28 15:02:23 [SQL] [ERROR][iv_sql.js:79] Query failed: system.insertDebugIncident - Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265)"
+    },
+    {
+      "level": "INFO",
+      "prefix": "[DEBUGGER]",
+      "message": "ERROR: [SQL]: Query failed: system.insertDebugIncident - Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265) [c/q]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:02:23 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:110] No TTY available for interactive input - auto-continuing after timeout"
+    },
+    {
+      "level": "ERROR",
+      "prefix": null,
+      "message": "2025-07-28 15:02:30 [SQL] [ERROR][iv_sql.js:80] SQL: \n    INSERT INTO debug_incidents (\n      incident_id, user_id, error_level, error_message, error_context,\n      page_url, page_title, user_agent, screenshot_data, dom_html,\n      console_logs, user_comment, user_analysis_request, system_info,\n      stack_trace, status\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n  "
+    },
+    {
+      "level": "ERROR",
+      "prefix": null,
+      "message": "2025-07-28 15:02:30 [SQL] [ERROR][iv_sql.js:79] Query failed: system.insertDebugIncident - Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265)"
+    },
+    {
+      "level": "INFO",
+      "prefix": "[DEBUGGER]",
+      "message": "ERROR: [SQL]: Query failed: system.insertDebugIncident - Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265) [c/q]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 15:02:30 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:110] No TTY available for interactive input - auto-continuing after timeout"
+    }
+  ]
+}
