@@ -203,31 +203,12 @@ export class QueryBuilder {
     ]);
   }
 
-  async logEmotionalState(userId, emotion, intensity, trigger, duration = 30) {
-    return await this.safeExecute('behavioral_profiles.logEmotionalState', [
-      userId, emotion, intensity, trigger, duration
-    ]);
-  }
+  // ODSTRANĚNO: logEmotionalState - emoce jsou v profilu, ne v logu
 
-  async getCurrentEmotion(userId) {
-    return await this.safeQueryFirst('behavioral_profiles.getCurrentEmotion', [userId]);
-  }
+  // ODSTRANĚNO: getCurrentEmotion - emoce jsou v profilu
 
-  async saveBehaviorPattern(userId, contextType, patternName, patternData, frequency = 1, successRate = 1.0) {
-    return await this.safeExecute('behavioral_profiles.saveBehaviorPattern', [
-      userId, contextType, patternName, JSON.stringify(patternData), frequency, successRate
-    ]);
-  }
-
-  async getCachedPattern(userId, contextType, patternName) {
-    const result = await this.safeQueryFirst('behavioral_profiles.getCachedPattern', [
-      userId, contextType, patternName
-    ]);
-    if (result && result.pattern_data) {
-      result.pattern_data = JSON.parse(result.pattern_data);
-    }
-    return result;
-  }
+  // ODSTRANĚNO: saveBehaviorPattern - robot neukládá vlastní vzory
+  // ODSTRANĚNO: getCachedBehaviorPattern - žádná cache vzorů
 
   async initializeBehavioralProfiles() {
     return await this.safeExecute('behavioral_profiles.initializeAllProfiles');

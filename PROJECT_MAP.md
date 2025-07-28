@@ -1,5 +1,19 @@
 # PROJECT_MAP.md - Mapa struktury IVY4B3T projektu
 
+## 🚀 DEPLOYMENT NA VM
+
+### DŮLEŽITÉ: Struktura projektu na vzdálených VM
+- **Projekt běží POUZE ze složky `~/ivy/`** - jiné složky nejsou dostupné ani potřebné!
+- **Node.js spouští aplikaci přímo z `~/ivy/`** - není potřeba hlavní repozitář
+- **Instalace:** `scripts/setup-ivy.sh` - kompletní instalace včetně mazání a obnovy
+- **Update:** `ivy/start.sh` nebo `ivy/main-start.sh` - automaticky aktualizují při spuštění
+- **Git složka `~/git/ivy4b3t/`** - pouze pro stažení aktualizací, ne pro běh aplikace
+
+### Spouštěcí skripty
+- `start.sh` - spouští branch "production"
+- `main-start.sh` - spouští branch "main"
+- `update-files.sh` - pouze aktualizuje soubory bez spuštění robota
+
 ## 🎯 HLAVNÍ ENTRY POINTY
 
 ### `ivy.js` - MAIN CONTROLLER
@@ -98,14 +112,37 @@
 
 ## 🧠 INTELLIGENCE & BEHAVIOR
 
+### DŮLEŽITÉ: Správné pochopení Behavioral Profiles
+- **Robot SIMULUJE virtuální uživatele** - žádní fyzičtí uživatelé neexistují
+- **Behavioral profiles DEFINUJÍ chování** - jak rychle píše, kolik dělá chyb, jakou má náladu
+- **ŽÁDNÉ UČENÍ** - robot se neučí z úspěchů/neúspěchů, prostě plní profil
+- **FB chyby = systémové chyby** - ne "špatná rozhodnutí uživatele"
+- **Používáme POUZE `user_behavioral_profiles` tabulku** - žádná cache, žádné logy emocí
+
 ### CHOVÁNÍ
-- `iv_human_behavior_advanced.js` - simulace lidského chování
+- `iv_human_behavior_advanced.js` - simulace lidského chování podle profilů
 - `iv_rhythm.js` - rytmus aktivit
-- `sql/queries/behavioral_profiles.js` - behaviorální profily
+- `sql/queries/behavioral_profiles.js` - definice behavioral profilů
 
 ### ANALÝZA
 - `iv_fb_group_analyzer.js` - analýza FB skupin
 - `iv_fb_support.js` - Facebook support funkce
+
+---
+
+## 📅 PLÁNOVANÉ NÁVRHY A VYLEPŠENÍ
+
+### Biorytmy podle data narození
+- Každý uživatel by měl mít nastavené **datum narození**
+- Výpočet **3 křivek biorytmů**:
+  - **Fyzická** (23 denní cyklus)
+  - **Psychická** (28 denní cyklus) 
+  - **Emocionální** (33 denní cyklus)
+- Biorytmy by ovlivňovaly:
+  - Energii a výkonnost uživatele
+  - Náladu a emocionální stav
+  - Pravděpodobnost chyb při psaní
+  - Ochotu k interakcím
 
 ---
 
