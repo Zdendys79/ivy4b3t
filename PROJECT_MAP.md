@@ -14,6 +14,12 @@
 - `main-start.sh` - spouští branch "main"
 - `update-files.sh` - pouze aktualizuje soubory bez spuštění robota
 
+### Scripts synchronizace na VM
+- **Scripts složka se synchronizuje přes Syncthing** - ne přes Git
+- **Pre-commit hook automaticky synchronizuje** `scripts/` → `~/Sync/scripts/`
+- **Nové skripty musí být i v Sync složce** pro dostupnost na VM
+- **Test skript**: `test-db-connection.sh` - diagnostika DB připojení
+
 ## 🎯 HLAVNÍ ENTRY POINTY
 
 ### `ivy.js` - MAIN CONTROLLER
@@ -35,6 +41,19 @@
 ---
 
 ## 🏗️ CORE ARCHITEKTÚRA
+
+### DŮLEŽITÉ: ES MODULES
+- **Projekt používá ES modules** (`"type": "module"` v package.json)
+- **Importy:** `import mysql from 'mysql2/promise'` (NE `require()`)
+- **Exporty:** `export default` nebo `export { function }`
+- **Všechny test scripty a nové soubory musí používat ES module syntax**
+
+### DŮLEŽITÉ: MARIADB SYNTAX
+- **Databáze je MariaDB** - NE MySQL!
+- **VŽDY používat MariaDB kompatibilní syntax:**
+  - `CURRENT_USER()` místo `USER()`
+  - Další MariaDB specifické funkce podle potřeby
+- **NIKDY nepoužívat MySQL specifickou syntax**
 
 ### DATABÁZE & SQL
 - `iv_sql.js` - databázové připojení
