@@ -8,6 +8,7 @@ node_modules/
 
 *.bak
 *.code-workspace
+*.log
 
 # Claude memory files
 CLAUDE.md
