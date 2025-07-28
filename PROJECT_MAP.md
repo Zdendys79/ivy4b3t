@@ -18,6 +18,26 @@
 - **Scripts složka se synchronizuje přes Syncthing** - ne přes Git
 - **Pre-commit hook automaticky synchronizuje** `scripts/` → `~/Sync/scripts/`
 - **Nové skripty musí být i v Sync složce** pro dostupnost na VM
+
+## 📰 RSS SYSTÉM - SEPARACE SERVEROVÝCH A ROBOTICKÝCH PROCESŮ
+
+### RSS Server (~/rss-server/)
+- **Běží POUZE na serveru** - ne na VM s roboty
+- **Spouští se Ubuntu plánovačem (cron)** - nezávisle na robotech
+- **Funkce:** Načítá RSS kanály → parsuje články → ukládá URL do databáze
+- **Struktura:** `rss-standalone.js`, `rss_reader.js`, `libs/`, `sql/queries/rss.js`
+- **Databáze:** Zapisuje do tabulek `rss_urls` a `rss_channels`
+
+### News Post Akce (v robotech)
+- **Běží v robotech na VM** - používá data z databáze
+- **Funkce:** Bere URL z databáze → postuje na Facebook → označí jako použité
+- **SQL modul:** `sql/queries/news.js` s `getAvailableNewsUrl()` a `markNewsUrlAsUsed()`
+- **Databáze:** Čte z `rss_urls`, aktualizuje `used_count`
+
+### DŮLEŽITÉ: Oddělené procesy
+1. **RSS server** načítá a ukládá → **Databáze** (tabulky rss_*)
+2. **Roboti** čtou z databáze → **Facebook** (postování)
+3. **Žádná přímá komunikace** mezi RSS serverem a roboty!
 - **Test skript**: `test-db-connection.sh` - diagnostika DB připojení
 
 ## 🎯 HLAVNÍ ENTRY POINTY
