@@ -13,7 +13,7 @@ const config = getIvyConfig();
 import { Wait } from './iv_wait.class.js';
 
 export class FBBot {
-  constructor(context, userId = null) {
+  constructor(context, userId = null, disableAnalysis = false) {
     this.context = context;
     this.page = null;
     this.newThingElement = null;
@@ -22,6 +22,7 @@ export class FBBot {
     this.isInitialized = false;
     this.pageAnalyzer = null;
     this.userId = userId;
+    this.disableAnalysis = disableAnalysis;
     this.humanBehavior = null;
   }
 
@@ -70,6 +71,11 @@ export class FBBot {
   }
 
   async initializeAnalyzer() {
+    if (this.disableAnalysis) {
+      Log.info('[FB]', 'Analýza stránek je zakázána (UI režim)');
+      return;
+    }
+    
     if (this.page && !this.page.isClosed()) {
       this.pageAnalyzer = new PageAnalyzer(this.page);
       
@@ -409,7 +415,16 @@ export class FBBot {
     }
   }
 
+  // Pomocná metoda pro kontrolu dostupnosti analyzéru
+  isAnalyzerAvailable() {
+    return !this.disableAnalysis && this.pageAnalyzer;
+  }
+
   async isProfileLoaded(user) {
+    if (!this.isAnalyzerAvailable()) {
+      Log.debug('[FB]', 'Analýza zakázána - předpokládám, že profil je načten');
+      return true; // V UI režimu předpokládáme, že je vše OK
+    }
     // Použij sjednocené metody z analyzéru
     return await this.pageAnalyzer.isProfileLoaded(user);
   }

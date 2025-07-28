@@ -145,16 +145,16 @@ export class UIBot {
     try {
       Log.info(`[${user.id}]`, `UIBot převzal kontrolu pro příkaz: ${command.command}`);
 
-      // Inicializuj FB bota s existujícím kontextem
-      fbBot = new FBBot(context, user.id);
+      // Inicializuj FB bota s existujícím kontextem - BEZ ANALÝZY pro UI režim
+      fbBot = new FBBot(context, user.id, true);
       if (!await fbBot.init()) {
         throw new Error('FB initialization failed for UI command');
       }
       
       // Debug context removed - debugger simplified
 
-      // Otevři stránku FB bez analýzy
-      const fbOpenSuccess = await fbBot.openFB(user, false);
+      // Otevři stránku FB (analýza je již zakázána v konstruktoru)
+      const fbOpenSuccess = await fbBot.openFB(user);
       if (!fbOpenSuccess) {
         throw new Error('Failed to open Facebook page');
       }
