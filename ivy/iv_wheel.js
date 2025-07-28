@@ -58,6 +58,9 @@ export async function runWheelOfFortune(user, browser, context) {
   invasiveLock.init();
   await db.initUserActionPlan(user.id);
   
+  // Zajistit kompletní action plan pro uživatele
+  await ensureCompleteActionPlan(user.id);
+  
   // Nastavit globální stav - wheel aktivní
   global.systemState.currentUserId = user.id;
   
@@ -114,15 +117,36 @@ export async function runWheelOfFortune(user, browser, context) {
       // 4. Losování akce
       const pickedAction = pickAction(availableActions);
       if (!pickedAction) {
-        // Žádné dostupné akce - ukončit wheel podle sekvence uživatele
-        const shouldEnd = await handleNoAction(user, invasiveLock, availableActions);
-        if (shouldEnd) {
-          // Pro ukončovací akce nepotřebujeme FBBot
-          const endingContext = { browser, ...context };
-          await actionRouter.executeAction(shouldEnd.code, user, endingContext, {});
-          break;
+        // Žádné dostupné akce - zkusit ukončovací akce
+        Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce - zkouším ukončovací akce');
+        
+        // Získat ukončovací akce z databáze
+        let endingActions = await db.safeQueryAll('actions.getEndingActions', [user.id]);
+        
+        // Pokud nejsou, vytvořit je
+        if (!endingActions || endingActions.length === 0) {
+          Log.info(`[${user.id}]`, 'Vytvářím chybějící ukončovací akce');
+          await db.safeExecute('actions.createUserAction', [user.id, 'account_sleep']);
+          await db.safeExecute('actions.createUserAction', [user.id, 'account_delay']);
+          
+          // Znovu načíst
+          endingActions = await db.safeQueryAll('actions.getEndingActions', [user.id]);
         }
-        continue;
+        
+        if (endingActions && endingActions.length > 0) {
+          // Použít Wheel pro losování podle vah
+          const wheel = new Wheel(endingActions);
+          const endingAction = wheel.pick();
+          
+          if (endingAction) {
+            Log.info(`[${user.id}]`, `Vylosována ukončovací akce: ${endingAction.code}`);
+            const endingContext = { browser, ...context };
+            await actionRouter.executeAction(endingAction.code, user, endingContext, {});
+          }
+        } else {
+          await Log.error(`[${user.id}]`, 'KRITICKÁ CHYBA: Nelze vytvořit ukončovací akce!');
+        }
+        break;
       }
 
       Log.info(`[${user.id}]`, `Vylosována akce #${actionCount + 1}: ${pickedAction.code}`);
@@ -258,6 +282,34 @@ function isWheelEmpty(actions) {
 }
 
 /**
+ * Zajistí kompletní action plan pro uživatele
+ */
+async function ensureCompleteActionPlan(userId) {
+  try {
+    // Získat chybějící akce jedním SQL dotazem
+    const missingActions = await db.safeQueryAll('actions.getMissingActionsForUser', [userId]);
+    
+    if (missingActions && missingActions.length > 0) {
+      // Vytvořit chybějící akce
+      for (const action of missingActions) {
+        await db.safeExecute('actions.createUserAction', [userId, action.action_code]);
+      }
+      
+      Log.success(`[${userId}]`, `Vytvořeno ${missingActions.length} chybějících akcí v plánovači`);
+    }
+  } catch (err) {
+    await Log.error(`[${userId}]`, `Chyba při vytváření action plan: ${err.message}`);
+  }
+}
+
+/**
+ * Zajistí že uživatel má ukončovací akce v plánovači
+ */
+async function ensureEndingActions(userId) {
+  // Už není potřeba - ensureAllActionsForUser vytvoří všechny akce včetně ukončovacích
+}
+
+/**
  * Zpracuje prázdné kolo - vrátí ending akci
  */
 async function handleEmptyWheel(user, actions) {
@@ -301,15 +353,13 @@ async function handleNoAction(user, invasiveLock, availableActions) {
     return null; // Pokračovat v wheel
   } 
   
-  Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce - ukončuji wheel');
+  Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce - získávám ukončovací akce');
   
-  // Najít dostupné ukončovací akce
-  const endingActions = availableActions.filter(a => 
-    ['account_delay', 'account_sleep'].includes(a.code) && a.effective_weight > 0
-  );
+  // Získat ukončovací akce přímo z databáze
+  const endingActions = await db.safeQueryAll('actions.getEndingActions', [user.id]);
   
-  if (endingActions.length === 0) {
-    Log.info(`[${user.id}]`, 'Žádné ukončující akce k dispozici - končím bez akce');
+  if (!endingActions || endingActions.length === 0) {
+    await Log.error(`[${user.id}]`, 'CHYBA: Žádné ukončující akce (account_sleep/delay) v plánovači - ukončuji bez akce');
     return null;
   }
 

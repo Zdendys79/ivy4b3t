@@ -1,0 +1,84 @@
+{
+  "sessionId": "1753724136094-bvzvsdh",
+  "versionCode": "96415a8",
+  "hostname": "d4689-6369",
+  "timestamp": "2025-07-28T17:36:34.841Z",
+  "retryCount": 0,
+  "logs": [
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:30 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/profile.php?id=100080373234741"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:30 [999] [OK][iv_wheel.js:196] Kolo štěstí dokončeno. Provedeno 1 akcí"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:30 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:31 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:31 [999] [INFO][iv_wheel.js:212] FBBot ukončen"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:31 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:32 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:32 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:32 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:32 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:32 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:32 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.9 min do 19:38:29 (přerušitelné s UI)"
+    },
+    {
+      "level": "ERROR",
+      "prefix": null,
+      "message": "2025-07-28 17:36:33 [ANALYZER] [ERROR][iv_page_analyzer.class.js:1148] Chyba při hledání elementů: Attempted to use detached Frame 'D14712C3855DAB416E73347554943077'."
+    },
+    {
+      "level": "INFO",
+      "prefix": "[DEBUGGER]",
+      "message": "ERROR: [ANALYZER]: Chyba při hledání elementů: Attempted to use detached Frame 'D14712C3855DAB416E73347554943077'. [c/q]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 17:36:33 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:110] No TTY available for interactive input - auto-continuing after timeout"
+    }
+  ]
+}
