@@ -139,7 +139,6 @@ export class UIBot {
    */
   async handleUICommandComplete(command, user, browser, context) {
     const { FBBot } = await import('./iv_fb.class.js');
-    const { setDebugContext } = await import('../iv_interactive_debugger.js');
     
     let fbBot = null;
 
@@ -152,10 +151,7 @@ export class UIBot {
         throw new Error('FB initialization failed for UI command');
       }
       
-      // Set debug context
-      if (fbBot.page) {
-        setDebugContext(user, fbBot.page);
-      }
+      // Debug context removed - debugger simplified
 
       // Otevři stránku FB bez analýzy
       const fbOpenSuccess = await fbBot.openFB(user, false);
