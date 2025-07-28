@@ -1,0 +1,24 @@
+{
+  "sessionId": "1753705869851-qduv474",
+  "versionCode": "96415a8",
+  "hostname": "d4689-6369",
+  "timestamp": "2025-07-28T13:10:46.987Z",
+  "retryCount": 5,
+  "logs": [
+    {
+      "level": "WARN",
+      "prefix": null,
+      "message": "2025-07-28 13:10:43 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows"
+    },
+    {
+      "level": "INFO",
+      "prefix": "[DEBUGGER]",
+      "message": "WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-28 13:10:43 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout"
+    }
+  ]
+}

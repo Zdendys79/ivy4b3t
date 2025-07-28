@@ -114,7 +114,14 @@ export async function runWheelOfFortune(user, browser, context) {
       // 4. Losování akce
       const pickedAction = pickAction(availableActions);
       if (!pickedAction) {
-        await handleNoAction(user, invasiveLock);
+        // Žádné dostupné akce - ukončit wheel podle sekvence uživatele
+        const shouldEnd = await handleNoAction(user, invasiveLock, availableActions);
+        if (shouldEnd) {
+          // Pro ukončovací akce nepotřebujeme FBBot
+          const endingContext = { browser, ...context };
+          await actionRouter.executeAction(shouldEnd.code, user, endingContext, {});
+          break;
+        }
         continue;
       }
 
@@ -285,16 +292,37 @@ function pickAction(actions) {
 
 /**
  * Zpracuje situaci kdy není k dispozici žádná akce
+ * Sekvence podle uživatele: zavřít prohlížeč → losovat account_delay/account_sleep → ukončit wheel
  */
-async function handleNoAction(user, invasiveLock) {
+async function handleNoAction(user, invasiveLock, availableActions) {
   if (invasiveLock.isActive()) {
     Log.info(`[${user.id}]`, `Čekání na invasive lock (${invasiveLock.getRemainingSeconds()}s)`);
-    // Zde by mohla být neškodná aktivita, ale neděláme fallbacky
-  } else {
-    Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce');
+    await Wait.toSeconds(10, 'Pauza po selhání');
+    return null; // Pokračovat v wheel
+  } 
+  
+  Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce - ukončuji wheel');
+  
+  // Najít dostupné ukončovací akce
+  const endingActions = availableActions.filter(a => 
+    ['account_delay', 'account_sleep'].includes(a.code) && a.effective_weight > 0
+  );
+  
+  if (endingActions.length === 0) {
+    Log.info(`[${user.id}]`, 'Žádné ukončující akce k dispozici - končím bez akce');
+    return null;
+  }
+
+  // Losovat mezi account_delay a account_sleep
+  const wheel = new Wheel(endingActions);
+  const endingAction = wheel.pick();
+  
+  if (endingAction) {
+    Log.info(`[${user.id}]`, `Vylosována ukončovací akce: ${endingAction.code}`);
+    return endingAction;
   }
   
-  await Wait.toSeconds(10, 'Pauza po selhání');
+  return null;
 }
 
 /**
