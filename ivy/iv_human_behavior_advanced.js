@@ -2,8 +2,8 @@
  * Název souboru: iv_human_behavior_advanced.js
  * Umístění: ~/ivy/iv_human_behavior_advanced.js
  *
- * Popis: Pokročilá simulace lidského chování s databázovými profily
- * Implementuje realistické psaní, váhání, emoce a adaptivní učení
+ * Popis: Simulace lidského chování virtuálních uživatelů podle jejich profilů
+ * Implementuje realistické psaní, váhání a chyby - BEZ učení nebo adaptace
  */
 
 import { Wait } from './libs/iv_wait.class.js';
@@ -46,8 +46,7 @@ export class AdvancedHumanBehavior {
         this.profile = this._createDefaultProfile();
       }
 
-      // Načti aktuální emocionální stav
-      this.currentEmotion = await db.safeQueryFirst('behavioral_profiles.getCurrentEmotion', [this.userId]);
+      // ODSTRANĚNO: Načítání emočního stavu z logu - emoce jsou v profilu
       
       if (this.profile && this.profile.base_mood) {
         Log.debug(`[${this.userId}]`, `Behavioral profil načten: ${this.profile.base_mood}, energy: ${this.profile.energy_level}`);
@@ -402,23 +401,7 @@ export class AdvancedHumanBehavior {
     }
   }
 
-  /**
-   * Uložení behavioral pattern do cache
-   */
-  async saveBehaviorPattern(contextType, patternName, patternData) {
-    try {
-      await db.safeExecute('behavioral_profiles.saveBehaviorPattern', [
-        this.userId,
-        contextType,
-        patternName,
-        JSON.stringify(patternData),
-        1, // frequency
-        1.0 // success_rate
-      ]);
-    } catch (error) {
-      await Log.error(`[${this.userId}] saveBehaviorPattern`, error);
-    }
-  }
+  // ODSTRANĚNO: saveBehaviorPattern - robot neukládá vlastní vzory chování
 
   /**
    * Pomocné funkce
