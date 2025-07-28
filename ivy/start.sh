@@ -87,7 +87,7 @@ main_loop() {
         # Kontrola limitu restartů
         check_restart_limit
 
-        echo "[START] ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====='
+        echo "[START] ===== NOVÝ CYKLUS ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
 
         # ===========================================
         # SELF-UPDATE MECHANISMUS
