@@ -6,39 +6,28 @@
  * QueryBuilder je nyní v samostatném souboru iv_querybuilder.class.js
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 
 import { QueryUtils } from './sql/queries/index.js';
 import { QueryBuilder } from './libs/iv_querybuilder.class.js';
 import { Log } from './libs/iv_log.class.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 let sql_setup;
 
-// Prioritize environment variables for database connection
-if (process.env.DB_USER && process.env.DB_PASS) {
-  Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
-  sql_setup = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME || 'ivy'
-  };
-} else {
-  Log.info('[SQL]', 'Systémové proměnné nenalezeny, zkouším sql_config.json.');
-  const configPath = path.join(__dirname, 'sql', 'sql_config.json');
-  if (fs.existsSync(configPath)) {
-    sql_setup = JSON.parse(fs.readFileSync(configPath));
-  } else {
-    await Log.error('[SQL]', 'CHYBA: Nebyly nalezeny systémové proměnné ani soubor sql_config.json.');
-    process.exit(1);
-  }
+// Use ONLY environment variables for database connection - NO config files
+if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.DB_HOST || !process.env.DB_NAME) {
+  await Log.error('[SQL]', 'CHYBA: Chybí povinné systémové proměnné: DB_HOST, DB_USER, DB_PASS, DB_NAME');
+  await Log.error('[SQL]', 'Restartuj terminál nebo spusť: source ~/.bashrc');
+  process.exit(1);
 }
+
+Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
+sql_setup = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
+};
 
 
 const pool = mysql.createPool({
