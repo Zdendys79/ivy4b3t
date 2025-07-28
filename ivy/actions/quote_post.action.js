@@ -229,30 +229,42 @@ export class QuotePostAction extends BaseAction {
     // Po kliknutí na Přidat čekat 3 sekundy
     await Wait.toSeconds(3, 'Po kliknutí na Přidat');
     
-    // Hledat indikátory úspěšného odeslání
-    const successIndicators = [
-      'Váš příspěvek byl sdílen',
-      'Přidáno na vaši zeď',
-      'Co se vám honí hlavou', // Návrat k původnímu stavu
-      'Napsat komentář' // Pokud vidíme možnost komentovat
-    ];
-    
-    for (const indicator of successIndicators) {
-      if (await fbBot.pageAnalyzer.elementExists(indicator, { matchType: 'contains' })) {
-        Log.success(`[${user.id}]`, `KROK 7 DOKONČEN: Nalezen indikátor "${indicator}" - příspěvek odeslán!`);
-        return true;
-      }
-    }
-    
-    // Jako záložní řešení - pokud URL obsahuje story_fbid nebo jiný parametr
+    // Získat všechny viditelné texty na stránce
+    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     const currentUrl = fbBot.page.url();
-    if (currentUrl.includes('story_fbid') || currentUrl.includes('/posts/')) {
-      Log.success(`[${user.id}]`, 'KROK 7 DOKONČEN: URL indikuje úspěšné odeslání!');
-      return true;
+    
+    // Uložit data pro analýzu
+    try {
+      await db.safeExecute('system.insertDebugIncident', [
+        `quote_post_success_${Date.now()}`, // incident_id
+        user.id, // user_id
+        'INFO', // error_level
+        'quote_post_after_submit', // error_message
+        JSON.stringify({ // error_context
+          visibleTexts: visibleTexts,
+          url: currentUrl,
+          timestamp: new Date().toISOString()
+        }),
+        currentUrl, // page_url
+        'Quote Post Success Analysis', // page_title
+        null, // user_agent
+        null, // screenshot_data
+        null, // dom_html
+        null, // console_logs
+        'Automatický sběr dat po kliknutí na Přidat', // user_comment
+        'Analyzovat jaké prvky se objevují po úspěšném odeslání', // user_analysis_request
+        null, // system_info
+        null, // stack_trace
+        'ANALYSIS_NEEDED' // status
+      ]);
+      
+      Log.info(`[${user.id}]`, 'Data po odeslání uložena do debug_incidents pro analýzu');
+    } catch (err) {
+      Log.debug(`[${user.id}]`, `Nelze uložit debug data: ${err.message}`);
     }
     
-    // Pokud nic nenajdeme, předpokládáme úspěch (příspěvek byl odeslán podle uživatele)
-    Log.info(`[${user.id}]`, 'KROK 7: Žádný explicitní indikátor, ale předpokládám úspěch');
+    // Prozatím vždy vrátit true (víme že to funguje)
+    Log.info(`[${user.id}]`, 'KROK 7: Předpokládám úspěch (data uložena pro budoucí analýzu)');
     return true;
   }
 
