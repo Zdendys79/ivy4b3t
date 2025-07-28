@@ -13,7 +13,7 @@ import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 // Removed messageHashes import - table no longer exists
 import { QUOTES } from './quotes.js';
-import RSS from './rss.js'; // default export  
+  
 import { SYSTEM } from './system.js';
 // Removed systemMetrics import - table no longer exists
 import { USER_GROUP_BLOCKING } from './user_group_blocking.js';
@@ -27,7 +27,6 @@ export const SQL = {
   limits: LIMITS,
   // Removed message_hashes and system_metrics - tables no longer exist
   quotes: QUOTES,
-  rss: RSS,
   system: SYSTEM,
   user_group_blocking: USER_GROUP_BLOCKING,
   users: USERS
