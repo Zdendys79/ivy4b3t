@@ -78,7 +78,7 @@ check_restart_limit() {
 }
 
 run_ivy() {
-    echo "[START] ===== SPUŠTĚNÍ ===== $(date '+%Y-%m-%d %H:%M:%S') ====='
+    echo "[START] ===== SPUŠTĚNÍ ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
     
     # Kontrola času posledního spuštění (zabránění častému spouštění)
     check_restart_limit
