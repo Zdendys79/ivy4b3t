@@ -87,7 +87,7 @@ export class QueryBuilder {
   }
 
   async getUserActionsWithLimits(userId) {
-    return await this.safeQueryAll('actions.getUserActionsWithLimitsSimple', [userId, userId]);
+    return await this.safeQueryAll('actions.getUserActionsWithLimitsSimple', [userId, userId], true);
   }
 
   async logAction(accountId, actionCode, referenceId, text) {

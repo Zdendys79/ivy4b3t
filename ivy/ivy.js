@@ -20,7 +20,7 @@ import { tick as workerTick } from './iv_worker.js';
 import { Log } from './libs/iv_log.class.js';
 import { consoleLogger } from './libs/iv_console_logger.class.js';
 import { initIvyConfig, getIvyConfig } from './libs/iv_config.class.js';
-import { rssScheduler } from './libs/rss_scheduler.class.js';
+// RSS scheduler odstraněn - bude spouštěn Ubuntu plánovačem
 
 const hostname = os.hostname();
 const versionCode = getVersion();
@@ -116,9 +116,7 @@ async function backgroundHeartbeat() {
   heartbeatInterval = setInterval(backgroundHeartbeat, config.getHeartbeatIntervalSeconds() * 1000);
   Log.info('[IVY]', 'Heartbeat inicializován - první ohlášení dokončeno');
 
-  // Spustit RSS scheduler (hodinové načítání RSS kanálů)
-  rssScheduler.start();
-  Log.info('[IVY]', 'RSS Scheduler inicializován - načítání RSS každou hodinu');
+  // RSS scheduler je nyní samostatný proces na serveru
 
   while (!isShuttingDown) {
     try {
@@ -145,9 +143,7 @@ async function gracefulShutdown(signal) {
   Log.info(`[IVY] Proces ukončen signálem ${signal} - spouštím graceful shutdown...`);
   
   try {
-    // Zastavit RSS scheduler
-    rssScheduler.stop();
-    Log.info('[IVY]', 'RSS Scheduler ukončen');
+    // RSS scheduler už není součástí robotů
     
     // Zastavit heartbeat interval
     if (heartbeatInterval) {

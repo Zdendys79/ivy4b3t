@@ -116,11 +116,11 @@ async function safeQueryFirst(queryPath, params = []) {
   }
 }
 
-async function safeQueryAll(queryPath, params = []) {
+async function safeQueryAll(queryPath, params = [], allowEmpty = false) {
   try {
     const rows = await executeQuery(queryPath, params);
     const resultCount = rows ? rows.length : 0;
-    if (resultCount === 0) {
+    if (resultCount === 0 && !allowEmpty) {
       await Log.warn('[SQL]', `safeQueryAll ${queryPath} returned 0 rows`);
     }
     return rows || [];

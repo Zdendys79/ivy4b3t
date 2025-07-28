@@ -287,7 +287,7 @@ function isWheelEmpty(actions) {
 async function ensureCompleteActionPlan(userId) {
   try {
     // Získat chybějící akce jedním SQL dotazem
-    const missingActions = await db.safeQueryAll('actions.getMissingActionsForUser', [userId]);
+    const missingActions = await db.safeQueryAll('actions.getMissingActionsForUser', [userId], true);
     
     if (missingActions && missingActions.length > 0) {
       // Vytvořit chybějící akce
