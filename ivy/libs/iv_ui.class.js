@@ -165,6 +165,11 @@ export class UIBot {
         const timeoutMs = config.ui_timeout_minutes * 60 * 1000;
         Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command} s timeout ${config.ui_timeout_minutes} minut (${timeoutMs}ms)`);
         
+        // Aktualizovat globální stav pro heartbeat
+        global.systemState.currentUserId = user.id;
+        global.systemState.currentAction = `ui_${command.command}`;
+        global.systemState.actionStartTime = Date.now();
+        
         const uiPromise = this.processCommand(command, fbBot);
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error(`UI command timeout after ${config.ui_timeout_minutes} minutes (${timeoutMs}ms)`)), timeoutMs)
@@ -185,6 +190,11 @@ export class UIBot {
       } else {
         await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} selhal`);
       }
+      
+      // Vymazat UI stav z globálního stavu
+      global.systemState.currentUserId = null;
+      global.systemState.currentAction = null;
+      global.systemState.actionStartTime = null;
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při zpracování UI příkazu: ${err.message}`);
