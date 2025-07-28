@@ -1,0 +1,1177 @@
+2025-07-28 12:31:09 [SQL] [INFO][iv_sql.js:24] Používám systémové proměnné pro připojení k databázi.
+[ConsoleLogger] Initialized with session ID: 1753705869851-qduv474
+2025-07-28 12:31:09 [IVY_CONFIG] [DEBUG][iv_config.class.js:330] Načítám globální konfiguraci z databáze...
+2025-07-28 12:31:09 [IVY] [INFO][ivy.js:61] Globální konfigurace inicializována
+2025-07-28 12:31:09 [IVY] [INFO][ivy.js:66] Spouštím klienta na hostu: d4689-6369
+2025-07-28 12:31:09 [IVY] [INFO][ivy.js:67] Verze klienta: 96415a8 (ze souboru package.json)
+2025-07-28 12:31:09 [IVY] [INFO][ivy.js:68] Git branch: main (testing)
+2025-07-28 12:31:09 [IVY] [INFO][ivy.js:69] Session ID: 1753705869851-qduv474
+2025-07-28 12:31:09 [CONFIG] [INFO][iv_config.js:29] Konfigurace úspěšně načtena. Počet klíčů: 47
+2025-07-28 12:31:09 [IVY_CONFIG] [INFO][iv_config.class.js:340] Načteno 47 proměnných z databáze
+2025-07-28 12:31:09 [IVY_CONFIG] [DEBUG][iv_config.class.js:84] Inicializace dokončena
+2025-07-28 12:31:09 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] STARTUP event successfully logged to log_system
+2025-07-28 12:31:10 [IVY] [INFO][ivy.js:109] Verze v databázi: 96415a8
+2025-07-28 12:31:10 [IVY] [INFO][ivy.js:116] Heartbeat inicializován - první ohlášení dokončeno
+2025-07-28 12:31:10 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:31:10 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 802 posunut o 15 minut
+2025-07-28 12:31:10 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 802 (Vendula Matějová)
+2025-07-28 12:31:10 [802] [OK][iv_worker.js:108] Vybrán uživatel Vendula Matějová
+2025-07-28 12:31:12 [802] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile802
+2025-07-28 12:31:12 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:31:12 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:31:12 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:31:12 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:31:12 [802] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:31:12 [802] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:31:12 [802] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:31:12 [802] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:31:12 [802] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:31:12 [802] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 145
+2025-07-28 12:31:12 [802] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:31:12 [802] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:31:16 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:31:16 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:31:16 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:31:16 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:31:16 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:31:16 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:31:16 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:31:16 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:31:16 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:31:16 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:31:16 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:31:17 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:31:18 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:31:19 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:31:19 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:31:20 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:31:21 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:31:22 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:31:22 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:31:22 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:31:22 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:31:22 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:31:22 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:31:22 [802] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:31:22 [802] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:31:22 [802] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:31:22 [802] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:31:22 [802] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:31:22 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:31:22 [802] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:31:22 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:31:22 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:31:22 [802] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:31:22 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:31:23 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:31:23 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:31:23 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:31:23 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:31:24 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:31:24 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.3 min do 14:32:39 (přerušitelné s UI)
+2025-07-28 12:32:39 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:32:39 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:32:40 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:32:40 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 803 posunut o 15 minut
+2025-07-28 12:32:40 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 803 (Hanička Salvová)
+2025-07-28 12:32:40 [803] [OK][iv_worker.js:108] Vybrán uživatel Hanička Salvová
+2025-07-28 12:32:42 [803] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile803
+2025-07-28 12:32:42 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:32:42 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:32:42 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:32:42 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:32:42 [803] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:32:42 [803] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:32:42 [803] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:32:42 [803] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:32:42 [803] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:32:42 [803] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 157
+2025-07-28 12:32:42 [803] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:32:42 [803] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:32:46 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:32:46 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:32:46 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:32:46 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:32:46 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:32:46 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:32:46 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:32:46 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:32:46 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:32:46 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:32:46 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:32:47 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:32:48 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:32:49 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:32:49 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:32:50 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:32:51 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:32:52 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:32:52 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:32:52 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:32:52 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:32:52 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:32:52 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:32:52 [803] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:32:52 [803] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:32:52 [803] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:32:52 [803] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:32:52 [803] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:32:52 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:32:52 [803] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:32:52 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:32:52 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:32:52 [803] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:32:52 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:32:53 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:32:53 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:32:53 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:32:53 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:32:53 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:32:53 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.6 min do 14:34:27 (přerušitelné s UI)
+2025-07-28 12:34:27 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:34:27 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:34:28 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:34:28 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 804 posunut o 15 minut
+2025-07-28 12:34:28 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 804 (Radmila Slezáčková)
+2025-07-28 12:34:28 [804] [OK][iv_worker.js:108] Vybrán uživatel Radmila Slezáčková
+2025-07-28 12:34:29 [804] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile804
+2025-07-28 12:34:29 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:34:29 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:34:29 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:34:29 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:34:29 [804] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:34:29 [804] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:34:29 [804] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:34:29 [804] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:34:29 [804] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:34:29 [804] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 45
+2025-07-28 12:34:29 [804] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:34:29 [804] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:34:32 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:34:32 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:34:32 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:34:32 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:34:32 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:34:32 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:34:32 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:34:32 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:34:32 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:34:32 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:34:32 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:34:33 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:34:34 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:34:35 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:34:35 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:34:36 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:34:37 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:34:38 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:34:38 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:34:38 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:34:38 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:34:38 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:34:38 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:34:38 [804] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:34:38 [804] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:34:38 [804] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:34:38 [804] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:34:38 [804] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:34:38 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:34:38 [804] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:34:38 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:34:38 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:34:38 [804] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:34:38 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:34:39 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:34:39 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:34:39 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:34:39 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:34:39 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:34:39 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.2 min do 14:35:53 (přerušitelné s UI)
+2025-07-28 12:35:53 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:35:53 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:35:54 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:35:54 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 918 posunut o 15 minut
+2025-07-28 12:35:54 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 918 (Klára Podušková)
+2025-07-28 12:35:54 [918] [OK][iv_worker.js:108] Vybrán uživatel Klára Podušková
+2025-07-28 12:35:56 [918] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile918
+2025-07-28 12:35:56 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:35:56 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:35:56 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:35:56 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:35:56 [918] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:35:56 [918] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:35:56 [918] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:35:56 [918] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:35:56 [918] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:35:56 [918] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 265
+2025-07-28 12:35:56 [918] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:35:56 [918] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:35:59 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:35:59 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:35:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:35:59 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:35:59 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:35:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:35:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:35:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:35:59 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:35:59 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:35:59 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:36:00 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:36:01 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:36:02 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:36:02 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:36:03 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:36:04 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:36:05 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:36:05 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:36:05 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:36:05 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:36:05 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:36:05 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:36:05 [918] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:36:05 [918] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:36:05 [918] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:36:05 [918] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:36:05 [918] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:36:05 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:36:05 [918] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:36:05 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:36:05 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:36:05 [918] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:36:05 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:36:06 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:36:06 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:36:06 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:36:06 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:36:06 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:36:06 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.7 min do 14:37:51 (přerušitelné s UI)
+2025-07-28 12:37:51 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:37:51 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:37:52 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:37:52 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 919 posunut o 15 minut
+2025-07-28 12:37:52 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 919 (Esterka Pechová)
+2025-07-28 12:37:52 [919] [OK][iv_worker.js:108] Vybrán uživatel Esterka Pechová
+2025-07-28 12:37:53 [919] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile919
+2025-07-28 12:37:53 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:37:53 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:37:53 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:37:53 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:37:53 [919] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:37:53 [919] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:37:53 [919] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:37:53 [919] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:37:53 [919] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:37:53 [919] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 297
+2025-07-28 12:37:53 [919] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:37:53 [919] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:37:56 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:37:56 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:37:56 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:37:56 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:37:56 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:37:56 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:37:56 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:37:56 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:37:56 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:37:56 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:37:56 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:37:57 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:37:58 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:37:59 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:37:59 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:38:00 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:38:01 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:38:02 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:38:02 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:38:02 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:38:02 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:38:02 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:38:02 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:38:02 [919] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:38:02 [919] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:38:02 [919] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:38:02 [919] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:38:02 [919] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:38:02 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:38:02 [919] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:38:02 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:38:02 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:38:02 [919] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:38:02 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:38:03 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:38:03 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:38:03 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:38:03 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:38:03 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:38:03 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.5 min do 14:39:31 (přerušitelné s UI)
+2025-07-28 12:39:31 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:39:31 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:39:32 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:39:32 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 920 posunut o 15 minut
+2025-07-28 12:39:32 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 920 (Eva Haltová)
+2025-07-28 12:39:32 [920] [OK][iv_worker.js:108] Vybrán uživatel Eva Haltová
+2025-07-28 12:39:33 [920] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile920
+2025-07-28 12:39:33 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:39:33 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:39:33 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:39:33 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:39:33 [920] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:39:33 [920] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:39:33 [920] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:39:33 [920] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:39:33 [920] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:39:33 [920] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 213
+2025-07-28 12:39:33 [920] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:39:33 [920] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:39:36 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:39:36 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:39:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:39:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:39:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:39:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:39:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:39:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:39:36 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:39:36 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:39:36 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:39:37 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:39:38 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:39:39 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:39:39 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:39:40 [HEARTBEAT] [INFO][iv_querybuilder.class.js:275] State changed: User 920, Action: quote_post
+2025-07-28 12:39:40 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:39:41 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:39:42 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:39:42 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:39:42 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:39:42 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:39:42 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:39:42 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:39:42 [920] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:39:42 [920] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:39:42 [920] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:39:42 [920] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:39:42 [920] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:39:42 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:39:42 [920] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:39:42 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:39:42 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:39:42 [920] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:39:42 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:39:43 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:39:43 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:39:43 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:39:43 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:39:43 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:39:43 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.6 min do 14:41:19 (přerušitelné s UI)
+2025-07-28 12:41:19 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:41:19 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:41:20 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:41:23 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 921 posunut o 15 minut
+2025-07-28 12:41:23 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 921 (Andula Borská)
+2025-07-28 12:41:23 [921] [OK][iv_worker.js:108] Vybrán uživatel Andula Borská
+2025-07-28 12:41:24 [921] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile921
+2025-07-28 12:41:24 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:41:29 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:41:29 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:41:30 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:41:30 [921] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:41:30 [921] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:41:30 [921] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:41:30 [921] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:41:30 [921] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:41:30 [921] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 344
+2025-07-28 12:41:30 [921] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:41:30 [921] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:41:35 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:41:35 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:41:35 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:41:35 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:41:35 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:41:35 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:41:35 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:41:35 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:41:35 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:41:35 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:41:35 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:41:36 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:41:37 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:41:38 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:41:38 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:41:39 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:41:40 [HEARTBEAT] [INFO][iv_querybuilder.class.js:275] State changed: User 921, Action: quote_post
+2025-07-28 12:41:40 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:41:41 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:41:41 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:41:41 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:41:41 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:41:42 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:41:42 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:41:42 [921] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:41:42 [921] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:41:42 [921] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:41:42 [921] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:41:42 [921] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:41:42 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:41:42 [921] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:41:42 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:41:42 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:41:42 [921] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:41:42 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:41:43 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:41:43 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:41:43 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:41:43 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:41:45 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:41:45 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.3 min do 14:43:04 (přerušitelné s UI)
+2025-07-28 12:43:04 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:43:04 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:43:05 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:43:05 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 922 posunut o 15 minut
+2025-07-28 12:43:05 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 922 (Andrea Králová)
+2025-07-28 12:43:05 [922] [OK][iv_worker.js:108] Vybrán uživatel Andrea Králová
+2025-07-28 12:43:06 [922] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile922
+2025-07-28 12:43:06 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:43:06 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:43:06 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:43:06 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:43:06 [922] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:43:06 [922] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:43:06 [922] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:43:06 [922] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:43:06 [922] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:43:06 [922] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 60
+2025-07-28 12:43:06 [922] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:43:06 [922] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:43:09 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:43:09 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:43:09 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:43:09 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:43:09 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:43:09 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:43:09 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:43:09 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:43:09 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:43:09 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:43:09 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:43:10 [HEARTBEAT] [INFO][iv_querybuilder.class.js:275] State changed: User 922, Action: quote_post
+2025-07-28 12:43:10 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:43:11 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:43:12 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:43:12 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:43:13 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:43:14 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:43:15 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:43:15 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:43:15 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:43:15 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:43:15 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:43:15 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:43:15 [922] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:43:15 [922] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:43:15 [922] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:43:15 [922] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:43:15 [922] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:43:15 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:43:15 [922] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:43:15 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:43:15 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:43:15 [922] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:43:15 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:43:16 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:43:16 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:43:16 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:43:16 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:43:16 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:43:16 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.2 min do 14:44:31 (přerušitelné s UI)
+2025-07-28 12:44:31 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:44:31 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:44:32 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:44:32 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 923 posunut o 15 minut
+2025-07-28 12:44:32 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 923 (Martina Novotná)
+2025-07-28 12:44:32 [923] [OK][iv_worker.js:108] Vybrán uživatel Martina Novotná
+2025-07-28 12:44:33 [923] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile923
+2025-07-28 12:44:33 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:44:33 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:44:33 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:44:33 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:44:33 [923] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:44:33 [923] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:44:33 [923] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:44:33 [923] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:44:33 [923] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:44:33 [923] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 207
+2025-07-28 12:44:33 [923] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:44:33 [923] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:44:36 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:44:36 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:44:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:44:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:44:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:44:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:44:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:44:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:44:36 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:44:36 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:44:36 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:44:37 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:44:38 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:44:39 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:44:39 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:44:40 [HEARTBEAT] [INFO][iv_querybuilder.class.js:275] State changed: User 923, Action: quote_post
+2025-07-28 12:44:40 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:44:41 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:44:42 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:44:42 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:44:42 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:44:42 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:44:42 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:44:42 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:44:42 [923] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:44:42 [923] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:44:42 [923] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:44:42 [923] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:44:42 [923] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:44:42 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:44:42 [923] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:44:42 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:44:42 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:44:42 [923] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:44:42 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:44:43 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:44:43 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:44:43 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:44:43 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:44:43 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:44:43 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.7 min do 14:46:23 (přerušitelné s UI)
+2025-07-28 12:46:23 [WAIT] [INFO][iv_wait.class.js:144] Čekání dokončeno
+2025-07-28 12:46:23 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:46:24 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 12:46:24 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 975 posunut o 15 minut
+2025-07-28 12:46:24 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 975 (Ilja Hlaváč)
+2025-07-28 12:46:24 [975] [OK][iv_worker.js:108] Vybrán uživatel Ilja Hlaváč
+2025-07-28 12:46:26 [975] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile975
+2025-07-28 12:46:26 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 12:46:26 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 12:46:26 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:46:26 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:46:26 [975] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 12:46:26 [975] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 12:46:26 [975] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 12:46:26 [975] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 12:46:26 [975] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 12:46:26 [975] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 46
+2025-07-28 12:46:26 [975] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 12:46:26 [975] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 12:46:29 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:46:29 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:46:29 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:46:29 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:46:29 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"complete","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:46:29 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:46:29 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:46:29 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:46:29 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:46:29 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:46:29 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:46:30 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:46:31 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:46:32 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:46:32 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:46:33 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:46:34 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:46:35 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:46:35 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:46:35 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:46:35 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:46:35 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:46:35 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:46:35 [975] [ERROR][quote_post.action.js:108] Chyba při quote post: Facebook checkpoint detected - cannot continue
+2025-07-28 12:46:35 [975] [WARN][base_action.class.js:93] Neúspěšná akce quote_post: Failed
+2025-07-28 12:46:35 [975] [INFO][action_router.class.js:184] Akce quote_post selhala
+2025-07-28 12:46:35 [975] [WARN][iv_wheel.js:142] Akce quote_post NEPROVEDENA
+2025-07-28 12:46:35 [975] [INFO][iv_wheel.js:146] Facebook checkpoint detekován - blokuji uživatele a ukončuji wheel
+2025-07-28 12:46:35 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] ACCOUNT_LOCKED event successfully logged to log_system
+2025-07-28 12:46:35 [975] [OK][iv_wheel.js:186] Kolo štěstí dokončeno. Provedeno 0 akcí
+2025-07-28 12:46:35 [FB] [INFO][iv_fb.class.js:2039] Zavírám FB stránku...
+2025-07-28 12:46:35 [FB] [OK][iv_fb.class.js:2041] FB stránka zavřena
+2025-07-28 12:46:35 [975] [INFO][iv_wheel.js:202] FBBot ukončen
+2025-07-28 12:46:35 [BROWSER] [DEBUG][iv_browser_manager.class.js:84] Čekám 1s před zavřením prohlížeče...
+2025-07-28 12:46:36 [BROWSER] [INFO][iv_browser_manager.class.js:90] Zavírám 1 stránek...
+2025-07-28 12:46:36 [BROWSER] [DEBUG][iv_browser_manager.class.js:94] Zavírám stránku: about:blank
+2025-07-28 12:46:36 [BROWSER] [DEBUG][iv_browser_manager.class.js:98] Všechny stránky zavřeny
+2025-07-28 12:46:36 [BROWSER] [INFO][iv_browser_manager.class.js:105] Zavírám browser s timeout 30s...
+2025-07-28 12:46:36 [BROWSER] [OK][iv_browser_manager.class.js:113] BrowserManager úspěšně zavřel prohlížeč
+2025-07-28 12:46:36 [WAIT] [INFO][iv_wait.class.js:117] Čekání na další cyklus - 1.9 min do 14:48:28 (přerušitelné s UI)
+2025-07-28 12:47:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:47:40 [WAIT] [INFO][iv_wait.class.js:131] Čekání přerušeno kvůli nevyřízenému UI příkazu.
+2025-07-28 12:47:40 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:47:41 [USER_SELECTOR] [INFO][iv_user_selector.class.js:43] Vybrán uživatel 975 pro UI příkaz call_user
+2025-07-28 12:47:43 [975] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile975
+2025-07-28 12:47:43 [975] [INFO][iv_ui.class.js:146] UIBot převzal kontrolu pro příkaz: call_user
+2025-07-28 12:47:43 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:47:43 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:47:43 [WAIT] [INFO][iv_wait.class.js:25] Před navigací na Facebook - čekám 15s
+2025-07-28 12:47:59 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:47:59 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:47:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:47:59 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:47:59 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":592,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2004,"documentReady":"interactive","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 12:47:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=592, scripts=57, normal=false
+2025-07-28 12:47:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:47:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:47:59 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:47:59 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:47:59 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:48:00 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:48:00 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:48:01 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:48:02 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:48:02 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:48:03 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:48:04 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:48:05 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 12:48:05 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 12:48:05 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:48:05 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:48:05 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:48:05 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:48:05 [WAIT] [INFO][iv_wait.class.js:25] Stabilizace po otevření FB - čekám 3s
+2025-07-28 12:48:08 [975] [INFO][iv_ui.class.js:166] Spouštím UI příkaz call_user s timeout 20 minut (1200000ms)
+2025-07-28 12:48:08 [UI] [INFO][iv_ui.class.js:89] Zpracovávám příkaz: call_user
+2025-07-28 12:48:08 [UI] [OK][iv_ui.class.js:257] Uživatel 975 je nyní aktivní pro manuální správu.
+2025-07-28 12:48:08 [UI] [INFO][iv_ui.class.js:299] Čekám na manuální zavření prohlížeče (max 20 minut = 1200000ms)...
+2025-07-28 12:48:08 [UI] [DEBUG][iv_ui.class.js:315] Spouštím Promise.race mezi browser.disconnected a setTimeout...
+2025-07-28 12:48:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:48:30 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 12:48:30 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:48:38 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 20 minut čekání...
+2025-07-28 12:48:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:49:08 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 12:49:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:49:38 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 12:49:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:50:08 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 18 minut čekání...
+2025-07-28 12:50:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:50:18 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 12:50:18 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:50:38 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 18 minut čekání...
+2025-07-28 12:50:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:50:48 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 12:50:48 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:50:48 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+2025-07-28 12:51:08 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 17 minut čekání...
+2025-07-28 12:51:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:51:18 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 12:51:18 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:51:19 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/two_step_verification/two_factor/?encrypted_context=ARGprJ35vRRb7mfUD02jUimheBrMU6O6IpfML_NEpG2PrqmrI3dSiOORN6eOOss3gPmJGVPlir5t1Mrpff9MempOJR9o4sSYB6AYFfrb4WwKiId7ib7Bd8xxJz160odun_n349WjP9EABv6h9juG4RXebMjsCmhT1xoYAkmUqhUDmc5R3LKoxkE7DrsY6bUBZKJcm42rNBLVnh862kK0uUvhBQROnHCXzKDlgMZ61Zmpd6E2OvRGky1yGIF37w27NHDuWRZyGsdlN5Q6dni-1IF8oOYPTkv0jFTlNtkE552h39slErSgqqyirZzaFYir0rtpxLNNAyoWVXXxTkDZ0k9I3klxJ1-N3b3M8-rumzIlZPTZpdBi47JIXy7lEhs3UdXBXf80xyhd253WCHwUhpOVDdc267KABmAtYz_yIsl-2zXd2kYircM9CTf6ImS79jofYlm0OHLrUTPULTaBsdjm4BvHo7PLAs4&flow=two_factor_login&next
+2025-07-28 12:51:38 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 17 minut čekání...
+2025-07-28 12:51:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:51:48 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 12:51:48 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:51:48 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+2025-07-28 12:52:08 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 16 minut čekání...
+2025-07-28 12:52:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:52:38 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 16 minut čekání...
+2025-07-28 12:52:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:53:08 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 15 minut čekání...
+2025-07-28 12:53:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:53:38 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 15 minut čekání...
+2025-07-28 12:53:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:54:08 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 14 minut čekání...
+2025-07-28 12:54:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:54:38 [UI] [DEBUG][iv_ui.class.js:319] Browser disconnected event triggered
+2025-07-28 12:54:38 [UI] [OK][iv_ui.class.js:332] Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.
+2025-07-28 12:54:38 [UI] [DEBUG][iv_ui.class.js:339] Heartbeat interval cleared
+2025-07-28 12:54:38 [UI] [OK][iv_ui.class.js:116] Příkaz call_user úspěšně dokončen
+2025-07-28 12:54:38 [975] [OK][iv_ui.class.js:184] UI příkaz call_user dokončen úspěšně
+2025-07-28 12:54:38 [UI] [INFO][iv_ui.class.js:357] Prohlížeč již byl uzavřen nebo neexistuje
+2025-07-28 12:54:38 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:54:39 [USER_SELECTOR] [INFO][iv_user_selector.class.js:43] Vybrán uživatel 975 pro UI příkaz call_user
+2025-07-28 12:54:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:54:40 [975] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile975
+2025-07-28 12:54:40 [975] [INFO][iv_ui.class.js:146] UIBot převzal kontrolu pro příkaz: call_user
+2025-07-28 12:54:40 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:54:40 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:54:40 [WAIT] [INFO][iv_wait.class.js:25] Před navigací na Facebook - čekám 10s
+2025-07-28 12:54:51 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:54:51 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:54:51 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:54:51 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:54:51 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":222,"images":2,"scripts":39,"links":43,"buttons":1,"forms":1,"bodyTextLength":716,"documentReady":"interactive","hasBody":true,"title":"Facebook – přihlaste se, nebo se zaregistrujte"}
+2025-07-28 12:54:51 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=222, scripts=39, normal=false
+2025-07-28 12:54:51 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:54:51 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:54:51 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:54:51 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:54:52 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:54:52 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:54:53 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:54:54 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:54:55 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:54:55 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: login_required
+2025-07-28 12:54:55 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:54:55 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:54:55 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:54:55 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:54:55 [WAIT] [INFO][iv_wait.class.js:25] Stabilizace po otevření FB - čekám 3s
+2025-07-28 12:54:58 [975] [INFO][iv_ui.class.js:166] Spouštím UI příkaz call_user s timeout 20 minut (1200000ms)
+2025-07-28 12:54:58 [UI] [INFO][iv_ui.class.js:89] Zpracovávám příkaz: call_user
+2025-07-28 12:54:58 [UI] [OK][iv_ui.class.js:257] Uživatel 975 je nyní aktivní pro manuální správu.
+2025-07-28 12:54:58 [UI] [INFO][iv_ui.class.js:299] Čekám na manuální zavření prohlížeče (max 20 minut = 1200000ms)...
+2025-07-28 12:54:58 [UI] [DEBUG][iv_ui.class.js:315] Spouštím Promise.race mezi browser.disconnected a setTimeout...
+2025-07-28 12:55:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:55:22 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 12:55:22 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:55:28 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 20 minut čekání...
+2025-07-28 12:55:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:55:58 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 12:56:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:56:19 [UI] [DEBUG][iv_ui.class.js:319] Browser disconnected event triggered
+2025-07-28 12:56:19 [UI] [OK][iv_ui.class.js:332] Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.
+2025-07-28 12:56:19 [UI] [DEBUG][iv_ui.class.js:339] Heartbeat interval cleared
+2025-07-28 12:56:19 [UI] [OK][iv_ui.class.js:116] Příkaz call_user úspěšně dokončen
+2025-07-28 12:56:19 [975] [OK][iv_ui.class.js:184] UI příkaz call_user dokončen úspěšně
+2025-07-28 12:56:19 [UI] [INFO][iv_ui.class.js:357] Prohlížeč již byl uzavřen nebo neexistuje
+2025-07-28 12:56:19 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 12:56:20 [USER_SELECTOR] [INFO][iv_user_selector.class.js:43] Vybrán uživatel 987 pro UI příkaz call_user
+2025-07-28 12:56:22 [987] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile987
+2025-07-28 12:56:22 [987] [INFO][iv_ui.class.js:146] UIBot převzal kontrolu pro příkaz: call_user
+2025-07-28 12:56:22 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 12:56:22 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 12:56:22 [WAIT] [INFO][iv_wait.class.js:25] Před navigací na Facebook - čekám 13s
+2025-07-28 12:56:36 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 12:56:36 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 12:56:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 12:56:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 12:56:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":594,"images":13,"scripts":57,"links":46,"buttons":1,"forms":1,"bodyTextLength":2476,"documentReady":"interactive","hasBody":true,"title":"Facebook – přihlaste se, nebo se zaregistrujte"}
+2025-07-28 12:56:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=594, scripts=57, normal=false
+2025-07-28 12:56:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 12:56:36 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 12:56:36 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 12:56:36 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:56:36 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:56:37 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:56:37 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:56:38 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 12:56:39 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 12:56:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:56:40 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: login_required
+2025-07-28 12:56:40 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 12:56:40 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 12:56:40 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 12:56:40 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 12:56:40 [WAIT] [INFO][iv_wait.class.js:25] Stabilizace po otevření FB - čekám 2s
+2025-07-28 12:56:42 [987] [INFO][iv_ui.class.js:166] Spouštím UI příkaz call_user s timeout 20 minut (1200000ms)
+2025-07-28 12:56:42 [UI] [INFO][iv_ui.class.js:89] Zpracovávám příkaz: call_user
+2025-07-28 12:56:42 [UI] [OK][iv_ui.class.js:257] Uživatel 987 je nyní aktivní pro manuální správu.
+2025-07-28 12:56:42 [UI] [INFO][iv_ui.class.js:299] Čekám na manuální zavření prohlížeče (max 20 minut = 1200000ms)...
+2025-07-28 12:56:42 [UI] [DEBUG][iv_ui.class.js:315] Spouštím Promise.race mezi browser.disconnected a setTimeout...
+2025-07-28 12:57:07 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 12:57:07 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:57:09 [ANALYZER] [ERROR][iv_page_analyzer.class.js:1148] Chyba při hledání elementů: Execution context was destroyed, most likely because of a navigation.
+2025-07-28 12:57:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:57:10 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 12:57:10 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:57:11 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/two_step_verification/two_factor/?encrypted_context=ARFuK2R3_JcuBEp3A14Hum8oUIRZrh8DC01UxMC9rJzvWwUqsT9rSM-y581wxemNVOGAY2-fuxPbgCg4VD8ICnuHDn2Mo6fY4d99rmCsln89iJaOGSYuVNG1AKV2DlycMclVVRXs7oqGQK9z6q0ZlJRMwjf4rlojXATE29EWZuyziKciIj9sQ6-ZBFPTE7t2K5Bjb62Zdj5dQ49LmdpUgIM7otH0cmNFsSecpBgm403G58HWc3SUYWhzS9dq2M3Cnm-Rj5uP1je1_2-vUjw8jUcdrmAtyG-uPO-jrSthIO5rb93jmjqwSZtRsYpvRe8vZKaUVLL7X-fWi3dsygd0jTynNpjz27oBhH47Rn9v5SgP14pdDcHXfkMcJ_IZmUggewSMlWLGjZN4Ut2z4gd8W2aWmhHAC-C4UayZIfYOqnaYl6gZv1dccWDf7MMbqr-2tY_qTp32M3yIMXte6Q4hjpII4NvXjkfEuck&flow=two_factor_login&next
+2025-07-28 12:57:12 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 20 minut čekání...
+2025-07-28 12:57:30 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 12:57:30 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:57:31 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/two_factor/remember_browser/?encrypted_context=ARFuK2R3_JcuBEp3A14Hum8oUIRZrh8DC01UxMC9rJzvWwUqsT9rSM-y581wxemNVOGAY2-fuxPbgCg4VD8ICnuHDn2Mo6fY4d99rmCsln89iJaOGSYuVNG1AKV2DlycMclVVRXs7oqGQK9z6q0ZlJRMwjf4rlojXATE29EWZuyziKciIj9sQ6-ZBFPTE7t2K5Bjb62Zdj5dQ49LmdpUgIM7otH0cmNFsSecpBgm403G58HWc3SUYWhzS9dq2M3Cnm-Rj5uP1je1_2-vUjw8jUcdrmAtyG-uPO-jrSthIO5rb93jmjqwSZtRsYpvRe8vZKaUVLL7X-fWi3dsygd0jTynNpjz27oBhH47Rn9v5SgP14pdDcHXfkMcJ_IZmUggewSMlWLGjZN4Ut2z4gd8W2aWmhHAC-C4UayZIfYOqnaYl6gZv1dccWDf7MMbqr-2tY_qTp32M3yIMXte6Q4hjpII4NvXjkfEuck&next=
+2025-07-28 12:57:34 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 12:57:34 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:57:36 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/privacy/consent/?flow=ad_free_subscription&params%5Bafs_variant%5D=first_time&params%5Bgcl_experience_id%5D=de402dc2-41b4-4258-aedd-a3ea0fa2a2c3&source=ad_free_subscription_blocking_flow
+2025-07-28 12:57:37 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/privacy/consent/?flow=ad_free_subscription&params%5Bafs_variant%5D=first_time&params%5Bgcl_experience_id%5D=de402dc2-41b4-4258-aedd-a3ea0fa2a2c3&source=ad_free_subscription_blocking_flow
+2025-07-28 12:57:37 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/privacy/consent/?flow=ad_free_subscription&params%5Bafs_variant%5D=first_time&params%5Bgcl_experience_id%5D=de402dc2-41b4-4258-aedd-a3ea0fa2a2c3&source=ad_free_subscription_blocking_flow
+2025-07-28 12:57:37 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/privacy/consent/?flow=ad_free_subscription&params%5Bafs_variant%5D=first_time&params%5Bgcl_experience_id%5D=de402dc2-41b4-4258-aedd-a3ea0fa2a2c3&source=ad_free_subscription_blocking_flow
+2025-07-28 12:57:37 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/privacy/consent/?flow=ad_free_subscription&params%5Bafs_variant%5D=first_time&params%5Bgcl_experience_id%5D=de402dc2-41b4-4258-aedd-a3ea0fa2a2c3&source=ad_free_subscription_blocking_flow
+2025-07-28 12:57:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:57:42 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 12:57:51 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/
+2025-07-28 12:57:51 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 12:57:53 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 12:57:57 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/
+2025-07-28 12:57:57 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/
+2025-07-28 12:58:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:58:12 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 12:58:21 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 12:58:21 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 12:58:23 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+2025-07-28 12:58:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:58:42 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 18 minut čekání...
+2025-07-28 12:59:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:59:12 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 18 minut čekání...
+2025-07-28 12:59:16 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/friends
+2025-07-28 12:59:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 12:59:42 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 17 minut čekání...
+2025-07-28 13:00:01 [UI] [DEBUG][iv_ui.class.js:319] Browser disconnected event triggered
+2025-07-28 13:00:01 [UI] [OK][iv_ui.class.js:332] Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.
+2025-07-28 13:00:01 [UI] [DEBUG][iv_ui.class.js:339] Heartbeat interval cleared
+2025-07-28 13:00:01 [UI] [OK][iv_ui.class.js:116] Příkaz call_user úspěšně dokončen
+2025-07-28 13:00:01 [987] [OK][iv_ui.class.js:184] UI příkaz call_user dokončen úspěšně
+2025-07-28 13:00:01 [UI] [INFO][iv_ui.class.js:357] Prohlížeč již byl uzavřen nebo neexistuje
+2025-07-28 13:00:01 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 13:00:02 [USER_SELECTOR] [INFO][iv_user_selector.class.js:43] Vybrán uživatel 987 pro UI příkaz call_user
+2025-07-28 13:00:04 [987] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile987
+2025-07-28 13:00:04 [987] [INFO][iv_ui.class.js:146] UIBot převzal kontrolu pro příkaz: call_user
+2025-07-28 13:00:04 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 13:00:04 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 13:00:04 [WAIT] [INFO][iv_wait.class.js:25] Před navigací na Facebook - čekám 15s
+2025-07-28 13:00:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:00:22 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 13:00:22 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 13:00:22 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 13:00:23 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 13:00:23 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":1944,"images":45,"scripts":315,"links":48,"buttons":0,"forms":0,"bodyTextLength":1464,"documentReady":"interactive","hasBody":true,"title":"Facebook"}
+2025-07-28 13:00:23 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=1944, scripts=315, normal=true
+2025-07-28 13:00:23 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=true, score=3
+2025-07-28 13:00:23 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 13:00:23 [ANALYZER] [INFO][iv_page_analyzer.class.js:271] Struktura stránky je normální. Předpokládám, že není chyba.
+2025-07-28 13:00:23 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: ok
+2025-07-28 13:00:23 [FB] [OK][iv_fb.class.js:345] Navigace na https://www.facebook.com/ úspěšná - stránka je v pořádku
+2025-07-28 13:00:23 [WAIT] [INFO][iv_wait.class.js:25] Stabilizace po otevření FB - čekám 2s
+2025-07-28 13:00:25 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 13:00:26 [987] [INFO][iv_ui.class.js:166] Spouštím UI příkaz call_user s timeout 20 minut (1200000ms)
+2025-07-28 13:00:26 [UI] [INFO][iv_ui.class.js:89] Zpracovávám příkaz: call_user
+2025-07-28 13:00:26 [UI] [OK][iv_ui.class.js:257] Uživatel 987 je nyní aktivní pro manuální správu.
+2025-07-28 13:00:26 [UI] [INFO][iv_ui.class.js:299] Čekám na manuální zavření prohlížeče (max 20 minut = 1200000ms)...
+2025-07-28 13:00:26 [UI] [DEBUG][iv_ui.class.js:315] Spouštím Promise.race mezi browser.disconnected a setTimeout...
+2025-07-28 13:00:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:00:55 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 13:00:55 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:00:56 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 20 minut čekání...
+2025-07-28 13:01:05 [UI] [DEBUG][iv_ui.class.js:319] Browser disconnected event triggered
+2025-07-28 13:01:05 [UI] [OK][iv_ui.class.js:332] Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.
+2025-07-28 13:01:05 [UI] [DEBUG][iv_ui.class.js:339] Heartbeat interval cleared
+2025-07-28 13:01:05 [UI] [OK][iv_ui.class.js:116] Příkaz call_user úspěšně dokončen
+2025-07-28 13:01:05 [987] [OK][iv_ui.class.js:184] UI příkaz call_user dokončen úspěšně
+2025-07-28 13:01:05 [UI] [INFO][iv_ui.class.js:357] Prohlížeč již byl uzavřen nebo neexistuje
+2025-07-28 13:01:05 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 13:01:06 [USER_SELECTOR] [INFO][iv_user_selector.class.js:43] Vybrán uživatel 998 pro UI příkaz call_user
+2025-07-28 13:01:09 [998] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile998
+2025-07-28 13:01:09 [998] [INFO][iv_ui.class.js:146] UIBot převzal kontrolu pro příkaz: call_user
+2025-07-28 13:01:09 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 13:01:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:01:10 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 13:01:10 [WAIT] [INFO][iv_wait.class.js:25] Před navigací na Facebook - čekám 12s
+2025-07-28 13:01:22 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 13:01:22 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 13:01:22 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 13:01:22 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 13:01:22 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":252,"images":2,"scripts":41,"links":42,"buttons":1,"forms":1,"bodyTextLength":561,"documentReady":"interactive","hasBody":true,"title":"Facebook - log in or sign up"}
+2025-07-28 13:01:22 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=252, scripts=41, normal=false
+2025-07-28 13:01:22 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=false, score=0
+2025-07-28 13:01:22 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 13:01:22 [ANALYZER] [WARN][iv_page_analyzer.class.js:281] Struktura stránky NENÍ normální. Hledám chybové vzory...
+[DEBUGGER] WARNING: [ANALYZER]: Struktura stránky NENÍ normální. Hledám chybové vzory... [c/q]
+2025-07-28 13:01:22 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:01:23 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 13:01:23 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 13:01:24 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 13:01:25 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 13:01:26 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Povolit soubory cookie": Element s textem "Povolit soubory cookie" nebyl nalezen během 3000ms.
+2025-07-28 13:01:26 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 13:01:27 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 13:01:28 [WAIT] [INFO][iv_wait.class.js:25] Krátká pauza před dalším pokusem - čekám 1s
+2025-07-28 13:01:29 [FB_SUPPORT] [WARN][iv_fb_support.js:127] findByText selhalo pro "Přihlásit se": Element s textem "Přihlásit se" nebyl nalezen během 3000ms.
+2025-07-28 13:01:29 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: not_logged_in
+2025-07-28 13:01:29 [FB] [INFO][iv_fb.class.js:348] Stránka https://www.facebook.com/ vypadá podezřele - provádím další analýzu
+2025-07-28 13:01:29 [FB] [INFO][iv_fb.class.js:365] Analyzing page issues based on complexity analysis
+2025-07-28 13:01:29 [FB] [INFO][iv_fb.class.js:379] Lock reason: null - žádný specifický důvod nenalezen
+2025-07-28 13:01:29 [SYSTEM_LOGGER] [DEBUG][iv_system_logger.class.js:43] PAGE_ISSUE event successfully logged to log_system
+2025-07-28 13:01:29 [WAIT] [INFO][iv_wait.class.js:25] Stabilizace po otevření FB - čekám 2s
+2025-07-28 13:01:31 [998] [INFO][iv_ui.class.js:166] Spouštím UI příkaz call_user s timeout 20 minut (1200000ms)
+2025-07-28 13:01:31 [UI] [INFO][iv_ui.class.js:89] Zpracovávám příkaz: call_user
+2025-07-28 13:01:31 [UI] [OK][iv_ui.class.js:257] Uživatel 998 je nyní aktivní pro manuální správu.
+2025-07-28 13:01:31 [UI] [INFO][iv_ui.class.js:299] Čekám na manuální zavření prohlížeče (max 20 minut = 1200000ms)...
+2025-07-28 13:01:31 [UI] [DEBUG][iv_ui.class.js:315] Spouštím Promise.race mezi browser.disconnected a setTimeout...
+2025-07-28 13:01:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:01:53 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 13:01:53 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:02:01 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 20 minut čekání...
+2025-07-28 13:02:15 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:02:31 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 13:02:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:03:01 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 19 minut čekání...
+2025-07-28 13:03:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:03:31 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 18 minut čekání...
+2025-07-28 13:03:40 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:03:40 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 13:03:41 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 13:03:57 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1387] DOMContentLoaded - čekám na networkidle2
+2025-07-28 13:03:57 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1456] URL změna detekována: https://www.facebook.com/login/?privacy_mutation_token=eyJ0eXBlIjowLCJjcmVhdGlvbl90aW1lIjoxNzUzNzA3ODIwLCJjYWxsc2l0ZV9pZCI6MzgxMjI5MDc5NTc1OTQ2fQ%3D%3D&next
+2025-07-28 13:03:57 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1394] Page load - čekám na networkidle2
+2025-07-28 13:03:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/login/?privacy_mutation_token=eyJ0eXBlIjowLCJjcmVhdGlvbl90aW1lIjoxNzUzNzA3ODIwLCJjYWxsc2l0ZV9pZCI6MzgxMjI5MDc5NTc1OTQ2fQ%3D%3D&next
+2025-07-28 13:03:59 [ANALYZER] [INFO][iv_page_analyzer.class.js:1421] Stránka načtena (networkidle2): https://www.facebook.com/login/?privacy_mutation_token=eyJ0eXBlIjowLCJjcmVhdGlvbl90aW1lIjoxNzUzNzA3ODIwLCJjYWxsc2l0ZV9pZCI6MzgxMjI5MDc5NTc1OTQ2fQ%3D%3D&next
+2025-07-28 13:04:01 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 18 minut čekání...
+2025-07-28 13:04:10 [UI_COMMAND] [INFO][iv_querybuilder.class.js:304] UI command found: call_user
+2025-07-28 13:04:27 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+[DEBUGGER] WARNING: [ANALYZER]: Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded [c/q]
+2025-07-28 13:04:27 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:04:27 [ANALYZER] [WARN][iv_page_analyzer.class.js:1433] Timeout při čekání na networkidle2: Navigation timeout of 30000 ms exceeded
+2025-07-28 13:04:31 [UI] [DEBUG][iv_ui.class.js:306] Heartbeat - zbývá 17 minut čekání...
+2025-07-28 13:04:39 [UI] [DEBUG][iv_ui.class.js:319] Browser disconnected event triggered
+2025-07-28 13:04:39 [UI] [OK][iv_ui.class.js:332] Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.
+2025-07-28 13:04:39 [UI] [DEBUG][iv_ui.class.js:339] Heartbeat interval cleared
+2025-07-28 13:04:39 [UI] [OK][iv_ui.class.js:116] Příkaz call_user úspěšně dokončen
+2025-07-28 13:04:39 [998] [OK][iv_ui.class.js:184] UI příkaz call_user dokončen úspěšně
+2025-07-28 13:04:39 [UI] [INFO][iv_ui.class.js:357] Prohlížeč již byl uzavřen nebo neexistuje
+2025-07-28 13:04:39 [WAIT] [INFO][iv_wait.class.js:25] Malá pauza pro CPU - čekám 1s
+2025-07-28 13:04:40 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi
+2025-07-28 13:04:40 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 987 posunut o 15 minut
+2025-07-28 13:04:40 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 987 (Evžen Grunt)
+2025-07-28 13:04:40 [987] [OK][iv_worker.js:108] Vybrán uživatel Evžen Grunt
+2025-07-28 13:04:42 [987] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile987
+2025-07-28 13:04:42 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován
+2025-07-28 13:04:42 [ACTION_ROUTER] [OK][action_router.class.js:64] Inicializován s 13 akcemi
+2025-07-28 13:04:42 [FB] [INFO][iv_fb.class.js:44] Inicializuji FB stránku...
+2025-07-28 13:04:42 [FB] [OK][iv_fb.class.js:61] FB stránka inicializována
+2025-07-28 13:04:42 [987] [INFO][iv_wheel.js:73] FBBot úspěšně inicializován
+2025-07-28 13:04:42 [987] [INFO][iv_wheel.js:121] Vylosována akce #1: quote_post
+2025-07-28 13:04:42 [987] [INFO][action_router.class.js:153] Spouštím akci: quote_post
+2025-07-28 13:04:42 [987] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post...
+2025-07-28 13:04:42 [987] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze...
+2025-07-28 13:04:42 [987] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 332
+2025-07-28 13:04:42 [987] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook...
+2025-07-28 13:04:42 [987] [INFO][quote_post.action.js:120] Naviguji na facebook.com...
+2025-07-28 13:04:53 [FB] [INFO][iv_fb.class.js:86] Spouštím první hledání elementů...
+2025-07-28 13:04:53 [FB] [OK][iv_fb.class.js:95] PageAnalyzer inicializován a elementy nalezeny
+2025-07-28 13:04:53 [ANALYZER] [INFO][iv_page_analyzer.class.js:63] Spouštím kompletní analýzu stránky: https://www.facebook.com/
+2025-07-28 13:04:53 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:328] Spouštím page.evaluate pro complexity analýzu...
+2025-07-28 13:04:53 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:374] Raw metrics: {"elements":3355,"images":92,"scripts":358,"links":90,"buttons":0,"forms":2,"bodyTextLength":2772,"documentReady":"complete","hasBody":true,"title":"(12) Facebook"}
+2025-07-28 13:04:53 [ANALYZER] [INFO][iv_page_analyzer.class.js:70] Complexity: elements=3355, scripts=358, normal=true
+2025-07-28 13:04:53 [ANALYZER] [INFO][iv_page_analyzer.class.js:74] Navigation: standard=true, score=3
+2025-07-28 13:04:53 [ANALYZER] [INFO][iv_page_analyzer.class.js:448] Provádím analýzu schopnosti postování...
+2025-07-28 13:04:53 [ANALYZER] [INFO][iv_page_analyzer.class.js:271] Struktura stránky je normální. Předpokládám, že není chyba.
+2025-07-28 13:04:53 [ANALYZER] [OK][iv_page_analyzer.class.js:103] Analýza dokončena se stavem: ok
+2025-07-28 13:04:53 [FB] [OK][iv_fb.class.js:345] Navigace na https://www.facebook.com/ úspěšná - stránka je v pořádku
+2025-07-28 13:04:53 [WAIT] [INFO][iv_wait.class.js:25] Po analýze - čekám 4s
+2025-07-28 13:04:57 [987] [OK][quote_post.action.js:134] KROK 1 DOKONČEN: Jsme na facebook.com
+2025-07-28 13:04:57 [987] [INFO][quote_post.action.js:156] KROK 2: Klikám na "Co se vám honí hlavou"...
+2025-07-28 13:04:59 [ANALYZER] [OK][iv_page_analyzer.class.js:1512] Úspěšné kliknutí na element: "Co se vám honí hlavou"
+2025-07-28 13:04:59 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1516] Čekám na reakci stránky po kliknutí...
+2025-07-28 13:05:02 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1521] Element cache aktualizována po kliknutí
+2025-07-28 13:05:02 [987] [OK][quote_post.action.js:164] KROK 2 DOKONČEN: Kliknuto na vstupní pole
+2025-07-28 13:05:02 [987] [INFO][quote_post.action.js:171] KROK 3: Píšu citát...
+2025-07-28 13:05:02 [987] [DEBUG][iv_human_behavior_advanced.js:52] Behavioral profil načten: neutral, energy: 0.80
+2025-07-28 13:05:02 [987] [DEBUG][iv_human_behavior_advanced.js:71] Začínám pokročilé psaní: "Nepiju alkohol. Pouze dezinfik..."
+2025-07-28 13:05:08 [987] [OK][iv_human_behavior_advanced.js:107] Psaní dokončeno s 0 chybami
+2025-07-28 13:05:08 [987] [OK][quote_post.action.js:177] KROK 3 DOKONČEN: Citát napsán
+2025-07-28 13:05:08 [987] [INFO][quote_post.action.js:201] KROK 5: Pauza na kontrolu příspěvku...
+2025-07-28 13:05:10 [HEARTBEAT] [INFO][iv_querybuilder.class.js:275] State changed: User 987, Action: quote_post
+2025-07-28 13:05:11 [987] [OK][quote_post.action.js:205] KROK 5 DOKONČEN: Kontrola dokončena
+2025-07-28 13:05:11 [987] [INFO][quote_post.action.js:212] KROK 6: Klikám na tlačítko "Přidat"...
+2025-07-28 13:05:13 [ANALYZER] [OK][iv_page_analyzer.class.js:1512] Úspěšné kliknutí na element: "Přidat"
+2025-07-28 13:05:13 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1516] Čekám na reakci stránky po kliknutí...
+2025-07-28 13:05:17 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1521] Element cache aktualizována po kliknutí
+2025-07-28 13:05:17 [987] [OK][quote_post.action.js:220] KROK 6 DOKONČEN: Kliknuto na "Přidat"
+2025-07-28 13:05:17 [987] [INFO][quote_post.action.js:227] KROK 7: Čekám na potvrzení odeslání...
+2025-07-28 13:05:17 [WAIT] [INFO][iv_wait.class.js:25] Po kliknutí na Přidat - čekám 2s
+2025-07-28 13:05:19 [ANALYZER] [DEBUG][iv_page_analyzer.class.js:1665] Nalezeno 200 textů pro debug
+2025-07-28 13:05:19 [SQL] [ERROR][iv_sql.js:79] Query failed: system.insertDebugIncident - Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265)
+[DEBUGGER] ERROR: [SQL]: Query failed: system.insertDebugIncident - Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265) [c/q]
+2025-07-28 13:05:19 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:05:28 [SQL] [ERROR][iv_sql.js:80] SQL: 
+    INSERT INTO debug_incidents (
+      incident_id, user_id, error_level, error_message, error_context,
+      page_url, page_title, user_agent, screenshot_data, dom_html,
+      console_logs, user_comment, user_analysis_request, system_info,
+      stack_trace, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  
+[DEBUGGER] ERROR: [SQL]: SQL: 
+    INSERT INTO debug_incidents (
+      incident_id, user_id, error_level, error_message, error_context,
+      page_url, page_title, user_agent, screenshot_data, dom_html,
+      console_logs, user_comment, user_analysis_request, system_info,
+      stack_trace, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   [c/q]
+2025-07-28 13:05:28 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:05:38 [SQL] [ERROR][iv_sql.js:81] Params: ["quote_post_success_1753707919454",987,"INFO","quote_post_after_submit","{\"visibleTexts\":[\"Facebook\",\"Hledejte na Facebooku\",\"Hlavní stránka\",\"Přátelé\",\"Videoportál\",\"Skupiny\",\"Gaming\",\"Počet nepřečtených upozornění\",\"12\",\"Facebook nabídka\",\"Evžen Grunt\",\"Meta AI\",\"Přátelé\",\"Vzpomínky\",\"Uložené\",\"Skupiny\",\"Videoportál\",\"Kanály příspěvků\",\"Události\",\"Správce reklam\",\"Zobrazit další\",\"Vaši zástupci\",\"Upravit\",\"Farmaření\",\"Meta © 2025\",\"Soukromí...
+[DEBUGGER] ERROR: [SQL]: Params: ["quote_post_success_1753707919454",987,"INFO","quote_post_after_submit","{\"visibleTexts\":[\"Facebook\",\"Hledejte na Facebooku\",\"Hlavní stránka\",\"Přátelé\",\"Videoportál\",\"Skupiny\",\"Gaming\",\"Počet nepřečtených upozornění\",\"12\",\"Facebook nabídka\",\"Evžen Grunt\",\"Meta AI\",\"Přátelé\",\"Vzpomínky\",\"Uložené\",\"Skupiny\",\"Videoportál\",\"Kanály příspěvků\",\"Události\",\"Správce reklam\",\"Zobrazit další\",\"Vaši zástupci\",\"Upravit\",\"Farmaření\",\"Meta © 2025\",\"Soukromí... [c/q]
+2025-07-28 13:05:38 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:05:45 [SQL] [ERROR][iv_sql.js:82] Error: Data truncated for column 'status' at row 1
+[DEBUGGER] ERROR: [SQL]: Error: Data truncated for column 'status' at row 1 [c/q]
+2025-07-28 13:05:45 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:05:52 [SQL] [ERROR][iv_sql.js:83] Error code: WARN_DATA_TRUNCATED
+[DEBUGGER] ERROR: [SQL]: Error code: WARN_DATA_TRUNCATED [c/q]
+2025-07-28 13:05:52 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:00 [SQL] [ERROR][iv_sql.js:84] Error number: 1265
+[DEBUGGER] ERROR: [SQL]: Error number: 1265 [c/q]
+2025-07-28 13:06:00 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:06 [SQL] [ERROR][iv_sql.js:85] SQL State: 01000
+[DEBUGGER] ERROR: [SQL]: SQL State: 01000 [c/q]
+2025-07-28 13:06:06 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:16 [SQL] [ERROR][iv_sql.js:86] SQL Query: 
+    INSERT INTO debug_incidents (
+      incident_id, user_id, error_level, error_message, error_context,
+      page_url, page_title, user_agent, screenshot_data, dom_html,
+      console_logs, user_comment, user_analysis_request, system_info,
+      stack_trace, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  
+[DEBUGGER] ERROR: [SQL]: SQL Query: 
+    INSERT INTO debug_incidents (
+      incident_id, user_id, error_level, error_message, error_context,
+      page_url, page_title, user_agent, screenshot_data, dom_html,
+      console_logs, user_comment, user_analysis_request, system_info,
+      stack_trace, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   [c/q]
+2025-07-28 13:06:16 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:26 [SQL] [ERROR][iv_sql.js:158] safeExecute system.insertDebugIncident exception: Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265)
+[DEBUGGER] ERROR: [SQL]: safeExecute system.insertDebugIncident exception: Data truncated for column 'status' at row 1 (code: WARN_DATA_TRUNCATED) (errno: 1265) [c/q]
+2025-07-28 13:06:26 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:35 [SQL] [ERROR][iv_sql.js:159] Error code: WARN_DATA_TRUNCATED
+[DEBUGGER] ERROR: [SQL]: Error code: WARN_DATA_TRUNCATED [c/q]
+2025-07-28 13:06:35 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:43 [SQL] [ERROR][iv_sql.js:160] Error number: 1265
+[DEBUGGER] ERROR: [SQL]: Error number: 1265 [c/q]
+2025-07-28 13:06:43 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:50 [SQL] [ERROR][iv_sql.js:161] SQL State: 01000
+[DEBUGGER] ERROR: [SQL]: SQL State: 01000 [c/q]
+2025-07-28 13:06:50 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:06:58 [987] [INFO][quote_post.action.js:261] Data po odeslání uložena do debug_incidents pro analýzu
+2025-07-28 13:06:58 [987] [INFO][quote_post.action.js:267] KROK 7: Předpokládám úspěch (data uložena pro budoucí analýzu)
+2025-07-28 13:06:58 [987] [INFO][quote_post.action.js:275] Zpracovávám úspěšné odeslání...
+2025-07-28 13:06:58 [SQL] [ERROR][iv_sql.js:79] Query failed: quotes.markAsUsed - The user specified as a definer ('Zdendys79'@'%') does not exist (code: ER_NO_SUCH_USER) (errno: 1449)
+[DEBUGGER] ERROR: [SQL]: Query failed: quotes.markAsUsed - The user specified as a definer ('Zdendys79'@'%') does not exist (code: ER_NO_SUCH_USER) (errno: 1449) [c/q]
+2025-07-28 13:06:58 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:05 [SQL] [ERROR][iv_sql.js:80] SQL: 
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL ? DAY
+    WHERE id = ?
+  
+[DEBUGGER] ERROR: [SQL]: SQL: 
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL ? DAY
+    WHERE id = ?
+   [c/q]
+2025-07-28 13:07:05 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:14 [SQL] [ERROR][iv_sql.js:81] Params: [30,332]
+[DEBUGGER] ERROR: [SQL]: Params: [30,332] [c/q]
+2025-07-28 13:07:14 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:24 [SQL] [ERROR][iv_sql.js:82] Error: The user specified as a definer ('Zdendys79'@'%') does not exist
+[DEBUGGER] ERROR: [SQL]: Error: The user specified as a definer ('Zdendys79'@'%') does not exist [c/q]
+2025-07-28 13:07:24 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:33 [SQL] [ERROR][iv_sql.js:83] Error code: ER_NO_SUCH_USER
+[DEBUGGER] ERROR: [SQL]: Error code: ER_NO_SUCH_USER [c/q]
+2025-07-28 13:07:33 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:41 [SQL] [ERROR][iv_sql.js:84] Error number: 1449
+[DEBUGGER] ERROR: [SQL]: Error number: 1449 [c/q]
+2025-07-28 13:07:41 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:50 [SQL] [ERROR][iv_sql.js:85] SQL State: HY000
+[DEBUGGER] ERROR: [SQL]: SQL State: HY000 [c/q]
+2025-07-28 13:07:50 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:07:59 [SQL] [ERROR][iv_sql.js:86] SQL Query: 
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL ? DAY
+    WHERE id = ?
+  
+[DEBUGGER] ERROR: [SQL]: SQL Query: 
+    UPDATE quotes
+    SET next_seen = NOW() + INTERVAL ? DAY
+    WHERE id = ?
+   [c/q]
+2025-07-28 13:07:59 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:08:06 [SQL] [ERROR][iv_sql.js:158] safeExecute quotes.markAsUsed exception: The user specified as a definer ('Zdendys79'@'%') does not exist (code: ER_NO_SUCH_USER) (errno: 1449)
+[DEBUGGER] ERROR: [SQL]: safeExecute quotes.markAsUsed exception: The user specified as a definer ('Zdendys79'@'%') does not exist (code: ER_NO_SUCH_USER) (errno: 1449) [c/q]
+2025-07-28 13:08:06 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:08:08 [UI] [DEBUG][iv_ui.class.js:325] Timeout 1200000ms elapsed
+2025-07-28 13:08:13 [SQL] [ERROR][iv_sql.js:159] Error code: ER_NO_SUCH_USER
+[DEBUGGER] ERROR: [SQL]: Error code: ER_NO_SUCH_USER [c/q]
+2025-07-28 13:08:13 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:08:20 [SQL] [ERROR][iv_sql.js:160] Error number: 1449
+[DEBUGGER] ERROR: [SQL]: Error number: 1449 [c/q]
+2025-07-28 13:08:20 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:08:28 [SQL] [ERROR][iv_sql.js:161] SQL State: HY000
+[DEBUGGER] ERROR: [SQL]: SQL State: HY000 [c/q]
+2025-07-28 13:08:28 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:08:36 [987] [OK][quote_post.action.js:299] Quote post úspěšný! Další akce za 8690 minut
+2025-07-28 13:08:36 [987] [OK][action_router.class.js:182] Akce quote_post úspěšně dokončena
+2025-07-28 13:08:36 [987] [OK][iv_wheel.js:159] Akce quote_post úspěšně dokončena
+2025-07-28 13:08:36 [IVY_CONFIG] [DEBUG][iv_config.class.js:330] Načítám globální konfiguraci z databáze...
+2025-07-28 13:08:36 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:32] Lock nastaven do Invalid Date
+2025-07-28 13:08:36 [987] [INFO][iv_wheel.js:165] Invasive lock nastaven na 0s
+2025-07-28 13:08:36 [IVY_CONFIG] [INFO][iv_config.class.js:340] Načteno 47 proměnných z databáze
+2025-07-28 13:08:36 [IVY_CONFIG] [DEBUG][iv_config.class.js:315] Background update dokončen
+2025-07-28 13:08:36 [WAIT] [INFO][iv_wait.class.js:42] Pauza mezi akcemi - čekám 4s (přerušitelné)
+2025-07-28 13:08:40 [HEARTBEAT] [INFO][iv_querybuilder.class.js:275] State changed: User 987, Action: none
+2025-07-28 13:08:40 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:08:40 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:08:46 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:08:46 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 6s
+2025-07-28 13:08:52 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:08:52 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:09:00 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:09:00 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 7s
+2025-07-28 13:09:07 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:09:07 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:09:17 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:09:17 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 9s
+2025-07-28 13:09:26 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:09:26 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:09:33 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:09:33 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 6s
+2025-07-28 13:09:39 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:09:39 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:09:48 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:09:48 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 8s
+2025-07-28 13:09:56 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:09:56 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:10:05 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:10:05 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 10s
+2025-07-28 13:10:15 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:10:15 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:10:21 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:10:21 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 6s
+2025-07-28 13:10:27 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:10:27 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+2025-07-28 13:10:35 [987] [INFO][iv_wheel.js:294] Nejsou dostupné žádné akce
+2025-07-28 13:10:35 [WAIT] [INFO][iv_wait.class.js:25] Pauza po selhání - čekám 8s
+2025-07-28 13:10:43 [SQL] [WARN][iv_sql.js:124] safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows
+[DEBUGGER] WARNING: [SQL]: safeQueryAll actions.getUserActionsWithLimitsSimple returned 0 rows [c/q]
+2025-07-28 13:10:43 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:104] No TTY available for interactive input - auto-continuing after timeout
+[CONSOLE] Shutting down logger...
+2025-07-28 13:10:46 [IVY] Proces ukončen signálem SIGTERM - spouštím graceful shutdown... [INFO][ivy.js:140]
+2025-07-28 13:10:47 [IVY] [INFO][ivy.js:156] Heartbeat ukončen a stav vyčištěn
+2025-07-28 13:10:47 [BROWSER] [INFO][iv_browser_manager.class.js:143] Zavírám 6 aktivních browser instances...
+2025-07-28 13:10:47 [BROWSER] [DEBUG][iv_browser_manager.class.js:147] Zavírám browser instance 1/6
+2025-07-28 13:10:47 [BROWSER] [DEBUG][iv_browser_manager.class.js:147] Zavírám browser instance 2/6
+2025-07-28 13:10:47 [BROWSER] [DEBUG][iv_browser_manager.class.js:147] Zavírám browser instance 3/6
+2025-07-28 13:10:47 [BROWSER] [DEBUG][iv_browser_manager.class.js:147] Zavírám browser instance 4/6
+2025-07-28 13:10:47 [BROWSER] [DEBUG][iv_browser_manager.class.js:147] Zavírám browser instance 5/6
+2025-07-28 13:10:47 [BROWSER] [DEBUG][iv_browser_manager.class.js:147] Zavírám browser instance 6/6
+2025-07-28 13:10:47 [BROWSER] [INFO][iv_browser_manager.class.js:167] Čekám na shutdown všech browsers s timeout 10s...
+[CONSOLE] Saved 13 pending logs to file before shutdown
