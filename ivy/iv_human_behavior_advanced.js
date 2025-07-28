@@ -102,20 +102,13 @@ export class AdvancedHumanBehavior {
         }
       }
       
-      // Uložit pattern do cache
-      await this.saveBehaviorPattern('typing', context, {
-        text_length: text.length,
-        words: words.length,
-        errors: totalErrors,
-        completion_time: Date.now() - this.sessionStartTime,
-        emotional_state: this.currentEmotion?.emotion_type || 'neutral'
-      });
+      // ODSTRANĚNO: saveBehaviorPattern - žádné ukládání patterns
       
       Log.success(`[${this.userId}]`, `Psaní dokončeno s ${totalErrors} chybami`);
       
     } catch (error) {
       await Log.error(`[${this.userId}] typeLikeHuman`, error);
-      await this.updateEmotionalState('frustrated', 0.7, 'typing_failed');
+      // ODSTRANĚNO: updateEmotionalState - žádné ukládání emocí
       throw error;
     }
   }
@@ -367,7 +360,7 @@ export class AdvancedHumanBehavior {
     
     // Úpravy podle osobnosti
     if (!profile || typeof profile.impatience_level !== 'number') {
-      await Log.warn('[HumanBehavior]', 'Missing impatience_level in profile, using default 0.5');
+      // Tiše použít default hodnotu bez warningů
       profile = { ...profile, impatience_level: 0.5 };
     }
     const personalityMultiplier = 0.5 + profile.impatience_level;
@@ -376,30 +369,7 @@ export class AdvancedHumanBehavior {
     await Wait.toMS(finalPause);
   }
 
-  /**
-   * Aktualizace emocionálního stavu
-   */
-  async updateEmotionalState(emotion, intensity, trigger) {
-    try {
-      await db.safeExecute('behavioral_profiles.logEmotionalState', [
-        this.userId,
-        emotion,
-        intensity,
-        trigger,
-        30 + Math.random() * 60 // 30-90 minut trvání
-      ]);
-      
-      this.currentEmotion = {
-        emotion_type: emotion,
-        intensity: intensity,
-        trigger_event: trigger
-      };
-      
-      Log.debug(`[${this.userId}]`, `Emocionální stav aktualizován: ${emotion} (${intensity})`);
-    } catch (error) {
-      await Log.error(`[${this.userId}] updateEmotionalState`, error);
-    }
-  }
+  // ODSTRANĚNO: updateEmotionalState - žádné ukládání emocí do DB
 
   // ODSTRANĚNO: saveBehaviorPattern - robot neukládá vlastní vzory chování
 

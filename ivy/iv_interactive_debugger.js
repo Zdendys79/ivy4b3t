@@ -22,8 +22,7 @@ export class InteractiveDebugger {
    * Emergency shutdown - stops all intervals and timers
    */
   emergencyShutdown(reason = 'Critical error') {
-    console.log(`\n[EMERGENCY] SHUTDOWN: ${reason}`);
-    console.log('Stopping all background processes...');
+    console.log(`[EMERGENCY] SHUTDOWN: ${reason}`);
     
     // Stop all intervals and timeouts
     // Get all active handles (intervals, timeouts)
@@ -40,7 +39,6 @@ export class InteractiveDebugger {
     
     // Force process exit after brief cleanup
     setTimeout(() => {
-      console.log('[SHUTDOWN] Process terminated - also stopping start.sh');
       process.exit(99); // Exit code 99 will stop start.sh script
     }, 1000);
   }
@@ -58,11 +56,9 @@ export class InteractiveDebugger {
     
     if (isCriticalDbError) {
       this.criticalErrorCount++;
-      console.log(`\n[CRITICAL] DATABASE ERROR (${this.criticalErrorCount}/3): ${message}`);
-      
       if (this.criticalErrorCount >= 3) {
-        console.log('System will perform emergency shutdown to prevent infinite loops.');
-        this.emergencyShutdown(`Repeated critical database errors: ${message}`);
+        console.log(`[CRITICAL] DB ERROR ${this.criticalErrorCount}/3 - EMERGENCY SHUTDOWN`);
+        this.emergencyShutdown(message);
         return;
       }
     }
@@ -70,8 +66,7 @@ export class InteractiveDebugger {
     // Prevent multiple concurrent debugger sessions
     if (this.isActive) {
       if (isCriticalDbError) {
-        console.log('\n[CRITICAL] DEBUGGER RECURSION DETECTED!');
-        this.emergencyShutdown('Debugger recursion with critical database error');
+        this.emergencyShutdown('Debugger recursion');
         return;
       }
       return false; // Continue without pausing
@@ -79,12 +74,10 @@ export class InteractiveDebugger {
 
     this.isActive = true;
 
-    // Simple error display
-    console.log(`\n[DEBUGGER] ${errorLevel}: ${message}`);
-    console.log('[c]ontinue [q]uit - Auto-continue in 10s...');
+    // Compact error display - 1 line
+    console.log(`[DEBUGGER] ${errorLevel}: ${message} [c/q]`);
 
     const response = await this.waitForUserInput(10);
-    console.log(`Choice: ${response}`);
 
     let result = false;
     
