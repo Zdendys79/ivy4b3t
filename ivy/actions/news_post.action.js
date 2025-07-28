@@ -91,16 +91,10 @@ export class NewsPostAction extends BaseAction {
    * KROK 0: Vybrat URL z databáze
    */
   async step0_selectUrl(user) {
-    Log.info(`[${user.id}]`, 'KROK 0: Vybírám URL z RSS databáze...');
+    Log.info(`[${user.id}]`, 'KROK 0: RSS nedostupné - akce deaktivována');
     
-    // Vybrat URL s nejnižším used_count, při shodě nejmladší
-    const newsUrl = await db.safeQueryFirst('rss.getAvailableUrl');
-    
-    if (newsUrl) {
-      Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrána URL ID ${newsUrl.id} (${newsUrl.channel_id})`);
-    }
-    
-    return newsUrl;
+    // RSS bylo přesunuto na server - akce není dostupná
+    throw new Error('News post akce vyžaduje RSS server - dočasně nedostupná');
   }
 
   /**
