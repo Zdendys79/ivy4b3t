@@ -291,25 +291,8 @@ export class QuotePostAction extends BaseAction {
    * Zpracovat selhání
    */
   async handleFailure(user, fbBot) {
-    await Log.error(`[${user.id}]`, 'Quote post selhal - zapisuji debug informace...');
-    
-    try {
-      // Zapsat do debug_incidents
-      await db.safeExecute('system.insertDebugIncident', [
-        user.id,
-        'quote_post_failed',
-        JSON.stringify({
-          visibleTexts: fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 100 }),
-          url: fbBot.page.url(),
-          timestamp: new Date().toISOString()
-        }),
-        await fbBot.page.screenshot({ encoding: 'base64' })
-      ]);
-      
-      Log.info(`[${user.id}]`, 'Debug informace uloženy do debug_incidents');
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při ukládání debug informací: ${err.message}`);
-    }
+    await Log.error(`[${user.id}]`, 'Quote post selhal');
+    // ODSTRANĚNO: zapisování debug informací - není potřeba
   }
 
 }
