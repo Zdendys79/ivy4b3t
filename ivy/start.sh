@@ -41,47 +41,41 @@ BRANCH="production"
 MAX_RETRIES=3
 TIME_WINDOW=60
 
-# Pole pro uchovávání časů pokusů
-declare -a attempt_times=()
+# Soubor pro sledování času posledního spuštění
+LAST_START_FILE="$TARGET_DIR/.last_start_time"
 
 # ===========================================
 # FUNKCE PRO SPRÁVU RESTARTŮ
 # ===========================================
 
-# Přidá nový pokus do seznamu a zkontroluje limit
+# Funkce pro kontrolu času posledního spuštění s dynamickým čekáním
 check_restart_limit() {
     local current_time=$(date +%s)
-
-    # Odstraň pokusy starší než TIME_WINDOW
-    local filtered_times=()
-    for time in "${attempt_times[@]}"; do
-        if (( current_time - time < TIME_WINDOW )); then
-            filtered_times+=("$time")
+    
+    # Zkontroluj čas posledního spuštění
+    if [[ -f "$LAST_START_FILE" ]]; then
+        local last_start_time=$(cat "$LAST_START_FILE" 2>/dev/null || echo "0")
+        local time_diff=$((current_time - last_start_time))
+        
+        if (( time_diff < TIME_WINDOW )); then
+            local remaining_time=$((TIME_WINDOW - time_diff))
+            echo "[START] Od posledního spuštění uplynulo pouze ${time_diff}s"
+            echo "[START] Minimální interval je ${TIME_WINDOW}s, zbývá ${remaining_time}s"
+            echo "[START] Poslední spuštění: $(date -d "@$last_start_time" '+%Y-%m-%d %H:%M:%S')"
+            echo "[START] Čekám ${remaining_time} sekund do dalšího povoleného spuštění..."
+            
+            # Čekání na přesný zbývající čas
+            sleep $remaining_time
+            
+            # Aktualizuj čas po čekání
+            current_time=$(date +%s)
         fi
-    done
-    attempt_times=("${filtered_times[@]}")
-
-    # Přidej nový pokus
-    attempt_times+=("$current_time")
-
-    # Zkontroluj limit
-    if (( ${#attempt_times[@]} > MAX_RETRIES )); then
-        echo "[START] Překročen limit pokusů ($MAX_RETRIES za $TIME_WINDOW sekund)"
-        echo "[START] Posledních ${#attempt_times[@]} pokusů:"
-        for i in "${!attempt_times[@]}"; do
-            local time_str=$(date -d "@${attempt_times[i]}" '+%H:%M:%S')
-            echo "[START]   $((i + 1)). $time_str"
-        done
-        echo "[START] Ukončuji skript z bezpečnostních důvodů"
-        exit 1
     fi
-
-    local remaining=$((MAX_RETRIES - ${#attempt_times[@]} + 1))
-    if (( remaining <= 1 )); then
-        echo "[START] VAROVÁNÍ: Zbývá pouze $remaining pokus před dosažením limitu!"
-    else
-        echo "[START] Pokus ${#attempt_times[@]}/$MAX_RETRIES (zbývá $remaining pokusů)"
-    fi
+    
+    # Zapiš čas aktuálního spuštění
+    echo "$current_time" > "$LAST_START_FILE"
+    
+    echo "[START] Časová kontrola OK - pokračuji v cyklu"
 }
 
 # ===========================================
@@ -162,28 +156,6 @@ main_loop() {
         echo "[START] Pracovní adresář: $(pwd)"
         echo ""
 
-        # Systémový log pro restart (pokud to není první pokus)
-        current_attempt=${#attempt_times[@]}
-        if [ $current_attempt -gt 1 ]; then
-            node -e "
-                import { QueryBuilder } from './iv_querybuilder.class.js';
-                import { get as getVersion } from './iv_version.js';
-                const db = new QueryBuilder();
-                const version = getVersion();
-                db.logSystemEvent(
-                    'RESTART',
-                    'WARN',
-                    'Ivy client restarted by start.sh',
-                    { 
-                        attempt: $current_attempt, 
-                        max_attempts: $MAX_RETRIES,
-                        version: version,
-                        git_pull: true,
-                        restart_reason: 'automatic'
-                    }
-                ).catch(err => console.error('System log error:', err.message));
-            " 2>/dev/null || true
-        fi
 
         # Spuštění aplikace
         # export DEBUG="puppeteer:*"  # pouze pro rozsáhlý debugging
