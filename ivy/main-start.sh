@@ -157,7 +157,7 @@ run_ivy() {
                 echo "[START] Normální ukončení"
                 ;;
             1)
-                echo "[START] Obecná chyba nebo neočekávané ukončení"
+                echo "[START] Plánovaný restart - detekována změna verze"
                 ;;
             99)
                 echo "[START] QUIT požadavek z interactive debuggeru"
