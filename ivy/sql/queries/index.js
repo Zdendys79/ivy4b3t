@@ -11,6 +11,7 @@ import actionQuality from './action_quality.js'; // default export
 import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
+import { LOGS } from './logs.js';
 // Removed messageHashes import - table no longer exists
 import { NEWS } from './news.js';
 import { QUOTES } from './quotes.js';
@@ -26,6 +27,7 @@ export const SQL = {
   behavioral_profiles: BEHAVIORAL_PROFILES,
   groups: GROUPS,
   limits: LIMITS,
+  logs: LOGS,
   // Removed message_hashes and system_metrics - tables no longer exist
   news: NEWS,
   quotes: QUOTES,
