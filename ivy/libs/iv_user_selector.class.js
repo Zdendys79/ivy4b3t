@@ -124,7 +124,7 @@ export class UserSelector {
     const user = await db.getUserWithAvailableActions(this.hostname);
     if (user) {
       await db.updateUserWorktime(user.id, 15);
-      Log.info('[USER_SELECTOR]', `MAIN větev: Čas aktivity uživatele ${user.id} posunut o ${Log.formatTime(15, 'min')}`);
+      Log.info('[USER_SELECTOR]', `MAIN větev: Čas aktivity uživatele ${user.id} posunut o ${Log.formatTime(15, 'm')}`);
     }
     
     return user;
@@ -141,7 +141,7 @@ export class UserSelector {
     if (user) {
       // Aktualizuj next_worktime hned po výběru - vždy!
       await db.updateUserWorktime(user.id, 15);
-      Log.info('[USER_SELECTOR]', `Produkční větev: Čas aktivity uživatele ${user.id} posunut o ${Log.formatTime(15, 'min')}`);
+      Log.info('[USER_SELECTOR]', `Produkční větev: Čas aktivity uživatele ${user.id} posunut o ${Log.formatTime(15, 'm')}`);
     }
     
     return user;

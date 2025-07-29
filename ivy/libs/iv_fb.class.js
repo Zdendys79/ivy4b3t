@@ -452,7 +452,7 @@ export class FBBot {
         // Posun času aktivity o +3 minuty pro rotaci účtů během testování
         try {
           await db.updateUserWorktime(user.id, 3);
-          Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +${Log.formatTime(3, 'min')} pro rotaci účtů`);
+          Log.info(`[FB] Čas aktivity uživatele ${user.id} posunut o +${Log.formatTime(3, 'm')} pro rotaci účtů`);
         } catch (err) {
           await Log.warn(`[FB] Nepodařilo se aktualizovat čas aktivity: ${err.message}`);
         }
