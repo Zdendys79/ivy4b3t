@@ -232,10 +232,11 @@ export async function transaction(callback) {
 }
 
 export function getConnectionStats() {
+  const currentDbName = isMainBranch ? mainDbName : prodDbName;
   return {
     config: {
       host: process.env.DB_HOST,
-      database: process.env.DB_NAME,
+      database: currentDbName,
       connectionLimit: 10
     },
     pool: {
