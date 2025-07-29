@@ -1681,23 +1681,25 @@ export class PageAnalyzer {
       } else if (element.xpath) {
         selector = element.xpath;
       } else {
-        // Fallback - pokus se najít podle pozice a textu
-        return await this._directClickByText(element.text, { timeout });
+        // Fallback - použijeme prázdný selektor a spoléháme na hledání podle textu
+        selector = '';
       }
 
       // Proveď kliknutí
       const result = await this.page.evaluate(async (sel, scroll, text) => {
         let targetElement = null;
         
-        // Zkus najít podle selektoru
-        if (sel.startsWith('/') || sel.startsWith('(')) {
-          // XPath
-          const xpath = sel;
-          const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-          targetElement = result.singleNodeValue;
-        } else {
-          // CSS selektor
-          targetElement = document.querySelector(sel);
+        // Zkus najít podle selektoru (pouze pokud není prázdný)
+        if (sel && sel.length > 0) {
+          if (sel.startsWith('/') || sel.startsWith('(')) {
+            // XPath
+            const xpath = sel;
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            targetElement = result.singleNodeValue;
+          } else {
+            // CSS selektor
+            targetElement = document.querySelector(sel);
+          }
         }
 
         // Pokud element není nalezen, zkus najít podle textu

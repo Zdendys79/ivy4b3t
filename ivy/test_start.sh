@@ -156,7 +156,7 @@ main_loop() {
 
 
         # Spuštění aplikace
-        export IVY_GIT_BRANCH="production"
+        export IVY_GIT_BRANCH="main"
         node --trace-warnings ivy.js
 
         local exit_code=$?

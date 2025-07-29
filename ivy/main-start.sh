@@ -144,7 +144,6 @@ run_ivy() {
 
 
         # Spuštění aplikace
-        # export DEBUG="puppeteer:*"  # pouze pro rozsáhlý debugging
         export IVY_GIT_BRANCH="main"
         node --trace-warnings ivy.js
 
@@ -158,6 +157,10 @@ run_ivy() {
                 ;;
             1)
                 echo "[START] Plánovaný restart - detekována změna verze"
+                ;;
+            2)
+                echo "[START] Databáze nedostupná - ukončuji"
+                exit 2
                 ;;
             99)
                 echo "[START] QUIT požadavek z interactive debuggeru"

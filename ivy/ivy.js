@@ -14,7 +14,7 @@ import os from 'node:os';
 
 // Local modules - named imports (UPDATED)
 import { Wait } from './libs/iv_wait.class.js';
-import { db, closeConnection as closeDB } from './iv_sql.js'
+import { db, closeConnection as closeDB, initializeDatabase } from './iv_sql.js'
 import { get as getVersion } from './iv_version.js';
 import { tick as workerTick } from './iv_worker.js';
 import { Log } from './libs/iv_log.class.js';
@@ -68,6 +68,13 @@ Log.info('[IVY]', `Verze klienta: ${versionCode} (ze souboru package.json)`);
 Log.info('[IVY]', `Git branch: ${process.env.IVY_GIT_BRANCH}${global.isTestBranch ? ' (testing)' : ''}`);
 Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
+
+// Inicializace databáze s retry logikou
+const dbInitialized = await initializeDatabase();
+if (!dbInitialized) {
+  await Log.error('[IVY]', 'Database initialization failed after all retries - exiting with code 2');
+  process.exit(2);
+}
 
 // Záznam do systémového logu o spuštění
 const { SystemLogger } = await import('./libs/iv_system_logger.class.js');

@@ -14,11 +14,12 @@ import { Log } from './iv_log.class.js';
 const hostname = os.hostname();
 
 export class QueryBuilder {
-  constructor(safeQueryFirst, safeQueryAll, safeExecute) {
+  constructor(safeQueryFirst, safeQueryAll, safeExecute, fbSync = null) {
     this.SQL = SQL;
     this.safeQueryFirst = safeQueryFirst;
     this.safeQueryAll = safeQueryAll;
     this.safeExecute = safeExecute;
+    this.fbSync = fbSync;
     this._lastUICommand = null; // Pro tracking změn UI příkazů
   }
 
@@ -63,6 +64,15 @@ export class QueryBuilder {
   }
 
   async updateUserWorktime(userId, minutes) {
+    const query = this.SQL.users.updateWorktime;
+    
+    // Pro fb_users použijeme synchronizovaný zápis
+    if (this.fbSync && query.includes('fb_users')) {
+      await Log.info('[QB]', `Using FBSync for updateUserWorktime: user ${userId}, minutes ${minutes}`);
+      const result = await this.fbSync.queryFB(query, [minutes, userId]);
+      return result.affectedRows > 0;
+    }
+    
     return await this.safeExecute('users.updateWorktime', [minutes, userId]);
   }
 
