@@ -197,6 +197,9 @@ export class UIBot {
       global.systemState.currentUserId = null;
       global.systemState.currentAction = null;
       global.systemState.actionStartTime = null;
+      
+      // KRITICKÉ: Vymazat UI cache aby se heartbeat nepokusil znovu spustit stejný příkaz
+      global.uiCommandCache = null;
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při zpracování UI příkazu: ${err.message}`);
