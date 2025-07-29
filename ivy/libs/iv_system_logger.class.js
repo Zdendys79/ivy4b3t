@@ -40,7 +40,6 @@ export class SystemLogger {
       ]);
       
       if (result) {
-        Log.debug('[SYSTEM_LOGGER]', `${eventType} event successfully logged to log_system`);
         return true;
       } else {
         Log.debug('[SYSTEM_LOGGER]', `${eventType} event logging returned false`);

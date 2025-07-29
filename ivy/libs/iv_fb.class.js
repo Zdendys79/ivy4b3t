@@ -42,7 +42,6 @@ export class FBBot {
         return false;
       }
 
-      Log.info('[FB]', 'Inicializuji FB stránku...');
       this.page = await this.context.newPage();
 
       if (!this.page) {
@@ -59,7 +58,6 @@ export class FBBot {
       // Detekce a zavírání crash dialogů je nyní řešeno spouštěcím argumentem prohlížeče.
 
       this.isInitialized = true;
-      Log.success('[FB]', 'FB stránka inicializována');
       return true;
 
     } catch (err) {

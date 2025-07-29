@@ -74,11 +74,9 @@ check_restart_limit() {
     # Zapiš čas aktuálního spuštění
     echo "$current_time" > "$LAST_START_FILE"
     
-    echo "[START] Časová kontrola OK - spouštím aplikaci"
 }
 
 run_ivy() {
-    echo "[START] ===== SPUŠTĚNÍ ===== $(date '+%Y-%m-%d %H:%M:%S') ====="
     
     # Kontrola času posledního spuštění (zabránění častému spouštění)
     check_restart_limit

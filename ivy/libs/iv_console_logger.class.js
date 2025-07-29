@@ -50,7 +50,6 @@ class ConsoleLogger {
         process.on('beforeExit', () => this.flush());
         
         this.isInitialized = true;
-        this.originalConsole.log(`[ConsoleLogger] Initialized with session ID: ${this.sessionId}`);
     }
 
     capture(level, args) {

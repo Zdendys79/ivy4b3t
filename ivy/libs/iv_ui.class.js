@@ -86,7 +86,6 @@ export class UIBot {
 
     try {
       const data = command.data ? JSON.parse(command.data) : {};
-      Log.info('[UI]', `Zpracovávám příkaz: ${command.command}`);
 
       await db.uiCommandAccepted(command.id);
 
@@ -164,7 +163,6 @@ export class UIBot {
       let uiSuccess = false;
       try {
         const timeoutMs = config.ui_timeout_minutes * 60 * 1000;
-        Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command}`);
         
         // Aktualizovat globální stav pro heartbeat
         global.systemState.currentUserId = user.id;
@@ -331,7 +329,6 @@ export class UIBot {
 
     try {
       // Čekáme na jednu ze dvou událostí: zavření prohlížeče nebo timeout
-      Log.debug('[UI]', 'Spouštím Promise.race mezi browser.disconnected a setTimeout...');
       await Promise.race([
         new Promise(resolve => {
           browser.once('disconnected', () => {
