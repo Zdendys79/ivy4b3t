@@ -170,9 +170,11 @@ export class FBBot {
   }
 
   async _checkTexts(text1, text2) {
-    if (!this.pageAnalyzer) {
-      throw new Error('PageAnalyzer není inicializován');
+    if (this.disableAnalysis) {
+      return false; // V UI režimu neprovádět kontroly
     }
+    
+    await this.ensureAnalyzer();
 
     const exists1 = await this.pageAnalyzer.elementExists(text1);
     const exists2 = await this.pageAnalyzer.elementExists(text2);
@@ -343,8 +345,8 @@ export class FBBot {
         return true;
       }
       
-      // Inicializace analyzeru pokud ještě není
-      if (!this.pageAnalyzer) {
+      // Inicializace analyzeru pokud ještě není (pouze pokud není zakázána analýza)
+      if (!this.pageAnalyzer && !this.disableAnalysis) {
         await this.initializeAnalyzer();
       }
       
@@ -424,6 +426,16 @@ export class FBBot {
   // Pomocná metoda pro kontrolu dostupnosti analyzéru
   isAnalyzerAvailable() {
     return !this.disableAnalysis && this.pageAnalyzer;
+  }
+
+  // Zajistí inicializaci analyzéru pokud je potřeba a povolena
+  async ensureAnalyzer() {
+    if (this.disableAnalysis) {
+      throw new Error('Analýza je zakázána v UI režimu');
+    }
+    if (!this.pageAnalyzer) {
+      await this.initializeAnalyzer();
+    }
   }
 
   async isProfileLoaded(user) {
