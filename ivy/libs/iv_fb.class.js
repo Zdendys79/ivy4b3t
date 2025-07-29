@@ -396,10 +396,10 @@ export class FBBot {
       await this.bringToFront();
       
       // Lidská pauza před navigací na Facebook
-      await Wait.toSeconds(15, 'Před navigací na Facebook');
+      await Wait.toSeconds(4);
       
       await this.navigateToPage('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
-      await Wait.toSeconds(3, 'Stabilizace po otevření FB');
+      await Wait.toSeconds(3);
       return true;
     } catch (err) {
       await Log.error('[FB]', `Chyba při otevírání stránky Facebooku: ${err.message}`);

@@ -164,7 +164,7 @@ export class UIBot {
       let uiSuccess = false;
       try {
         const timeoutMs = config.ui_timeout_minutes * 60 * 1000;
-        Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command} s timeout ${config.ui_timeout_minutes} minut (${timeoutMs}ms)`);
+        Log.info(`[${user.id}]`, `Spouštím UI příkaz ${command.command}`);
         
         // Aktualizovat globální stav pro heartbeat
         global.systemState.currentUserId = user.id;
@@ -314,7 +314,7 @@ export class UIBot {
     const timeoutMs = timeoutMinutes * 60 * 1000;
     let elapsedTime = 0;
 
-    Log.info('[UI]', `Čekám na manuální zavření prohlížeče (max ${timeoutMinutes} minut = ${timeoutMs}ms)...`);
+    Log.info('[UI]', `Čekám na manuální zavření prohlížeče (max ${timeoutMinutes} minut)...`);
 
     // Spustíme interval, který bude posílat heartbeat
     const heartbeatInterval = setInterval(async () => {
