@@ -88,7 +88,7 @@ export class QuotePostAction extends BaseAction {
       }
       
       // Čekání 60s nebo do zavření prohlížeče - použít browser management
-      Log.info(`[${user.id}]`, 'Čekám 60s nebo do zavření prohlížeče...');
+      Log.info(`[${user.id}]`, `Čekám ${Log.formatTime(60)} nebo do zavření prohlížeče...`);
       
       // Import BrowserManager
       const { BrowserManager } = await import('../libs/iv_browser_manager.class.js');

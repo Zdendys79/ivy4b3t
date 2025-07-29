@@ -81,7 +81,7 @@ export class BrowserManager {
 
     try {
       // Krátká pauza před zavřením
-      Log.debug('[BROWSER]', 'Čekám 1s před zavřením prohlížeče...');
+      Log.debug('[BROWSER]', `Čekám ${Log.formatTime(1)} před zavřením prohlížeče...`);
       await Wait.toSeconds(1);
 
       // Nejdřív zavři všechny stránky
