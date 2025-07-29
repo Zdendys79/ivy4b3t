@@ -281,9 +281,9 @@ fi
 # === 12. DOKONČENÍ INSTALACE ===
 echo -e "\n✅ Instalace dokončena!"
 echo -e "\n⚠️  DŮLEŽITÉ: Pro správné načtení databázových proměnných je nutné:"
-echo "   1) Restartovat celé VM (doporučeno)"
-echo "   2) Nebo se odhlásit a znovu přihlásit"
-echo "   3) Nebo spustit: source ~/.bashrc"
+echo "   1) Restartovat celé VM (doporučeno pro všechny)"
+echo "   2) Pro SSH: Odhlásit se a znovu přihlásit"
+echo "   3) Pro Chrome Remote Desktop: Otevřít nový terminál nebo source ~/.bashrc"
 echo -e "\nPo restartu/přihlášení můžete spustit IVY pomocí:"
 echo "   - ~/ivy/start.sh (pro větev production)"
 echo "   - ~/ivy/main-start.sh (pro větev main)"
