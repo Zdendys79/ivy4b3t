@@ -127,7 +127,7 @@ async function backgroundHeartbeat() {
       }
       
       await workerTick();
-      await Wait.toSeconds(1, 'Čekání mezi cykly');
+      await Wait.toSeconds(1);
     } catch (err) {
       await Log.error('[IVY]', err);
       await Wait.toMinutes(1, 'Čekání na další heartbeat');
