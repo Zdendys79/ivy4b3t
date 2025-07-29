@@ -1,0 +1,194 @@
+{
+  "sessionId": "1753807304666-cerl64u",
+  "versionCode": "63b51fc",
+  "hostname": "d4689-6369",
+  "timestamp": "2025-07-29T16:41:53.761Z",
+  "retryCount": 0,
+  "logs": [
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [IVY_CONFIG] [DEBUG][iv_config.class.js:329] Načítám globální konfiguraci z databáze..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [IVY] [INFO][ivy.js:66] Spouštím klienta na hostu: d4689-6369"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [IVY] [INFO][ivy.js:67] Verze klienta: 63b51fc (ze souboru package.json)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [IVY] [INFO][ivy.js:68] Git branch: main (testing)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [IVY] [INFO][ivy.js:69] Session ID: 1753807304666-cerl64u"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [SQL] [INFO][iv_sql.js:257] Database initialization attempt 1/6"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [CONFIG] [INFO][iv_config.js:29] Konfigurace úspěšně načtena. Počet klíčů: 47"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [SQL] [INFO][iv_sql.js:201] Database connection test successful"
+    },
+    {
+      "level": "ERROR",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [QueryBuilder] [ERROR][iv_querybuilder.class.js:577] Missing SQL modules: logs"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [SQL] [DEBUG][iv_sql.js:270] Database initialized: {\n  \"config\": {\n    \"host\": \"localhost\",\n    \"database\": \"ivy\",\n    \"connectionLimit\": 10\n  },\n  \"pool\": {\n    \"activeConnections\": 0,\n    \"freeConnections\": 0,\n    \"queuedRequests\": 0\n  }\n}"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [SQL] [DEBUG][iv_sql.js:271] QueryBuilder stats: {\n  \"className\": \"QueryBuilder\",\n  \"sqlModules\": 10,\n  \"methods\": 83\n}"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [SQL] [INFO][iv_sql.js:273] Database initialization successful"
+    },
+    {
+      "level": "INFO",
+      "prefix": "[DEBUGGER]",
+      "message": "ERROR: [QueryBuilder]: Missing SQL modules: logs [c/q]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [DEBUGGER] [DEBUG][iv_interactive_debugger.js:110] No TTY available for interactive input - auto-continuing after timeout"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [IVY] [INFO][ivy.js:122] Heartbeat inicializován - první ohlášení dokončeno"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [QB] [INFO][iv_querybuilder.class.js:71] Using FBSync for updateUserWorktime: user 987, minutes 15"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [FB_SYNC] [INFO][iv_fb_sync.class.js:56] FB table detected - using synchronized write"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [FB_SYNC] [INFO][iv_fb_sync.class.js:22] Preparing synchronized query: \n    UPDATE fb_users\n    SET next_worktime = NOW()..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [FB_SYNC] [INFO][iv_fb_sync.class.js:23] Parameters: [15,987]"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [FB_SYNC] [INFO][iv_fb_sync.class.js:31] Query executed on both databases successfully"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [FB_SYNC] [INFO][iv_fb_sync.class.js:32] Main DB affected rows: 1"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [FB_SYNC] [INFO][iv_fb_sync.class.js:33] Prod DB affected rows: 1"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 987 posunut o 15:00"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 987 (Evžen Grunt)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:44 [987] [OK][iv_worker.js:108] Vybrán uživatel Evžen Grunt"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile987"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [ACTION_ROUTER] [OK][action_router.class.js:66] Inicializován s 14 akcemi"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][iv_wheel.js:76] FBBot úspěšně inicializován"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][iv_wheel.js:152] Vylosována akce #1: quote_post"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][action_router.class.js:155] Spouštím akci: quote_post"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 115"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:41:46 [987] [INFO][quote_post.action.js:120] Naviguji na facebook.com..."
+    }
+  ]
+}

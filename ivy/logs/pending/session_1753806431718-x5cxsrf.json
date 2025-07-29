@@ -1,0 +1,119 @@
+{
+  "sessionId": "1753806431718-x5cxsrf",
+  "versionCode": "63b51fc",
+  "hostname": "d4689-6369",
+  "timestamp": "2025-07-29T16:27:21.019Z",
+  "retryCount": 2,
+  "logs": [
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [IVY_CONFIG] [DEBUG][iv_config.class.js:329] Načítám globální konfiguraci z databáze..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [IVY] [INFO][ivy.js:66] Spouštím klienta na hostu: d4689-6369"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [IVY] [INFO][ivy.js:67] Verze klienta: 63b51fc (ze souboru package.json)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [IVY] [INFO][ivy.js:68] Git branch: main (testing)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [IVY] [INFO][ivy.js:69] Session ID: 1753806431718-x5cxsrf"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [CONFIG] [INFO][iv_config.js:29] Konfigurace úspěšně načtena. Počet klíčů: 47"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [IVY] [INFO][ivy.js:115] Heartbeat inicializován - první ohlášení dokončeno"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [USER_SELECTOR] [INFO][iv_user_selector.class.js:122] MAIN větev - používám rotační výběr uživatele s dostupnými akcemi"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [USER_SELECTOR] [INFO][iv_user_selector.class.js:127] MAIN větev: Čas aktivity uživatele 987 posunut o 15:00"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [USER_SELECTOR] [OK][iv_user_selector.class.js:70] Vybrán uživatel 987 (Evžen Grunt)"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:11 [987] [OK][iv_worker.js:108] Vybrán uživatel Evžen Grunt"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][iv_browser_manager.class.js:57] BrowserManager otevřel prohlížeč pro profil Profile987"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [INVASIVE_LOCK] [DEBUG][iv_invasive_lock.class.js:23] Lock inicializován"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [ACTION_ROUTER] [OK][action_router.class.js:66] Inicializován s 14 akcemi"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][iv_wheel.js:76] FBBot úspěšně inicializován"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][iv_wheel.js:152] Vylosována akce #1: quote_post"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][action_router.class.js:155] Spouštím akci: quote_post"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][quote_post.action.js:49] Spouštím jednoduchý quote post..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][quote_post.action.js:141] KROK 0: Vybírám citát z databáze..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [OK][quote_post.action.js:146] KROK 0 DOKONČEN: Vybrán citát ID 73"
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][quote_post.action.js:117] KROK 1: Otevírám Facebook..."
+    },
+    {
+      "level": "INFO",
+      "prefix": null,
+      "message": "2025-07-29 16:27:13 [987] [INFO][quote_post.action.js:120] Naviguji na facebook.com..."
+    }
+  ]
+}

@@ -11,8 +11,8 @@ import mysql from 'mysql2/promise';
 import { QueryUtils } from './sql/queries/index.js';
 import { QueryBuilder } from './libs/iv_querybuilder.class.js';
 import { Log } from './libs/iv_log.class.js';
+import { FBSync } from './libs/iv_fb_sync.class.js';
 
-let sql_setup;
 
 // Use ONLY environment variables for database connection - NO config files
 if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.DB_HOST || !process.env.DB_NAME) {
@@ -22,23 +22,47 @@ if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.DB_HOST || !pro
 }
 
 Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
-sql_setup = {
+
+
+// Určit názvy databází podle větve
+const isMainBranch = process.env.IVY_GIT_BRANCH === 'main';
+const mainDbName = process.env.DB_NAME + '_test';  // Vždy s _test sufixem
+const prodDbName = process.env.DB_NAME;           // Vždy bez sufixu
+
+Log.info('[SQL]', `Branch detection: ${isMainBranch ? 'main' : 'production'}`);
+Log.info('[SQL]', `Main DB: ${mainDbName}, Prod DB: ${prodDbName}`);
+
+// Main pool - test databáze
+const main_pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: process.env.DB_NAME
-};
-
-
-const pool = mysql.createPool({
-  host: sql_setup.host,
-  user: sql_setup.user,
-  password: sql_setup.password,
-  database: sql_setup.database,
+  database: mainDbName,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
+
+// Production pool - produkční databáze
+const prod_pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: prodDbName,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+// Pool pro běžné dotazy podle aktuální větve
+const pool = isMainBranch ? main_pool : prod_pool;
+
+Log.info('[SQL]', `Active pool: ${isMainBranch ? 'main_pool (test DB)' : 'prod_pool (production DB)'}`);
+Log.info('[SQL]', `Database pools initialized successfully`);
+
+// FBSync instance pro synchronizaci FB tabulek
+const fbSync = new FBSync(main_pool, prod_pool);
+Log.info('[SQL]', 'FBSync instance created for fb_users and fb_groups synchronization');
 
 function _truncateLog(data, maxLines = 10, maxJsonLength = 500) {
   if (typeof data === 'string') {
@@ -210,8 +234,8 @@ export async function transaction(callback) {
 export function getConnectionStats() {
   return {
     config: {
-      host: sql_setup.host,
-      database: sql_setup.database,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
       connectionLimit: 10
     },
     pool: {
@@ -222,34 +246,51 @@ export function getConnectionStats() {
   };
 }
 
-export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute);
+export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute, fbSync);
 
 export async function initializeDatabase() {
-  try {
-    const connectionOk = await testConnection();
-    if (!connectionOk) {
-      throw new Error('Database connection failed');
+  const maxRetries = 6;
+  const retryDelay = 20000; // 20 sekund
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await Log.info('[SQL]', `Database initialization attempt ${attempt}/${maxRetries}`);
+      
+      const connectionOk = await testConnection();
+      if (!connectionOk) {
+        throw new Error('Database connection failed');
+      }
+
+      const modulesOk = db.validateSQLModules();
+      if (!modulesOk) {
+        throw new Error('SQL modules validation failed');
+      }
+
+      const stats = getConnectionStats();
+      Log.debug('[SQL]', 'Database initialized:', stats);
+      Log.debug('[SQL]', 'QueryBuilder stats:', db.getStats());
+
+      await Log.info('[SQL]', 'Database initialization successful');
+      return true;
+    } catch (err) {
+      await Log.error('[SQL]', `Database initialization attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+      
+      if (attempt === maxRetries) {
+        await Log.error('[SQL]', 'All database initialization attempts failed - database unavailable');
+        return false;
+      }
+      
+      await Log.info('[SQL]', `Waiting ${retryDelay/1000}s before retry attempt ${attempt + 1}/${maxRetries}`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-
-    const modulesOk = db.validateSQLModules();
-    if (!modulesOk) {
-      throw new Error('SQL modules validation failed');
-    }
-
-    const stats = getConnectionStats();
-    Log.debug('[SQL]', 'Database initialized:', stats);
-    Log.debug('[SQL]', 'QueryBuilder stats:', db.getStats());
-
-    Log.info('[SQL]', 'Database initialization successful');
-    return true;
-  } catch (err) {
-    await Log.error('[SQL]', `Database initialization failed: ${err.message}`);
-    return false;
   }
+  
+  return false;
 }
 
 export { SQL } from './sql/queries/index.js';
 export { testConnection as testDB, closeConnection as closeDB };
+export { pool, main_pool, prod_pool, fbSync };
 
 export async function verifyMsg(groupId, messageHash) {
   Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);
