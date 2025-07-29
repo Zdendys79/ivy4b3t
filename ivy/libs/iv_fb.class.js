@@ -79,24 +79,8 @@ export class FBBot {
     if (this.page && !this.page.isClosed()) {
       this.pageAnalyzer = new PageAnalyzer(this.page);
       
-      // Povol auto-tracking pro elementy
-      this.pageAnalyzer.enableAutoElementTracking({
-        updateInterval: 10000,  // 10 sekund
-        maxWords: 10,
-        includeInputs: true,
-        includeButtons: true,
-        onlyVisible: true
-      });
-      
-      // NOVĚ: Okamžitě spusť první hledání elementů
-      Log.info('[FB]', 'Spouštím první hledání elementů...');
-      await this.pageAnalyzer.startElementTracking({
-        updateInterval: 10000,
-        maxWords: 10,
-        includeInputs: true,
-        includeButtons: true,
-        onlyVisible: true
-      });
+      // ŽÁDNÉ automatické spouštění analýz!
+      // Analýzy se budou spouštět POUZE na vyžádání pomocí await
       
       Log.success('[FB]', 'PageAnalyzer inicializován a elementy nalezeny');
       return true;

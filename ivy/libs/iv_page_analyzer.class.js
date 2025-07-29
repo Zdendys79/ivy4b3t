@@ -30,8 +30,7 @@ export class PageAnalyzer {
     this.autoTrackingEnabled = false;
     this.autoTrackingOptions = {};
     
-    // Nastavení event listenerů pro automatický tracking
-    this._setupAutoTracking();
+    // ŽÁDNÉ automatické trackování! Vše pouze na vyžádání
   }
 
 
@@ -1155,17 +1154,8 @@ export class PageAnalyzer {
    * @param {Object} options - Možnosti sledování
    */
   enableAutoElementTracking(options = {}) {
-    this.autoTrackingEnabled = true;
-    this.autoTrackingOptions = {
-      updateInterval: 10000,
-      maxWords: 10,
-      includeInputs: true,
-      includeButtons: true,
-      onlyVisible: true,
-      ...options
-    };
-    
-    // Log.debug('[ANALYZER]', 'Automatický element tracking povolen'); // Reduced spam
+    // ZAKÁZÁNO! Žádné automatické trackování
+    Log.warn('[ANALYZER]', 'enableAutoElementTracking je zakázáno - používejte ruční analýzy');
   }
 
   /**
@@ -1199,22 +1189,8 @@ export class PageAnalyzer {
     this.updateIntervalMs = updateInterval;
     this.isElementTrackingActive = true;
 
-    // První aktualizace ihned
+    // Pouze jednorázová aktualizace - ŽÁDNÝ interval!
     await this._updateElementCache({ maxWords, includeInputs, includeButtons, onlyVisible });
-
-    // Nastavení pravidelných aktualizací
-    this.elementUpdateInterval = setInterval(async () => {
-      try {
-        if (!this.page || this.page.isClosed()) {
-          this.stopElementTracking();
-          return;
-        }
-        
-        await this._updateElementCache({ maxWords, includeInputs, includeButtons, onlyVisible });
-      } catch (err) {
-        await Log.error('[ANALYZER]', `Chyba při aktualizaci element cache: ${err.message}`);
-      }
-    }, this.updateIntervalMs);
 
     // Log.debug('[ANALYZER]', `Element tracking spuštěn s intervalem ${updateInterval}ms`); // Reduced spam
   }
@@ -1223,13 +1199,8 @@ export class PageAnalyzer {
    * Zastaví automatické sledování elementů
    */
   stopElementTracking() {
-    if (this.elementUpdateInterval) {
-      clearInterval(this.elementUpdateInterval);
-      this.elementUpdateInterval = null;
-    }
-    
+    // Již není co zastavovat - žádné intervaly neběží
     this.isElementTrackingActive = false;
-    // Log.debug('[ANALYZER]', 'Element tracking zastaven'); // Reduced spam
   }
 
   /**
@@ -1380,29 +1351,8 @@ export class PageAnalyzer {
    * @private
    */
   _setupAutoTracking() {
-    try {
-      // Event listener pro navigation events
-      this.page.on('domcontentloaded', async () => {
-        if (this.autoTrackingEnabled) {
-          Log.debug('[ANALYZER]', 'DOMContentLoaded - čekám na networkidle2');
-          await this._waitForPageLoad();
-        }
-      });
-
-      this.page.on('load', async () => {
-        if (this.autoTrackingEnabled) {
-          Log.debug('[ANALYZER]', 'Page load - čekám na networkidle2');
-          await this._waitForPageLoad();
-        }
-      });
-
-      // Ručně sledujeme URL změny pro SPA navigaci
-      this._currentUrl = this.page.url();
-      this._setupUrlChangeDetection();
-
-    } catch (err) {
-      Log.warn('[ANALYZER]', `Nepodařilo se nastavit auto tracking: ${err.message}`);
-    }
+    // ZAKÁZÁNO! Žádné automatické trackování
+    // Všechny analýzy pouze na vyžádání
   }
 
   /**
@@ -1443,28 +1393,8 @@ export class PageAnalyzer {
    * @private
    */
   _setupUrlChangeDetection() {
-    // Pravidelně kontroluj URL změny (pro SPA navigaci)
-    setInterval(async () => {
-      try {
-        if (!this.page || this.page.isClosed()) {
-          return;
-        }
-        
-        const currentUrl = this.page.url();
-        if (currentUrl !== this._currentUrl) {
-          this._currentUrl = currentUrl;
-          Log.debug('[ANALYZER]', `URL změna detekována: ${currentUrl}`);
-          
-          if (this.autoTrackingEnabled) {
-            // Počkej chvíli na načtení nového obsahu
-            await Wait.toSeconds(3);
-            await this._updateElementCache(this.autoTrackingOptions);
-          }
-        }
-      } catch (err) {
-        // Ignoruj chyby při URL detekci
-      }
-    }, 5000); // Kontrola každých 5 sekund
+    // ZAKÁZÁNO! Žádná automatická detekce URL změn
+    // Všechny kontroly pouze na vyžádání
   }
 
   /**
