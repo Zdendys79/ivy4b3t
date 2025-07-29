@@ -172,8 +172,6 @@ async function gracefulShutdown(signal) {
     // Zavři všechny aktivní browser instances
     await worker.shutdownAllBrowsers();
     
-    // Flush pending logs before exit
-    await consoleLogger.flush();
     
     // Záznam do systémového logu o ukončení - PŘED zavřením DB
     const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
