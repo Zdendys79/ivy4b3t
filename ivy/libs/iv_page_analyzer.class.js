@@ -1207,19 +1207,40 @@ export class PageAnalyzer {
    * Vrátí aktuální elementy pro současnou stránku
    * @returns {Array} Seznam elementů nebo prázdný array
    */
-  getCurrentElements() {
+  async getCurrentElements() {
     if (!this.page || this.page.isClosed()) {
       return [];
     }
 
-    const url = this.page.url();
-    const cached = this.elementCache.get(url);
-    
-    if (!cached) {
+    // Vždy načti elementy čerstvě ze stránky
+    try {
+      const elements = await this.page.evaluate(() => {
+        const allElements = [];
+        const interactiveSelectors = ['a', 'button', 'input', 'textarea', 'select', '[role="button"]', '[onclick]'];
+        
+        interactiveSelectors.forEach(selector => {
+          const els = document.querySelectorAll(selector);
+          els.forEach(el => {
+            const text = el.innerText || el.value || el.placeholder || '';
+            if (text.trim()) {
+              allElements.push({
+                tagName: el.tagName,
+                text: text.trim(),
+                selector: el.tagName.toLowerCase() + (el.id ? `#${el.id}` : ''),
+                xpath: null // Pro kompatibilitu
+              });
+            }
+          });
+        });
+        
+        return allElements;
+      });
+      
+      return elements;
+    } catch (err) {
+      Log.debug('[ANALYZER]', `Chyba při načítání elementů: ${err.message}`);
       return [];
     }
-
-    return cached.elements;
   }
 
   /**
@@ -1581,7 +1602,7 @@ export class PageAnalyzer {
     } = options;
 
     try {
-      const elements = this.getCurrentElements();
+      const elements = await this.getCurrentElements();
       let filteredTexts = elements
         .filter(el => {
           if (elementType !== 'any' && el.tagName.toLowerCase() !== elementType.toLowerCase()) {
@@ -1611,7 +1632,7 @@ export class PageAnalyzer {
    */
   async _findElementInCache(text, options) {
     const { matchType, elementType } = options;
-    const elements = this.getCurrentElements();
+    const elements = await this.getCurrentElements();
 
     for (const element of elements) {
       // Kontrola typu elementu
