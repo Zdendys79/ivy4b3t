@@ -337,6 +337,12 @@ export class FBBot {
       // a) Navigace na stránku
       await this.page.goto(url, options);
       
+      // V UI režimu neprovádět žádnou analýzu
+      if (this.disableAnalysis) {
+        Log.success('[FB]', `Navigace na ${url} úspěšná (UI režim - bez analýzy)`);
+        return true;
+      }
+      
       // Inicializace analyzeru pokud ještě není
       if (!this.pageAnalyzer) {
         await this.initializeAnalyzer();
