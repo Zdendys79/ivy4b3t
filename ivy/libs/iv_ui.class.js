@@ -173,7 +173,7 @@ export class UIBot {
         
         const uiPromise = this.processCommand(command, fbBot);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`UI command timeout after ${config.ui_timeout_minutes} minutes (${timeoutMs}ms)`)), timeoutMs)
+          setTimeout(() => reject(new Error(`UI command timeout after ${config.ui_timeout_minutes} minutes (${(timeoutMs/1000).toFixed(3)}s)`)), timeoutMs)
         );
 
         uiSuccess = await Promise.race([uiPromise, timeoutPromise]);
