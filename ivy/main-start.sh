@@ -89,10 +89,10 @@ run_ivy() {
         
         # Kontrola, zda už proběhl restart
         if [[ "$SCRIPT_RESTARTED" == "1" ]]; then
-            echo "[START]  Skript již byl restartován, pokračuji bez další aktualizace"
-            # Pouze synchronizace souborů bez self-update kontroly
-            if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
-                echo "[START] Aktualizace souborů selhala!"
+            echo "[START] Skript již byl restartován, pouze synchronizuji soubory"
+            # Pouze synchronizace souborů bez Git aktualizace
+            if ! sync_files "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR"; then
+                echo "[START] Synchronizace souborů selhala!"
                 exit 1
             fi
             
