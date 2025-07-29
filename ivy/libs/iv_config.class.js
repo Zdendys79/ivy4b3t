@@ -81,7 +81,6 @@ export class IvyConfig {
     this._loadFromDatabase()
       .then(() => {
         this.pendingUpdate = false;
-        Log.debug('[IVY_CONFIG]', 'Inicializace dokončena');
       })
       .catch(async err => {
         this.pendingUpdate = false;
@@ -337,7 +336,6 @@ export class IvyConfig {
         this.cache[variable.name] = await this._parseValue(variable.value, variable.type);
       }
       
-      Log.info('[IVY_CONFIG]', `Načteno ${variables.length} proměnných z databáze`);
     } else {
       Log.info('[IVY_CONFIG]', 'Žádné proměnné v databázi nenalezeny');
     }

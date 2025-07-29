@@ -59,7 +59,6 @@ consoleLogger.init();
 
 // Initialize the global configuration
 initIvyConfig();
-Log.info('[IVY]', 'Globální konfigurace inicializována');
 
 let isShuttingDown = false;
 let heartbeatInterval = null;
@@ -107,7 +106,6 @@ async function backgroundHeartbeat() {
   try {
     const dbVersionResult = await db.safeQueryFirst('system.getVersionCode');
     const dbVersionFromDb = dbVersionResult?.code || 'nenalezena';
-    Log.info('[IVY]', `Verze v databázi: ${dbVersionFromDb}`);
   } catch (err) {
     Log.debug('[IVY]', `Chyba při načítání verze z DB: ${err.message}`);
   }
