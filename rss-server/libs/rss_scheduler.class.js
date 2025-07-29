@@ -80,7 +80,7 @@ export class RSSScheduler {
       const duration = Date.now() - startTime;
       
       if (result.success) {
-        const message = `RSS cycle #${this.runCount} completed: ${result.newUrls} new URLs from ${result.channel} (${(duration/1000).toFixed(3)}s)`;
+        const message = `RSS cycle #${this.runCount} completed: ${result.newUrls} new URLs from ${result.channel} (${Log.formatTime(duration)})`;
         Log.info('[RSS_SCHEDULER]', message);
         
         // Log do system logu
@@ -108,7 +108,7 @@ export class RSSScheduler {
           );
         }
       } else {
-        const message = `RSS cycle #${this.runCount} failed: ${result.error} (${(duration/1000).toFixed(3)}s)`;
+        const message = `RSS cycle #${this.runCount} failed: ${result.error} (${Log.formatTime(duration)})`;
         Log.error('[RSS_SCHEDULER]', message);
         
         // Log chybu do system logu
@@ -132,7 +132,7 @@ export class RSSScheduler {
       
     } catch (err) {
       const duration = Date.now() - startTime;
-      const message = `RSS cycle #${this.runCount} error: ${err.message} (${(duration/1000).toFixed(3)}s)`;
+      const message = `RSS cycle #${this.runCount} error: ${err.message} (${Log.formatTime(duration)})`;
       Log.error('[RSS_SCHEDULER]', message);
       
       // Log chybu do system logu
