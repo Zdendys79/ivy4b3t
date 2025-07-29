@@ -19,6 +19,7 @@ export class QueryBuilder {
     this.safeQueryFirst = safeQueryFirst;
     this.safeQueryAll = safeQueryAll;
     this.safeExecute = safeExecute;
+    this._lastUICommand = null; // Pro tracking změn UI příkazů
   }
 
   // =========================================================
@@ -307,10 +308,18 @@ export class QueryBuilder {
   async getUICommand() {
     const result = await this.safeQueryFirst('system.getUICommand', [hostname]);
     
-    // Log when UI command is found (it's notable)
-    if (result) {
-      const { Log } = await import('./iv_log.class.js');
-      await Log.info('[UI_COMMAND]', `UI command found: ${result.command || 'unknown'}`);
+    // Log pouze při změně UI příkazu (nový ID nebo změna stavu)
+    const currentUICommand = result ? `${result.id}:${result.command}` : null;
+    if (currentUICommand !== this._lastUICommand) {
+      this._lastUICommand = currentUICommand;
+      
+      if (result) {
+        const { Log } = await import('./iv_log.class.js');
+        await Log.info('[UI_COMMAND]', `UI command found: ${result.command} (ID: ${result.id})`);
+      } else if (this._lastUICommand !== null) {
+        const { Log } = await import('./iv_log.class.js');
+        await Log.info('[UI_COMMAND]', `No UI commands found`);
+      }
     }
     
     return result;
