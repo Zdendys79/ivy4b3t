@@ -378,7 +378,7 @@ export class UIBot {
     }
 
     try {
-      Log.debug('[UI]', 'Čekám 2s před zavřením prohlížeče...');
+      Log.debug('[UI]', `Čekám ${Log.formatTime(2)} před zavřením prohlížeče...`);
       await Wait.toSeconds(2, 'Čekání před zavřením prohlížeče');
       
       Log.info('[UI]', 'Zavírám prohlížeč...');
