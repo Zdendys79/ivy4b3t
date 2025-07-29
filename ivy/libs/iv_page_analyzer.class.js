@@ -1227,7 +1227,7 @@ export class PageAnalyzer {
                 tagName: el.tagName,
                 text: text.trim(),
                 selector: el.tagName.toLowerCase() + (el.id ? `#${el.id}` : ''),
-                xpath: null // Pro kompatibilitu
+                xpath: null
               });
             }
           });
