@@ -527,7 +527,7 @@ export async function checkPageResponsiveness(user, fbBot) {
     if (responseTime > 5000) {
       return {
         responsive: false,
-        reason: `Stránka reaguje pomalu (${(responseTime/1000).toFixed(3)}s)`,
+        reason: `Stránka reaguje pomalu (${Log.formatTime(responseTime)})`,
         responseTime: responseTime
       };
     }

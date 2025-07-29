@@ -43,6 +43,69 @@ const getCallerLocation = () => {
 
 export class Log {
   /**
+   * Formátuje čas v lidsky čitelném formátu
+   * @param {number} time - Čas jako číslo
+   * @param {string} unit - Jednotka času: 'ms' (default), 's', 'm', 'h'
+   * @returns {string} Lidsky čitelný formát času
+   */
+  static formatTime(time, unit = 'ms') {
+    // Převést vše na sekundy
+    let totalSeconds;
+    switch (unit) {
+      case 'ms':
+        totalSeconds = time / 1000;
+        break;
+      case 's':
+        totalSeconds = time;
+        break;
+      case 'm':
+        totalSeconds = time * 60;
+        break;
+      case 'h':
+        totalSeconds = time * 3600;
+        break;
+      default:
+        throw new Error(`Unsupported time unit: ${unit}`);
+    }
+
+    // Formátování podle velikosti času
+    if (totalSeconds <= 10) {
+      // Do 10s - 3 desetinná místa
+      return `${totalSeconds.toFixed(3)}s`;
+    } 
+    else if (totalSeconds <= 30) {
+      // Do 30s - 1 desetinné místo
+      return `${totalSeconds.toFixed(1)}s`;
+    }
+    else if (totalSeconds <= 119) {
+      // Do 119s - celé sekundy
+      return `${Math.round(totalSeconds)}s`;
+    }
+    else if (totalSeconds <= 7140) { // 119 minut = 7140 sekund
+      // Do 119 minut - min:sec bez desetinných míst
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = Math.round(totalSeconds % 60);
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    else if (totalSeconds <= 172740) { // 47h 59m = 172740 sekund
+      // Do 47h 59m - h:m bez sekund
+      const totalMinutes = Math.round(totalSeconds / 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${hours}:${minutes.toString().padStart(2, '0')}`;
+    }
+    else {
+      // Nad 47h 59m - Xd h:m
+      const totalMinutes = Math.round(totalSeconds / 60);
+      const days = Math.floor(totalMinutes / (24 * 60));
+      const remainingMinutes = totalMinutes % (24 * 60);
+      const hours = Math.floor(remainingMinutes / 60);
+      const minutes = remainingMinutes % 60;
+      return `${days}d ${hours}:${minutes.toString().padStart(2, '0')}`;
+    }
+  }
+
+  /**
    * Pomocná metoda pro interactive debugging - žádná duplicita kódu!
    */
   static async _handleInteractiveDebug(level, prefix, message, context = {}) {
