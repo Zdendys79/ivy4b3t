@@ -141,6 +141,7 @@ export class UIBot {
     const { FBBot } = await import('./iv_fb.class.js');
     
     let fbBot = null;
+    let uiCommandSuccessful = false;
 
     try {
       Log.info(`[${user.id}]`, `UIBot převzal kontrolu pro příkaz: ${command.command}`);
@@ -187,6 +188,7 @@ export class UIBot {
 
       if (uiSuccess) {
         Log.success(`[${user.id}]`, `UI příkaz ${command.command} dokončen úspěšně`);
+        uiCommandSuccessful = true;
       } else {
         await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} selhal`);
       }
@@ -199,7 +201,26 @@ export class UIBot {
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při zpracování UI příkazu: ${err.message}`);
     } finally {
-      // UIBot vždy zavře prohlížeč
+      // V UI režimu nechat prohlížeč otevřený pokud byl příkaz úspěšný
+      if (command.command === 'call_user' && uiCommandSuccessful && browser && browser.isConnected()) {
+        Log.info(`[${user.id}]`, 'UI režim - prohlížeč zůstává otevřený pro ruční ovládání');
+        // Cleanup FB bota
+        if (fbBot) {
+          try {
+            await fbBot.close();
+          } catch (e) {
+            // Ignoruj cleanup chyby
+          }
+        }
+        
+        // Cleanup vlastních zdrojů
+        await this.close();
+        
+        // Nečekat na zavření, ale rovnou skončit
+        return;
+      }
+      
+      // UIBot zavře prohlížeč pouze při chybě nebo jiných příkazech
       await this._closeBrowserSafely(browser);
       
       // Cleanup FB bota
