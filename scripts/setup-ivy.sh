@@ -278,28 +278,27 @@ if [ -z "$DB_HOST" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS
     echo "   Možná bude potřeba restartovat terminál."
 fi
 
-# === 12. VÝBĚR A SPUŠTĚNÍ START SKRIPTU ===
-echo -e "\n🚀 Vyber start skript:"
-echo "1) start.sh (větev production)"
-echo "2) main-start.sh (větev main)"
-read -p "Zadej číslo [1-2]: " choice
+# === 12. DOKONČENÍ INSTALACE ===
+echo -e "\n✅ Instalace dokončena!"
+echo -e "\n⚠️  DŮLEŽITÉ: Pro správné načtení databázových proměnných je nutné:"
+echo "   1) Restartovat celé VM (doporučeno)"
+echo "   2) Nebo se odhlásit a znovu přihlásit"
+echo "   3) Nebo spustit: source ~/.bashrc"
+echo -e "\nPo restartu/přihlášení můžete spustit IVY pomocí:"
+echo "   - ~/ivy/start.sh (pro větev production)"
+echo "   - ~/ivy/main-start.sh (pro větev main)"
 
-case $choice in
-    1)
-        echo "Spouštím start.sh (production)..."
-        chmod +x start.sh
-        ./start.sh
-        ;;
-    2)
-        echo "Spouštím main-start.sh (main)..."
-        chmod +x main-start.sh
-        ./main-start.sh
+# Nabídka restartu VM
+echo -e "\n🔄 Chcete restartovat VM nyní? (doporučeno)"
+read -p "Restartovat? [a/n]: " restart_choice
+
+case $restart_choice in
+    [aA]|[aA][nN][oO]|[yY]|[yY][eE][sS])
+        echo "Restartuji VM..."
+        sudo reboot
         ;;
     *)
-        echo "Neplatná volba. Spouštím výchozí start.sh..."
-        chmod +x start.sh
-        ./start.sh
+        echo -e "\n📌 Nezapomeňte se odhlásit a přihlásit nebo spustit: source ~/.bashrc"
+        echo "🎉 Instalace dokončena. IVY klient je připraven k použití po načtení proměnných."
         ;;
 esac
-
-echo -e "\n🎉 Instalace dokončena. IVY klient je připraven."
