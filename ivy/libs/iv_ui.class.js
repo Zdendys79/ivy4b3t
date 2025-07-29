@@ -179,7 +179,7 @@ export class UIBot {
       } catch (err) {
         if (err.message.includes('timeout')) {
           await Log.info(`[${user.id}]`, `UI příkaz ${command.command} vypršel: ${err.message}`);
-          return false; // Ukončit funkci po timeout
+          return true; // Timeout je úspěch - uživatel dostal čas na manuální práci
         } else {
           throw err;
         }
