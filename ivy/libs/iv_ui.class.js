@@ -178,8 +178,8 @@ export class UIBot {
         uiSuccess = await Promise.race([uiPromise, timeoutPromise]);
       } catch (err) {
         if (err.message.includes('timeout')) {
-          await Log.warn(`[${user.id}]`, `UI příkaz ${command.command} vypršel: ${err.message}`);
-          uiSuccess = false;
+          await Log.info(`[${user.id}]`, `UI příkaz ${command.command} vypršel: ${err.message}`);
+          return false; // Ukončit funkci po timeout
         } else {
           throw err;
         }
@@ -338,7 +338,7 @@ export class UIBot {
         }),
         new Promise(resolve => {
           setTimeout(() => {
-            Log.debug('[UI]', `Timeout ${timeoutMs}ms elapsed`);
+            Log.debug('[UI]', `Timeout ${Log.formatTime(timeoutMs)} elapsed`);
             resolve();
           }, timeoutMs);
         })
@@ -347,7 +347,6 @@ export class UIBot {
       if (!browser.isConnected()) {
         Log.success('[UI]', 'Prohlížeč byl manuálně zavřen, UI příkaz je považován za dokončený.');
       } else {
-        await Log.warn('[UI]', `Timeout čekání na zavření prohlížeče po ${timeoutMinutes} minutách.`);
       }
     } finally {
       // Vždy po skončení čekání zrušíme interval pro heartbeat
