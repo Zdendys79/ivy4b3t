@@ -211,14 +211,45 @@ export class QuotePostAction extends BaseAction {
   async step6_clickSubmit(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 6: Klikám na tlačítko "Přidat"...');
     
+    // Nejdřív ověřit že tlačítko existuje
+    const buttonExists = await fbBot.pageAnalyzer.elementExists('Přidat', { 
+      matchType: 'exact'
+    });
+    
+    if (!buttonExists) {
+      Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" nebylo nalezeno!');
+      throw new Error('Button "Přidat" not found on page');
+    }
+    
+    Log.info(`[${user.id}]`, 'Tlačítko "Přidat" nalezeno, pokouším se kliknout...');
+    
+    // Získat info o tlačítku před kliknutím
+    const buttonInfo = await fbBot.pageAnalyzer.getElementInfo('Přidat', { matchType: 'exact' });
+    if (buttonInfo) {
+      Log.debug(`[${user.id}]`, `Info o tlačítku: ${buttonInfo.tagName}, pozice: ${buttonInfo.position || 'neznámá'}`);
+    }
+    
+    // Kliknout na tlačítko
     const clicked = await fbBot.pageAnalyzer.clickElementWithText('Přidat', { 
       matchType: 'exact',
-      scrollIntoView: true,  // Automaticky scrollovat k tlačítku
-      timeout: 10000         // Delší timeout pro scroll a klik
+      timeout: 10000
     });
     
     if (!clicked) {
-      throw new Error('Failed to publish post - button not found');
+      Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Kliknutí na "Přidat" se nezdařilo!');
+      throw new Error('Failed to click on "Přidat" button');
+    }
+    
+    // Ověřit že kliknutí proběhlo - počkat malou chvíli
+    await Wait.toSeconds(1, 'Ověření kliknutí');
+    
+    // Zkontrolovat zda tlačítko stále existuje
+    const stillExists = await fbBot.pageAnalyzer.elementExists('Přidat', { 
+      matchType: 'exact'
+    });
+    
+    if (stillExists) {
+      Log.warn(`[${user.id}]`, 'VAROVÁNÍ: Tlačítko "Přidat" je stále viditelné po kliknutí!');
     }
     
     Log.success(`[${user.id}]`, 'KROK 6 DOKONČEN: Kliknuto na "Přidat"');
