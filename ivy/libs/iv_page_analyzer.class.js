@@ -1439,12 +1439,28 @@ export class PageAnalyzer {
         await Wait.toSeconds(1);
       }
 
-      // Najdi element v cache
-      const element = await this._findElementInCache(text, { matchType, elementType });
+      // Najdi element přímo na stránce - ŽÁDNÁ CACHE!
+      const elements = await this.findElementsWithShortText({ 
+        maxWords: 10,
+        includeButtons: true,
+        onlyVisible: true 
+      });
+      
+      // Hledej element s požadovaným textem
+      let element = null;
+      for (const el of elements) {
+        const matches = matchType === 'exact' ? 
+          el.text === text : 
+          el.text.includes(text);
+          
+        if (matches) {
+          element = el;
+          break;
+        }
+      }
       
       if (!element) {
-        // Pokud není v cache, vrať chybu - žádné fallbacky!
-        await Log.error('[ANALYZER]', `Element "${text}" nenalezen v cache - akce selhala`);
+        await Log.error('[ANALYZER]', `Element "${text}" nenalezen na stránce`);
         return false;
       }
 
@@ -1490,18 +1506,31 @@ export class PageAnalyzer {
   async elementExists(text, options = {}) {
     const {
       matchType = 'exact',
-      elementType = 'any',
-      refreshCache = false
+      elementType = 'any'
     } = options;
 
     try {
-      // Možnost refreshe cache před kontrolou
-      if (refreshCache) {
-        await this._updateElementCache(this.autoTrackingOptions);
+      // Vždy hledat přímo na stránce - ŽÁDNÁ CACHE!
+      const elements = await this.findElementsWithShortText({ 
+        maxWords: 10,
+        includeButtons: true,
+        onlyVisible: true 
+      });
+      
+      // Hledej element s požadovaným textem
+      let found = false;
+      for (const el of elements) {
+        const matches = matchType === 'exact' ? 
+          el.text === text : 
+          el.text.includes(text);
+          
+        if (matches) {
+          found = true;
+          break;
+        }
       }
-
-      const element = await this._findElementInCache(text, { matchType, elementType });
-      const exists = element !== null;
+      
+      const exists = found;
       
       // Loguj pouze změny stavu, ne každou kontrolu
       if (this.lastElementState !== exists) {
@@ -1720,36 +1749,8 @@ export class PageAnalyzer {
           await Wait.toSeconds(1);
         }
 
-        // Simuluj reálné kliknutí myší
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-          buttons: 1
-        });
-        
-        // Nejdřív simuluj mousedown, pak mouseup, pak click
-        const mousedownEvent = new MouseEvent('mousedown', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-          buttons: 1
-        });
-        
-        const mouseupEvent = new MouseEvent('mouseup', {
-          view: window,
-          bubbles: true,
-          cancelable: true,
-          buttons: 1
-        });
-        
-        targetElement.dispatchEvent(mousedownEvent);
-        targetElement.dispatchEvent(mouseupEvent);
-        targetElement.dispatchEvent(clickEvent);
-        
-        // Zkus i starší metodu pro jistotu
+        // Klikni
         targetElement.click();
-        
         return true;
 
       }, selector, scrollIntoView, element.text);
