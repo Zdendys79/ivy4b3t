@@ -211,7 +211,11 @@ export class QuotePostAction extends BaseAction {
   async step6_clickSubmit(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 6: Klikám na tlačítko "Přidat"...');
     
-    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Přidat', { matchType: 'exact' });
+    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Přidat', { 
+      matchType: 'exact',
+      scrollIntoView: true,  // Automaticky scrollovat k tlačítku
+      timeout: 10000         // Delší timeout pro scroll a klik
+    });
     
     if (!clicked) {
       throw new Error('Failed to publish post - button not found');

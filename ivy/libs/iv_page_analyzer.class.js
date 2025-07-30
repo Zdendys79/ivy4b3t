@@ -1071,16 +1071,13 @@ export class PageAnalyzer {
               return;
             }
             
-            // Kontrola, zda je element ve viewportu (viditelný na obrazovce)
+            // Kontrola velikosti elementu - musí mít nějakou velikost
             const rect = element.getBoundingClientRect();
-            const isInViewport = rect.top >= 0 && 
-                                rect.left >= 0 && 
-                                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-                                rect.right <= (window.innerWidth || document.documentElement.clientWidth);
-            
-            if (!isInViewport) {
+            if (rect.width === 0 || rect.height === 0) {
               return;
             }
+            
+            // NEOMEZOVAT na viewport - tlačítko může být níže na stránce!
           }
           
           // Získání textu - buď přímý text nebo placeholder/aria-label pro inputy
@@ -1723,8 +1720,36 @@ export class PageAnalyzer {
           await Wait.toSeconds(1);
         }
 
-        // Klikni
+        // Simuluj reálné kliknutí myší
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          buttons: 1
+        });
+        
+        // Nejdřív simuluj mousedown, pak mouseup, pak click
+        const mousedownEvent = new MouseEvent('mousedown', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          buttons: 1
+        });
+        
+        const mouseupEvent = new MouseEvent('mouseup', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          buttons: 1
+        });
+        
+        targetElement.dispatchEvent(mousedownEvent);
+        targetElement.dispatchEvent(mouseupEvent);
+        targetElement.dispatchEvent(clickEvent);
+        
+        // Zkus i starší metodu pro jistotu
         targetElement.click();
+        
         return true;
 
       }, selector, scrollIntoView, element.text);
