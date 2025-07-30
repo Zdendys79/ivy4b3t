@@ -102,7 +102,7 @@ export class Wait {
   }
 
   /**
-   * Čeká na další worker cyklus s kontrolou UI příkazů a restart_needed
+   * Čeká na další worker cyklus s kontrolou UI příkazů, restart_needed a klávesy 'q'
    * @param {number} maxMinutes - Maximální čas v minutách
    * @returns {Promise<void>}
    */
@@ -119,29 +119,61 @@ export class Wait {
     const start_time = Date.now();
     const end_time = start_time + wait_ms;
     
-    while (Date.now() < end_time) {
-      // Kontrola restart_needed
-      if (global.systemState?.restart_needed) {
-        Log.info('[WAIT]', 'Čekání přerušeno kvůli restart_needed. Ukončuji aplikaci pro restart.');
-        process.exit(1);
-      }
+    // Setup keyboard listener for 'q' key
+    let keyListener = null;
+    let quitRequested = false;
+    
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
       
-      // Kontrola UI příkazů
-      if (global.uiCommandCache) {
-        Log.info('[WAIT]', 'Čekání přerušeno kvůli nevyřízenému UI příkazu.');
-        return;
-      }
+      keyListener = (key) => {
+        if (key.toString() === 'q') {
+          quitRequested = true;
+          Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program...');
+        }
+      };
       
-      // Čekej maximálně 1 sekundu nebo do konce
-      const remaining_ms = end_time - Date.now();
-      const next_check_ms = Math.min(1000, remaining_ms);
-      
-      if (next_check_ms > 0) {
-        await new Promise(resolve => setTimeout(resolve, next_check_ms));
-      }
+      process.stdin.on('data', keyListener);
     }
     
-    Log.info('[WAIT]', 'Čekání dokončeno');
+    try {
+      while (Date.now() < end_time && !quitRequested) {
+        // Kontrola restart_needed
+        if (global.systemState?.restart_needed) {
+          Log.info('[WAIT]', 'Čekání přerušeno kvůli restart_needed. Ukončuji aplikaci pro restart.');
+          process.exit(1);
+        }
+        
+        // Kontrola UI příkazů
+        if (global.uiCommandCache) {
+          Log.info('[WAIT]', 'Čekání přerušeno kvůli nevyřízenému UI příkazu.');
+          return;
+        }
+        
+        // Čekej maximálně 1 sekundu nebo do konce
+        const remaining_ms = end_time - Date.now();
+        const next_check_ms = Math.min(1000, remaining_ms);
+        
+        if (next_check_ms > 0) {
+          await new Promise(resolve => setTimeout(resolve, next_check_ms));
+        }
+      }
+      
+      if (quitRequested) {
+        Log.info('[WAIT]', 'Program ukončen uživatelem (klávesa q)');
+        process.exit(0);
+      }
+      
+      Log.info('[WAIT]', 'Čekání dokončeno');
+    } finally {
+      // Cleanup keyboard listener
+      if (keyListener && process.stdin.isTTY) {
+        process.stdin.removeListener('data', keyListener);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
+      }
+    }
   }
 
   /**
@@ -197,7 +229,7 @@ export class Wait {
   }
 
   /**
-   * Čekání s kontrolou restart_needed každou sekundu
+   * Čekání s kontrolou restart_needed a klávesy 'q' každou sekundu
    * @param {number} wait_ms - Čas v milisekundách
    * @returns {Promise<void>}
    * @private
@@ -206,19 +238,51 @@ export class Wait {
     const start_time = Date.now();
     const end_time = start_time + wait_ms;
     
-    while (Date.now() < end_time) {
-      // Kontrola restart_needed
-      if (global.systemState?.restart_needed) {
-        Log.info('[WAIT]', 'Čekání přerušeno kvůli restart_needed. Ukončuji aplikaci pro restart.');
-        process.exit(1);
+    // Setup keyboard listener for 'q' key
+    let keyListener = null;
+    let quitRequested = false;
+    
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      
+      keyListener = (key) => {
+        if (key.toString() === 'q') {
+          quitRequested = true;
+          Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program...');
+        }
+      };
+      
+      process.stdin.on('data', keyListener);
+    }
+    
+    try {
+      while (Date.now() < end_time && !quitRequested) {
+        // Kontrola restart_needed
+        if (global.systemState?.restart_needed) {
+          Log.info('[WAIT]', 'Čekání přerušeno kvůli restart_needed. Ukončuji aplikaci pro restart.');
+          process.exit(1);
+        }
+        
+        // Čekej maximálně 1 sekundu nebo do konce
+        const remaining_ms = end_time - Date.now();
+        const next_check_ms = Math.min(1000, remaining_ms);
+        
+        if (next_check_ms > 0) {
+          await new Promise(resolve => setTimeout(resolve, next_check_ms));
+        }
       }
       
-      // Čekej maximálně 1 sekundu nebo do konce
-      const remaining_ms = end_time - Date.now();
-      const next_check_ms = Math.min(1000, remaining_ms);
-      
-      if (next_check_ms > 0) {
-        await new Promise(resolve => setTimeout(resolve, next_check_ms));
+      if (quitRequested) {
+        Log.info('[WAIT]', 'Program ukončen uživatelem (klávesa q)');
+        process.exit(0);
+      }
+    } finally {
+      // Cleanup keyboard listener
+      if (keyListener && process.stdin.isTTY) {
+        process.stdin.removeListener('data', keyListener);
+        process.stdin.setRawMode(false);
+        process.stdin.pause();
       }
     }
   }
