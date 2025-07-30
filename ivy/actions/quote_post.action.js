@@ -229,43 +229,53 @@ export class QuotePostAction extends BaseAction {
     // Po kliknutí na Přidat čekat 3 sekundy
     await Wait.toSeconds(3, 'Po kliknutí na Přidat');
     
-    // Získat všechny viditelné texty na stránce
+    // Zkontrolovat zda tlačítko "Přidat" zmizelo (což znamená úspěch)
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     const currentUrl = fbBot.page.url();
+    
+    // Hledat tlačítko "Přidat" v textech
+    const submitButtonVisible = visibleTexts.some(text => 
+      text === 'Přidat' || text.includes('Přidat')
+    );
     
     // Uložit data pro analýzu
     try {
       await db.safeExecute('system.insertDebugIncident', [
-        `quote_post_success_${Date.now()}`, // incident_id
+        `quote_post_verification_${Date.now()}`, // incident_id
         user.id, // user_id
-        'INFO', // error_level
-        'quote_post_after_submit', // error_message
+        submitButtonVisible ? 'WARNING' : 'INFO', // error_level
+        submitButtonVisible ? 'quote_post_failed_submit_button_still_visible' : 'quote_post_successful_submit_button_disappeared', // error_message
         JSON.stringify({ // error_context
           visibleTexts: visibleTexts,
           url: currentUrl,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          submitButtonVisible: submitButtonVisible
         }),
         currentUrl, // page_url
-        'Quote Post Success Analysis', // page_title
+        'Quote Post Verification', // page_title
         null, // user_agent
         null, // screenshot_data
         null, // dom_html
         null, // console_logs
-        'Automatický sběr dat po kliknutí na Přidat', // user_comment
-        'Analyzovat jaké prvky se objevují po úspěšném odeslání', // user_analysis_request
+        'Automatická kontrola úspěchu odeslání', // user_comment
+        'Ověření zda tlačítko Přidat zmizelo po odeslání', // user_analysis_request
         null, // system_info
         null, // stack_trace
         'NEW' // status
       ]);
       
-      Log.info(`[${user.id}]`, 'Data po odeslání uložena do debug_incidents pro analýzu');
+      Log.info(`[${user.id}]`, 'Data verifikace odeslání uložena do debug_incidents');
     } catch (err) {
       Log.debug(`[${user.id}]`, `Nelze uložit debug data: ${err.message}`);
     }
     
-    // Prozatím vždy vrátit true (víme že to funguje)
-    Log.info(`[${user.id}]`, 'KROK 7: Předpokládám úspěch (data uložena pro budoucí analýzu)');
-    return true;
+    if (submitButtonVisible) {
+      Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
+      return false;
+    } else {
+      Log.info(`[${user.id}]`, 'KROK 7 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');
+      return true;
+    }
   }
 
   /**
