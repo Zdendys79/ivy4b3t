@@ -33,7 +33,7 @@ export const NEWS = {
   markUrlAsUsed: `
     UPDATE rss_urls 
     SET used_count = used_count + 1,
-        last_used_at = NOW()
+        last_used = NOW()
     WHERE id = ?
   `,
 
