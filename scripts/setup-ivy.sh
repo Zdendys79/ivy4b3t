@@ -197,6 +197,14 @@ npm install -g npm
 
 # === 4. INSTALACE / AKTUALIZACE GIT A DALŠÍCH NÁSTROJŮ ===
 echo -e "\n📦 Instalace nebo aktualizace GIT a nástrojů..."
+
+# Kontrola a oprava duplicitních APT konfigurací pro Chrome Remote Desktop
+if [ -f "/etc/apt/sources.list.d/chrome-remote-desktop.list" ] && [ -f "/etc/apt/sources.list.d/chrome-remote-desktop.sources" ]; then
+    echo "🔧 Opravuji duplicitní APT konfigurace pro Chrome Remote Desktop..."
+    sudo rm -f /etc/apt/sources.list.d/chrome-remote-desktop.list
+    echo "✅ Odstraněna duplicitní konfigurace"
+fi
+
 sudo apt update
 sudo apt install -y git jq
 
