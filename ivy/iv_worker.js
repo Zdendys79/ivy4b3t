@@ -80,6 +80,8 @@ async function handleUICommands() {
     const user = await userSelector.getUserForUICommand(uiCommand);
     if (!user) {
       await Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
+      // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
+      Log.info('[WORKER]', 'UI příkaz s chybou dokončen - ukončuji cyklus pro restart');
       return true;
     }
 
@@ -87,6 +89,9 @@ async function handleUICommands() {
     
     const uiBot = new UIBot();
     await uiBot.handleUICommandComplete(uiCommand, user, browser, context);
+    
+    // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
+    Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
     return true;
   }
   
@@ -131,6 +136,10 @@ async function handleWheelResult(wheelResult, user, browser, context) {
       const uiBot = new UIBot();
       await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
     }
+    
+    // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
+    Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
+    return;
   } else if (wheelResult.stoppedByRestart) {
     Log.info('[WORKER]', 'Wheel ukončen kvůli restart_needed. Ukončuji worker.');
     await browserManager.closeBrowser(browser);
