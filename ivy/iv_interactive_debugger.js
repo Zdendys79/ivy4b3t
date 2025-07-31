@@ -186,24 +186,14 @@ export class InteractiveDebugger {
         return;
       }
       
-      const incidentId = `debugger_auto_${Date.now()}`;
       const userId = global.systemState?.currentUserId || null;
       
       await db.safeExecute('system.insertDebugIncident', [
-        incidentId,                     // incident_id
         userId,                         // user_id  
         errorLevel,                     // error_level
         message,                        // error_message
         JSON.stringify(context),        // error_context
         null,                          // page_url
-        null,                          // page_title
-        null,                          // user_agent
-        null,                          // screenshot_data
-        null,                          // dom_html
-        null,                          // console_logs
-        null,                          // user_comment
-        null,                          // user_analysis_request
-        null,                          // system_info
         context.stack || null,         // stack_trace
         'NEW'                          // status
       ]);

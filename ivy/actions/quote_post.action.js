@@ -273,36 +273,6 @@ export class QuotePostAction extends BaseAction {
       text === 'Přidat' || text.includes('Přidat')
     );
     
-    // Uložit data pro analýzu
-    try {
-      await db.safeExecute('system.insertDebugIncident', [
-        `quote_post_verification_${Date.now()}`, // incident_id
-        user.id, // user_id
-        submitButtonVisible ? 'WARNING' : 'INFO', // error_level
-        submitButtonVisible ? 'quote_post_failed_submit_button_still_visible' : 'quote_post_successful_submit_button_disappeared', // error_message
-        JSON.stringify({ // error_context
-          visibleTexts: visibleTexts,
-          url: currentUrl,
-          timestamp: new Date().toISOString(),
-          submitButtonVisible: submitButtonVisible
-        }),
-        currentUrl, // page_url
-        'Quote Post Verification', // page_title
-        null, // user_agent
-        null, // screenshot_data
-        null, // dom_html
-        null, // console_logs
-        'Automatická kontrola úspěchu odeslání', // user_comment
-        'Ověření zda tlačítko Přidat zmizelo po odeslání', // user_analysis_request
-        null, // system_info
-        null, // stack_trace
-        'NEW' // status
-      ]);
-      
-      Log.info(`[${user.id}]`, 'Data verifikace odeslání uložena do debug_incidents');
-    } catch (err) {
-      Log.debug(`[${user.id}]`, `Nelze uložit debug data: ${err.message}`);
-    }
     
     if (submitButtonVisible) {
       Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
