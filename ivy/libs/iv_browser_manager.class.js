@@ -259,6 +259,9 @@ export class BrowserManager {
       if (fs.existsSync(lockFile)) {
         fs.unlinkSync(lockFile);
         Log.debug('[BROWSER]', `Odstraněn existující SingletonLock pro ${profileDir}`);
+        
+        // Počkat trochu pro stabilizaci po odstranění lock souboru
+        await Wait.toSeconds(1, 'Po odstranění SingletonLock');
       }
     } catch (err) {
       if (err.code !== 'ENOENT') {

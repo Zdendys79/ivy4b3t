@@ -83,7 +83,7 @@ export async function findByText(page, text, options = {}) {
         break;
       }
 
-      await Wait.toSeconds(1, 'Krátká pauza před dalším pokusem');
+      await Wait.toSeconds(1);
     }
 
     if (elements.length === 0) {
