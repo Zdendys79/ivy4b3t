@@ -17,14 +17,14 @@ echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do package.json"
 # Zápis do databáze do tabulky variables - podle aktuální branch
 CURRENT_BRANCH=$(git branch --show-current)
 if [[ "$CURRENT_BRANCH" == "main" ]]; then
-    TARGET_DB="${DB_NAME}_test"
+    TARGET_DB="${MYSQL_DATABASE}_test"
 else
-    TARGET_DB="$DB_NAME"
+    TARGET_DB="$MYSQL_DATABASE"
 fi
 
 SQL="INSERT INTO variables (name, value) VALUES ('version', '$VERSION_CODE') ON DUPLICATE KEY UPDATE value = '$VERSION_CODE';"
 
-mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$TARGET_DB" -e "$SQL"
+mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$TARGET_DB" -e "$SQL"
 echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do databáze $TARGET_DB"
 
 # Synchronizace scripts složky

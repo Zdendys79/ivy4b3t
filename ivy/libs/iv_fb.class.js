@@ -1115,14 +1115,14 @@ export class FBBot {
 
       // Ujisti se, že má stránka focus pro přístup ke schránce
       await this.bringToFront();
-      await Wait.toSeconds(0.5, 'Krátká pauza po focus');
+      await Wait.toSeconds(0.5);
 
       // Zkopíruj text do schránky
       await this.page.evaluate((textToCopy) => {
         return navigator.clipboard.writeText(textToCopy);
       }, text);
 
-      await Wait.toSeconds(1, 'Krátká pauza po kopírování');
+      await Wait.toSeconds(1);
 
       // Vloží text pomocí Ctrl+V
       const success = await this.pasteFromClipboard();
@@ -1484,7 +1484,7 @@ export class FBBot {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, element);
 
-      await Wait.toSeconds(0.5, 'Krátká pauza');
+      await Wait.toSeconds(0.5);
 
       // Zkusíme několik metod kliknutí
       const clickMethods = [

@@ -21,7 +21,7 @@ export class Wait {
     const min_time = Math.round(max_time * 0.6);
     const wait_time = min_time + Math.random() * (max_time - min_time);
     
-    if (comment && wait_time >= 0.1) {
+    if (comment) {
       Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s`);
     }
     
@@ -38,7 +38,7 @@ export class Wait {
     const min_time = Math.round(max_time * 0.6);
     const wait_time = min_time + Math.random() * (max_time - min_time);
     
-    if (comment && wait_time >= 0.1) {
+    if (comment) {
       Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s (přerušitelné)`);
     }
     

@@ -14,6 +14,9 @@ node_modules/
 CLAUDE.md
 CLAUDE.memory
 
+# MCP configuration with sensitive data
+.mcp.json
+
 commit_message.txt
 
 # PHP Error Logs
