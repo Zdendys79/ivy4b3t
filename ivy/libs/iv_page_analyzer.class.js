@@ -23,12 +23,9 @@ export class PageAnalyzer {
     this.cacheTimeout = 5000; // 5 sekund
     
     // Element tracking pro různé záložky
-    this.elementCache = new Map(); // url -> { elements: [], timestamp, domain }
     this.elementUpdateInterval = null;
     this.isElementTrackingActive = false;
     this.updateIntervalMs = 10000; // 10 sekund default
-    this.autoTrackingEnabled = false;
-    this.autoTrackingOptions = {};
     
     // ŽÁDNÉ automatické trackování! Vše pouze na vyžádání
   }
@@ -1146,24 +1143,6 @@ export class PageAnalyzer {
     }
   }
 
-  /**
-   * Povolí automatické spuštění trackingu při načtení stránky
-   * @param {Object} options - Možnosti sledování
-   */
-  async enableAutoElementTracking(options = {}) {
-    // ZAKÁZÁNO! Žádné automatické trackování
-    await Log.warn('[ANALYZER]', 'enableAutoElementTracking je zakázáno - používejte ruční analýzy');
-  }
-
-  /**
-   * Zakáže automatické spuštění trackingu
-   */
-  disableAutoElementTracking() {
-    this.autoTrackingEnabled = false;
-    this.autoTrackingOptions = {};
-    
-    Log.info('[ANALYZER]', 'Automatický element tracking zakázán');
-  }
 
   /**
    * Spustí automatické sledování elementů na pozadí
@@ -1187,7 +1166,6 @@ export class PageAnalyzer {
     this.isElementTrackingActive = true;
 
     // Pouze jednorázová aktualizace - ŽÁDNÝ interval!
-    await this._updateElementCache({ maxWords, includeInputs, includeButtons, onlyVisible });
 
     // Log.debug('[ANALYZER]', `Element tracking spuštěn s intervalem ${updateInterval}ms`); // Reduced spam
   }
@@ -1240,107 +1218,8 @@ export class PageAnalyzer {
     }
   }
 
-  /**
-   * Vrátí elementy pro specifickou doménu
-   * @param {string} domain - Doména (fb, utio, atd.)
-   * @returns {Array} Seznam všech elementů pro doménu
-   */
-  getElementsByDomain(domain) {
-    const results = [];
-    
-    for (const [url, cache] of this.elementCache.entries()) {
-      if (cache.domain === domain) {
-        results.push({
-          url: url,
-          elements: cache.elements,
-          timestamp: cache.timestamp
-        });
-      }
-    }
-    
-    return results;
-  }
 
-  /**
-   * Vrátí statistiky element cache
-   * @returns {Object} Statistiky
-   */
-  getElementCacheStats() {
-    const stats = {
-      totalUrls: this.elementCache.size,
-      isTracking: this.isElementTrackingActive,
-      updateInterval: this.updateIntervalMs,
-      domains: {}
-    };
 
-    for (const [url, cache] of this.elementCache.entries()) {
-      if (!stats.domains[cache.domain]) {
-        stats.domains[cache.domain] = {
-          totalElements: 0,
-          lastUpdate: null
-        };
-      }
-      
-      stats.domains[cache.domain].totalElements += cache.elements.length;
-      
-      if (!stats.domains[cache.domain].lastUpdate || cache.timestamp > stats.domains[cache.domain].lastUpdate) {
-        stats.domains[cache.domain].lastUpdate = cache.timestamp;
-      }
-    }
-
-    return stats;
-  }
-
-  /**
-   * Vymaže element cache
-   * @param {string} domain - Volitelně vymaž pouze pro specifickou doménu
-   */
-  clearElementCache(domain = null) {
-    if (domain) {
-      for (const [url, cache] of this.elementCache.entries()) {
-        if (cache.domain === domain) {
-          this.elementCache.delete(url);
-        }
-      }
-      Log.info('[ANALYZER]', `Element cache vymazána pro doménu: ${domain}`);
-    } else {
-      this.elementCache.clear();
-      Log.info('[ANALYZER]', 'Celá element cache vymazána');
-    }
-  }
-
-  /**
-   * Privátní metoda pro aktualizaci element cache
-   * @private
-   */
-  async _updateElementCache(options) {
-    try {
-      const url = this.page.url();
-      const domain = this._extractDomain(url);
-      
-      // Najdi elementy
-      const elements = await this.findElementsWithShortText(options);
-      
-      // Uložení do cache
-      this.elementCache.set(url, {
-        elements: elements,
-        timestamp: Date.now(),
-        domain: domain
-      });
-
-      // Údržba cache - max 100 URL
-      if (this.elementCache.size > 100) {
-        const oldestUrl = Array.from(this.elementCache.entries())
-          .sort((a, b) => a[1].timestamp - b[1].timestamp)[0][0];
-        this.elementCache.delete(oldestUrl);
-      }
-
-      // Cache update - silent operation to reduce spam
-
-    } catch (err) {
-      await Log.error('[ANALYZER]', `Chyba při aktualizaci element cache: ${err.message}`);
-    }
-  }
 
   /**
    * Extrahuje doménu z URL
@@ -1388,21 +1267,11 @@ export class PageAnalyzer {
       const newUrl = this.page.url();
       Log.info('[ANALYZER]', `Stránka načtena (networkidle2): ${newUrl}`);
       
-      // Spustí tracking pokud není již aktivní
-      if (!this.isElementTrackingActive) {
-        await this.startElementTracking(this.autoTrackingOptions);
-      } else {
-        // Jen aktualizuj cache pro novou stránku
-        await this._updateElementCache(this.autoTrackingOptions);
-      }
       
     } catch (err) {
       // Timeout nebo jiná chyba - zkusíme spustit tracking i tak
       await Log.warn('[ANALYZER]', `Timeout při čekání na networkidle2: ${err.message}`);
       
-      if (this.autoTrackingEnabled && !this.isElementTrackingActive) {
-        await this.startElementTracking(this.autoTrackingOptions);
-      }
     }
   }
 
@@ -1480,9 +1349,6 @@ export class PageAnalyzer {
           Log.debug('[ANALYZER]', 'Čekám na reakci stránky po kliknutí...');
           await Wait.toSeconds(3);
           
-          // Aktualizuj element cache po změnách
-          await this._updateElementCache(this.autoTrackingOptions);
-          Log.debug('[ANALYZER]', 'Element cache aktualizována po kliknutí');
         }
         
         return true;
@@ -1600,8 +1466,6 @@ export class PageAnalyzer {
     // Log.debug('[ANALYZER]', `Čekám na element "${text}" (max ${timeout}ms)`); // Reduced spam
 
     while (Date.now() - startTime < timeout) {
-      // Refresh cache a zkontroluj existenci
-      await this._updateElementCache(this.autoTrackingOptions);
       
       if (await this.elementExists(text, { matchType, elementType })) {
         Log.success('[ANALYZER]', `Element "${text}" se objevil`);
