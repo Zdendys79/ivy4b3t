@@ -93,7 +93,9 @@ async function handleUICommands() {
     const uiBot = new UIBot();
     await uiBot.handleUICommandComplete(uiCommand, user, browser, context);
     
-    // OPTIMALIZACE: Zavřít browser jen pokud příští UI uživatel je jiný
+    // BROWSER OPTIMIZATION: Only close browser if next UI command is for different user
+    // This prevents unnecessary browser restart cycles and SingletonLock conflicts
+    // when multiple UI commands are queued for the same user
     const nextUICommand = global.uiCommandCache;
     const shouldCloseBrowser = !nextUICommand || nextUICommand.user_id !== user.id;
     
@@ -151,7 +153,9 @@ async function handleWheelResult(wheelResult, user, browser, context) {
       await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
     }
     
-    // OPTIMALIZACE: Zavřít browser jen pokud příští UI uživatel je jiný
+    // BROWSER OPTIMIZATION: Only close browser if next UI command is for different user
+    // This prevents unnecessary browser restart cycles and SingletonLock conflicts  
+    // when multiple UI commands are queued for the same user
     const nextUICommand = global.uiCommandCache;
     const shouldCloseBrowser = !nextUICommand || nextUICommand.user_id !== user.id;
     
