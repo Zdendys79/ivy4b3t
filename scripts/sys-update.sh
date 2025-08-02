@@ -31,12 +31,12 @@ fi
 
 # 2. Aktualizace systému včetně phased balíků
 echo "[UPDATE] Spouštím plnou aktualizaci včetně phased updates..." | tee -a "$LOG_FILE"
-sudo apt -o APT::Get::Always-Include-Phased-Updates=true update | tee -a "$LOG_FILE"
-sudo apt -o APT::Get::Always-Include-Phased-Updates=true upgrade -y | tee -a "$LOG_FILE"
+sudo apt-get -o APT::Get::Always-Include-Phased-Updates=true update | tee -a "$LOG_FILE"
+sudo apt-get -o APT::Get::Always-Include-Phased-Updates=true upgrade -y | tee -a "$LOG_FILE"
 
 # 3. Instalace Noto Mono fontu pro Unicode podporu v terminálu
 echo "[FONTS] Instaluji Noto Mono font pro Unicode podporu..." | tee -a "$LOG_FILE"
-sudo apt install -y fonts-noto-mono | tee -a "$LOG_FILE"
+sudo apt-get install -y fonts-noto-mono | tee -a "$LOG_FILE"
 
 # Refresh font cache pro okamžité použití nových fontů
 echo "[FONTS] Aktualizuji font cache..." | tee -a "$LOG_FILE"
@@ -44,7 +44,7 @@ fc-cache -f -v | tee -a "$LOG_FILE" || echo "[FONTS] Font cache refresh selhal -
 
 # 4. Odstranění nepoužívaných balíků
 echo "[CLEANUP] Odstraňuji nepotřebné balíky..."
-sudo apt autoremove -y
+sudo apt-get autoremove -y
 
 # 5. Zajištění automatického spuštění Syncthingu
 echo "[SYNCTHING] Povoluji autospuštění Syncthingu..." | tee -a "$LOG_FILE"
