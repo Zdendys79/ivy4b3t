@@ -93,6 +93,9 @@ async function handleUICommands() {
     const uiBot = new UIBot();
     await uiBot.handleUICommandComplete(uiCommand, user, browser, context);
     
+    // KRITICKÉ: Zavřít browser před restartem workeru
+    await browserManager.closeBrowser(browser);
+    
     // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
     Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
     return true;
@@ -139,6 +142,9 @@ async function handleWheelResult(wheelResult, user, browser, context) {
       const uiBot = new UIBot();
       await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
     }
+    
+    // KRITICKÉ: Zavřít browser před restartem workeru
+    await browserManager.closeBrowser(browser);
     
     // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
     Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
