@@ -158,24 +158,37 @@ export class NewsPostAction extends BaseAction {
     // Malá pauza před vložením
     await Wait.toSeconds(1, 'Před vložením URL');
     
+    // Získat délku obsahu PŘED vložením
+    const lengthBefore = await fbBot.page.evaluate(() => {
+      const input = document.activeElement || document.querySelector('[contenteditable="true"]');
+      return input ? (input.innerHTML || input.textContent || input.value || '').length : 0;
+    });
+    
     // Vložit pomocí Ctrl+V
     await fbBot.page.keyboard.down('Control');
     await fbBot.page.keyboard.press('v');
     await fbBot.page.keyboard.up('Control');
     
-    // Pauza pro načtení URL preview
-    await Wait.toSeconds(3, 'Čekám na načtení URL preview');
+    // Okamžitá kontrola změny délky (během několika ms)
+    await Wait.toMS(100); // Krátká pauza pro zpracování vložení
     
-    // Ověření že URL byla vložena - kontrola obsahu textového pole
-    const inputContent = await fbBot.page.evaluate(() => {
-      const input = document.querySelector('[data-testid="status-attachment-mentions-input"], [contenteditable="true"]');
-      return input ? input.textContent || input.value || '' : '';
+    const lengthAfter = await fbBot.page.evaluate(() => {
+      const input = document.activeElement || document.querySelector('[contenteditable="true"]');
+      return input ? (input.innerHTML || input.textContent || input.value || '').length : 0;
     });
     
-    if (!inputContent.includes(newsUrl.url.substring(0, 20))) {
-      await Log.error(`[${user.id}]`, `KROK 3 SELHAL: URL nebyla vložena do pole. Obsah: "${inputContent}"`);
-      throw new Error('URL was not successfully inserted into input field');
+    const expectedLength = newsUrl.url.length;
+    const actualChange = lengthAfter - lengthBefore;
+    
+    if (actualChange < expectedLength * 0.8) { // Tolerance 80% délky URL
+      await Log.error(`[${user.id}]`, `KROK 3 SELHAL: URL nebyla vložena. Délka před: ${lengthBefore}, po: ${lengthAfter}, očekávaná změna: ~${expectedLength}`);
+      throw new Error(`URL insertion failed - content length change too small: ${actualChange}`);
     }
+    
+    Log.debug(`[${user.id}]`, `URL vložení detekováno: délka ${lengthBefore} → ${lengthAfter} (+${actualChange})`);
+    
+    // Krátká pauza pro stabilizaci před pokračováním
+    await Wait.toSeconds(1, 'Stabilizace po vložení URL');
     
     Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: URL vložena a ověřena');
   }
