@@ -9,7 +9,10 @@
 # spuštění na Ubuntu pomocí:
 # cd ~/ivy && chmod +x main-start.sh && ./main-start.sh
 
-clear
+# clear - vypnuto pro debug při druhém spuštění
+if [[ "$SCRIPT_RESTARTED" != "1" ]]; then
+    clear
+fi
 
 # ===========================================
 # KONFIGURACE A INICIALIZACE
