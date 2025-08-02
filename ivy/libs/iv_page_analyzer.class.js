@@ -1150,9 +1150,9 @@ export class PageAnalyzer {
    * Povolí automatické spuštění trackingu při načtení stránky
    * @param {Object} options - Možnosti sledování
    */
-  enableAutoElementTracking(options = {}) {
+  async enableAutoElementTracking(options = {}) {
     // ZAKÁZÁNO! Žádné automatické trackování
-    Log.warn('[ANALYZER]', 'enableAutoElementTracking je zakázáno - používejte ruční analýzy');
+    await Log.warn('[ANALYZER]', 'enableAutoElementTracking je zakázáno - používejte ruční analýzy');
   }
 
   /**
