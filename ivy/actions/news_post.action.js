@@ -99,7 +99,7 @@ export class NewsPostAction extends BaseAction {
     if (newsUrl) {
       Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrána URL ID ${newsUrl.id} (${newsUrl.channel_name})`);
     } else {
-      Log.warn(`[${user.id}]`, 'KROK 0: Žádná dostupná RSS URL nenalezena');
+      await Log.warn(`[${user.id}]`, 'KROK 0: Žádná dostupná RSS URL nenalezena');
     }
     
     return newsUrl;
