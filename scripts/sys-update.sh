@@ -39,6 +39,9 @@ echo "[FONTS] Instaluji Noto Mono font pro Unicode podporu..." | tee -a "$LOG_FI
 sudo apt-get install -y fonts-noto-mono | tee -a "$LOG_FILE"
 
 # Refresh font cache pro okamžité použití nových fontů
+echo "[FONTS] Čistím poškozené font cache soubory..." | tee -a "$LOG_FILE"
+rm -f ~/.cache/fontconfig/*.cache-9 2>/dev/null || true
+
 echo "[FONTS] Aktualizuji font cache..." | tee -a "$LOG_FILE"
 fc-cache -f -v | tee -a "$LOG_FILE" || echo "[FONTS] Font cache refresh selhal - pokračuji..." | tee -a "$LOG_FILE"
 
