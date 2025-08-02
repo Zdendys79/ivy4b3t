@@ -393,8 +393,8 @@ export class FBBot {
     try {
       await this.bringToFront();
       
-      // Lidská pauza před navigací na Facebook
-      await Wait.toSeconds(4);
+      // Lidská pauza před navigací na Facebook - prodlouženo pro ruční zásah
+      await Wait.toSeconds(20);
       
       await this.navigateToPage('https://www.facebook.com/', { waitUntil: 'domcontentloaded' });
       await Wait.toSeconds(3);

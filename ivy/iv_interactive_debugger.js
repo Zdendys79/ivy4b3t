@@ -101,79 +101,22 @@ export class InteractiveDebugger {
   }
 
   /**
-   * Čeká na vstup uživatele s timeoutem
+   * Čeká na vstup uživatele s timeoutem - NYNÍ POUŽÍVÁ UNIVERZÁLNÍ WAIT METODU
    */
   async waitForUserInput(timeoutSeconds = 30) {
+    // Ulož resolver pro možné přerušení
+    this.currentInputResolver = null;
     
-    // Kontrola, zda máme TTY pro interaktivní vstup
-    if (!process.stdin.isTTY) {
-      Log.debug('[DEBUGGER]', 'No TTY available for interactive input - auto-continuing after timeout');
-      await Wait.toSeconds(timeoutSeconds);
+    const result = await Wait.forUserInput(timeoutSeconds);
+    
+    // Zpracování výsledku podle původního chování
+    if (result === 'timeout') {
+      const actualSeconds = timeoutSeconds;
+      Log.info('[DEBUGGER]', `Timeout reached after ${actualSeconds}s (expected ${timeoutSeconds}s) - auto-continuing`);
       return 'timeout';
     }
-
-    return new Promise((resolve) => {
-      let resolved = false;
-      const startTime = Date.now();
-      
-      // Ulož resolver pro možné přerušení
-      this.currentInputResolver = resolve;
-
-      const cleanup = () => {
-        if (timeout) clearTimeout(timeout);
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdin.removeListener('data', onData);
-        process.stdin.removeListener('SIGINT', onSigint);
-        process.stdin.pause();
-        
-        // Vyčisti resolver
-        this.currentInputResolver = null;
-      };
-
-      const onData = (key) => {
-        if (resolved || this.globalInputLock) return; // Guard against double processing and multiple instances
-        this.globalInputLock = true; // Lock globally to prevent other instances
-        
-        const choice = key.toString().toLowerCase();
-        Log.info('[DEBUGGER]', `Key received: "${choice}" (code: ${key[0]})`);
-        if (['c', 'q'].includes(choice)) {
-          resolved = true;
-          cleanup();
-          resolve(choice);
-        }
-        this.globalInputLock = false; // Unlock for next input
-      };
-
-      const onSigint = () => {
-        if (!resolved) {
-          resolved = true;
-          cleanup();
-          resolve('c'); // Continue on Ctrl+C
-        }
-      };
-
-      // Timeout
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          const actualSeconds = ((Date.now() - startTime) / 1000).toFixed(1);
-          Log.info('[DEBUGGER]', `Timeout reached after ${actualSeconds}s (expected ${timeoutSeconds}s) - auto-continuing`);
-          resolved = true;
-          cleanup();
-          resolve('timeout');
-        } else {
-        }
-      }, timeoutSeconds * 1000);
-
-      // Setup listeners - pouze raw mode bez readline
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(true);
-      }
-      process.stdin.on('data', onData);
-      process.stdin.on('SIGINT', onSigint);
-      process.stdin.resume();
-    });
+    
+    return result;
   }
 
   /**

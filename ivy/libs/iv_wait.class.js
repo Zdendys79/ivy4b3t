@@ -12,7 +12,7 @@ import { Log } from './iv_log.class.js';
 
 export class Wait {
   /**
-   * Čeká náhodný čas v sekundách (min je 60% z max)
+   * Čeká náhodný čas v sekundách (min je 60% z max) - NYní S PODPOROU KLÁVESY 'Q'
    * @param {number} max_time - Maximální čas v sekundách
    * @param {string} comment - Volitelný komentář
    * @returns {Promise<void>}
@@ -25,11 +25,15 @@ export class Wait {
       Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s`);
     }
     
-    return new Promise(resolve => setTimeout(resolve, wait_time * 1000));
+    await this._waitWithKeyboardSupport(wait_time * 1000, {
+      checkRestart: false,
+      checkUICommand: false,
+      allowedKeys: ['q']
+    });
   }
 
   /**
-   * Čeká náhodný čas v sekundách - PŘERUŠITELNÉ při restart_needed
+   * Čeká náhodný čas v sekundách - S KONTROLOU RESTART A KLÁVESY 'Q'
    * @param {number} max_time - Maximální čas v sekundách
    * @param {string} comment - Volitelný komentář
    * @returns {Promise<void>}
@@ -42,7 +46,11 @@ export class Wait {
       Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s (přerušitelné)`);
     }
     
-    return this._waitWithRestartCheck(wait_time * 1000);
+    await this._waitWithKeyboardSupport(wait_time * 1000, {
+      checkRestart: true,
+      checkUICommand: false,
+      allowedKeys: ['q']
+    });
   }
 
   /**
@@ -62,7 +70,7 @@ export class Wait {
   }
 
   /**
-   * Čeká náhodný čas v minutách (min je 60% z max)
+   * Čeká náhodný čas v minutách - S PODPOROU KLÁVESY 'Q'
    * @param {number} max_time - Maximální čas v minutách (může být desetinný)
    * @param {string} comment - Volitelný komentář
    * @returns {Promise<void>}
@@ -78,11 +86,15 @@ export class Wait {
     const final_comment = comment || 'Čekám';
     Log.info('[WAIT]', `${final_comment} - ${Math.round(wait_minutes * 10) / 10} min do ${target_formatted}`);
     
-    return new Promise(resolve => setTimeout(resolve, wait_ms));
+    await this._waitWithKeyboardSupport(wait_ms, {
+      checkRestart: false,
+      checkUICommand: false,
+      allowedKeys: ['q']
+    });
   }
 
   /**
-   * Čeká náhodný čas v minutách - PŘERUŠITELNÉ při restart_needed
+   * Čeká náhodný čas v minutách - S KONTROLOU RESTART A KLÁVESY 'Q'  
    * @param {number} max_time - Maximální čas v minutách (může být desetinný)
    * @param {string} comment - Volitelný komentář
    * @returns {Promise<void>}
@@ -98,7 +110,11 @@ export class Wait {
     const final_comment = comment || 'Čekám';
     Log.info('[WAIT]', `${final_comment} - ${Math.round(wait_minutes * 10) / 10} min do ${target_formatted} (přerušitelné)`);
     
-    return this._waitWithRestartCheck(wait_ms);
+    await this._waitWithKeyboardSupport(wait_ms, {
+      checkRestart: true,
+      checkUICommand: false,
+      allowedKeys: ['q']
+    });
   }
 
   /**
@@ -116,68 +132,21 @@ export class Wait {
     
     Log.info('[WAIT]', `Čekání na další cyklus - ${Math.round(wait_minutes * 10) / 10} min do ${target_formatted} (přerušitelné s UI)`);
     
-    const start_time = Date.now();
-    const end_time = start_time + wait_ms;
+    const result = await this._waitWithKeyboardSupport(wait_ms, {
+      checkRestart: true,
+      checkUICommand: true,
+      allowedKeys: ['q']
+    });
     
-    // Setup keyboard listener for 'q' key
-    let keyListener = null;
-    let quitRequested = false;
-    
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-      process.stdin.resume();
-      
-      keyListener = (key) => {
-        if (key.toString() === 'q') {
-          quitRequested = true;
-          Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program...');
-        }
-      };
-      
-      process.stdin.on('data', keyListener);
+    if (result === 'ui_command') {
+      return; // UI příkaz detected - běžná cesta
     }
     
-    try {
-      while (Date.now() < end_time && !quitRequested) {
-        // Kontrola restart_needed
-        if (global.systemState?.restart_needed) {
-          Log.info('[WAIT]', 'Čekání přerušeno kvůli restart_needed. Ukončuji aplikaci pro restart.');
-          process.exit(1);
-        }
-        
-        // Kontrola UI příkazů
-        if (global.uiCommandCache) {
-          Log.info('[WAIT]', 'Čekání přerušeno kvůli nevyřízenému UI příkazu.');
-          return;
-        }
-        
-        // Čekej maximálně 1 sekundu nebo do konce
-        const remaining_ms = end_time - Date.now();
-        const next_check_ms = Math.min(1000, remaining_ms);
-        
-        if (next_check_ms > 0) {
-          await new Promise(resolve => setTimeout(resolve, next_check_ms));
-        }
-      }
-      
-      if (quitRequested) {
-        Log.info('[WAIT]', 'Program ukončen uživatelem (klávesa q)');
-        process.exit(0);
-      }
-      
-      Log.info('[WAIT]', 'Čekání dokončeno');
-    } finally {
-      // Cleanup keyboard listener
-      if (keyListener && process.stdin.isTTY) {
-        process.stdin.removeListener('data', keyListener);
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
-      }
-    }
+    Log.info('[WAIT]', 'Čekání dokončeno');
   }
 
   /**
-   * Čeká do konkrétního času
+   * Čeká do konkrétního času - S PODPOROU KLÁVESY 'Q'
    * @param {Date|number} target_time - Cílový čas (Date objekt nebo timestamp)
    * @param {string} comment - Volitelný komentář
    * @returns {Promise<void>}
@@ -196,7 +165,11 @@ export class Wait {
     
     Log.info('[WAIT]', `${final_comment} - do ${target_formatted}`);
     
-    return new Promise(resolve => setTimeout(resolve, wait_ms));
+    await this._waitWithKeyboardSupport(wait_ms, {
+      checkRestart: false,
+      checkUICommand: false,
+      allowedKeys: ['q']
+    });
   }
 
   /**
@@ -229,27 +202,51 @@ export class Wait {
   }
 
   /**
-   * Čekání s kontrolou restart_needed a klávesy 'q' každou sekundu
+   * UNIVERZÁLNÍ čekání s podporou klávesových zkratek a kontrol
    * @param {number} wait_ms - Čas v milisekundách
-   * @returns {Promise<void>}
+   * @param {object} options - Možnosti čekání
+   * @param {boolean} options.checkRestart - Kontrolovat restart_needed (default: true)
+   * @param {boolean} options.checkUICommand - Kontrolovat UI příkazy (default: false)
+   * @param {Array<string>} options.allowedKeys - Povolené klávesy (default: ['q'])
+   * @param {function} options.onKeyPress - Callback pro stisk klávesy (key) => action
+   * @returns {Promise<string|null>} Vráti stisknutou klávesu nebo null při timeout
    * @private
    */
-  static async _waitWithRestartCheck(wait_ms) {
+  static async _waitWithKeyboardSupport(wait_ms, options = {}) {
+    const {
+      checkRestart = true,
+      checkUICommand = false,
+      allowedKeys = ['q'],
+      onKeyPress = null
+    } = options;
+    
     const start_time = Date.now();
     const end_time = start_time + wait_ms;
     
-    // Setup keyboard listener for 'q' key
     let keyListener = null;
-    let quitRequested = false;
+    let keyPressed = null;
     
-    if (process.stdin.isTTY) {
+    // Setup keyboard listener
+    if (process.stdin.isTTY && allowedKeys.length > 0) {
       process.stdin.setRawMode(true);
       process.stdin.resume();
       
       keyListener = (key) => {
-        if (key.toString() === 'q') {
-          quitRequested = true;
-          Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program...');
+        const keyStr = key.toString().toLowerCase();
+        if (allowedKeys.includes(keyStr)) {
+          keyPressed = keyStr;
+          
+          // Custom handler nebo default akce
+          if (onKeyPress) {
+            const action = onKeyPress(keyStr);
+            if (action === 'exit') {
+              Log.info('[WAIT]', `Stisknuta klávesa "${keyStr}" - ukončuji program...`);
+              process.exit(0);
+            }
+          } else if (keyStr === 'q') {
+            Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program...');
+            process.exit(0);
+          }
         }
       };
       
@@ -257,11 +254,17 @@ export class Wait {
     }
     
     try {
-      while (Date.now() < end_time && !quitRequested) {
+      while (Date.now() < end_time && !keyPressed) {
         // Kontrola restart_needed
-        if (global.systemState?.restart_needed) {
+        if (checkRestart && global.systemState?.restart_needed) {
           Log.info('[WAIT]', 'Čekání přerušeno kvůli restart_needed. Ukončuji aplikaci pro restart.');
           process.exit(1);
+        }
+        
+        // Kontrola UI příkazů
+        if (checkUICommand && global.uiCommandCache) {
+          Log.info('[WAIT]', 'Čekání přerušeno kvůli nevyřízenému UI příkazu.');
+          return 'ui_command';
         }
         
         // Čekej maximálně 1 sekundu nebo do konce
@@ -273,10 +276,7 @@ export class Wait {
         }
       }
       
-      if (quitRequested) {
-        Log.info('[WAIT]', 'Program ukončen uživatelem (klávesa q)');
-        process.exit(0);
-      }
+      return keyPressed;
     } finally {
       // Cleanup keyboard listener
       if (keyListener && process.stdin.isTTY) {
@@ -286,6 +286,7 @@ export class Wait {
       }
     }
   }
+
 
   /**
    * Validace času - BEZ FALLBACK!
@@ -302,7 +303,7 @@ export class Wait {
   }
 
   /**
-   * LEGACY: Zachovaná funkce delay pro zpětnou kompatibilitu
+   * Čekání s pevným časem - S PODPOROU KLÁVESY 'Q'
    * @param {number} delay_time - Čas v ms
    * @param {boolean} verbose - Zobrazit log
    * @returns {Promise<void>}
@@ -319,7 +320,38 @@ export class Wait {
       Log.info('[WAIT]', `Čekám ${minutes}:${seconds.toString().padStart(2, '0')} do ${target_formatted}`);
     }
     
-    return new Promise(resolve => setTimeout(resolve, delay_time));
+    await this._waitWithKeyboardSupport(delay_time, {
+      checkRestart: false,
+      checkUICommand: false,
+      allowedKeys: ['q']
+    });
+  }
+
+  /**
+   * Čekání s interaktivní podporou klávesových zkratek pro debugger
+   * @param {number} timeoutSeconds - Timeout v sekundách
+   * @returns {Promise<string>} Vrací stisknutou klávesu nebo 'timeout'
+   */
+  static async forUserInput(timeoutSeconds = 30) {
+    // Kontrola, zda máme TTY pro interaktivní vstup
+    if (!process.stdin.isTTY) {
+      Log.debug('[WAIT]', 'No TTY available for interactive input - auto-continuing after timeout');
+      await this.toSeconds(timeoutSeconds);
+      return 'timeout';
+    }
+
+    const result = await this._waitWithKeyboardSupport(timeoutSeconds * 1000, {
+      checkRestart: false,
+      checkUICommand: false,
+      allowedKeys: ['c', 'q'],
+      onKeyPress: (key) => {
+        Log.info('[WAIT]', `Key received: "${key}"`);
+        if (key === 'q') return 'exit';
+        return 'continue';
+      }
+    });
+
+    return result || 'timeout';
   }
 }
 
