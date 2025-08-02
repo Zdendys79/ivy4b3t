@@ -38,65 +38,9 @@ sudo apt -o APT::Get::Always-Include-Phased-Updates=true upgrade -y | tee -a "$L
 echo "[FONTS] Instaluji Noto Mono font pro Unicode podporu..." | tee -a "$LOG_FILE"
 sudo apt install -y fonts-noto-mono | tee -a "$LOG_FILE"
 
-# 3a. Instalace Gnome Terminal pro lepší Unicode podporu
-echo "[TERMINAL] Instaluji Gnome Terminal pro lepší Unicode podporu..." | tee -a "$LOG_FILE"
-sudo apt install -y gnome-terminal | tee -a "$LOG_FILE"
-
-# 3b. Konfigurace plochy pro uživatele remotes
-echo "[DESKTOP] === DEBUG: Spouštím konfiguraci plochy ===" | tee -a "$LOG_FILE"
-echo "[DESKTOP] Script verze: $(date '+%Y-%m-%d %H:%M:%S')" | tee -a "$LOG_FILE"
-DESKTOP_DIR="/home/remotes/Desktop"
-mkdir -p "$DESKTOP_DIR"
-
-# Debug: zobraz aktuální obsah plochy
-echo "[DESKTOP] DEBUG: Aktuální soubory na ploše:" | tee -a "$LOG_FILE"
-ls -la "$DESKTOP_DIR"/*.desktop 2>/dev/null | tee -a "$LOG_FILE" || echo "Žádné .desktop soubory nenalezeny" | tee -a "$LOG_FILE"
-
-# Odstranění starých zástupců terminálu
-echo "[DESKTOP] Odstraňuji staré zástupce terminálu..." | tee -a "$LOG_FILE"
-echo "[DESKTOP] DEBUG: Mazání souborů:" | tee -a "$LOG_FILE"
-find "$DESKTOP_DIR" -name "*terminal*.desktop" -exec echo "  Mažu: {}" \; -delete | tee -a "$LOG_FILE"
-find "$DESKTOP_DIR" -name "*Terminal*.desktop" -exec echo "  Mažu: {}" \; -delete | tee -a "$LOG_FILE"
-find "$DESKTOP_DIR" -name "xfce4-terminal*.desktop" -exec echo "  Mažu: {}" \; -delete | tee -a "$LOG_FILE"
-
-echo "[DESKTOP] DEBUG: Obsah plochy po smazání:" | tee -a "$LOG_FILE"
-ls -la "$DESKTOP_DIR"/*.desktop 2>/dev/null | tee -a "$LOG_FILE" || echo "Žádné .desktop soubory nezůstaly" | tee -a "$LOG_FILE"
-
-# Vytvoření nového zástupce Gnome Terminal
-echo "[DESKTOP] Vytvářím nový zástupce Gnome Terminal..." | tee -a "$LOG_FILE"
-cat > "$DESKTOP_DIR/gnome-terminal.desktop" << 'EOF'
-[Desktop Entry]
-Version=1.0
-Name=Terminal
-Comment=Use the command line
-TryExec=gnome-terminal
-Exec=gnome-terminal --disable-factory
-Icon=utilities-terminal
-Type=Application
-Categories=System;TerminalEmulator;
-StartupNotify=true
-Keywords=shell;prompt;command;commandline;cmd;
-EOF
-
-# Nastavení oprávnění a vlastníka
-chmod +x "$DESKTOP_DIR/gnome-terminal.desktop"
-chown remotes:remotes "$DESKTOP_DIR/gnome-terminal.desktop"
-
-# Označit jako trusted pro desktop environment
-echo "[DESKTOP] Označuji zástupce jako trusted..." | tee -a "$LOG_FILE"
-gio set "$DESKTOP_DIR/gnome-terminal.desktop" metadata::trusted true 2>/dev/null || echo "[DESKTOP] gio set selhalo - pokračuji..." | tee -a "$LOG_FILE"
-
 # Refresh font cache pro okamžité použití nových fontů
 echo "[FONTS] Aktualizuji font cache..." | tee -a "$LOG_FILE"
 fc-cache -f -v | tee -a "$LOG_FILE" || echo "[FONTS] Font cache refresh selhal - pokračuji..." | tee -a "$LOG_FILE"
-
-echo "[DESKTOP] DEBUG: Finální obsah plochy:" | tee -a "$LOG_FILE"
-ls -la "$DESKTOP_DIR"/*.desktop 2>/dev/null | tee -a "$LOG_FILE" || echo "Žádné .desktop soubory" | tee -a "$LOG_FILE"
-echo "[DESKTOP] === DEBUG: Konfigurace plochy dokončena ===" | tee -a "$LOG_FILE"
-
-# Kontrola že Gnome Terminal je nainstalován
-echo "[DESKTOP] DEBUG: Kontrola instalace Gnome Terminal:" | tee -a "$LOG_FILE"
-which gnome-terminal | tee -a "$LOG_FILE" || echo "Gnome Terminal NENÍ nainstalován!" | tee -a "$LOG_FILE"
 
 # 4. Odstranění nepoužívaných balíků
 echo "[CLEANUP] Odstraňuji nepotřebné balíky..."
