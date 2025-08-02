@@ -205,8 +205,8 @@ if [ -f "/etc/apt/sources.list.d/chrome-remote-desktop.list" ] && [ -f "/etc/apt
     echo "✅ Odstraněna duplicitní konfigurace"
 fi
 
-sudo apt update
-sudo apt install -y git jq
+sudo apt-get update
+sudo apt-get install -y git jq
 
 echo "✅ Git verze: $(git --version)"
 echo "✅ Node.js: $(node -v)"
