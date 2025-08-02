@@ -93,8 +93,16 @@ async function handleUICommands() {
     const uiBot = new UIBot();
     await uiBot.handleUICommandComplete(uiCommand, user, browser, context);
     
-    // KRITICKÉ: Zavřít browser před restartem workeru
-    await browserManager.closeBrowser(browser);
+    // OPTIMALIZACE: Zavřít browser jen pokud příští UI uživatel je jiný
+    const nextUICommand = global.uiCommandCache;
+    const shouldCloseBrowser = !nextUICommand || nextUICommand.user_id !== user.id;
+    
+    if (shouldCloseBrowser) {
+      Log.info('[WORKER]', `Zavírám browser - další UI uživatel je jiný (aktuální: ${user.id}, další: ${nextUICommand?.user_id || 'žádný'})`);
+      await browserManager.closeBrowser(browser);
+    } else {
+      Log.info('[WORKER]', `Ponechávám browser otevřený - stejný uživatel ${user.id} pokračuje`);
+    }
     
     // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
     Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
@@ -143,8 +151,16 @@ async function handleWheelResult(wheelResult, user, browser, context) {
       await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
     }
     
-    // KRITICKÉ: Zavřít browser před restartem workeru
-    await browserManager.closeBrowser(browser);
+    // OPTIMALIZACE: Zavřít browser jen pokud příští UI uživatel je jiný
+    const nextUICommand = global.uiCommandCache;
+    const shouldCloseBrowser = !nextUICommand || nextUICommand.user_id !== user.id;
+    
+    if (shouldCloseBrowser) {
+      Log.info('[WORKER]', `Zavírám browser - další UI uživatel je jiný (aktuální: ${user.id}, další: ${nextUICommand?.user_id || 'žádný'})`);
+      await browserManager.closeBrowser(browser);
+    } else {
+      Log.info('[WORKER]', `Ponechávám browser otevřený - stejný uživatel ${user.id} pokračuje`);
+    }
     
     // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
     Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
