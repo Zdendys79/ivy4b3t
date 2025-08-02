@@ -83,7 +83,7 @@ export class InteractiveDebugger {
     // Compact error display - 1 line
     console.log(`[DEBUGGER] ${errorLevel}: ${message} [c/q]`);
 
-    const response = await this.waitForUserInput(10);
+    const response = await this.waitForUserInput(); // Bez timeout - čeká nekonečně na vstup
 
     let result = false;
     
