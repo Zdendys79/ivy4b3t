@@ -163,7 +163,21 @@ export class NewsPostAction extends BaseAction {
     await fbBot.page.keyboard.press('v');
     await fbBot.page.keyboard.up('Control');
     
-    Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: URL vložena');
+    // Pauza pro načtení URL preview
+    await Wait.toSeconds(3, 'Čekám na načtení URL preview');
+    
+    // Ověření že URL byla vložena - kontrola obsahu textového pole
+    const inputContent = await fbBot.page.evaluate(() => {
+      const input = document.querySelector('[data-testid="status-attachment-mentions-input"], [contenteditable="true"]');
+      return input ? input.textContent || input.value || '' : '';
+    });
+    
+    if (!inputContent.includes(newsUrl.url.substring(0, 20))) {
+      await Log.error(`[${user.id}]`, `KROK 3 SELHAL: URL nebyla vložena do pole. Obsah: "${inputContent}"`);
+      throw new Error('URL was not successfully inserted into input field');
+    }
+    
+    Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: URL vložena a ověřena');
   }
 
   /**

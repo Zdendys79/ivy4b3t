@@ -40,9 +40,12 @@ export async function tick() {
     // Kontrola restart_needed
     if (await checkRestartNeeded()) return;
     
-    // Zpracování UI příkazů
-    if (await handleUICommands()) return;
-    
+    // Zpracování UI příkazů - po dokončení ukončit worker
+    const uiHandled = await handleUICommands();
+    if (uiHandled) {
+      Log.info('[WORKER]', 'UI příkaz zpracován - ukončuji worker pro restart');
+      return;
+    }
     
     // Výběr a zpracování uživatele
     await processUserWork();

@@ -233,7 +233,7 @@ export class Wait {
       
       keyListener = (key) => {
         const keyStr = key.toString().toLowerCase();
-        console.log(`[WAIT DEBUG] Key pressed: "${keyStr}", allowed: [${allowedKeys.join(',')}]`);
+        // console.log(`[WAIT DEBUG] Key pressed: "${keyStr}", allowed: [${allowedKeys.join(',')}]`);
         
         if (allowedKeys.includes(keyStr)) {
           keyPressed = keyStr;
@@ -241,7 +241,7 @@ export class Wait {
           // Custom handler nebo default akce
           if (onKeyPress) {
             const action = onKeyPress(keyStr);
-            console.log(`[WAIT DEBUG] onKeyPress returned: "${action}"`);
+            // console.log(`[WAIT DEBUG] onKeyPress returned: "${action}"`);
             if (action === 'exit') {
               Log.info('[WAIT]', `Stisknuta klávesa "${keyStr}" - ukončuji program...`);
               process.exit(0);
@@ -254,9 +254,9 @@ export class Wait {
       };
       
       process.stdin.on('data', keyListener);
-      console.log(`[WAIT DEBUG] Keyboard listener setup complete. TTY: ${process.stdin.isTTY}, allowed keys: [${allowedKeys.join(',')}]`);
+      // console.log(`[WAIT DEBUG] Keyboard listener setup complete. TTY: ${process.stdin.isTTY}, allowed keys: [${allowedKeys.join(',')}]`);
     } else {
-      console.log(`[WAIT DEBUG] Keyboard listener NOT setup. TTY: ${process.stdin.isTTY}, allowedKeys.length: ${allowedKeys.length}`);
+      // console.log(`[WAIT DEBUG] Keyboard listener NOT setup. TTY: ${process.stdin.isTTY}, allowedKeys.length: ${allowedKeys.length}`);
     }
     
     try {
