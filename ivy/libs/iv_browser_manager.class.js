@@ -35,9 +35,12 @@ export class BrowserManager {
    * @returns {Promise<Object>} {instance: browser, context: context}
    */
   async openForUser(user) {
-    // Kontrola zda už není browser otevřený pro tohoto uživatele
+    // BROWSER REUSE OPTIMIZATION: Check if user already has an active browser
+    // This prevents Chrome SingletonLock errors and improves performance by
+    // reusing existing browser instances for the same user profile
     if (this.userBrowsers.has(user.id)) {
       const existing = this.userBrowsers.get(user.id);
+      // Verify the browser connection is still alive before reusing
       if (existing.browser.isConnected()) {
         Log.info(`[${user.id}]`, `Používám existující browser pro profil Profile${user.id}`);
         return {
@@ -45,7 +48,7 @@ export class BrowserManager {
           context: existing.context
         };
       } else {
-        // Browser se odpojil, vyčistit z mapy
+        // Browser connection died, clean up stale references
         this.userBrowsers.delete(user.id);
         this.activeBrowsers.delete(existing.browser);
       }
@@ -68,7 +71,9 @@ export class BrowserManager {
     const context = browser.defaultBrowserContext();
     await this._setupContextPermissions(context);
 
-    // Tracking pro graceful shutdown
+    // Register browser for tracking and user association
+    // activeBrowsers: for graceful shutdown of all browsers
+    // userBrowsers: for user-specific browser reuse optimization
     this.activeBrowsers.add(browser);
     this.userBrowsers.set(user.id, { browser, context });
 
