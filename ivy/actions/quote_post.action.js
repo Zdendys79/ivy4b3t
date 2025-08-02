@@ -217,7 +217,7 @@ export class QuotePostAction extends BaseAction {
     });
     
     if (!buttonExists) {
-      Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" nebylo nalezeno!');
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" nebylo nalezeno!');
       throw new Error('Button "Přidat" not found on page');
     }
     
@@ -236,7 +236,7 @@ export class QuotePostAction extends BaseAction {
     });
     
     if (!clicked) {
-      Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Kliknutí na "Přidat" se nezdařilo!');
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Kliknutí na "Přidat" se nezdařilo!');
       throw new Error('Failed to click on "Přidat" button');
     }
     
@@ -249,7 +249,7 @@ export class QuotePostAction extends BaseAction {
     });
     
     if (stillExists) {
-      Log.warn(`[${user.id}]`, 'VAROVÁNÍ: Tlačítko "Přidat" je stále viditelné po kliknutí!');
+      await Log.warn(`[${user.id}]`, 'VAROVÁNÍ: Tlačítko "Přidat" je stále viditelné po kliknutí!');
     }
     
     Log.success(`[${user.id}]`, 'KROK 6 DOKONČEN: Kliknuto na "Přidat"');
@@ -275,7 +275,7 @@ export class QuotePostAction extends BaseAction {
     
     
     if (submitButtonVisible) {
-      Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
+      await Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
       return false;
     } else {
       Log.info(`[${user.id}]`, 'KROK 7 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');

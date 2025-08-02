@@ -29,11 +29,11 @@ export class DBRetry {
         // Kontrola zda je to connection error
         if (this.isConnectionError(err)) {
           if (attempt < this.MAX_RETRIES) {
-            Log.warn('[DB_RETRY]', `${operationName} selhalo (pokus ${attempt}/${this.MAX_RETRIES}): ${err.message}`);
+            await Log.warn('[DB_RETRY]', `${operationName} selhalo (pokus ${attempt}/${this.MAX_RETRIES}): ${err.message}`);
             Log.info('[DB_RETRY]', `Čekám ${Log.formatTime(this.RETRY_DELAY_MS)} před dalším pokusem...`);
             await Wait.toMilliseconds(this.RETRY_DELAY_MS);
           } else {
-            Log.error('[DB_RETRY]', `${operationName} selhalo po ${this.MAX_RETRIES} pokusech`);
+            await Log.error('[DB_RETRY]', `${operationName} selhalo po ${this.MAX_RETRIES} pokusech`);
           }
         } else {
           // Není connection error - nehnat retry
@@ -43,7 +43,7 @@ export class DBRetry {
     }
     
     // Po všech pokusech - exit s kódem který nezastaví start.sh
-    Log.error('[DB_RETRY]', 'Databáze nedostupná po všech pokusech. Ukončuji s exit code 2.');
+    await Log.error('[DB_RETRY]', 'Databáze nedostupná po všech pokusech. Ukončuji s exit code 2.');
     process.exit(2); // Exit code 2 = DB nedostupná, start.sh pokračuje
   }
 
