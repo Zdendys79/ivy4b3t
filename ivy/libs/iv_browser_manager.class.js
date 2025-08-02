@@ -25,6 +25,7 @@ export class BrowserManager {
     this.hostname = os.hostname();
     this.debugKeepOpen = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
     this.activeBrowsers = new Set();
+    this.userBrowsers = new Map(); // Map userId -> {browser, context}
     this.userDataDir = this.isLinux ? '/home/remotes/Chromium' : './profiles';
   }
 
@@ -34,6 +35,22 @@ export class BrowserManager {
    * @returns {Promise<Object>} {instance: browser, context: context}
    */
   async openForUser(user) {
+    // Kontrola zda už není browser otevřený pro tohoto uživatele
+    if (this.userBrowsers.has(user.id)) {
+      const existing = this.userBrowsers.get(user.id);
+      if (existing.browser.isConnected()) {
+        Log.info(`[${user.id}]`, `Používám existující browser pro profil Profile${user.id}`);
+        return {
+          instance: existing.browser,
+          context: existing.context
+        };
+      } else {
+        // Browser se odpojil, vyčistit z mapy
+        this.userBrowsers.delete(user.id);
+        this.activeBrowsers.delete(existing.browser);
+      }
+    }
+    
     const profileDir = `Profile${user.id}`;
     const lockFile = path.join(this.userDataDir, profileDir, 'SingletonLock');
 
@@ -53,8 +70,9 @@ export class BrowserManager {
 
     // Tracking pro graceful shutdown
     this.activeBrowsers.add(browser);
+    this.userBrowsers.set(user.id, { browser, context });
 
-    Log.info(`[${user.id}]`, `BrowserManager otevřel prohlížeč pro profil ${profileDir}`);
+    Log.info(`[${user.id}]`, `BrowserManager otevřel nový prohlížeč pro profil ${profileDir}`);
 
     return {
       instance: browser,
@@ -76,6 +94,7 @@ export class BrowserManager {
     if (!browser || !browser.isConnected()) {
       Log.info('[BROWSER]', 'Prohlížeč již byl uzavřen nebo neexistuje');
       this.activeBrowsers.delete(browser);
+      this._removeFromUserBrowsers(browser);
       return;
     }
 
@@ -126,6 +145,7 @@ export class BrowserManager {
       }
     } finally {
       this.activeBrowsers.delete(browser);
+      this._removeFromUserBrowsers(browser);
     }
   }
 
@@ -178,6 +198,22 @@ export class BrowserManager {
     }
     
     this.activeBrowsers.clear();
+    this.userBrowsers.clear();
+  }
+
+  /**
+   * Odstraní browser z userBrowsers mapy
+   * @param {Object} browser - Browser instance k odstranění
+   * @private
+   */
+  _removeFromUserBrowsers(browser) {
+    for (const [userId, data] of this.userBrowsers.entries()) {
+      if (data.browser === browser) {
+        this.userBrowsers.delete(userId);
+        Log.debug('[BROWSER]', `Odstraněn browser z mapy pro uživatele ${userId}`);
+        break;
+      }
+    }
   }
 
   /**
