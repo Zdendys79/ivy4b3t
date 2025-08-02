@@ -30,7 +30,6 @@ echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do databáze $TARGET_DB"
 # Synchronizace scripts složky
 mkdir -p "/home/remotes/Sync/scripts"
 rsync -av "/home/remotes/ivy4b3t/scripts/" "/home/remotes/Sync/scripts/"
-chown -R remotes:remotes "/home/remotes/Sync/scripts"
 setfacl -R -m u:www-data:rwX "/home/remotes/Sync/scripts"
 setfacl -R -d -m u:www-data:rwX "/home/remotes/Sync/scripts"
 echo "[PRE-COMMIT] Scripts synchronizovány"
