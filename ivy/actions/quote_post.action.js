@@ -8,13 +8,13 @@
  * - Minimalistické řešení
  */
 
-import { BaseAction } from '../libs/base_action.class.js';
+import { BasePostAction } from '../libs/base_post_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
 import { db } from '../iv_sql.js';
 import { Wait } from '../libs/iv_wait.class.js';
 import { getHumanBehavior } from '../iv_human_behavior_advanced.js';
 
-export class QuotePostAction extends BaseAction {
+export class QuotePostAction extends BasePostAction {
   constructor() {
     super('quote_post');
   }
@@ -39,76 +39,6 @@ export class QuotePostAction extends BaseAction {
     };
   }
 
-  /**
-   * Provedení quote post - krok po kroku
-   */
-  async execute(user, context, pickedAction) {
-    const { fbBot, browser } = context;
-
-    try {
-      Log.info(`[${user.id}]`, 'Spouštím jednoduchý quote post...');
-
-      // KROK 0: Vybrat citát z databáze
-      const quote = await this.step0_selectQuote(user);
-      if (!quote) {
-        await Log.error(`[${user.id}]`, 'Žádný dostupný citát pro uživatele');
-        return false;
-      }
-
-      // KROK 1: Otevřít prohlížeč na stránce facebook.com
-      await this.step1_openFacebook(user, fbBot);
-
-      // KROK 2: Kliknout na "Co se vám honí hlavou"
-      await this.step2_clickPostInput(user, fbBot);
-
-      // KROK 3: Napsat citát
-      await this.step3_writeQuote(user, fbBot, quote);
-
-      // KROK 4: Přidat autora (pokud existuje)
-      if (quote.author) {
-        await this.step4_addAuthor(user, fbBot, quote.author);
-      }
-
-      // KROK 5: Krátká pauza na kontrolu
-      await this.step5_pauseForReview(user);
-
-      // KROK 6: Kliknout na tlačítko "Přidat"
-      await this.step6_clickSubmit(user, fbBot);
-
-      // KROK 7: Ověřit úspěšné odeslání
-      const success = await this.step7_waitForSuccess(user, fbBot);
-
-      // KROK 8: Zpracovat výsledek
-      if (success) {
-        await this.handleSuccess(user, quote, pickedAction);
-        return true;
-      } else {
-        await this.handleFailure(user, fbBot);
-        return false;
-      }
-      
-      // Čekání 60s nebo do zavření prohlížeče - použít browser management
-      Log.info(`[${user.id}]`, `Čekám ${Log.formatTime(60)} nebo do zavření prohlížeče...`);
-      
-      // Import BrowserManager
-      const { BrowserManager } = await import('../libs/iv_browser_manager.class.js');
-      const browserManager = new BrowserManager();
-      
-      const result = await browserManager.waitForBrowserCloseOrTimeout(user, browser, 60 * 1000); // 60s
-      
-      if (result === 'restart' || result === 'ui_command') {
-        Log.info(`[${user.id}]`, `Akce ukončena kvůli: ${result}`);
-        return false;
-      }
-      
-      await Log.warn(`[${user.id}]`, 'Nedokončený Programový kód akce.');
-      return false;
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při quote post: ${err.message}`);
-      return false;
-    }
-  }
 
   /**
    * KROK 1: Otevřít prohlížeč na facebook.com
@@ -137,7 +67,7 @@ export class QuotePostAction extends BaseAction {
   /**
    * KROK 0: Vybrat citát z databáze
    */
-  async step0_selectQuote(user) {
+  async step0_selectData(user) {
     Log.info(`[${user.id}]`, 'KROK 0: Vybírám citát z databáze...');
     
     const quote = await db.safeQueryFirst('quotes.getRandomForUser', [user.id]);
@@ -167,7 +97,7 @@ export class QuotePostAction extends BaseAction {
   /**
    * KROK 3: Napsat citát (lidsky)
    */
-  async step3_writeQuote(user, fbBot, quote) {
+  async step3_insertContent(user, fbBot, quote) {
     Log.info(`[${user.id}]`, 'KROK 3: Píšu citát...');
     
     // Pokročilé lidské psaní s chybami a databázovými profily
@@ -175,13 +105,18 @@ export class QuotePostAction extends BaseAction {
     await humanBehavior.typeLikeHuman(fbBot.page, quote.text, 'quote_writing');
     
     Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Citát napsán');
+
+    // Přidat autora (pokud existuje)
+    if (quote.author) {
+      await this.addAuthor(user, fbBot, quote.author);
+    }
   }
 
   /**
-   * KROK 4: Přidat autora
+   * Přidat autora citátu
    */
-  async step4_addAuthor(user, fbBot, author) {
-    Log.info(`[${user.id}]`, 'KROK 4: Přidávám autora...');
+  async addAuthor(user, fbBot, author) {
+    Log.info(`[${user.id}]`, 'Přidávám autora...');
     
     // Přidat nový řádek
     await fbBot.page.keyboard.press('Enter');
@@ -191,8 +126,9 @@ export class QuotePostAction extends BaseAction {
     const humanBehavior = await getHumanBehavior(user.id);
     await humanBehavior.typeLikeHuman(fbBot.page, `- ${author}`, 'author_writing');
     
-    Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Autor přidán');
+    Log.success(`[${user.id}]`, 'Autor přidán');
   }
+
 
   /**
    * KROK 5: Pauza na kontrolu

@@ -170,7 +170,7 @@ get_git_info() {
     echo "Branch: $git_branch"
     echo "Last Commit: $git_commit_msg"
     echo "Commit Date: $git_commit_date"
-    echo "Package Version: $package_version (používá aplikace)"
+    echo "Verze klienta: $package_version (používá aplikace)"
 }
 
 # Získá aktuální Git hash a informace o commitu ve formátu JSON
