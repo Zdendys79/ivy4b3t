@@ -6,14 +6,24 @@
 import { BaseSource } from './base_source.class.js';
 import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
+import https from 'https';
 
 export class BrainyQuoteSource extends BaseSource {
   constructor() {
     super('BrainyQuote', 'https://www.brainyquote.com', 'scraping');
     this.supportedLanguages = ['eng'];
-    this.rateLimit = 3000; // 3s mezi requesty - opatrný přístup
+    this.rateLimit = 15000; // 15s mezi requesty - velmi opatrné
     this.description = 'High quality English quotes from famous people';
-    this.disabled = false; // Můžeme povolit/zakázat podle potřeby
+    this.disabled = false;
+    
+    // Rotující User-Agents pro lepší obcházení detekce
+    this.userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0'
+    ];
   }
 
   async fetchQuotes(activeLanguages) {
@@ -25,14 +35,23 @@ export class BrainyQuoteSource extends BaseSource {
     }
 
     try {
-      // Kategorické stránky s citáty
+      // Rozšířený seznam kategorií
       const categories = [
         'motivational',
         'inspirational', 
         'life',
         'success',
         'wisdom',
-        'happiness'
+        'happiness',
+        'love',
+        'friendship',
+        'nature',
+        'dreams',
+        'education',
+        'courage',
+        'hope',
+        'freedom',
+        'time'
       ];
 
       for (const category of categories) {
@@ -63,10 +82,25 @@ export class BrainyQuoteSource extends BaseSource {
     try {
       const url = `${this.url}/topics/${category}-quotes`;
       
+      // Náhodný User-Agent z kolekce
+      const randomUserAgent = this.userAgents[Math.floor(Math.random() * this.userAgents.length)];
+      
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+          'User-Agent': randomUserAgent,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'DNT': '1',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Cache-Control': 'max-age=0',
+          'Referer': 'https://www.brainyquote.com/'
+        },
+        agent: new https.Agent({
+          keepAlive: true,
+          timeout: 30000
+        })
       });
 
       if (!response.ok) {
@@ -131,7 +165,7 @@ export class BrainyQuoteSource extends BaseSource {
     }
 
     // BrainyQuote specifické filtry
-    const text = quote.text.toLowerCase();
+    const text = (quote.original_text || quote.text).toLowerCase();
     
     // Odfiltrovat reklamní texty
     const spamKeywords = [
@@ -151,6 +185,6 @@ export class BrainyQuoteSource extends BaseSource {
     }
 
     // Musí obsahovat smysluplný obsah
-    return quote.text.split(' ').length >= 5;
+    return (quote.original_text || quote.text).split(' ').length >= 5;
   }
 }

@@ -111,8 +111,7 @@ export class InteractiveDebugger {
     
     // Zpracování výsledku podle původního chování
     if (result === 'timeout') {
-      const actualSeconds = timeoutSeconds;
-      Log.info('[DEBUGGER]', `Timeout reached after ${actualSeconds}s (expected ${timeoutSeconds}s) - auto-continuing`);
+      Log.info('[DEBUGGER]', `Timeout reached after ${timeoutSeconds}s (expected ${timeoutSeconds}s) - auto-continuing`);
       return 'timeout';
     }
     

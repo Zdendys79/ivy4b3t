@@ -6,6 +6,9 @@ import { QuotableSource } from './sources/quotable_source.class.js';
 import { WikiquoteSource } from './sources/wikiquote_source.class.js';
 import { BrainyQuoteSource } from './sources/brainyquote_source.class.js';
 import { CeskySource } from './sources/cesky_source.class.js';
+import { ZenQuotesSource } from './sources/zenquotes_source.class.js';
+import { APINinjasSource } from './sources/apininjas_source.class.js';
+import { DummyJSONSource } from './sources/dummyjson_source.class.js';
 
 export class SourceManager {
   constructor() {
@@ -19,6 +22,9 @@ export class SourceManager {
   initializeSources() {
     // API zdroje (priorita)
     this.sources.push(new QuotableSource());
+    this.sources.push(new ZenQuotesSource());
+    this.sources.push(new APINinjasSource());
+    this.sources.push(new DummyJSONSource());
     
     // Web scraping zdroje
     this.sources.push(new WikiquoteSource());

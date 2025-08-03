@@ -5,12 +5,13 @@
 
 import { BaseSource } from './base_source.class.js';
 import fetch from 'node-fetch';
+import https from 'https';
 
 export class QuotableSource extends BaseSource {
   constructor() {
     super('Quotable.io', 'https://api.quotable.io', 'api');
     this.supportedLanguages = ['eng'];
-    this.rateLimit = 500; // 500ms mezi requesty
+    this.rateLimit = 3000; // 3s mezi requesty - opatrné i pro API
     this.description = 'Free API with thousands of famous quotes';
     this.maxQuotesPerRequest = 20;
   }
@@ -52,7 +53,19 @@ export class QuotableSource extends BaseSource {
     for (let i = 0; i < totalBatches; i++) {
       try {
         const url = `${this.url}/quotes?limit=${batchSize}&page=${i + 1}`;
-        const response = await fetch(url);
+        
+        // SSL agent pro ignorování expired certificates
+        const httpsAgent = new https.Agent({
+          rejectUnauthorized: false
+        });
+        
+        const response = await fetch(url, {
+          agent: httpsAgent,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -104,7 +117,19 @@ export class QuotableSource extends BaseSource {
     for (const author of famousAuthors) {
       try {
         const url = `${this.url}/quotes?author=${encodeURIComponent(author)}&limit=50`;
-        const response = await fetch(url);
+        
+        // SSL agent pro ignorování expired certificates
+        const httpsAgent = new https.Agent({
+          rejectUnauthorized: false
+        });
+        
+        const response = await fetch(url, {
+          agent: httpsAgent,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/json'
+          }
+        });
         
         if (!response.ok) {
           continue; // Pokračovat s dalším autorem

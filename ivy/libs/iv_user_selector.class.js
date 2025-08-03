@@ -16,7 +16,6 @@ import { UIBot } from './iv_ui.class.js';
 
 export class UserSelector {
   constructor() {
-    this.hostname = os.hostname();
   }
 
   /**
@@ -87,10 +86,10 @@ export class UserSelector {
     try {
       // Jednoduché počítání zablokovaných účtů místo komplexních statistik
       // Filtruje pouze uživatele pro místní hostname
-      const totalUsers = await db.safeQueryAll('users.getByHostname', [this.hostname]);
+      const totalUsers = await db.safeQueryAll('users.getByHostname', [os.hostname()]);
       const lockedUsers = totalUsers.filter(user => user.locked !== null);
       
-      Log.info('[USER_SELECTOR]', `=== Statistiky účtů (${this.hostname}) ===`);
+      Log.info('[USER_SELECTOR]', `=== Statistiky účtů (${os.hostname()}) ===`);
       Log.info('[USER_SELECTOR]', `Zablokováno: ${lockedUsers.length} z ${totalUsers.length} celkem`);
       
       if (lockedUsers.length > 0) {
@@ -121,7 +120,7 @@ export class UserSelector {
   async _selectUserForMainBranch() {
     Log.info('[USER_SELECTOR]', 'MAIN větev - používám rotační výběr uživatele s dostupnými akcemi');
     
-    const user = await db.getUserWithAvailableActions(this.hostname);
+    const user = await db.getUserWithAvailableActions(os.hostname());
     if (user) {
       await db.updateUserWorktime(user.id, 15);
       Log.info('[USER_SELECTOR]', `MAIN větev: Čas aktivity uživatele ${user.id} posunut o ${Log.formatTime(15, 'm')}`);
@@ -137,7 +136,7 @@ export class UserSelector {
   async _selectUserForProductionBranch() {
     Log.info('[USER_SELECTOR]', 'Produkční větev - standardní výběr uživatele');
     
-    const user = await db.getUserWithAvailableActions(this.hostname);
+    const user = await db.getUserWithAvailableActions(os.hostname());
     if (user) {
       // Aktualizuj next_worktime hned po výběru - vždy!
       await db.updateUserWorktime(user.id, 15);

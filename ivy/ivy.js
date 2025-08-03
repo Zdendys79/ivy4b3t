@@ -105,40 +105,137 @@ async function backgroundHeartbeat() {
   }
 }
 
-(async () => {
-  // První heartbeat IHNED pro okamžité ohlášení
-  await backgroundHeartbeat();
+// CLI režim pro testování
+async function runCLICommand() {
+  const args = process.argv.slice(2);
+  const userIndex = args.indexOf('--user');
+  const actionIndex = args.indexOf('--action');
   
-  // Zobraz verzi z databáze po prvním heartbeatu (z tabulky variables)
+  if (userIndex === -1 || actionIndex === -1) {
+    console.log('❌ Použití: node ivy.js --user <ID> --action <action_name>');
+    console.log('Příklady:');
+    console.log('  node ivy.js --user 999 --action quote_post');
+    console.log('  node ivy.js --user 1 --action screenshot');
+    process.exit(1);
+  }
+  
+  const userId = parseInt(args[userIndex + 1]);
+  const actionName = args[actionIndex + 1];
+  
+  if (!userId || !actionName) {
+    console.log('❌ Neplatné parametry');
+    process.exit(1);
+  }
+  
+  Log.info('[CLI]', `Spouštím akci "${actionName}" pro uživatele ${userId}`);
+  
+  // Načíst uživatele z fb_users tabulky
+  const user = await db.pool.execute('SELECT id, name, surname, host, fb_login FROM fb_users WHERE id = ?', [userId]).then(([rows]) => rows[0]);
+  if (!user) {
+    Log.error('[CLI]', `Uživatel ${userId} neexistuje`);
+    process.exit(1);
+  }
+  
+  // Kontrola hostname
+  if (user.host && user.host !== hostname) {
+    Log.error('[CLI]', `Uživatel ${userId} není povolen na hostname "${hostname}". Povolen: "${user.host}"`);
+    process.exit(1);
+  }
+  
+  Log.info('[CLI]', `Uživatel: ${user.name} ${user.surname} | FB: ${user.fb_login} (${user.id})`);
+  Log.info('[CLI]', `Hostname: ${hostname} ✅`);
+  
+  // Načíst akci
   try {
-    const dbVersionResult = await db.safeQueryFirst('system.getVersionCode');
-    const dbVersionFromDb = dbVersionResult?.code || 'nenalezena';
-  } catch (err) {
-    Log.debug('[IVY]', `Chyba při načítání verze z DB: ${err.message}`);
+    const actionModule = await import(`./actions/${actionName}.action.js`);
+    const ActionClass = Object.values(actionModule)[0];
+    const action = new ActionClass();
+    
+    // Zkontrolovat zda akce potřebuje browser/fbBot
+    const requirements = action.getRequirements ? action.getRequirements() : {};
+    
+    let context = null;
+    if (requirements.needsFB) {
+      // Importovat worker pro browser management
+      const worker = await import('./iv_worker.js');
+      
+      Log.info('[CLI]', `Akce "${actionName}" vyžaduje Facebook - spouštím browser na DISPLAY=:20`);
+      
+      // Vytvořit browser context pro uživatele
+      context = await worker.createBrowserContext(user);
+      if (!context) {
+        throw new Error('Nelze vytvořit browser kontext pro uživatele');
+      }
+    }
+    
+    // Spustit akci
+    global.systemState.currentUserId = user.id;
+    global.systemState.currentAction = actionName;
+    global.systemState.actionStartTime = new Date();
+    
+    await action.execute(user, context, null);
+    
+    Log.success('[CLI]', `Akce "${actionName}" dokončena!`);
+    
+  } catch (error) {
+    Log.error('[CLI]', `Chyba při spouštění akce: ${error.message}`);
+    process.exit(1);
   }
   
-  // Spustit heartbeat interval
-  heartbeatInterval = setInterval(backgroundHeartbeat, config.getHeartbeatIntervalSeconds() * 1000);
-  Log.info('[IVY]', 'Heartbeat inicializován - první ohlášení dokončeno');
+  // Vyčistit stav
+  global.systemState.currentUserId = null;
+  global.systemState.currentAction = null;
+  global.systemState.actionStartTime = null;
+  
+  process.exit(0);
+}
 
-  // RSS scheduler je nyní samostatný proces na serveru
+// Detekce CLI vs normální režim
+const isCLIMode = process.argv.includes('--user') || process.argv.includes('--action');
 
-  while (!isShuttingDown) {
+if (isCLIMode) {
+  // CLI režim
+  runCLICommand().catch(async (error) => {
+    await Log.error('[CLI]', `Kritická chyba: ${error.message}`);
+    process.exit(1);
+  });
+} else {
+  // Normální režim
+  (async () => {
+    // První heartbeat IHNED pro okamžité ohlášení
+    await backgroundHeartbeat();
+    
+    // Zobraz verzi z databáze po prvním heartbeatu (z tabulky variables)
     try {
-      // Kontrola restart_needed z heartbeat
-      if (global.systemState.restart_needed) {
-        Log.info(`[IVY] Heartbeat detekoval změnu verze. Ukončuji.`);
-        process.exit(1);
-      }
-      
-      await workerTick();
-      await Wait.toSeconds(1);
+      const dbVersionResult = await db.safeQueryFirst('system.getVersionCode');
+      const dbVersionFromDb = dbVersionResult?.code || 'nenalezena';
     } catch (err) {
-      await Log.error('[IVY]', err);
-      await Wait.toMinutes(1, 'Čekání na další heartbeat');
+      Log.debug('[IVY]', `Chyba při načítání verze z DB: ${err.message}`);
     }
-  }
-})();
+    
+    // Spustit heartbeat interval
+    heartbeatInterval = setInterval(backgroundHeartbeat, config.getHeartbeatIntervalSeconds() * 1000);
+    Log.info('[IVY]', 'Heartbeat inicializován - první ohlášení dokončeno');
+
+    // RSS scheduler je nyní samostatný proces na serveru
+
+    while (!isShuttingDown) {
+      try {
+        // Kontrola restart_needed z heartbeat
+        if (global.systemState.restart_needed) {
+          Log.info(`[IVY] Heartbeat detekoval změnu verze. Ukončuji.`);
+          process.exit(1);
+        }
+        
+        await workerTick();
+        await Wait.toSeconds(1);
+      } catch (err) {
+        await Log.error('[IVY]', err);
+        await Wait.toMinutes(1, 'Čekání na další heartbeat');
+      }
+    }
+  })();
+}
 
 // Graceful shutdown handler
 async function gracefulShutdown(signal) {

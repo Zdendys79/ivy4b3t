@@ -48,14 +48,16 @@ export class DuplicateChecker {
     const similarQuotes = await this.db.findSimilarQuotes(targetText);
     
     for (const dbQuote of similarQuotes) {
-      // Kontrola proti českému textu
-      const similarity1 = this.calculateSimilarity(
-        targetText, 
-        this.normalizeForComparison(dbQuote.text)
-      );
+      // Kontrola proti českému textu (pokud existuje)
+      if (dbQuote.translated_text) {
+        const similarity1 = this.calculateSimilarity(
+          targetText, 
+          this.normalizeForComparison(dbQuote.translated_text)
+        );
 
-      if (similarity1 >= this.similarityThreshold) {
-        return true;
+        if (similarity1 >= this.similarityThreshold) {
+          return true;
+        }
       }
 
       // Kontrola proti originálnímu textu (pokud existuje)
@@ -176,7 +178,7 @@ export class DuplicateChecker {
     for (const dbQuote of similarQuotes) {
       const similarity = this.calculateSimilarity(
         targetText, 
-        this.normalizeForComparison(dbQuote.text)
+        this.normalizeForComparison(dbQuote.translated_text)
       );
 
       if (similarity > maxSimilarity) {

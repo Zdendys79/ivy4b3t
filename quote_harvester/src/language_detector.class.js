@@ -2,7 +2,7 @@
  * LanguageDetector - Detekce jazyka citátů
  */
 
-import franc from 'franc';
+import { franc } from 'franc';
 
 export class LanguageDetector {
   constructor() {

@@ -21,7 +21,6 @@ import { Wait } from './iv_wait.class.js';
 
 export class UIBot {
   constructor() {
-    this.hostname = os.hostname();
     this.browser = null;
     this.fbBot = null;
     this.currentCommand = null;
@@ -55,7 +54,7 @@ export class UIBot {
   async checkForCommand() {
     try {
       const command = await db.getUICommand();
-      if (command && command.host === this.hostname) {
+      if (command && command.host === os.hostname()) {
         Log.info('[UI]', `Nalezen UI příkaz: ${command.command} (ID: ${command.id})`);
         return command;
       }
