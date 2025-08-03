@@ -261,8 +261,8 @@ export class QuotePostAction extends BaseAction {
   async step7_waitForSuccess(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 7: Čekám na potvrzení odeslání...');
     
-    // Po kliknutí na Přidat čekat 3 sekundy
-    await Wait.toSeconds(3, 'Po kliknutí na Přidat');
+    // Po kliknutí na Přidat čekat až 10 sekund než tlačítko zmizí
+    await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
     // Zkontrolovat zda tlačítko "Přidat" zmizelo (což znamená úspěch)
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });

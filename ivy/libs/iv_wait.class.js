@@ -4,8 +4,14 @@
  * 
  * Popis: Jednotná třída pro všechny typy čekání a pauzy
  * - Jednoduché API s konzistentním logováním
- * - Náhodné intervaly pro lidské chování
+ * - Náhodné intervaly pro lidské chování (60% minimum z max času)
+ * - Keyboard support s 'q' klávesou pro ukončení
  * - Bez duplicitních funkcí
+ * 
+ * RANDOMIZACE: Všechny čekací metody používají generátor náhodných časů:
+ * - min_time = max_time * 0.6 (60% z maximálního času)
+ * - actual_time = min_time + random * (max_time - min_time)
+ * - Simuluje lidské chování s nepravidelnostmi
  */
 
 import { Log } from './iv_log.class.js';
@@ -22,7 +28,7 @@ export class Wait {
     const wait_time = min_time + Math.random() * (max_time - min_time);
     
     if (comment) {
-      Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s`);
+      Log.info('[WAIT]', `${comment} - čekám ${Log.formatTime(wait_time, 's')}`);
     }
     
     await this._waitWithKeyboardSupport(wait_time * 1000, {
@@ -43,7 +49,7 @@ export class Wait {
     const wait_time = min_time + Math.random() * (max_time - min_time);
     
     if (comment) {
-      Log.info('[WAIT]', `${comment} - čekám ${Math.round(wait_time)}s (přerušitelné)`);
+      Log.info('[WAIT]', `${comment} - čekám ${Log.formatTime(wait_time, 's')} (přerušitelné)`);
     }
     
     await this._waitWithKeyboardSupport(wait_time * 1000, {
@@ -84,7 +90,7 @@ export class Wait {
     const target_formatted = target_time.toTimeString().substring(0, 8);
     
     const final_comment = comment || 'Čekám';
-    Log.info('[WAIT]', `${final_comment} - ${Math.round(wait_minutes * 10) / 10} min do ${target_formatted}`);
+    Log.info('[WAIT]', `${final_comment} - ${Log.formatTime(wait_minutes, 'm')} do ${target_formatted}`);
     
     await this._waitWithKeyboardSupport(wait_ms, {
       checkRestart: false,
@@ -108,7 +114,7 @@ export class Wait {
     const target_formatted = target_time.toTimeString().substring(0, 8);
     
     const final_comment = comment || 'Čekám';
-    Log.info('[WAIT]', `${final_comment} - ${Math.round(wait_minutes * 10) / 10} min do ${target_formatted} (přerušitelné)`);
+    Log.info('[WAIT]', `${final_comment} - ${Log.formatTime(wait_minutes, 'm')} do ${target_formatted} (přerušitelné)`);
     
     await this._waitWithKeyboardSupport(wait_ms, {
       checkRestart: true,
@@ -130,7 +136,7 @@ export class Wait {
     const target_time = new Date(Date.now() + wait_ms);
     const target_formatted = target_time.toTimeString().substring(0, 8);
     
-    Log.info('[WAIT]', `Čekání na další cyklus - ${Math.round(wait_minutes * 10) / 10} min do ${target_formatted} (přerušitelné s UI)`);
+    Log.info('[WAIT]', `Čekání na další cyklus - ${Log.formatTime(wait_minutes, 'm')} do ${target_formatted} (přerušitelné s UI)`);
     
     const result = await this._waitWithKeyboardSupport(wait_ms, {
       checkRestart: true,
@@ -317,13 +323,11 @@ export class Wait {
   static async delay(delay_time, verbose = true) {
     await this._validateTime(delay_time, 'delay');
     
-    if (verbose && delay_time >= 60000) {
-      const minutes = Math.floor(delay_time / 60000);
-      const seconds = Math.floor((delay_time / 1000) % 60);
+    if (verbose && delay_time >= 1000) {
       const target_time = new Date(Date.now() + delay_time);
       const target_formatted = target_time.toTimeString().substring(0, 8);
       
-      Log.info('[WAIT]', `Čekám ${minutes}:${seconds.toString().padStart(2, '0')} do ${target_formatted}`);
+      Log.info('[WAIT]', `Čekám ${Log.formatTime(delay_time)} do ${target_formatted}`);
     }
     
     await this._waitWithKeyboardSupport(delay_time, {

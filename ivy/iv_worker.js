@@ -75,10 +75,14 @@ async function checkRestartNeeded() {
  * @returns {Promise<boolean>} true pokud byl zpracován UI příkaz
  */
 async function handleUICommands() {
-  if (global.uiCommandCache) {
-    const uiCommand = global.uiCommandCache;
-    // Vyčistit cache po načtení
-    global.uiCommandCache = null;
+  // Check both cache and database for UI commands
+  const uiCommand = global.uiCommandCache || await UIBot.quickCheck();
+  
+  if (uiCommand) {
+    // Vyčistit cache po načtení (pokud byl z cache)
+    if (global.uiCommandCache) {
+      global.uiCommandCache = null;
+    }
     
     const user = await userSelector.getUserForUICommand(uiCommand);
     if (!user) {
@@ -96,7 +100,7 @@ async function handleUICommands() {
     // BROWSER OPTIMIZATION: Only close browser if next UI command is for different user
     // This prevents unnecessary browser restart cycles and SingletonLock conflicts
     // when multiple UI commands are queued for the same user
-    const nextUICommand = global.uiCommandCache;
+    const nextUICommand = global.uiCommandCache || await UIBot.quickCheck();
     const shouldCloseBrowser = !nextUICommand || nextUICommand.user_id !== user.id;
     
     if (shouldCloseBrowser) {
@@ -145,29 +149,21 @@ async function processUserWork() {
  */
 async function handleWheelResult(wheelResult, user, browser, context) {
   if (wheelResult.stoppedByUI) {
-    if (global.uiCommandCache && global.uiCommandCache.user_id === user.id) {
-      const postUICommand = global.uiCommandCache;
-      // Vyčistit cache po načtení
-      global.uiCommandCache = null;
-      const uiBot = new UIBot();
-      await uiBot.handleUICommandComplete(postUICommand, user, browser, context);
-    }
-    
     // BROWSER OPTIMIZATION: Only close browser if next UI command is for different user
     // This prevents unnecessary browser restart cycles and SingletonLock conflicts  
     // when multiple UI commands are queued for the same user
-    const nextUICommand = global.uiCommandCache;
+    const nextUICommand = global.uiCommandCache || await UIBot.quickCheck();
     const shouldCloseBrowser = !nextUICommand || nextUICommand.user_id !== user.id;
     
     if (shouldCloseBrowser) {
       Log.info('[WORKER]', `Zavírám browser - další UI uživatel je jiný (aktuální: ${user.id}, další: ${nextUICommand?.user_id || 'žádný'})`);
       await browserManager.closeBrowser(browser);
     } else {
-      Log.info('[WORKER]', `Ponechávám browser otevřený - stejný uživatel ${user.id} pokračuje`);
+      Log.info('[WORKER]', `Ponechávám browser otevřený - stejný uživatel ${user.id}, UI příkaz převezme další cyklus`);
     }
     
-    // Po dokončení UI příkazu - ukončit cyklus (worker se restartuje přirozeně)
-    Log.info('[WORKER]', 'UI příkaz dokončen - ukončuji cyklus pro restart');
+    // Wheel přerušen UI příkazem - ukončit cyklus, nový cyklus převezme UI
+    Log.info('[WORKER]', 'Wheel přerušen UI příkazem - ukončuji cyklus, nový worker převezme UI');
     return;
   } else if (wheelResult.stoppedByRestart) {
     Log.info('[WORKER]', 'Wheel ukončen kvůli restart_needed. Ukončuji worker.');
