@@ -319,8 +319,8 @@ export class UIBot {
     const heartbeatInterval = setInterval(async () => {
       try {
         elapsedTime += checkIntervalMs;
-        const remainingMinutes = Math.ceil((timeoutMs - elapsedTime) / 60000);
-        Log.debug('[UI]', `Heartbeat - zbývá ${remainingMinutes} minut čekání...`);
+        const remainingTime = timeoutMs - elapsedTime;
+        Log.debug('[UI]', `Heartbeat - zbývá ${Log.formatTime(remainingTime)} čekání...`);
         db.heartBeat(this.currentCommand.user_id || 0, 0, 'UI_WAIT');
       } catch (e) {
         await Log.warn('[UI]', `Heartbeat během čekání selhal: ${e.message}`);
