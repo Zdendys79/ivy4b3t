@@ -1,0 +1,25 @@
+{
+  "name": "quote-harvester",
+  "version": "1.0.0",
+  "description": "Automatický systém pro sběr citátů z různých zdrojů",
+  "main": "harvester.js",
+  "type": "module",
+  "scripts": {
+    "start": "node harvester.js",
+    "harvest": "node harvester.js --run",
+    "validate": "node harvester.js --validate-only",
+    "stats": "node harvester.js --stats-only"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "node-fetch": "^3.3.0",
+    "mysql2": "^3.6.0",
+    "franc": "^6.0.0",
+    "levenshtein": "^1.0.5",
+    "crypto": "^1.0.0"
+  },
+  "keywords": ["quotes", "harvester", "scraping", "multilingual"],
+  "author": "IVY4B3T",
+  "license": "MIT"
+}

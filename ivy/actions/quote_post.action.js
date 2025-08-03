@@ -100,33 +100,59 @@ export class QuotePostAction extends BasePostAction {
   async step3_insertContent(user, fbBot, quote) {
     Log.info(`[${user.id}]`, 'KROK 3: Píšu citát...');
     
-    // Pokročilé lidské psaní s chybami a databázovými profily
-    const humanBehavior = await getHumanBehavior(user.id);
-    await humanBehavior.typeLikeHuman(fbBot.page, quote.text, 'quote_writing');
+    // Vybrat náhodnou variantu zobrazení
+    const variant = this.selectDisplayVariant(quote);
+    Log.debug(`[${user.id}]`, `Vybrána varianta: ${variant}`);
     
-    Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Citát napsán');
-
-    // Přidat autora (pokud existuje)
-    if (quote.author) {
-      await this.addAuthor(user, fbBot, quote.author);
-    }
+    // Sestavit text podle varianty
+    const textToType = this.buildQuoteText(quote, variant);
+    Log.debug(`[${user.id}]`, `Text k napsání: ${textToType.substring(0, 50)}...`);
+    
+    // Pokročilé lidské psaní
+    const humanBehavior = await getHumanBehavior(user.id);
+    await humanBehavior.typeLikeHuman(fbBot.page, textToType, 'quote_writing');
+    
+    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Citát napsán (varianta: ${variant})`);
   }
 
   /**
-   * Přidat autora citátu
+   * Vybrat náhodnou variantu zobrazení citátu
    */
-  async addAuthor(user, fbBot, author) {
-    Log.info(`[${user.id}]`, 'Přidávám autora...');
+  selectDisplayVariant(quote) {
+    // Pokud není originální text, použij pouze český
+    if (!quote.original_text) {
+      return 'czech_only';
+    }
     
-    // Přidat nový řádek
-    await fbBot.page.keyboard.press('Enter');
-    await fbBot.page.keyboard.press('Enter');
+    // Náhodný výběr mezi 3 variantami pro citáty s originálním textem
+    const variants = ['czech_only', 'original_plus_czech', 'original_only'];
+    const randomIndex = Math.floor(Math.random() * variants.length);
+    return variants[randomIndex];
+  }
+
+  /**
+   * Sestavit text citátu podle vybrané varianty
+   */
+  buildQuoteText(quote, variant) {
+    const author = quote.author ? `\n\n- ${quote.author}` : '';
     
-    // Pokročilé lidské psaní autora
-    const humanBehavior = await getHumanBehavior(user.id);
-    await humanBehavior.typeLikeHuman(fbBot.page, `- ${author}`, 'author_writing');
-    
-    Log.success(`[${user.id}]`, 'Autor přidán');
+    switch (variant) {
+      case 'czech_only':
+        // Varianta 1: Pouze český překlad
+        return `${quote.text}${author}`;
+        
+      case 'original_plus_czech':
+        // Varianta 2: Originál + český překlad
+        return `"${quote.original_text}"\n\n${quote.text}${author}`;
+        
+      case 'original_only':
+        // Varianta 3: Pouze originál
+        return `"${quote.original_text}"${author}`;
+        
+      default:
+        // Fallback na českou variantu
+        return `${quote.text}${author}`;
+    }
   }
 
 
@@ -228,11 +254,19 @@ export class QuotePostAction extends BasePostAction {
     // Nastavit timeout citátu na 30 dní
     await db.safeExecute('quotes.markAsUsed', [30, quote.id]);
     
-    // Zapsat úspěšnou akci do action_log
+    // Určit použitou variantu pro logování
+    let variant = 'czech_only';
+    if (quote.original_text) {
+      // Pokud má originál, mohla být použita jakákoli varianta
+      variant = 'random_variant';
+    }
+    
+    // Zapsat úspěšnou akci do action_log s detaily
+    const logDetail = `Quote ID: ${quote.id}, Lang: ${quote.language_code || 'ces'}, Variant: ${variant}`;
     await db.safeExecute('actions.logAction', [
       user.id,
       'quote_post',
-      `Quote ID: ${quote.id}`,
+      logDetail,
       quote.id
     ]);
     
