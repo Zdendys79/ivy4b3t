@@ -225,8 +225,8 @@ export class NewsPostAction extends BaseAction {
   async step6_waitForSuccess(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 6: Čekám na potvrzení odeslání...');
     
-    // Po kliknutí na Přidat čekat minimálně 5 sekund
-    await Wait.toSeconds(5, 'Po kliknutí na Přidat - povinná pauza');
+    // Po kliknutí na Přidat čekat až 10 sekund než tlačítko zmizí
+    await Wait.toSeconds(10, 'Po kliknutí na Přidat - povinná pauza');
     
     // Prozatím vždy vrátit true (stejně jako v quote_post)
     Log.info(`[${user.id}]`, 'KROK 6: Předpokládám úspěch');

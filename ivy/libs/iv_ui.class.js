@@ -197,8 +197,8 @@ export class UIBot {
       global.systemState.currentAction = null;
       global.systemState.actionStartTime = null;
       
-      // KRITICKÉ: Vymazat UI cache aby se heartbeat nepokusil znovu spustit stejný příkaz
-      global.uiCommandCache = null;
+      // KRITICKÉ: Po dokončení UI příkazu načíst další UI příkaz do cache
+      global.uiCommandCache = await UIBot.quickCheck();
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při zpracování UI příkazu: ${err.message}`);
@@ -328,7 +328,7 @@ export class UIBot {
     }, checkIntervalMs);
 
     try {
-      // Čekáme na jednu ze dvou událostí: zavření prohlížeče nebo timeout
+      // Čekáme na jednu ze tří událostí: zavření prohlížeče, timeout, nebo q-key
       await Promise.race([
         new Promise(resolve => {
           browser.once('disconnected', () => {
@@ -341,6 +341,18 @@ export class UIBot {
             Log.debug('[UI]', `Timeout ${Log.formatTime(timeoutMs)} elapsed`);
             resolve();
           }, timeoutMs);
+        }),
+        // Keyboard listener for 'q' key to exit
+        Wait._waitWithKeyboardSupport(timeoutMs, {
+          checkRestart: false,
+          checkUICommand: false,
+          allowedKeys: ['q'],
+          onKeyPress: (key) => {
+            if (key === 'q') {
+              Log.info('[UI]', 'Heartbeat čekání přerušeno klávesou "q" - ukončuji program');
+              process.exit(0);
+            }
+          }
         })
       ]);
 

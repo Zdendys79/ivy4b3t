@@ -53,6 +53,102 @@
 - Kontrola UI příkazů → výběr uživatele → akce
 - Orchestrace mezi moduly
 
+#### WORKER CYKLUS - DETAILNÍ POSTUP
+
+**Hlavní funkce: `tick()` - přesný postup kroků:**
+
+```
+START tick()
+│
+├─ 1. RESTART KONTROLA (nejvyšší priorita)
+│  └─ checkRestartNeeded()
+│     └─ IF global.systemState.restart_needed === true
+│        └─ process.exit(1) → OKAMŽITÉ UKONČENÍ
+│
+├─ 2. UI PŘÍKAZY - PRIORITA #1 (před wheel)
+│  └─ handleUICommands()
+│     ├─ Check: global.uiCommandCache || await UIBot.quickCheck()
+│     └─ IF uiCommand found
+│        ├─ getUserForUICommand() → user validation
+│        ├─ openForUser() → browser + context
+│        ├─ handleUICommandComplete() → zpracování UI příkazu
+│        ├─ Browser optimization (stejný user = ponechat browser)
+│        └─ return true → UKONČIT WORKER CYKLUS
+│
+├─ 3. WHEEL A AKCE (normální provoz)
+│  └─ processUserWork()
+│     ├─ selectUser() → výběr aktivního uživatele
+│     ├─ IF no user → showAccountLockStats() → END
+│     ├─ openForUser() → browser + context
+│     ├─ runWheelOfFortune() → losování a provedení akce
+│     └─ handleWheelResult() → zpracování výsledku wheel
+│
+└─ 4. ČEKÁNÍ (konec cyklu)
+   └─ Wait.forNextWorkerCycle() → interruptible wait → RESTART
+```
+
+#### UI COMMAND PŘERUŠENÍ - MECHANISMUS
+
+**1. BĚHEM WHEEL OPERACÍ:**
+- Wheel pravidelně kontroluje `global.uiCommandCache`
+- Při nalezení UI příkazu → `wheelResult.stoppedByUI = true`
+- Wheel ukončí současnou akci a vrátí kontrolu worker
+
+**2. PO WHEEL PŘERUŠENÍ:**
+```
+handleWheelResult() při stoppedByUI:
+├─ Browser optimization check:
+│  ├─ IF nextUICommand.user_id === currentUser.id
+│  │  └─ Ponechat browser otevřený (SingletonLock prevence)
+│  └─ ELSE
+│     └─ Zavřít browser
+├─ Log: "Wheel přerušen UI příkazem"
+└─ return → UKONČIT worker cyklus
+```
+
+**3. NOVÝ WORKER CYKLUS:**
+- Spustí se `tick()` znovu
+- `handleUICommands()` na začátku převezme UI příkaz
+- UI má vždy prioritu před wheel operacemi
+
+#### UI COMMAND GLOBAL CACHE - ARCHITEKTURA
+
+**INICIALIZACE:**
+```javascript
+// ivy.js při spuštění:
+global.uiCommandCache = null;
+
+// První heartbeat (AWAIT - čeká na dokončení):
+await backgroundHeartbeat(); // Naplní cache pokud UI příkaz existuje
+```
+
+**HEARTBEAT MECHANISMUS:**
+```javascript
+// Každých X sekund na pozadí:
+const result = await db.heartBeat({...systemState...});
+
+// Cache UI příkaz z DB odpovědi:
+global.uiCommandCache = result?.uiCommand || null;
+```
+
+**CACHE LIFECYCLE:**
+1. **Heartbeat načte** UI příkaz z DB → `global.uiCommandCache`
+2. **Worker zpracuje** UI příkaz → `handleUICommandComplete()`
+3. **Cache se vymaže** po zpracování → `global.uiCommandCache = null`
+4. **Další heartbeat** načte nový UI příkaz (pokud existuje)
+
+**VÝHODY CACHE SYSTÉMU:**
+- ✓ **Okamžitá reakce** - bez čekání na DB dotazy
+- ✓ **Efektivní přerušení** - wheel může rychle detekovat UI příkaz
+- ✓ **Optimalizace** - méně DB dotazů během běhu
+- ✓ **Spolehlivost** - první heartbeat při startu načte existující UI příkazy
+
+**DŮLEŽITÉ:**
+- Cache obsahuje **pouze jeden aktuální** UI příkaz
+- Po zpracování se automaticky **vymaže** (správné chování)
+- **Žádné race conditions** - heartbeat běží asynchronně
+- **Fallback na DB** - `global.uiCommandCache || await UIBot.quickCheck()`
+
 ### `iv_wheel.js` - ACTION SELECTOR
 - Losování akcí podle vah
 - Invasive lock management
@@ -188,7 +284,11 @@
 ## 🔧 UTILITIES
 
 ### POMOCNÉ TŘÍDY
-- `libs/iv_wait.class.js` - čekací mechanismy
+- `libs/iv_wait.class.js` - čekací mechanismy s keyboard support
+  - **Keyboard support:** 'q' klávesy pro okamžité ukončení (`process.exit(0)`)
+  - **Interruptible waiting:** UI command a restart detection během čekání
+  - **Worker integration:** `Wait.forNextWorkerCycle()` s kompletní interrupt logikou
+  - **UI waiting:** `Wait._waitWithKeyboardSupport()` pro heartbeat čekání
 - `libs/iv_math.class.js` - matematické utility
 - `libs/iv_char.class.class.js` - práce s textem
 - `libs/iv_querybuilder.class.js` - SQL builder
