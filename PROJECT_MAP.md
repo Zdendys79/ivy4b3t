@@ -281,6 +281,46 @@ global.uiCommandCache = result?.uiCommand || null;
 
 ---
 
+## 📜 SCRIPTS (`/scripts/`)
+
+### SETUP & DEPLOYMENT
+- `setup-ivy.sh` - kompletní instalace IVY na VM včetně mazání a obnovy
+- `update-files.sh` - aktualizace souborů bez spuštění robota
+
+### SYNCHRONIZATION & MONITORING
+- `install-inotify.sh` - instalace inotify-tools + nastavení systemd service pro automatické spouštění
+  - Vytváří systemd service `scripts-sync.service` s přímým inotifywait příkazem
+  - Automatická synchronizace scripts/ → Sync/scripts/ při jakékoli změně
+  - Spouští se automaticky při startu systému s počáteční synchronizací
+  - Kontrola stavu: `sudo systemctl status scripts-sync.service`
+  - Logy: `sudo journalctl -u scripts-sync.service -f`
+
+### DATABASE & QUOTES
+- `quotes-google-sheets.js` - Google Apps Script pro správu citátů přes Google Sheets
+  - Načítání citátů z databáze s rozlišením originálních textů a překladů
+  - Statistiky podle jazyků a stavu překladů
+  - Aktualizace překladů přímo z Google Sheets
+  - Automatické obnovování dat každou hodinu
+
+### TRANSLATION QUALITY CONTROL
+- `translation-quality-checker.js` - AI-powered kontrola a vylepšování kvality překladů
+  - **Profesionální lingvistický přístup** - posuzuje věrnost, přirozenost, poetičnost a gramatiku
+  - **Claude Sonnet 3.5** pro nejvyšší kvalitu hodnocení
+  - **Rate limiting** - 1 citát za 10 minut pro kontrolu nákladů
+  - **Token monitoring** - sledování spotřeby a nákladů v reálném čase
+  - **Automatické označování výsledků:**
+    - `translation_approved = 1` pro schválené překlady
+    - `translation_approved = 0` pro opravené překlady (čekají další kontrolu)  
+    - `translation_approved = 2` pro problematické případy
+  - **Graceful handling** - pokračuje při problémech bez zastavení
+  - **Detailní statistiky** - míra schválení, průměrné tokeny, odhad nákladů
+  - **Poznámka:** Plánována sofistikovanější tabulka pro správu problematických případů
+
+### TESTING & DIAGNOSTICS
+- `test-db-connection.sh` - diagnostika DB připojení
+
+---
+
 ## 🔧 UTILITIES
 
 ### POMOCNÉ TŘÍDY

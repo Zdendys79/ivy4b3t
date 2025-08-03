@@ -67,7 +67,7 @@ export class QualityValidator {
    * Validace délky textu
    */
   validateLength(quote) {
-    const text = quote.text;
+    const text = quote.original_text || quote.text;
     const length = text.length;
     const wordCount = text.split(/\s+/).length;
 
@@ -103,7 +103,7 @@ export class QualityValidator {
    * Validace obsahu
    */
   validateContent(quote) {
-    const text = quote.text.toLowerCase();
+    const text = (quote.original_text || quote.text).toLowerCase();
 
     // Kontrola HTML tagů
     if (text.includes('<') && text.includes('>')) {
@@ -138,7 +138,7 @@ export class QualityValidator {
    * Validace jazyka a kódování
    */
   validateLanguage(quote) {
-    const text = quote.text;
+    const text = quote.original_text || quote.text;
 
     // Kontrola základního kódování
     if (/[\uFFFD\u0000-\u001F]/.test(text)) {
@@ -163,7 +163,7 @@ export class QualityValidator {
    * Validace formátu
    */
   validateFormat(quote) {
-    const text = quote.text.trim();
+    const text = (quote.original_text || quote.text).trim();
 
     // Kontrola prázdného textu
     if (!text) {
@@ -191,7 +191,7 @@ export class QualityValidator {
    * Kontrola zakázaných slov
    */
   validateBlockedWords(quote) {
-    const text = quote.text.toLowerCase();
+    const text = (quote.original_text || quote.text).toLowerCase();
 
     for (const word of this.blockedWords) {
       if (text.includes(word.toLowerCase())) {
@@ -206,7 +206,7 @@ export class QualityValidator {
    * Validace relevance pro citáty
    */
   validateRelevance(quote) {
-    const text = quote.text.toLowerCase();
+    const text = (quote.original_text || quote.text).toLowerCase();
 
     // Pozitivní indikátory (zvyšují skóre)
     const positiveKeywords = [

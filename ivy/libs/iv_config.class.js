@@ -57,7 +57,6 @@ export class IvyConfig {
   constructor() {
     // Systémové konstanty
     this.isLinux = process.platform === 'linux';
-    this.hostname = os.hostname();
     this.debugKeepBrowserOpen = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
     
     // Cache - inicializovaná s default hodnotami

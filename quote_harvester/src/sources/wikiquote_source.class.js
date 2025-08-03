@@ -11,7 +11,7 @@ export class WikiquoteSource extends BaseSource {
   constructor() {
     super('Wikiquote', 'https://wikiquote.org', 'scraping');
     this.supportedLanguages = ['eng', 'ces', 'fra', 'deu', 'ita', 'spa'];
-    this.rateLimit = 2000; // 2s mezi requesty - respektování robots.txt
+    this.rateLimit = 8000; // 8s mezi requesty - velmi opatrné pro větší objem
     this.description = 'Wikipedia sister project with quotes';
   }
 
@@ -61,10 +61,7 @@ export class WikiquoteSource extends BaseSource {
         const pageQuotes = await this.scrapePage(url, languageCode);
         quotes.push(...pageQuotes);
 
-        // Omezit množství citátů z jedné stránky
-        if (pageQuotes.length > 20) {
-          break;
-        }
+        // Bez omezení - chceme víc citátů
 
         await this.respectRateLimit();
         
@@ -81,12 +78,37 @@ export class WikiquoteSource extends BaseSource {
    */
   getPopularPages(subdomain) {
     const commonPages = {
-      'en': ['Albert_Einstein', 'Winston_Churchill', 'Mark_Twain', 'Oscar_Wilde'],
-      'cs': ['Albert_Einstein', 'Tomáš_Garrigue_Masaryk', 'Václav_Havel'],
-      'fr': ['Albert_Einstein', 'Napoleon_Bonaparte', 'Victor_Hugo'],
-      'de': ['Albert_Einstein', 'Johann_Wolfgang_von_Goethe', 'Friedrich_Nietzsche'],
-      'it': ['Albert_Einstein', 'Leonardo_da_Vinci', 'Dante_Alighieri'],
-      'es': ['Albert_Einstein', 'Pablo_Picasso', 'Miguel_de_Cervantes']
+      'en': [
+        'Albert_Einstein', 'Winston_Churchill', 'Mark_Twain', 'Oscar_Wilde',
+        'Benjamin_Franklin', 'Abraham_Lincoln', 'Mahatma_Gandhi', 'Nelson_Mandela',
+        'Steve_Jobs', 'Ernest_Hemingway', 'William_Shakespeare', 'Aristotle',
+        'Confucius', 'Maya_Angelou', 'Martin_Luther_King,_Jr.', 'Theodore_Roosevelt'
+      ],
+      'cs': [
+        'Albert_Einstein', 'Tomáš_Garrigue_Masaryk', 'Václav_Havel',
+        'Karel_Čapek', 'Bohumil_Hrabal', 'Milan_Kundera', 'Franz_Kafka',
+        'Jan_Amos_Komenský', 'Božena_Němcová', 'Jaroslav_Hašek'
+      ],
+      'fr': [
+        'Albert_Einstein', 'Napoleon_Bonaparte', 'Victor_Hugo', 'Voltaire',
+        'Jean-Jacques_Rousseau', 'Marcel_Proust', 'Antoine_de_Saint-Exupéry',
+        'Coco_Chanel', 'Charles_de_Gaulle', 'Simone_de_Beauvoir'
+      ],
+      'de': [
+        'Albert_Einstein', 'Johann_Wolfgang_von_Goethe', 'Friedrich_Nietzsche',
+        'Immanuel_Kant', 'Arthur_Schopenhauer', 'Hermann_Hesse', 'Thomas_Mann',
+        'Bertolt_Brecht', 'Franz_Kafka', 'Rainer_Maria_Rilke'
+      ],
+      'it': [
+        'Albert_Einstein', 'Leonardo_da_Vinci', 'Dante_Alighieri',
+        'Galileo_Galilei', 'Niccolò_Machiavelli', 'Giuseppe_Garibaldi',
+        'Umberto_Eco', 'Federico_Fellini', 'Roberto_Benigni'
+      ],
+      'es': [
+        'Albert_Einstein', 'Pablo_Picasso', 'Miguel_de_Cervantes',
+        'Federico_García_Lorca', 'Salvador_Dalí', 'Antonio_Machado',
+        'Gabriel_García_Márquez', 'Jorge_Luis_Borges', 'Octavio_Paz'
+      ]
     };
 
     return commonPages[subdomain] || ['Albert_Einstein'];

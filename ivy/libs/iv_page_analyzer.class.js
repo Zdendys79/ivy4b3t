@@ -1396,14 +1396,12 @@ export class PageAnalyzer {
         }
       }
       
-      const exists = found;
-      
       // Loguj pouze změny stavu, ne každou kontrolu
-      if (this.lastElementState !== exists) {
-        Log.debug('[ANALYZER]', `Element "${text}" ${exists ? 'existuje' : 'neexistuje'}`);
-        this.lastElementState = exists;
+      if (this.lastElementState !== found) {
+        Log.debug('[ANALYZER]', `Element "${text}" ${found ? 'existuje' : 'neexistuje'}`);
+        this.lastElementState = found;
       }
-      return exists;
+      return found;
 
     } catch (err) {
       await Log.error('[ANALYZER]', `Chyba při kontrole existence "${text}": ${err.message}`);
@@ -1583,8 +1581,7 @@ export class PageAnalyzer {
         if (sel && sel.length > 0) {
           if (sel.startsWith('/') || sel.startsWith('(')) {
             // XPath
-            const xpath = sel;
-            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            const result = document.evaluate(sel, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
             targetElement = result.singleNodeValue;
           } else {
             // CSS selektor

@@ -12,7 +12,6 @@ class ConsoleLogger {
         this.logBuffer = [];
         this.sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
         this.versionCode = getVersion();
-        this.hostname = os.hostname();
         this.originalConsole = {};
         this.flushInterval = null;
         this.isInitialized = false;

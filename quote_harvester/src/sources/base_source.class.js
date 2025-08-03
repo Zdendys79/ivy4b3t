@@ -59,6 +59,13 @@ export class BaseSource {
   }
 
   /**
+   * Simple wait function
+   */
+  async wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
    * Normalizace citátu do standardního formátu
    */
   normalizeQuote(rawQuote) {
@@ -75,12 +82,13 @@ export class BaseSource {
    * Validace základních požadavků na citát
    */
   isValidQuote(quote) {
-    return quote.text && 
-           quote.text.length >= 10 && 
-           quote.text.length <= 500 &&
-           !quote.text.includes('<') && // Žádné HTML
-           !quote.text.includes('@') && // Žádné zmínky
-           !quote.text.includes('http'); // Žádné URL
+    const text = quote.original_text || quote.text;
+    return text && 
+           text.length >= 10 && 
+           text.length <= 500 &&
+           !text.includes('<') && // Žádné HTML
+           !text.includes('@') && // Žádné zmínky
+           !text.includes('http'); // Žádné URL
   }
 
   /**

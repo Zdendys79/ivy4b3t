@@ -12,7 +12,6 @@ import { db } from '../iv_sql.js';
 
 export class ErrorReportBuilder {
   constructor() {
-    this.hostname = os.hostname();
     this.reportData = {};
   }
 
@@ -46,7 +45,7 @@ export class ErrorReportBuilder {
       full_analysis_data: null,
 
       // Metadata
-      hostname: this.hostname,
+      hostname: os.hostname(),
       user_agent: null
     };
 
@@ -91,7 +90,7 @@ export class ErrorReportBuilder {
       timestamp: new Date().toISOString(),
       analysis: pageAnalysis,
       metadata: {
-        hostname: this.hostname,
+        hostname: os.hostname(),
         node_version: process.version,
         platform: process.platform
       }
@@ -197,7 +196,7 @@ export class ErrorReportBuilder {
         errorType,
         errorReason,
         pageUrl,
-        this.hostname
+        os.hostname()
       ]);
 
       if (result && result.insertId) {

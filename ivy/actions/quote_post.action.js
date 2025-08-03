@@ -100,32 +100,45 @@ export class QuotePostAction extends BasePostAction {
   async step3_insertContent(user, fbBot, quote) {
     Log.info(`[${user.id}]`, 'KROK 3: Píšu citát...');
     
-    // Vybrat náhodnou variantu zobrazení
-    const variant = this.selectDisplayVariant(quote);
-    Log.debug(`[${user.id}]`, `Vybrána varianta: ${variant}`);
+    // Vybrat a uložit náhodnou variantu zobrazení
+    quote._usedVariant = this.selectDisplayVariant(quote);
+    Log.debug(`[${user.id}]`, `Vybrána varianta: ${quote._usedVariant}`);
     
     // Sestavit text podle varianty
-    const textToType = this.buildQuoteText(quote, variant);
+    const textToType = this.buildQuoteText(quote, quote._usedVariant);
     Log.debug(`[${user.id}]`, `Text k napsání: ${textToType.substring(0, 50)}...`);
     
     // Pokročilé lidské psaní
     const humanBehavior = await getHumanBehavior(user.id);
     await humanBehavior.typeLikeHuman(fbBot.page, textToType, 'quote_writing');
     
-    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Citát napsán (varianta: ${variant})`);
+    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Citát napsán (varianta: ${quote._usedVariant})`);
   }
 
   /**
    * Vybrat náhodnou variantu zobrazení citátu
    */
   selectDisplayVariant(quote) {
-    // Pokud není originální text, použij pouze český
+    // Pokud není originální text, chyba
     if (!quote.original_text) {
-      return 'czech_only';
+      return 'original_only';
     }
     
-    // Náhodný výběr mezi 3 variantami pro citáty s originálním textem
-    const variants = ['czech_only', 'original_plus_czech', 'original_only'];
+    // Pokud má překlad, ale není schválený - použij pouze originál
+    if (quote.translated_text && !quote.translation_approved) {
+      return 'original_only';
+    }
+    
+    // Pokud je to český citát, zobraz originál (česky)
+    if (quote.language_code === 'ces' || quote.language_code === 'svk') {
+      return 'original_only';
+    }
+    
+    // Cizí jazyk - pokud má schválený překlad, všechny varianty možné
+    const variants = (quote.translated_text && quote.translation_approved) ? 
+      ['czech_only', 'original_plus_czech', 'original_only'] : 
+      ['original_only'];
+    
     const randomIndex = Math.floor(Math.random() * variants.length);
     return variants[randomIndex];
   }
@@ -139,22 +152,112 @@ export class QuotePostAction extends BasePostAction {
     switch (variant) {
       case 'czech_only':
         // Varianta 1: Pouze český překlad
-        return `${quote.text}${author}`;
+        return `${quote.translated_text}${author}`;
         
       case 'original_plus_czech':
-        // Varianta 2: Originál + český překlad
-        return `"${quote.original_text}"\n\n${quote.text}${author}`;
+        // Varianta 2: Originál + český překlad (náhodné formátování)
+        return this.formatOriginalPlusTranslation(quote, author);
         
       case 'original_only':
         // Varianta 3: Pouze originál
-        return `"${quote.original_text}"${author}`;
+        return `${quote.original_text}${author}`;
         
       default:
         // Fallback na českou variantu
-        return `${quote.text}${author}`;
+        return `${quote.translated_text}${author}`;
     }
   }
 
+  /**
+   * Náhodné formátování originál + překlad
+   */
+  formatOriginalPlusTranslation(quote, author) {
+    const original = quote.original_text;
+    const translation = quote.translated_text;
+    
+    // 24 různých zábavných variant formátování!
+    const formats = [
+      // ORIGINÁL PRVNÍ - klasické varianty:
+      // 1. Klasické uvozovky
+      () => `"${original}"\n\n${translation}${author}`,
+      
+      // 2. S pomlčkou
+      () => `${original}\n\n- ${translation}${author}`,
+      
+      // 3. Překlad v závorkách
+      () => `${original}\n\n(${translation})${author}`,
+      
+      // 4. Hvězdičky kolem překladu
+      () => `${original}\n\n*${translation}*${author}`,
+      
+      // 5. S šipkou
+      () => `${original}\n\n→ ${translation}${author}`,
+      
+      // 6. ASCII dekorace
+      () => `${original}\n\n~ ${translation} ~${author}`,
+      
+      // ORIGINÁL PRVNÍ - kreativní varianty:
+      // 7. S dvojtečkou jako "vysvětlení"
+      () => `${original}\n\n: ${translation}${author}`,
+      
+      // 8. ASCII rámečky
+      () => `${original}\n\n[ ${translation} ]${author}`,
+      
+      // 9. Tři tečky jako pokračování
+      () => `${original}...\n\n${translation}${author}`,
+      
+      // 10. Plus jako "a také"
+      () => `${original}\n\n+ ${translation}${author}`,
+      
+      // 11. Vertikální čára
+      () => `${original}\n\n| ${translation}${author}`,
+      
+      // 12. Equals jako "znamená"
+      () => `${original}\n\n= ${translation}${author}`,
+      
+      // PŘEKLAD PRVNÍ (česká verze první):
+      // 13. Překlad první s pomlčkou k originálu
+      () => `${translation}\n\n- ${original}${author}`,
+      
+      // 14. Překlad první, originál v uvozovkách
+      () => `${translation}\n\n"${original}"${author}`,
+      
+      // 15. Překlad první, originál v závorkách
+      () => `${translation}\n\n(${original})${author}`,
+      
+      // 16. Překlad s hvězdičkami, originál normálně
+      () => `*${translation}*\n\n${original}${author}`,
+      
+      // 17. Překlad první s šipkou zpět
+      () => `${translation}\n\n← ${original}${author}`,
+      
+      // 18. Překlad první s tildy
+      () => `~ ${translation} ~\n\n${original}${author}`,
+      
+      // PŘEKLAD PRVNÍ - kreativní varianty:
+      // 19. Jako původní myšlenka
+      () => `${translation}\n\n(původně: ${original})${author}`,
+      
+      // 20. Jako vysvětlení
+      () => `${translation}\n\n...${original}${author}`,
+      
+      // 21. V hranatých závorkách jako poznámka
+      () => `${translation}\n\n[${original}]${author}`,
+      
+      // 22. S dvojtečkou jako zdroj
+      () => `${translation}\n\n: "${original}"${author}`,
+      
+      // 23. Jako alternativa
+      () => `${translation}\n\n/ ${original}${author}`,
+      
+      // 24. Retro styl s >> <<
+      () => `>> ${translation} <<\n\n${original}${author}`
+    ];
+    
+    // Náhodný výběr formátu
+    const randomFormat = formats[Math.floor(Math.random() * formats.length)];
+    return randomFormat();
+  }
 
   /**
    * KROK 5: Pauza na kontrolu
@@ -254,12 +357,8 @@ export class QuotePostAction extends BasePostAction {
     // Nastavit timeout citátu na 30 dní
     await db.safeExecute('quotes.markAsUsed', [30, quote.id]);
     
-    // Určit použitou variantu pro logování
-    let variant = 'czech_only';
-    if (quote.original_text) {
-      // Pokud má originál, mohla být použita jakákoli varianta
-      variant = 'random_variant';
-    }
+    // Získat skutečně použitou variantu
+    const variant = quote._usedVariant || 'czech_only';
     
     // Zapsat úspěšnou akci do action_log s detaily
     const logDetail = `Quote ID: ${quote.id}, Lang: ${quote.language_code || 'ces'}, Variant: ${variant}`;

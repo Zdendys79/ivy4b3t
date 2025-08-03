@@ -22,7 +22,6 @@ const config = getIvyConfig();
 export class BrowserManager {
   constructor() {
     this.isLinux = process.platform === 'linux';
-    this.hostname = os.hostname();
     this.debugKeepOpen = process.env.DEBUG_KEEP_BROWSER_OPEN === 'true';
     this.activeBrowsers = new Set();
     this.userBrowsers = new Map(); // Map userId -> {browser, context}

@@ -4,16 +4,16 @@
 
 import mysql from 'mysql2/promise';
 import crypto from 'crypto';
+import { TextNormalizer } from './text_normalizer.class.js';
 
 export class DatabaseManager {
   constructor() {
     this.connection = null;
+    this.textNormalizer = new TextNormalizer();
     
-    // Určit správnou databázi podle větve (stejná logika jako pre-commit-hook)
+    // Pro harvester VŽDY použít testovací databázi během vývoje
     const currentBranch = this.getCurrentBranch();
-    const targetDatabase = currentBranch === 'main' 
-      ? `${process.env.MYSQL_DATABASE}_test`
-      : process.env.MYSQL_DATABASE;
+    const targetDatabase = `${process.env.MYSQL_DATABASE}_test`;
     
     this.config = {
       host: process.env.MYSQL_HOST,
@@ -33,7 +33,13 @@ export class DatabaseManager {
   getCurrentBranch() {
     try {
       const { execSync } = require('child_process');
-      return execSync('git branch --show-current', { encoding: 'utf8' }).trim();
+      const path = require('path');
+      // Spustit git z hlavní projektové složky  
+      const projectRoot = path.resolve(__dirname, '../..');
+      return execSync('git branch --show-current', { 
+        encoding: 'utf8', 
+        cwd: projectRoot 
+      }).trim();
     } catch (error) {
       console.warn('⚠️  Nelze zjistit git větev, používám default');
       return 'unknown';
@@ -76,25 +82,34 @@ export class DatabaseManager {
   async importQuote(quote, sourceName) {
     const conn = await this.connect();
     
+    // Normalizovat text před uložením
+    const normalizedQuote = this.textNormalizer.normalizeQuote(quote);
+    
     // Vytvořit hash z originálního textu nebo z českého textu
-    const textForHash = quote.original_text || quote.text;
+    const textForHash = normalizedQuote.original_text || normalizedQuote.text;
     const hash = crypto.createHash('md5').update(textForHash).digest('hex');
     
     const query = `
-      INSERT INTO quotes (text, original_text, language_code, author, hash)
+      INSERT INTO quotes (translated_text, original_text, language_code, author, hash)
       VALUES (?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE 
-        text = VALUES(text),
+        translated_text = VALUES(translated_text),
         original_text = VALUES(original_text),
         language_code = VALUES(language_code),
         author = VALUES(author)
     `;
     
+    // NOVÁ LOGIKA: Všechny originály do original_text, překlady do translated_text
+    let translatedTextValue = null;
+    let originalTextValue = normalizedQuote.text || normalizedQuote.original_text;
+    
+    // translated_text zůstává prázdné - vyplní se později překladem
+
     const values = [
-      quote.text,
-      quote.original_text || null,
-      quote.language_code,
-      quote.author || null,
+      translatedTextValue,
+      originalTextValue,
+      normalizedQuote.language_code,
+      normalizedQuote.author || null,
       hash
     ];
     
@@ -122,7 +137,7 @@ export class DatabaseManager {
   async getAllQuotes() {
     const conn = await this.connect();
     const [rows] = await conn.execute(
-      'SELECT id, text, original_text, author, language_code FROM quotes'
+      'SELECT id, translated_text, original_text, author, language_code FROM quotes'
     );
     return rows;
   }
@@ -133,7 +148,7 @@ export class DatabaseManager {
   async findSimilarQuotes(text, threshold = 0.8) {
     const conn = await this.connect();
     const [rows] = await conn.execute(
-      'SELECT text, original_text FROM quotes WHERE CHAR_LENGTH(text) BETWEEN ? AND ?',
+      'SELECT translated_text, original_text FROM quotes WHERE CHAR_LENGTH(COALESCE(original_text, translated_text)) BETWEEN ? AND ?',
       [Math.floor(text.length * 0.7), Math.ceil(text.length * 1.3)]
     );
     return rows;
@@ -156,7 +171,7 @@ export class DatabaseManager {
         l.name_cs as language_name,
         COUNT(*) as count
       FROM quotes q
-      LEFT JOIN c_languages l ON q.language_code = l.code
+      LEFT JOIN c_languages l ON q.language_code COLLATE utf8mb4_unicode_ci = l.code
       GROUP BY q.language_code, l.name_cs
       ORDER BY count DESC
     `);
