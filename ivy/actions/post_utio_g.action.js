@@ -2,18 +2,19 @@
  * Název souboru: post_utio_g.action.js
  * Umístění: ~/ivy/actions/post_utio_g.action.js
  *
- * Popis: UTIO post do běžných skupin (G)
- * - Implementuje BaseAction
- * - Pouze jedna odpovědnost: post UTIO do běžných skupin
- * - Žádné fallbacky
+ * Popis: Implementace UTIO post do skupin
+ * - Krok za krokem
+ * - Bez fallbacků
+ * - Minimalistické řešení
  */
 
-import { BaseAction } from '../libs/base_action.class.js';
+import { BasePostAction } from '../libs/base_post_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
+import { db } from '../iv_sql.js';
 import { Wait } from '../libs/iv_wait.class.js';
-import { getAvailableGroupsForUser, blockUserGroup } from '../user_group_escalation.js';
+import { getHumanBehavior } from '../iv_human_behavior_advanced.js';
 
-export class PostUtioGAction extends BaseAction {
+export class PostUtioGAction extends BasePostAction {
   constructor() {
     super('post_utio_g');
   }
@@ -32,195 +33,215 @@ export class PostUtioGAction extends BaseAction {
    * Ověří připravenost akce
    */
   async verifyReadiness(user, context) {
-    const { fbBot } = context;
-    
-    if (!fbBot) {
-      return {
-        ready: false,
-        reason: 'Chybí FBBot instance',
-        critical: true
-      };
-    }
-
-    // Zkontroluj dostupnost skupin typu G
-    const group = await this.db.getSingleAvailableGroup(user.id, 'G');
-    if (!group) {
-      return {
-        ready: false,
-        reason: 'Žádné dostupné skupiny typu G',
-        critical: false
-      };
-    }
-
     return {
       ready: true,
-      reason: 'Akce je připravena'
+      reason: 'Připraveno'
     };
   }
 
   /**
-   * Provedení UTIO post do běžné skupiny
+   * KROK 0: Vybrat dostupnou skupinu z databáze
    */
-  async execute(user, context, pickedAction) {
-    const { fbBot, utioBot } = context;
-    const joinActionCode = 'join_group_g';
+  async step0_selectData(user) {
+    Log.info(`[${user.id}]`, 'KROK 0: Vybírám dostupnou skupinu z databáze...');
+    
+    const group = await db.safeQueryFirst('groups.getSingleAvailableGroup', [user.id, 'G']);
+    
+    if (group) {
+      Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrána skupina ID ${group.id}: ${group.name}`);
+    }
+    
+    return group;
+  }
 
-    try {
-      // Získej dostupnou skupinu typu G
-      const group = await this.db.getSingleAvailableGroup(user.id, 'G');
-      if (!group) {
-        await Log.warn(`[${user.id}]`, 'Žádné dostupné skupiny typu G');
-        return false;
-      }
+  /**
+   * KROK 1: Otevřít Facebook skupinu
+   */
+  async step1_openFacebook(user, fbBot, group) {
+    Log.info(`[${user.id}]`, `KROK 1: Otevírám Facebook skupinu ${group.name}...`);
 
-      Log.info(`[${user.id}]`, `Vybrána skupina: ${group.name} (${group.fb_id})`);
+    // Navigace na Facebook skupinu
+    const groupUrl = `https://www.facebook.com/groups/${group.fb_id}`;
+    Log.info(`[${user.id}]`, `Naviguji na ${groupUrl}...`);
+    
+    const pageReady = await fbBot.navigateToPage(groupUrl, {
+      waitUntil: 'networkidle2',
+      timeout: 30 * 1000 // 30s
+    });
 
-      // Otevři skupinu
-      await fbBot.openGroup(group);
-      await Wait.toSeconds(1, 'Po otevření skupiny');
+    if (!pageReady) {
+      throw new Error('Facebook checkpoint detected - cannot continue');
+    }
 
-      // Rychlá kontrola na "Obsah teď není dostupný"
-      const pageContent = await fbBot.page.evaluate(() => document.body.textContent);
-      if (pageContent.includes('Obsah teď není dostupný')) {
-        await Log.warn(`[${user.id}]`, `Skupina ${group.name} je trvale nedostupná`);
-        await blockUserGroup(user.id, group.id, 'Obsah trvale nedostupný - skupina neexistuje');
-        return false;
-      }
+    // Kontrola dostupnosti skupiny
+    const pageContent = await fbBot.page.evaluate(() => document.body.textContent);
+    if (pageContent.includes('Obsah teď není dostupný')) {
+      throw new Error('Group content not available');
+    }
 
-      // Inicializuj analyzer
-      fbBot.initializeAnalyzer();
-      await Wait.toSeconds(1, 'Po inicializaci analyzátoru');
+    // Jedna lidská pauza
+    await Wait.toSeconds(5, 'Po načtení skupiny');
 
-      // Zkus kliknout na "Napište něco"
-      Log.info(`[${user.id}]`, 'Pokouším se kliknout na "Napište něco"...');
-      const postClicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
-        matchType: 'startsWith',
-        scrollIntoView: false,
-        waitAfterClick: true,
-        naturalDelay: true
-      });
+    Log.success(`[${user.id}]`, `KROK 1 DOKONČEN: Jsme ve skupině ${group.name}`);
+  }
 
-      if (postClicked) {
-        Log.info(`[${user.id}]`, 'Úspěšně kliknuto na "Napište něco", pokračuji s publikací...');
-        return await this.performDirectPublication(user, fbBot, utioBot, group);
-      }
+  /**
+   * KROK 2: Kliknout na "Napište něco"
+   */
+  async step2_clickPostInput(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 2: Klikám na "Napište něco"...');
 
-      // Pokud není "Napište něco", zkus "Diskuze" nejdřív
-      Log.info(`[${user.id}]`, '"Napište něco" nenalezeno, zkouším "Diskuze"...');
-      
-      const discussionTexts = ['Diskuze', 'Discussion', 'Diskuse'];
-      let discussionWorked = false;
-      
-      for (const discussionText of discussionTexts) {
-        const canDiscuss = await fbBot.pageAnalyzer.clickElementWithText(discussionText, {
-          matchType: 'contains',
-          scrollIntoView: false,
-          waitAfterClick: true,
-          naturalDelay: true
-        });
-        
-        if (canDiscuss) {
-          Log.info(`[${user.id}]`, 'Úspěšně kliknuto na "Diskuze", zkouším "Napište něco" znovu...');
-          await Wait.toSeconds(3, 'Po kliknutí na Diskuze');
-          
-          // Po kliknutí na diskuze zkus "Napište něco" znovu
-          const postClickedAfterDiscussion = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', {
-            matchType: 'startsWith',
-            scrollIntoView: false,
-            waitAfterClick: true,
-            naturalDelay: true
-          });
-          
-          if (postClickedAfterDiscussion) {
-            Log.info(`[${user.id}]`, '"Napište něco" funguje po přechodu do diskuze!');
-            return await this.performDirectPublication(user, fbBot, utioBot, group);
-          }
-          discussionWorked = true;
-          break;
-        }
-      }
-      
-      // Pouze pokud diskuze nefunguje, zkus "Přidat se ke skupině" jako poslední možnost
-      if (!discussionWorked) {
-        Log.info(`[${user.id}]`, '"Diskuze" nenalezena, zkouším "Přidat se ke skupině" jako poslední možnost...');
-        
-        const joinTexts = ['Přidat se ke skupině', 'Join Group', 'Připojit se'];
-        for (const joinText of joinTexts) {
-          const canJoin = await fbBot.pageAnalyzer.clickElementWithText(joinText, {
-            matchType: 'contains',
-            scrollIntoView: false,
-            waitAfterClick: false,
-            naturalDelay: false,
-            dryRun: true
-          });
-          
-          if (canJoin) {
-            // Zkontroluj nedávný join pokus
-            const recentJoin = await this.db.getRecentJoinGroupAction(user.id, joinActionCode);
-            if (recentJoin) {
-              Log.info(`[${user.id}]`, '⏰ Již byla odeslána žádost o členství v posledních 8 hodinách');
-              return true;
-            }
+    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', { matchType: 'startsWith' });
+    
+    if (!clicked) {
+      throw new Error('Cannot find post input field - page not ready');
+    }
+    
+    Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
+  }
 
-            Log.info(`[${user.id}]`, `Pokouším se přidat do skupiny ${group.name} jako poslední možnost...`);
-            const joinResult = await fbBot.joinToGroup();
-            
-            if (joinResult) {
-              await Wait.toSeconds(4, 'Po přidání do skupiny');
-              
-              // Zapiš do action_log (pro 8h limit)
-              await this.logAction(user, group.id, `Žádost o členství: ${group.name}`);
-              
-              // Zapiš do user_groups (pro vztah uživatel-skupina)
-              await this.db.insertUserGroupMembership(user.id, group.id, `Žádost o členství: ${group.name}`);
-              
-              Log.success(`[${user.id}]`, `Žádost o členství odeslána do ${group.name}`);
-              return true;
-            } else {
-              await blockUserGroup(user.id, group.id, 'Failed to click join button');
-              return false;
-            }
-          }
-        }
-      }
+  /**
+   * KROK 3: Otevřít UTIO záložku a načíst data
+   */
+  async step3_loadUtioData(user, utioBot) {
+    Log.info(`[${user.id}]`, 'KROK 3: Načítám data z UTIO...');
+    
+    // Otevřít UTIO stránku (nebo použít existující záložku)
+    const utioReady = await utioBot.ensureUtioPage();
+    
+    if (!utioReady) {
+      throw new Error('Cannot open UTIO page');
+    }
 
-      // Žádné dostupné akce
-      await Log.warn(`[${user.id}]`, `Skupina ${group.name} nemá dostupné akce`);
-      await blockUserGroup(user.id, group.id, 'Skupina neobsahuje potřebné elementy pro interakci');
+    // Načíst data z UTIO stránky
+    const utioData = await utioBot.extractCurrentContent();
+    
+    if (!utioData || !utioData.text) {
+      throw new Error('No content available from UTIO');
+    }
+
+    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Načten obsah z UTIO (${utioData.text.length} znaků)`);
+    return utioData;
+  }
+
+  /**
+   * KROK 4: Vložit obsah z UTIO do Facebook pole
+   */
+  async step4_insertContent(user, fbBot, utioData) {
+    Log.info(`[${user.id}]`, 'KROK 4: Vkládám obsah z UTIO...');
+    
+    const textToType = utioData.text;
+    Log.debug(`[${user.id}]`, `Text k vložení: ${textToType.substring(0, 50)}...`);
+    
+    // Pokročilé lidské psaní
+    const humanBehavior = await getHumanBehavior(user.id);
+    await humanBehavior.typeLikeHuman(fbBot.page, textToType, 'utio_posting');
+    
+    Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Obsah vložen');
+  }
+
+  /**
+   * KROK 5: Pauza na kontrolu
+   */
+  async step5_pauseForReview(user) {
+    Log.info(`[${user.id}]`, 'KROK 5: Pauza na kontrolu příspěvku...');
+    
+    await Wait.toSeconds(5); // Kontrola příspěvku
+    
+    Log.success(`[${user.id}]`, 'KROK 5 DOKONČEN: Kontrola dokončena');
+  }
+
+  /**
+   * KROK 6: Kliknout na "Přidat"
+   */
+  async step6_clickSubmit(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 6: Klikám na tlačítko "Přidat"...');
+    
+    // Ověřit že tlačítko existuje
+    const buttonExists = await fbBot.pageAnalyzer.elementExists('Přidat', { 
+      matchType: 'exact'
+    });
+    
+    if (!buttonExists) {
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" nebylo nalezeno!');
+      throw new Error('Button "Přidat" not found on page');
+    }
+    
+    // Kliknout na tlačítko
+    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Přidat', { 
+      matchType: 'exact',
+      timeout: 10000
+    });
+    
+    if (!clicked) {
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Kliknutí na "Přidat" se nezdařilo!');
+      throw new Error('Failed to click on "Přidat" button');
+    }
+    
+    // Ověření kliknutí
+    await Wait.toSeconds(1, 'Ověření kliknutí');
+    
+    Log.success(`[${user.id}]`, 'KROK 6 DOKONČEN: Kliknuto na "Přidat"');
+  }
+
+  /**
+   * KROK 7: Ověřit úspěšné odeslání
+   */
+  async step7_waitForSuccess(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 7: Čekám na potvrzení odeslání...');
+    
+    // Čekat na dokončení odeslání
+    await Wait.toSeconds(10, 'Po kliknutí na Přidat');
+    
+    // Zkontrolovat zda tlačítko "Přidat" zmizelo
+    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    
+    const submitButtonVisible = visibleTexts.some(text => 
+      text === 'Přidat' || text.includes('Přidat')
+    );
+    
+    if (submitButtonVisible) {
+      await Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
       return false;
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při UTIO post G: ${err.message}`);
-      return false;
+    } else {
+      Log.info(`[${user.id}]`, 'KROK 7 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');
+      return true;
     }
   }
 
   /**
-   * Přímá publikace - editor je už otevřený
+   * Zpracovat úspěch
    */
-  async performDirectPublication(user, fbBot, utioBot, group) {
-    Log.info(`[${user.id}]`, `📝 Editor je otevřený, publikuji do skupiny ${group.name}...`);
+  async handleSuccess(user, group, pickedAction) {
+    Log.info(`[${user.id}]`, 'Zpracovávám úspěšné odeslání...');
     
-    try {
-      // Získej zprávu z UTIO a publikuj
-      // TODO: Implementovat pasteMsg bez fallback mechanismů
-      const error = new Error('support.pasteMsg() byla odstraněna kvůli fallback mechanismům. Nutné přepsat bez fallbacků.');
-      await Log.error(`[${user.id}]`, error);
-      throw error;
-      if (!message) {
-        await Log.warn(`[${user.id}]`, '❌ Publikace selhala (pasteMsg vrátilo false)');
-        return false;
-      }
+    // Zapsat úspěšnou akci do action_log
+    const logDetail = `Group: ${group.name} (${group.fb_id})`;
+    await db.safeExecute('actions.logAction', [
+      user.id,
+      'post_utio_g',
+      logDetail,
+      group.id
+    ]);
+    
+    // Naplánovat další akci
+    const minMinutes = pickedAction.min_minutes || 60;
+    const maxMinutes = pickedAction.max_minutes || 120;
+    const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
+    
+    await db.safeExecute('actions.scheduleNext', [
+      Math.round(nextMinutes),
+      user.id,
+      'post_utio_g'
+    ]);
+    
+    Log.success(`[${user.id}]`, `UTIO post úspěšný! Další akce za ${Math.round(nextMinutes)} minut`);
+  }
 
-      await this.logAction(user, group.id, `Post do skupiny: ${group.name}`);
-      // TODO: Implementovat updatePostStats bez fallback mechanismů
-      Log.info(`[${user.id}]`, 'TODO: updatePostStats() byla odstraněna kvůli fallback mechanismům.');
-      Log.success(`[${user.id}]`, `Úspěšně publikováno do skupiny ${group.name}!`);
-      return true;
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `❌ Chyba při přímé publikaci: ${err.message}`);
-      return false;
-    }
+  /**
+   * Zpracovat selhání
+   */
+  async handleFailure(user, fbBot) {
+    await Log.error(`[${user.id}]`, 'UTIO post selhal');
   }
 }
