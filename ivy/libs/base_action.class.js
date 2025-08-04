@@ -69,34 +69,6 @@ export class BaseAction {
     throw new Error(`execute() method must be implemented in ${this.constructor.name}`);
   }
 
-  /**
-   * Zaloguje kvalitu akce
-   * @param {Object} user - Uživatelské data
-   * @param {boolean} success - Úspěch akce
-   * @param {Object} details - Další detaily
-   */
-  async logActionQuality(user, success, details = {}) {
-    try {
-      const qualityData = {
-        user_id: user.id,
-        action_code: this.actionCode,
-        success: success,
-        timestamp: new Date().toISOString(),
-        details: JSON.stringify(details),
-        verification_used: details.verificationUsed || false,
-        pre_checks_passed: details.preChecksPassed || false
-      };
-
-      await this.db.logActionQuality(qualityData);
-
-      if (!success) {
-        await Log.warn(`[${user.id}]`, `Neúspěšná akce ${this.actionCode}: ${details.reason || 'Neznámý důvod'}`);
-      }
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při logování kvality akce: ${err.message}`);
-    }
-  }
 
   /**
    * Zaloguje provedení akce do databáze

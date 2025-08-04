@@ -162,23 +162,12 @@ export class ActionRouter {
       const readinessCheck = await actionInstance.verifyReadiness(user, context);
       if (!readinessCheck.ready && readinessCheck.critical) {
         await Log.error(`[${user.id}]`, `Akce ${actionCode} není připravena: ${readinessCheck.reason}`);
-        await actionInstance.logActionQuality(user, false, {
-          reason: readinessCheck.reason,
-          verificationUsed: true,
-          preChecksPassed: false
-        });
         return false;
       }
 
       // Provedení akce
       const result = await actionInstance.execute(user, context, pickedAction);
 
-      // Logování kvality akce
-      await actionInstance.logActionQuality(user, result, {
-        verificationUsed: readinessCheck.ready,
-        preChecksPassed: readinessCheck.ready,
-        reason: result ? 'Success' : 'Failed'
-      });
 
       if (result) {
         Log.success(`[${user.id}]`, `Akce ${actionCode} úspěšně dokončena`);
@@ -191,17 +180,6 @@ export class ActionRouter {
     } catch (error) {
       await Log.error(`[${user.id}] executeAction`, error);
       
-      // Pokus o logování kvality i při chybě
-      try {
-        const tempInstance = new ActionClass();
-        await tempInstance.logActionQuality(user, false, {
-          reason: error.message,
-          verificationUsed: false,
-          preChecksPassed: false
-        });
-      } catch (logError) {
-        // Ignoruj chyby při logování
-      }
 
       return false;
     }

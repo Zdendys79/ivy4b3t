@@ -7,7 +7,6 @@
  */
 
 import { ACTIONS } from './actions.js';
-import actionQuality from './action_quality.js'; // default export
 import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
@@ -23,7 +22,6 @@ import { USERS } from './users.js';
 
 export const SQL = {
   actions: ACTIONS,
-  action_quality: actionQuality,
   behavioral_profiles: BEHAVIORAL_PROFILES,
   groups: GROUPS,
   limits: LIMITS,
