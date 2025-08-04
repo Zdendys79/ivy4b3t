@@ -318,17 +318,17 @@ export class PostUtioGAction extends BasePostAction {
     }
 
     // Získej denní limit pro typ "G" z databáze
-    const userLimit = await db.safeQueryFirst('limits.getUserLimit', [user.id, 'G']);
+    let userLimit = await db.safeQueryFirst('limits.getUserLimit', [user.id, 'G']);
     if (!userLimit) {
-      Log.warn(`[${user.id}]`, 'Nebyl nalezen denní limit pro typ G - použiji výchozí hodnotu 15');
+      Log.warn(`[${user.id}]`, 'Nebyl nalezen denní limit pro typ G - použiji výchozí hodnotu 3');
       // Vytvoř výchozí limit
-      await db.safeExecute('limits.upsertLimit', [user.id, 'G', 15, 24]);
-      userLimit = { max_posts: 15 };
+      await db.safeExecute('limits.upsertLimit', [user.id, 'G', 3, 24]);
+      userLimit = { max_posts: 3 };
     }
 
-    // Vypočítej velikost dávky: náhodné číslo mezi 1/5 a 1/2 denního limitu
-    const minBatchSize = Math.ceil(userLimit.max_posts / 5);
-    const maxBatchSize = Math.ceil(userLimit.max_posts / 2);
+    // Vypočítej velikost dávky: náhodné číslo mezi 1/5 a 1/2 denního limitu (minimálně 1)
+    const minBatchSize = Math.max(1, Math.ceil(userLimit.max_posts / 5));
+    const maxBatchSize = Math.max(1, Math.ceil(userLimit.max_posts / 2));
     const batchSize = Math.floor(minBatchSize + Math.random() * (maxBatchSize - minBatchSize + 1));
 
     // Ulož do global
