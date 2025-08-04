@@ -149,12 +149,6 @@ export class PostUtioGAction extends BasePostAction {
       throw new Error('Facebook checkpoint detected - cannot continue');
     }
 
-    // Kontrola dostupnosti skupiny
-    const pageContent = await fbBot.page.evaluate(() => document.body.textContent);
-    if (pageContent.includes('Obsah teď není dostupný')) {
-      throw new Error('Group content not available');
-    }
-
     // Jedna lidská pauza
     await Wait.toSeconds(5, 'Po načtení skupiny');
 
@@ -195,12 +189,15 @@ export class PostUtioGAction extends BasePostAction {
       user.district_id || 0
     );
     
-    if (!message || !message.text) {
+    if (!message || !message.length) {
       throw new Error('No content available from UTIO');
     }
 
-    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Načten obsah z UTIO (${message.text.length} znaků)`);
-    return message;
+    // Převeď na formát {text: string}
+    const textContent = Array.isArray(message) ? message.join('\n') : message;
+
+    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Načten obsah z UTIO (${textContent.length} znaků)`);
+    return { text: textContent };
   }
 
   /**
