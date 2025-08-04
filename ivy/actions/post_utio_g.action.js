@@ -12,7 +12,6 @@ import { BasePostAction } from '../libs/base_post_action.class.js';
 import { Log } from '../libs/iv_log.class.js';
 import { db } from '../iv_sql.js';
 import { Wait } from '../libs/iv_wait.class.js';
-import { getHumanBehavior } from '../iv_human_behavior_advanced.js';
 
 export class PostUtioGAction extends BasePostAction {
   constructor() {
@@ -101,43 +100,82 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
-   * KROK 3: Otevřít UTIO záložku a načíst data
+   * KROK 3: Načíst data z UTIO
    */
   async step3_loadUtioData(user, utioBot) {
     Log.info(`[${user.id}]`, 'KROK 3: Načítám data z UTIO...');
     
-    // Otevřít UTIO stránku (nebo použít existující záložku)
-    const utioReady = await utioBot.ensureUtioPage();
-    
-    if (!utioReady) {
-      throw new Error('Cannot open UTIO page');
+    // Přepnout na UTIO záložku
+    const frontReady = await utioBot.bringToFront();
+    if (!frontReady) {
+      throw new Error('Cannot bring UTIO to front');
     }
 
-    // Načíst data z UTIO stránky
-    const utioData = await utioBot.extractCurrentContent();
+    // Získat zprávu z UTIO
+    const message = await utioBot.getMessage(
+      user.portal_id || 1, 
+      user.region_id || 5, 
+      user.district_id || 0
+    );
     
-    if (!utioData || !utioData.text) {
+    if (!message || !message.text) {
       throw new Error('No content available from UTIO');
     }
 
-    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Načten obsah z UTIO (${utioData.text.length} znaků)`);
-    return utioData;
+    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Načten obsah z UTIO (${message.text.length} znaků)`);
+    return message;
   }
 
   /**
-   * KROK 4: Vložit obsah z UTIO do Facebook pole
+   * KROK 4: Vložit obsah z UTIO do Facebook pole (pomocí schránky)
    */
-  async step4_insertContent(user, fbBot, utioData) {
+  async step4_insertContent(user, fbBot, message) {
     Log.info(`[${user.id}]`, 'KROK 4: Vkládám obsah z UTIO...');
     
-    const textToType = utioData.text;
-    Log.debug(`[${user.id}]`, `Text k vložení: ${textToType.substring(0, 50)}...`);
+    const textToInsert = message.text;
+    Log.debug(`[${user.id}]`, `Text k vložení: ${textToInsert.substring(0, 50)}...`);
     
-    // Pokročilé lidské psaní
-    const humanBehavior = await getHumanBehavior(user.id);
-    await humanBehavior.typeLikeHuman(fbBot.page, textToType, 'utio_posting');
+    // Zkopírovat text do schránky (vzor z news_post)
+    await fbBot.page.evaluate((text) => {
+      navigator.clipboard.writeText(text);
+    }, textToInsert);
     
-    Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Obsah vložen');
+    // Malá pauza před vložením
+    await Wait.toSeconds(1, 'Před vložením textu');
+    
+    // Získat délku obsahu PŘED vložením
+    const lengthBefore = await fbBot.page.evaluate(() => {
+      const input = document.activeElement || document.querySelector('[contenteditable="true"]');
+      return input ? (input.innerHTML || input.textContent || input.value || '').length : 0;
+    });
+    
+    // Vložit pomocí Ctrl+V (vzor z news_post)
+    await fbBot.page.keyboard.down('Control');
+    await fbBot.page.keyboard.press('v');
+    await fbBot.page.keyboard.up('Control');
+    
+    // Kontrola úspěšnosti vložení
+    await Wait.toMS(100); // Krátká pauza pro zpracování vložení
+    
+    const lengthAfter = await fbBot.page.evaluate(() => {
+      const input = document.activeElement || document.querySelector('[contenteditable="true"]');
+      return input ? (input.innerHTML || input.textContent || input.value || '').length : 0;
+    });
+    
+    const expectedLength = textToInsert.length;
+    const actualChange = lengthAfter - lengthBefore;
+    
+    if (actualChange < expectedLength * 0.8) { // Tolerance 80% délky textu
+      await Log.error(`[${user.id}]`, `KROK 4 SELHAL: Text nebyl vložen. Délka před: ${lengthBefore}, po: ${lengthAfter}, očekávaná změna: ~${expectedLength}`);
+      throw new Error(`Text insertion failed - content length change too small: ${actualChange}`);
+    }
+    
+    Log.debug(`[${user.id}]`, `Text vložení detekováno: délka ${lengthBefore} → ${lengthAfter} (+${actualChange})`);
+    
+    // Krátká pauza pro stabilizaci před pokračováním
+    await Wait.toSeconds(1, 'Stabilizace po vložení textu');
+    
+    Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Obsah vložen a ověřen');
   }
 
   /**
