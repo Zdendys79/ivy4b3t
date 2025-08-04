@@ -249,6 +249,44 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
+   * KROK 6: Ověřit úspěšné odeslání (override z BasePostAction)
+   */
+  async step6_waitForSuccess(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 6: Ověřujem úspěšné odeslání příspěvku...');
+    
+    // Počkat na reakci po kliknutí
+    await Wait.toSeconds(3);
+    
+    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    
+    // 1. Kontrola zmizení tlačítka "Zveřejnit" (hlavní indikátor)
+    const publishButtonVisible = visibleTexts.some(text => 
+      text === 'Zveřejnit' || text.includes('Zveřejnit')
+    );
+    
+    // 2. Hledat pozitivní indikátory úspěchu
+    const successIndicators = [
+      'Váš příspěvek byl zveřejněn',
+      'příspěvek byl publikován',
+      'před chvílí',
+      'před několika sekundami',
+      'teď'
+    ];
+    
+    const hasSuccessIndicator = visibleTexts.some(text => 
+      successIndicators.some(indicator => text.toLowerCase().includes(indicator.toLowerCase()))
+    );
+    
+    if (!publishButtonVisible || hasSuccessIndicator) {
+      Log.success(`[${user.id}]`, 'KROK 6 ÚSPĚCH: Příspěvek byl úspěšně odeslán');
+      return true;
+    } else {
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Zveřejnit" je stále viditelné - příspěvek nebyl odeslán');
+      return false;
+    }
+  }
+
+  /**
    * Zpracovat úspěch
    */
   async handleSuccess(user, group, pickedAction) {
