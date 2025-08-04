@@ -3,9 +3,11 @@
  * Umístění: ~/ivy/actions/post_utio_g.action.js
  *
  * Popis: Implementace UTIO post do skupin
+ * - Podle vzoru quote_post.action.js
  * - Krok za krokem
  * - Bez fallbacků
  * - Minimalistické řešení
+ * - Systém pracovních dávek
  */
 
 import { BasePostAction } from '../libs/base_post_action.class.js';
@@ -16,7 +18,6 @@ import { Wait } from '../libs/iv_wait.class.js';
 export class PostUtioGAction extends BasePostAction {
   constructor() {
     super('post_utio_g');
-    this.actionName = 'post_utio_g';
   }
 
   /**
@@ -27,68 +28,6 @@ export class PostUtioGAction extends BasePostAction {
       needsFB: true,
       needsUtio: true
     };
-  }
-
-  /**
-   * Hlavní execute metoda s workflow pro UTIO skupiny
-   */
-  async execute(user, context, pickedAction) {
-    const { fbBot, utioBot } = context;
-
-    try {
-      Log.info(`[${user.id}]`, `Spouštím ${this.actionName}...`);
-
-      // Kontrola připravenosti a správy dávek
-      const readiness = await this.verifyReadiness(user, context);
-      if (!readiness.ready) {
-        Log.info(`[${user.id}]`, `Akce přeskočena: ${readiness.reason}`);
-        return false;
-      }
-
-      // KROK 0: Vybrat dostupnou skupinu z databáze
-      const group = await this.step0_selectData(user);
-      if (!group) {
-        await Log.error(`[${user.id}]`, 'Žádná dostupná skupina pro uživatele');
-        return false;
-      }
-
-      // KROK 1: Otevřít Facebook skupinu
-      await this.step1_openFacebook(user, fbBot, group);
-
-      // KROK 2: Kliknout na "Napište něco"
-      await this.step2_clickPostInput(user, fbBot);
-
-      // KROK 3: Načíst data z UTIO
-      const message = await this.step3_loadUtioData(user, utioBot);
-      if (!message) {
-        throw new Error('Nepodařilo se načíst obsah z UTIO');
-      }
-
-      // KROK 4: Vložit obsah z UTIO do Facebook pole
-      await this.step4_insertContent(user, fbBot, message);
-
-      // KROK 5: Pauza na kontrolu
-      await this.step5_pauseForReview(user);
-
-      // KROK 6: Kliknout na "Přidat"
-      await this.step6_clickSubmit(user, fbBot);
-
-      // KROK 7: Ověřit úspěšné odeslání
-      const success = await this.step7_waitForSuccess(user, fbBot);
-
-      // Zpracovat výsledek
-      if (success) {
-        await this.handleSuccess(user, group, pickedAction);
-        return true;
-      } else {
-        await this.handleFailure(user, fbBot);
-        return false;
-      }
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při ${this.actionName}: ${err.message}`);
-      return false;
-    }
   }
 
   /**
@@ -171,11 +110,17 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
-   * KROK 3: Načíst data z UTIO
+   * KROK 3: Načíst a vložit obsah z UTIO
    */
-  async step3_loadUtioData(user, utioBot) {
-    Log.info(`[${user.id}]`, 'KROK 3: Načítám data z UTIO...');
+  async step3_insertContent(user, fbBot, group) {
+    Log.info(`[${user.id}]`, 'KROK 3: Načítám a vkládám obsah z UTIO...');
     
+    // Načíst obsah z UTIO - přes kontext aby bylo dostupné
+    const utioBot = fbBot.context?.utioBot;
+    if (!utioBot) {
+      throw new Error('UTIO bot není k dispozici');
+    }
+
     // Přepnout na UTIO záložku
     const frontReady = await utioBot.bringToFront();
     if (!frontReady) {
@@ -193,23 +138,11 @@ export class PostUtioGAction extends BasePostAction {
       throw new Error('No content available from UTIO');
     }
 
-    // Převeď na formát {text: string}
-    const textContent = Array.isArray(message) ? message.join('\n') : message;
-
-    Log.success(`[${user.id}]`, `KROK 3 DOKONČEN: Načten obsah z UTIO (${textContent.length} znaků)`);
-    return { text: textContent };
-  }
-
-  /**
-   * KROK 4: Vložit obsah z UTIO do Facebook pole (pomocí schránky)
-   */
-  async step4_insertContent(user, fbBot, message) {
-    Log.info(`[${user.id}]`, 'KROK 4: Vkládám obsah z UTIO...');
-    
-    const textToInsert = message.text;
+    // Převeď na text
+    const textToInsert = Array.isArray(message) ? message.join('\n') : message;
     Log.debug(`[${user.id}]`, `Text k vložení: ${textToInsert.substring(0, 50)}...`);
     
-    // Zkopírovat text do schránky (vzor z news_post)
+    // Zkopírovat text do schránky
     await fbBot.page.evaluate((text) => {
       navigator.clipboard.writeText(text);
     }, textToInsert);
@@ -217,108 +150,15 @@ export class PostUtioGAction extends BasePostAction {
     // Malá pauza před vložením
     await Wait.toSeconds(1, 'Před vložením textu');
     
-    // Získat délku obsahu PŘED vložením
-    const lengthBefore = await fbBot.page.evaluate(() => {
-      const input = document.activeElement || document.querySelector('[contenteditable="true"]');
-      return input ? (input.innerHTML || input.textContent || input.value || '').length : 0;
-    });
-    
-    // Vložit pomocí Ctrl+V (vzor z news_post)
+    // Vložit pomocí Ctrl+V
     await fbBot.page.keyboard.down('Control');
     await fbBot.page.keyboard.press('v');
     await fbBot.page.keyboard.up('Control');
     
-    // Kontrola úspěšnosti vložení
-    await Wait.toMS(100); // Krátká pauza pro zpracování vložení
-    
-    const lengthAfter = await fbBot.page.evaluate(() => {
-      const input = document.activeElement || document.querySelector('[contenteditable="true"]');
-      return input ? (input.innerHTML || input.textContent || input.value || '').length : 0;
-    });
-    
-    const expectedLength = textToInsert.length;
-    const actualChange = lengthAfter - lengthBefore;
-    
-    if (actualChange < expectedLength * 0.8) { // Tolerance 80% délky textu
-      await Log.error(`[${user.id}]`, `KROK 4 SELHAL: Text nebyl vložen. Délka před: ${lengthBefore}, po: ${lengthAfter}, očekávaná změna: ~${expectedLength}`);
-      throw new Error(`Text insertion failed - content length change too small: ${actualChange}`);
-    }
-    
-    Log.debug(`[${user.id}]`, `Text vložení detekováno: délka ${lengthBefore} → ${lengthAfter} (+${actualChange})`);
-    
-    // Krátká pauza pro stabilizaci před pokračováním
+    // Krátká pauza pro stabilizaci
     await Wait.toSeconds(1, 'Stabilizace po vložení textu');
     
-    Log.success(`[${user.id}]`, 'KROK 4 DOKONČEN: Obsah vložen a ověřen');
-  }
-
-  /**
-   * KROK 5: Pauza na kontrolu
-   */
-  async step5_pauseForReview(user) {
-    Log.info(`[${user.id}]`, 'KROK 5: Pauza na kontrolu příspěvku...');
-    
-    await Wait.toSeconds(5); // Kontrola příspěvku
-    
-    Log.success(`[${user.id}]`, 'KROK 5 DOKONČEN: Kontrola dokončena');
-  }
-
-  /**
-   * KROK 6: Kliknout na "Přidat"
-   */
-  async step6_clickSubmit(user, fbBot) {
-    Log.info(`[${user.id}]`, 'KROK 6: Klikám na tlačítko "Přidat"...');
-    
-    // Ověřit že tlačítko existuje
-    const buttonExists = await fbBot.pageAnalyzer.elementExists('Přidat', { 
-      matchType: 'exact'
-    });
-    
-    if (!buttonExists) {
-      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" nebylo nalezeno!');
-      throw new Error('Button "Přidat" not found on page');
-    }
-    
-    // Kliknout na tlačítko
-    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Přidat', { 
-      matchType: 'exact',
-      timeout: 10000
-    });
-    
-    if (!clicked) {
-      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Kliknutí na "Přidat" se nezdařilo!');
-      throw new Error('Failed to click on "Přidat" button');
-    }
-    
-    // Ověření kliknutí
-    await Wait.toSeconds(1, 'Ověření kliknutí');
-    
-    Log.success(`[${user.id}]`, 'KROK 6 DOKONČEN: Kliknuto na "Přidat"');
-  }
-
-  /**
-   * KROK 7: Ověřit úspěšné odeslání
-   */
-  async step7_waitForSuccess(user, fbBot) {
-    Log.info(`[${user.id}]`, 'KROK 7: Čekám na potvrzení odeslání...');
-    
-    // Čekat na dokončení odeslání
-    await Wait.toSeconds(10, 'Po kliknutí na Přidat');
-    
-    // Zkontrolovat zda tlačítko "Přidat" zmizelo
-    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
-    
-    const submitButtonVisible = visibleTexts.some(text => 
-      text === 'Přidat' || text.includes('Přidat')
-    );
-    
-    if (submitButtonVisible) {
-      await Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
-      return false;
-    } else {
-      Log.info(`[${user.id}]`, 'KROK 7 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');
-      return true;
-    }
+    Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Obsah z UTIO vložen');
   }
 
   /**
