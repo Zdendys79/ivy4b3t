@@ -214,7 +214,7 @@ export class PostUtioGAction extends BasePostAction {
     }, textToInsert);
     
     // Malá pauza před vložením
-    await Wait.toSeconds(1, 'Před vložením textu');
+    await Wait.toSeconds(1);
     
     // Vložit pomocí Ctrl+V
     await fbBot.page.keyboard.down('Control');
@@ -222,7 +222,7 @@ export class PostUtioGAction extends BasePostAction {
     await fbBot.page.keyboard.up('Control');
     
     // Krátká pauza pro stabilizaci
-    await Wait.toSeconds(1, 'Stabilizace po vložení textu');
+    await Wait.toSeconds(1);
     
     Log.success(`[${user.id}]`, 'KROK 3 DOKONČEN: Obsah z UTIO vložen');
   }

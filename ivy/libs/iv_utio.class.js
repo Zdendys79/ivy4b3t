@@ -46,7 +46,7 @@ export class UtioBot {
         timeout: 30000
       });
 
-      await Wait.toSeconds(2, 'Inicializace UTIO stránky');
+      await Wait.toSeconds(2);
       Log.success('[UTIO]', 'UTIO stránka inicializována');
       return true;
 
@@ -230,7 +230,7 @@ export class UtioBot {
             link.click();
           }
         });
-        await Wait.toSeconds(2, 'Čekání na logout');
+        await Wait.toSeconds(2);
 
         this.isLoggedIn = false;
         this.currentUser = null;
@@ -322,17 +322,17 @@ export class UtioBot {
       // Najdi a vyplň login pole
       await this.page.waitForSelector('#loginform-username', { timeout: 10000 });
       await this.page.type('#loginform-username', login);
-      await Wait.toSeconds(0.5, 'Pauza při vyplňování formuláře');
+      await Wait.toSeconds(0.5);
 
       // Najdi a vyplň heslo
       await this.page.waitForSelector('#loginform-password', { timeout: 5000 });
       await this.page.type('#loginform-password', password);
-      await Wait.toSeconds(0.5, 'Pauza při vyplňování formuláře');
+      await Wait.toSeconds(0.5);
 
       // Klikni na přihlášení
       await this.page.waitForSelector('button[type="submit"]', { timeout: 5000 });
       await this.page.click('button[type="submit"]');
-      await Wait.toSeconds(3, 'Čekání na přihlášení/generování URL');
+      await Wait.toSeconds(3);
 
       // Ověř úspěšné přihlášení
       try {
@@ -361,7 +361,7 @@ export class UtioBot {
         waitUntil: "domcontentloaded",
         timeout: 15000
       });
-      await Wait.toSeconds(2, 'Čekání na načtení stránky');
+      await Wait.toSeconds(2);
       return true;
     } catch (err) {
       await Log.error('[UTIO] _navigateToMessageGenerator', err);
@@ -383,7 +383,7 @@ export class UtioBot {
       Log.info('[UTIO]', `Vybírám portál ${portalId}...`);
       await this.page.waitForSelector("#portalId", { timeout: 10000 });
       await this.page.select("#portalId", portalId.toString());
-      await Wait.toSeconds(1, 'Čekání na výběr/kopírování');
+      await Wait.toSeconds(1);
 
       // Vyber region (náhodný pokud je 0)
       if (regionId === 0) {
@@ -394,7 +394,7 @@ export class UtioBot {
       Log.info('[UTIO]', `Vybírám region ${regionId}...`);
       await this.page.waitForSelector("#regionId", { timeout: 5000 });
       await this.page.select("#regionId", regionId.toString());
-      await Wait.toSeconds(1, 'Čekání na výběr/kopírování');
+      await Wait.toSeconds(1);
 
       // Vyber okres (náhodný pokud je 0)
       if (districtId === 0) {
@@ -405,7 +405,7 @@ export class UtioBot {
       Log.info('[UTIO]', `Vybírám okres ${districtId}...`);
       await this.page.waitForSelector("#districtId", { timeout: 5000 });
       await this.page.select("#districtId", districtId.toString());
-      await Wait.toSeconds(1, 'Čekání na výběr/kopírování');
+      await Wait.toSeconds(1);
 
       return true;
     } catch (err) {
@@ -425,7 +425,7 @@ export class UtioBot {
       Log.info('[UTIO]', 'Generuji zprávu...');
       await this.page.waitForSelector("#getUrl", { timeout: 5000 });
       await this.page.click("#getUrl");
-      await Wait.toSeconds(3, 'Čekání na přihlášení/generování URL');
+      await Wait.toSeconds(3);
 
       // Klikni na "Kopíruj" tlačítko
       Log.info('[UTIO]', 'Kopíruji zprávu...');
@@ -437,7 +437,7 @@ export class UtioBot {
         await this.page.waitForSelector("#copy", { timeout: 5000 });
         await this.page.click("#copy");
       }
-      await Wait.toSeconds(1, 'Čekání na výběr/kopírování');
+      await Wait.toSeconds(1);
 
       return true;
     } catch (err) {
