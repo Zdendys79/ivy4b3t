@@ -397,16 +397,6 @@ export class QueryBuilder {
     ]);
   }
 
-  async logActionQuality(qualityData) {
-    return await this.safeExecute('action_quality.insert', [
-      qualityData.user_id,
-      qualityData.action_code,
-      qualityData.success ? 1 : 0,
-      qualityData.details,
-      qualityData.verification_used ? 1 : 0
-    ]);
-  }
-
   // =========================================================
   // METRICS & HASHES - Metriky a hashe
   // =========================================================
