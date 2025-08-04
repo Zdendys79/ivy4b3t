@@ -161,12 +161,18 @@ export class PostUtioGAction extends BasePostAction {
         await this.handleSuccess(user, data, pickedAction);
         return true;
       } else {
-        await this.handleFailure(user, fbBot);
+        await this.handleFailure(user, fbBot, data);
         return false;
       }
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při post_utio_g: ${err.message}`);
+      
+      // Pokud se pokusilo o skupinu, zablokuj ji
+      if (data) {
+        await this.handleFailure(user, fbBot, data);
+      }
+      
       return false;
     }
   }
@@ -277,8 +283,19 @@ export class PostUtioGAction extends BasePostAction {
   /**
    * Zpracovat selhání
    */
-  async handleFailure(user, fbBot) {
+  async handleFailure(user, fbBot, group) {
     await Log.error(`[${user.id}]`, 'UTIO post selhal');
+    
+    if (group) {
+      // Zablokovat skupinu pro uživatele - přidat do user_groups
+      await db.safeExecute('groups.blockUserGroup', [
+        user.id,
+        group.id,
+        'UTIO post failed - Facebook checkpoint or other issue'
+      ]);
+      
+      Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) zablokována kvůli selhání`);
+    }
   }
 
   // ==========================================
