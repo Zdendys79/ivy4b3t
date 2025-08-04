@@ -356,9 +356,6 @@ export class UtioBot {
    */
   async _navigateToMessageGenerator() {
     try {
-      // Lidská pauza před navigací na generátor zpráv
-      await Wait.toSeconds(15, 'Před navigací na generátor zpráv');
-
       Log.info('[UTIO]', 'Naviguji na stránku pro generování zpráv...');
       await this.page.goto('https://utio.b3group.cz/tags/index', {
         waitUntil: "domcontentloaded",
