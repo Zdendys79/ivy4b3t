@@ -40,9 +40,6 @@ export class UtioBot {
       // Nastavení timeoutu pro navigaci
       this.page.setDefaultNavigationTimeout(30000);
 
-      // Lidská pauza před navigací na UTIO
-      await Wait.toSeconds(15, 'Před navigací na UTIO');
-
       Log.info('[UTIO]', 'Načítám UTIO přihlašovací stránku...');
       await this.page.goto('https://utio.b3group.cz/site/login', {
         waitUntil: "domcontentloaded",
