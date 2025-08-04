@@ -75,6 +75,12 @@ export class PostUtioGAction extends BasePostAction {
   async step1_openFacebook(user, fbBot, group) {
     Log.info(`[${user.id}]`, `KROK 1: Otevírám Facebook skupinu ${group.name}...`);
 
+    // Přepnout na Facebook záložku (UTIO zůstává navrchu po inicializaci)
+    const fbFrontReady = await fbBot.bringToFront();
+    if (!fbFrontReady) {
+      throw new Error('Cannot bring Facebook to front at start');
+    }
+
     // Navigace na Facebook skupinu
     const groupUrl = `https://www.facebook.com/groups/${group.fb_id}`;
     Log.info(`[${user.id}]`, `Naviguji na ${groupUrl}...`);
