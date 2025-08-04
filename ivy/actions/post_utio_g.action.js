@@ -29,9 +29,23 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
-   * Ověří připravenost akce
+   * Ověří připravenost akce a správu pracovních dávek
    */
   async verifyReadiness(user, context) {
+    // Inicializuj nebo získej pracovní dávku pro uživatele
+    await this.initializeBatchSystem(user);
+    
+    // Zkontroluj zda nepřekračujeme limit dávky
+    const canContinue = await this.checkBatchLimit(user);
+    if (!canContinue) {
+      Log.info(`[${user.id}]`, 'Pracovní dávka dokončena - přeplánuji akci');
+      await this.rescheduleFutureAction(user);
+      return {
+        ready: false,
+        reason: 'Pracovní dávka dokončena - akce přeplánována'
+      };
+    }
+    
     return {
       ready: true,
       reason: 'Připraveno'
@@ -262,6 +276,9 @@ export class PostUtioGAction extends BasePostAction {
       group.id
     ]);
     
+    // Aktualizuj počítadlo v dávce
+    await this.incrementBatchCounter(user);
+    
     // Naplánovat další akci
     const minMinutes = pickedAction.min_minutes || 60;
     const maxMinutes = pickedAction.max_minutes || 120;
@@ -281,5 +298,115 @@ export class PostUtioGAction extends BasePostAction {
    */
   async handleFailure(user, fbBot) {
     await Log.error(`[${user.id}]`, 'UTIO post selhal');
+  }
+
+  // ==========================================
+  // SYSTÉM PRACOVNÍCH DÁVEK
+  // ==========================================
+
+  /**
+   * Inicializuje systém pracovních dávek pro uživatele
+   */
+  async initializeBatchSystem(user) {
+    // Zkontroluj zda už existuje dávka pro tohoto uživatele
+    if (!global.postUtioBatches) {
+      global.postUtioBatches = {};
+    }
+
+    if (global.postUtioBatches[user.id]) {
+      return; // Dávka už existuje
+    }
+
+    // Získej denní limit pro typ "G" z databáze
+    const userLimit = await db.safeQueryFirst('limits.getUserLimit', [user.id, 'G']);
+    if (!userLimit) {
+      Log.warn(`[${user.id}]`, 'Nebyl nalezen denní limit pro typ G - použiji výchozí hodnotu 15');
+      // Vytvoř výchozí limit
+      await db.safeExecute('limits.upsertLimit', [user.id, 'G', 15, 24]);
+      userLimit = { max_posts: 15 };
+    }
+
+    // Vypočítej velikost dávky: náhodné číslo mezi 1/5 a 1/2 denního limitu
+    const minBatchSize = Math.ceil(userLimit.max_posts / 5);
+    const maxBatchSize = Math.ceil(userLimit.max_posts / 2);
+    const batchSize = Math.floor(minBatchSize + Math.random() * (maxBatchSize - minBatchSize + 1));
+
+    // Ulož do global
+    global.postUtioBatches[user.id] = {
+      batchSize: batchSize,
+      currentCount: 0,
+      dailyLimit: userLimit.max_posts,
+      startedAt: new Date()
+    };
+
+    Log.info(`[${user.id}]`, `Inicializována pracovní dávka: ${batchSize} akcí (z denního limitu ${userLimit.max_posts})`);
+  }
+
+  /**
+   * Zkontroluje zda můžeme pokračovat v dávce
+   */
+  async checkBatchLimit(user) {
+    const batch = global.postUtioBatches[user.id];
+    if (!batch) {
+      return false; // Nemělo by se stát
+    }
+
+    Log.debug(`[${user.id}]`, `Kontrola dávky: ${batch.currentCount}/${batch.batchSize}`);
+    
+    return batch.currentCount < batch.batchSize;
+  }
+
+  /**
+   * Zvýší počítadlo v dávce
+   */
+  async incrementBatchCounter(user) {
+    const batch = global.postUtioBatches[user.id];
+    if (!batch) {
+      return;
+    }
+
+    batch.currentCount++;
+    Log.debug(`[${user.id}]`, `Dávka aktualizována: ${batch.currentCount}/${batch.batchSize}`);
+
+    // Pokud je dávka dokončena, vymaž ji
+    if (batch.currentCount >= batch.batchSize) {
+      delete global.postUtioBatches[user.id];
+      Log.info(`[${user.id}]`, `Pracovní dávka dokončena (${batch.currentCount}/${batch.batchSize})`);
+    }
+  }
+
+  /**
+   * Přeplánuje akci do budoucnosti podle času
+   */
+  async rescheduleFutureAction(user) {
+    const currentHour = new Date().getHours();
+    const isNight = currentHour >= 21 || currentHour < 6;
+    
+    let hoursToAdd;
+    if (isNight) {
+      // Noc (21-6h): naplánuj za 8-12h
+      hoursToAdd = 8 + Math.random() * 4; // 8-12h
+    } else {
+      // Den (6-21h): naplánuj za 4-8h  
+      hoursToAdd = 4 + Math.random() * 4; // 4-8h
+    }
+
+    const futureTime = new Date();
+    futureTime.setHours(futureTime.getHours() + hoursToAdd);
+
+    // Aktualizuj v user_action_plan
+    await db.safeExecute('actions.scheduleSpecific', [
+      futureTime.toISOString().slice(0, 19).replace('T', ' '),
+      user.id,
+      'post_utio_g'
+    ]);
+
+    // Vymaž dokončenou dávku
+    if (global.postUtioBatches && global.postUtioBatches[user.id]) {
+      delete global.postUtioBatches[user.id];
+    }
+
+    const timeInfo = isNight ? 'noc - za 8-12h' : 'den - za 4-8h';
+    Log.info(`[${user.id}]`, `Akce post_utio_g přeplánována na ${futureTime.toLocaleString()} (${timeInfo})`);
   }
 }

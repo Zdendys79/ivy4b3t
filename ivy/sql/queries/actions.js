@@ -71,6 +71,12 @@ export const ACTIONS = {
     WHERE user_id = ? AND action_code = ?
   `,
 
+  scheduleSpecific: `
+    UPDATE user_action_plan
+    SET next_time = ?
+    WHERE user_id = ? AND action_code = ?
+  `,
+
   insertToPlan: `
     INSERT INTO user_action_plan (user_id, action_code, next_time)
     VALUES (?, ?, ?)
