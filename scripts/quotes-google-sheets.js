@@ -13,7 +13,7 @@ function connectToDatabase() {
   return conn;
 }
 
-function loadQuotes(startId = 831, endId = 5016) {
+function loadQuotes(startId, endId) {
     const conn = connectToDatabase();
 
     const stmt = conn.createStatement();
