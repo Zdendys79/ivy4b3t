@@ -298,8 +298,8 @@ export class PostUtioGAction extends BasePostAction {
     await db.safeExecute('actions.logAction', [
       user.id,
       'post_utio_g',
-      logDetail,
-      group.id
+      group.id,      // reference_id (krátké)
+      logDetail      // text (dlouhé)
     ]);
     
     // Aktualizuj počítadlo v dávce
