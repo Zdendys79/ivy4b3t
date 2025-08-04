@@ -208,17 +208,17 @@ export class QueryBuilder {
   // =========================================================
 
   async getBehavioralProfile(userId) {
-    const result = await this.safeQueryFirst('behavioral_profiles.getUserProfile', [userId]);
+    const result = await this.safeQueryFirst('behavioralProfiles.getUserProfile', [userId]);
     if (!result) {
       // Vytvoř default profil pokud neexistuje
-      await this.safeExecute('behavioral_profiles.createDefaultProfile', [userId]);
-      return await this.safeQueryFirst('behavioral_profiles.getUserProfile', [userId]);
+      await this.safeExecute('behavioralProfiles.createDefaultProfile', [userId]);
+      return await this.safeQueryFirst('behavioralProfiles.getUserProfile', [userId]);
     }
     return result;
   }
 
   async updateBehavioralMood(userId, mood, energyLevel) {
-    return await this.safeExecute('behavioral_profiles.updateMoodAndEnergy', [
+    return await this.safeExecute('behavioralProfiles.updateMoodAndEnergy', [
       mood, energyLevel, userId
     ]);
   }
@@ -231,7 +231,7 @@ export class QueryBuilder {
   // ODSTRANĚNO: getCachedBehaviorPattern - žádná cache vzorů
 
   async initializeBehavioralProfiles() {
-    return await this.safeExecute('behavioral_profiles.initializeAllProfiles');
+    return await this.safeExecute('behavioralProfiles.initializeAllProfiles');
   }
 
   // =========================================================
@@ -719,26 +719,26 @@ export class QueryBuilder {
   // =========================================================
 
   async isUserGroupBlocked(userId, groupId) {
-    const result = await this.safeQueryFirst('user_group_blocking.isUserGroupBlocked', [userId, groupId]);
+    const result = await this.safeQueryFirst('userGroupBlocking.isUserGroupBlocked', [userId, groupId]);
     return result || null;
   }
 
   async blockUserGroup(userId, groupId, blockedUntil, reason) {
-    return await this.safeExecute('user_group_blocking.blockUserGroup', [
+    return await this.safeExecute('userGroupBlocking.blockUserGroup', [
       blockedUntil, reason, userId, groupId
     ]);
   }
 
   async getAvailableGroupsForUserBlocking(userId, groupType) {
-    return await this.safeQueryAll('user_group_blocking.getAvailableGroupsForUser', [userId, groupType]);
+    return await this.safeQueryAll('userGroupBlocking.getAvailableGroupsForUser', [userId, groupType]);
   }
 
   async getUserGroupBlockStats(userId) {
-    return await this.safeQueryFirst('user_group_blocking.getUserGroupBlockStats', [userId]);
+    return await this.safeQueryFirst('userGroupBlocking.getUserGroupBlockStats', [userId]);
   }
 
   async cleanExpiredUserGroupBlocks() {
-    return await this.safeExecute('user_group_blocking.unblockExpiredUserGroups');
+    return await this.safeExecute('userGroupBlocking.unblockExpiredUserGroups');
   }
 
   // =========================================================
@@ -808,7 +808,7 @@ export class QueryBuilder {
     const blockedUntil = new Date();
     blockedUntil.setDate(blockedUntil.getDate() + days);
     // Používáme stávající dotaz, ale s logikou pro výpočet data
-    return await this.safeExecute('user_group_blocking.blockUserGroup', [blockedUntil, reason, userId, groupId]);
+    return await this.safeExecute('userGroupBlocking.blockUserGroup', [blockedUntil, reason, userId, groupId]);
   }
 
   async getSingleAvailableGroup(userId, groupType) {

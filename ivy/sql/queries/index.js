@@ -7,7 +7,7 @@
  */
 
 import { ACTIONS } from './actions.js';
-import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
+import { BEHAVIORAL_PROFILES } from './behavioralProfiles.js';
 import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 import { LOGS } from './logs.js';
@@ -17,12 +17,12 @@ import { QUOTES } from './quotes.js';
   
 import { SYSTEM } from './system.js';
 // Removed systemMetrics import - table no longer exists
-import { USER_GROUP_BLOCKING } from './user_group_blocking.js';
+import { USER_GROUP_BLOCKING } from './userGroupBlocking.js';
 import { USERS } from './users.js';
 
 export const SQL = {
   actions: ACTIONS,
-  behavioral_profiles: BEHAVIORAL_PROFILES,
+  behavioralProfiles: BEHAVIORAL_PROFILES,
   groups: GROUPS,
   limits: LIMITS,
   logs: LOGS,
@@ -30,7 +30,7 @@ export const SQL = {
   news: NEWS,
   quotes: QUOTES,
   system: SYSTEM,
-  user_group_blocking: USER_GROUP_BLOCKING,
+  userGroupBlocking: USER_GROUP_BLOCKING,
   users: USERS
 };
 

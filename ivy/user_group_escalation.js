@@ -87,7 +87,7 @@ function formatDuration(days) {
 export async function blockUserGroup(userId, groupId, reason) {
   try {
     // Získej aktuální počet blokací
-    const currentCount = await db.safeQueryFirst('user_group_blocking.getBlockCountForGroup', [userId, groupId]);
+    const currentCount = await db.safeQueryFirst('userGroupBlocking.getBlockCountForGroup', [userId, groupId]);
     const blockCount = currentCount ? currentCount.block_count : 0;
     
     // Vypočítej délku blokace
@@ -96,7 +96,7 @@ export async function blockUserGroup(userId, groupId, reason) {
     const blockedUntilStr = blockedUntil.toISOString().slice(0, 19).replace('T', ' ');
     
     // Proveď blokaci
-    const result = await db.safeExecute('user_group_blocking.blockUserGroup', [
+    const result = await db.safeExecute('userGroupBlocking.blockUserGroup', [
       blockedUntilStr,
       reason,
       userId,
@@ -144,7 +144,7 @@ export async function blockUserGroup(userId, groupId, reason) {
  */
 export async function checkUserGroupBlock(userId, groupId) {
   try {
-    const block = await db.safeQueryFirst('user_group_blocking.isUserGroupBlocked', [userId, groupId]);
+    const block = await db.safeQueryFirst('userGroupBlocking.isUserGroupBlocked', [userId, groupId]);
     return block;
   } catch (err) {
     await Log.error(`[${userId}] checkUserGroupBlock`, err);
@@ -160,7 +160,7 @@ export async function checkUserGroupBlock(userId, groupId) {
  */
 export async function getAvailableGroupsForUser(userId, groupType) {
   try {
-    const groups = await db.safeQueryAll('user_group_blocking.getAvailableGroupsForUser', [userId, groupType]);
+    const groups = await db.safeQueryAll('userGroupBlocking.getAvailableGroupsForUser', [userId, groupType]);
     
     Log.debug(`[${userId}]`, `Nalezeno ${groups.length} dostupných skupin typu ${groupType}`);
     
@@ -218,7 +218,7 @@ export async function detectMembershipRequest(user, group, pageContent) {
  */
 export async function cleanupExpiredBlocks() {
   try {
-    const result = await db.safeExecute('user_group_blocking.unblockExpiredUserGroups');
+    const result = await db.safeExecute('userGroupBlocking.unblockExpiredUserGroups');
     Log.info('[CLEANUP]', `Vyčištěno ${result ? 'několik' : '0'} expired user-group blokací`);
     return result ? 1 : 0;
   } catch (err) {
@@ -234,8 +234,8 @@ export async function cleanupExpiredBlocks() {
  */
 export async function getUserGroupStats(userId) {
   try {
-    const stats = await db.safeQueryFirst('user_group_blocking.getUserGroupBlockStats', [userId]);
-    const activeBlocks = await db.safeQueryAll('user_group_blocking.getActiveUserGroupBlocks', [10]);
+    const stats = await db.safeQueryFirst('userGroupBlocking.getUserGroupBlockStats', [userId]);
+    const activeBlocks = await db.safeQueryAll('userGroupBlocking.getActiveUserGroupBlocks', [10]);
     
     return {
       stats: stats || {},
