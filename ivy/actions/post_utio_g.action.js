@@ -16,6 +16,7 @@ import { Wait } from '../libs/iv_wait.class.js';
 export class PostUtioGAction extends BasePostAction {
   constructor() {
     super('post_utio_g');
+    this.actionName = 'post_utio_g';
   }
 
   /**
@@ -26,6 +27,68 @@ export class PostUtioGAction extends BasePostAction {
       needsFB: true,
       needsUtio: true
     };
+  }
+
+  /**
+   * Hlavní execute metoda s workflow pro UTIO skupiny
+   */
+  async execute(user, context, pickedAction) {
+    const { fbBot, utioBot } = context;
+
+    try {
+      Log.info(`[${user.id}]`, `Spouštím ${this.actionName}...`);
+
+      // Kontrola připravenosti a správy dávek
+      const readiness = await this.verifyReadiness(user, context);
+      if (!readiness.ready) {
+        Log.info(`[${user.id}]`, `Akce přeskočena: ${readiness.reason}`);
+        return false;
+      }
+
+      // KROK 0: Vybrat dostupnou skupinu z databáze
+      const group = await this.step0_selectData(user);
+      if (!group) {
+        await Log.error(`[${user.id}]`, 'Žádná dostupná skupina pro uživatele');
+        return false;
+      }
+
+      // KROK 1: Otevřít Facebook skupinu
+      await this.step1_openFacebook(user, fbBot, group);
+
+      // KROK 2: Kliknout na "Napište něco"
+      await this.step2_clickPostInput(user, fbBot);
+
+      // KROK 3: Načíst data z UTIO
+      const message = await this.step3_loadUtioData(user, utioBot);
+      if (!message) {
+        throw new Error('Nepodařilo se načíst obsah z UTIO');
+      }
+
+      // KROK 4: Vložit obsah z UTIO do Facebook pole
+      await this.step4_insertContent(user, fbBot, message);
+
+      // KROK 5: Pauza na kontrolu
+      await this.step5_pauseForReview(user);
+
+      // KROK 6: Kliknout na "Přidat"
+      await this.step6_clickSubmit(user, fbBot);
+
+      // KROK 7: Ověřit úspěšné odeslání
+      const success = await this.step7_waitForSuccess(user, fbBot);
+
+      // Zpracovat výsledek
+      if (success) {
+        await this.handleSuccess(user, group, pickedAction);
+        return true;
+      } else {
+        await this.handleFailure(user, fbBot);
+        return false;
+      }
+
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při ${this.actionName}: ${err.message}`);
+      return false;
+    }
   }
 
   /**
