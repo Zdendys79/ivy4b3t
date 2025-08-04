@@ -70,7 +70,7 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
-   * KROK 1: Otevřít Facebook skupinu
+   * KROK 1: Otevřít Facebook skupinu (overridden z BasePostAction)
    */
   async step1_openFacebook(user, fbBot, group) {
     Log.info(`[${user.id}]`, `KROK 1: Otevírám Facebook skupinu ${group.name}...`);
@@ -110,15 +110,69 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
+   * Override execute pro předání utioBot
+   */
+  async execute(user, context, pickedAction) {
+    const { fbBot, utioBot } = context;
+
+    try {
+      Log.info(`[${user.id}]`, `Spouštím post_utio_g...`);
+
+      // Kontrola připravenosti a správy dávek
+      const readiness = await this.verifyReadiness(user, context);
+      if (!readiness.ready) {
+        Log.info(`[${user.id}]`, `Akce přeskočena: ${readiness.reason}`);
+        return false;
+      }
+
+      // KROK 0: Vybrat data z databáze (abstract)
+      const data = await this.step0_selectData(user);
+      if (!data) {
+        await Log.error(`[${user.id}]`, 'Žádná dostupná data pro uživatele');
+        return false;
+      }
+
+      // KROK 1: Otevřít prohlížeč na stránce facebook.com
+      await this.step1_openFacebook(user, fbBot, data);
+
+      // KROK 2: Kliknout na "Co se vám honí hlavou"
+      await this.step2_clickPostInput(user, fbBot);
+
+      // KROK 3: Vložit obsah (abstract)
+      await this.step3_insertContent(user, fbBot, data, utioBot);
+
+      // KROK 4: Krátká pauza na kontrolu
+      await this.step4_pauseForReview(user);
+
+      // KROK 5: Kliknout na tlačítko "Přidat"
+      await this.step5_clickSubmit(user, fbBot);
+
+      // KROK 6: Ověřit úspěšné odeslání
+      const success = await this.step6_waitForSuccess(user, fbBot);
+
+      // KROK 7: Zpracovat výsledek
+      if (success) {
+        await this.handleSuccess(user, data, pickedAction);
+        return true;
+      } else {
+        await this.handleFailure(user, fbBot);
+        return false;
+      }
+
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při post_utio_g: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
    * KROK 3: Načíst a vložit obsah z UTIO
    */
-  async step3_insertContent(user, fbBot, group) {
+  async step3_insertContent(user, fbBot, data, utioBot) {
     Log.info(`[${user.id}]`, 'KROK 3: Načítám a vkládám obsah z UTIO...');
     
-    // Načíst obsah z UTIO - přes kontext aby bylo dostupné
-    const utioBot = fbBot.context?.utioBot;
     if (!utioBot) {
-      throw new Error('UTIO bot není k dispozici');
+      throw new Error('UtioBot není k dispozici');
     }
 
     // Přepnout na UTIO záložku

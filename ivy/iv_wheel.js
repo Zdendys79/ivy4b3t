@@ -16,6 +16,7 @@ import { getIvyConfig } from './libs/iv_config.class.js';
 import { InvasiveLock } from './libs/iv_invasive_lock.class.js';
 import { ActionRouter } from './libs/action_router.class.js';
 import { FBBot } from './libs/iv_fb.class.js';
+import { UtioBot } from './libs/iv_utio.class.js';
 import { UIBot } from './libs/iv_ui.class.js';
 import { IvMath } from './libs/iv_math.class.js';
 import { Wait } from './libs/iv_wait.class.js';
@@ -53,6 +54,7 @@ export async function runWheelOfFortune(user, browser, context) {
   let consecutiveFailures = 0;
   let actionCount = 0;
   let fbBot = null;
+  let utioBot = null;
 
   // Inicializace
   invasiveLock.init();
@@ -77,6 +79,24 @@ export async function runWheelOfFortune(user, browser, context) {
   } catch (err) {
     await Log.error(`[${user.id}]`, `Chyba při inicializaci FBBot: ${err.message}`);
     throw err;
+  }
+
+  // Iniciuj UtioBot pro UTIO akce
+  try {
+    utioBot = new UtioBot(context);
+    await utioBot.init();
+    Log.info(`[${user.id}]`, 'UtioBot úspěšně inicializován');
+    
+    // Přihlásit uživatele do UTIO
+    const utioLoginSuccess = await utioBot.openUtio(user);
+    if (utioLoginSuccess) {
+      Log.info(`[${user.id}]`, 'Uživatel úspěšně přihlášen do UTIO');
+    } else {
+      Log.warn(`[${user.id}]`, 'Přihlášení do UTIO se nezdařilo - UTIO akce nebudou dostupné');
+    }
+  } catch (err) {
+    await Log.warn(`[${user.id}]`, `Chyba při inicializaci UtioBot: ${err.message}`);
+    // UTIO není kritické - pokračuji bez něj
   }
 
   try {
@@ -155,6 +175,7 @@ export async function runWheelOfFortune(user, browser, context) {
       const actionContext = {
         browser,
         fbBot,
+        utioBot,
         ...context
       };
       
@@ -226,13 +247,22 @@ export async function runWheelOfFortune(user, browser, context) {
     global.systemState.currentAction = null;
     global.systemState.actionStartTime = null;
     
-    // Jediné místo kde se FBBot ukončuje
+    // Ukončení botů
     if (fbBot) {
       try {
         await fbBot.close();
         Log.info(`[${user.id}]`, 'FBBot ukončen');
       } catch (err) {
         await Log.warn(`[${user.id}]`, `Chyba při ukončování FBBot: ${err.message}`);
+      }
+    }
+    
+    if (utioBot) {
+      try {
+        await utioBot.close();
+        Log.info(`[${user.id}]`, 'UtioBot ukončen');
+      } catch (err) {
+        await Log.warn(`[${user.id}]`, `Chyba při ukončování UtioBot: ${err.message}`);
       }
     }
   }
