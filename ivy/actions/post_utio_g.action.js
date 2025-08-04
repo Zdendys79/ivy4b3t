@@ -228,6 +228,21 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
+   * KROK 5: Kliknout na "Zveřejnit" (override z BasePostAction)
+   */
+  async step5_clickSubmit(user, fbBot) {
+    Log.info(`[${user.id}]`, 'KROK 5: Klikám na tlačítko "Zveřejnit"...');
+    
+    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Zveřejnit', { matchType: 'exact' });
+    
+    if (!clicked) {
+      throw new Error('Failed to publish post - "Zveřejnit" button not found');
+    }
+    
+    Log.success(`[${user.id}]`, 'KROK 5 DOKONČEN: Kliknuto na "Zveřejnit"');
+  }
+
+  /**
    * Zpracovat úspěch
    */
   async handleSuccess(user, group, pickedAction) {
