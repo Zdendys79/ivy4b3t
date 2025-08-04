@@ -97,6 +97,12 @@ export class PostUtioGAction extends BasePostAction {
     // Jedna lidská pauza
     await Wait.toSeconds(5, 'Po načtení skupiny');
 
+    // Rychlá kontrola zda můžeme psát (jsou vidět input prvky)
+    const canPost = await fbBot.pageAnalyzer.hasElementWithText('Napište něco', { matchType: 'startsWith' });
+    if (!canPost) {
+      throw new Error('Cannot post in this group - probably not a member or group restrictions');
+    }
+
     Log.success(`[${user.id}]`, `KROK 1 DOKONČEN: Jsme ve skupině ${group.name}`);
   }
 
@@ -120,6 +126,7 @@ export class PostUtioGAction extends BasePostAction {
    */
   async execute(user, context, pickedAction) {
     const { fbBot, utioBot } = context;
+    let data = null; // Definovat data pro celou funkci
 
     try {
       Log.info(`[${user.id}]`, `Spouštím post_utio_g...`);
@@ -132,7 +139,7 @@ export class PostUtioGAction extends BasePostAction {
       }
 
       // KROK 0: Vybrat data z databáze (abstract)
-      const data = await this.step0_selectData(user);
+      data = await this.step0_selectData(user);
       if (!data) {
         await Log.error(`[${user.id}]`, 'Žádná dostupná data pro uživatele');
         return false;
