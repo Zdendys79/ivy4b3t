@@ -196,6 +196,12 @@ export class PostUtioGAction extends BasePostAction {
     const textToInsert = Array.isArray(message) ? message.join('\n') : message;
     Log.debug(`[${user.id}]`, `Text k vložení: ${textToInsert.substring(0, 50)}...`);
     
+    // Vrátit se na Facebook záložku
+    const fbFrontReady = await fbBot.bringToFront();
+    if (!fbFrontReady) {
+      throw new Error('Cannot bring Facebook to front');
+    }
+    
     // Zkopírovat text do schránky
     await fbBot.page.evaluate((text) => {
       navigator.clipboard.writeText(text);
