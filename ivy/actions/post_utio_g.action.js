@@ -325,11 +325,15 @@ export class PostUtioGAction extends BasePostAction {
     await Log.error(`[${user.id}]`, 'UTIO post selhal');
     
     if (group) {
-      // Zablokovat skupinu pro uživatele - přidat do user_groups
-      await db.safeExecute('groups.blockUserGroup', [
+      // Zablokovat skupinu pro uživatele na 24 hodin
+      const blockUntil = new Date();
+      blockUntil.setHours(blockUntil.getHours() + 24);
+      
+      await db.safeExecute('userGroupBlocking.blockUserGroup', [
+        blockUntil.toISOString().slice(0, 19).replace('T', ' '),
+        'UTIO post failed - Facebook checkpoint or other issue',
         user.id,
-        group.id,
-        'UTIO post failed - Facebook checkpoint or other issue'
+        group.id
       ]);
       
       Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) zablokována kvůli selhání`);
