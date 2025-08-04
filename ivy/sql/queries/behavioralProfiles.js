@@ -1,6 +1,6 @@
 /**
- * Název souboru: behavioral_profiles.js
- * Umístění: ~/ivy/sql/queries/behavioral_profiles.js
+ * Název souboru: behavioralProfiles.js
+ * Umístění: ~/ivy/sql/queries/behavioralProfiles.js
  * 
  * Popis: SQL dotazy pro správu behavioral profiles a human behavior simulation
  * POZOR: Tato data jsou citlivá a nesmí být nikdy commitnuta do Gitu
@@ -38,12 +38,12 @@ export const BEHAVIORAL_PROFILES = {
       last_mood_update,
       created,
       updated
-    FROM user_behavioral_profiles
+    FROM user_behavioralProfiles
     WHERE user_id = ?
   `,
 
   createDefaultProfile: `
-    INSERT INTO user_behavioral_profiles (
+    INSERT INTO user_behavioralProfiles (
       user_id,
       avg_typing_speed, typing_variance,
       mistake_rate,
@@ -102,7 +102,7 @@ export const BEHAVIORAL_PROFILES = {
   `,
 
   updateTypingCharacteristics: `
-    UPDATE user_behavioral_profiles
+    UPDATE user_behavioralProfiles
     SET 
       avg_typing_speed = ?, typing_variance = ?,
       mistake_rate = ?,
@@ -113,7 +113,7 @@ export const BEHAVIORAL_PROFILES = {
   `,
 
   updateMoodAndEnergy: `
-    UPDATE user_behavioral_profiles
+    UPDATE user_behavioralProfiles
     SET 
       base_mood = ?,
       energy_level = ?,
@@ -129,14 +129,14 @@ export const BEHAVIORAL_PROFILES = {
   // ===== BULK OPERACE =====
 
   initializeAllProfiles: `
-    INSERT IGNORE INTO user_behavioral_profiles (user_id)
+    INSERT IGNORE INTO user_behavioralProfiles (user_id)
     SELECT id FROM fb_users
-    WHERE id NOT IN (SELECT user_id FROM user_behavioral_profiles)
+    WHERE id NOT IN (SELECT user_id FROM user_behavioralProfiles)
   `,
 
   getProfilesNeedingUpdate: `
     SELECT user_id
-    FROM user_behavioral_profiles
+    FROM user_behavioralProfiles
     WHERE last_mood_update < DATE_SUB(NOW(), INTERVAL 2 HOUR)
        OR behavior_confidence < 0.3
     ORDER BY last_mood_update ASC
@@ -153,7 +153,7 @@ export const BEHAVIORAL_PROFILES = {
       AVG(energy_level) as avg_energy,
       base_mood,
       COUNT(*) as mood_count
-    FROM user_behavioral_profiles
+    FROM user_behavioralProfiles
     GROUP BY base_mood
     ORDER BY mood_count DESC
   `,
@@ -168,7 +168,7 @@ export const BEHAVIORAL_PROFILES = {
       ubp.avg_typing_speed,
       ubp.mistake_rate,
       ubp.correction_style
-    FROM user_behavioral_profiles ubp
+    FROM user_behavioralProfiles ubp
     JOIN fb_users fu ON ubp.user_id = fu.id
     WHERE ubp.user_id = ?
   `

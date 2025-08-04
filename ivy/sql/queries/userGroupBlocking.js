@@ -1,6 +1,6 @@
 /**
- * Název souboru: user_group_blocking.js
- * Umístění: ~/ivy/sql/queries/user_group_blocking.js
+ * Název souboru: userGroupBlocking.js
+ * Umístění: ~/ivy/sql/queries/userGroupBlocking.js
  *
  * Popis: SQL dotazy pro per-user group blocking systém
  * Řeší problém s vyřizováním žádostí o členství a opakovanými problémy
