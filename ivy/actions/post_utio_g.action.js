@@ -97,12 +97,6 @@ export class PostUtioGAction extends BasePostAction {
     // Jedna lidská pauza
     await Wait.toSeconds(5, 'Po načtení skupiny');
 
-    // Rychlá kontrola zda můžeme psát (jsou vidět input prvky)
-    const canPost = await fbBot.pageAnalyzer.hasElementWithText('Napište něco', { matchType: 'startsWith' });
-    if (!canPost) {
-      throw new Error('Cannot post in this group - probably not a member or group restrictions');
-    }
-
     Log.success(`[${user.id}]`, `KROK 1 DOKONČEN: Jsme ve skupině ${group.name}`);
   }
 
