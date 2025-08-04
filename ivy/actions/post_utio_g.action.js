@@ -205,8 +205,8 @@ export class PostUtioGAction extends BasePostAction {
       throw new Error('No content available from UTIO');
     }
 
-    // Převeď na text
-    const textToInsert = Array.isArray(message) ? message.join('\n') : message;
+    // Převeď na text a přidej mezeru na konec
+    const textToInsert = (Array.isArray(message) ? message.join('\n') : message) + ' ';
     Log.debug(`[${user.id}]`, `Text k vložení: ${textToInsert.substring(0, 50)}...`);
     
     // Vrátit se na Facebook záložku
