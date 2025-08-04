@@ -10,6 +10,9 @@ export class DatabaseManager {
   constructor() {
     this.connection = null;
     this.textNormalizer = new TextNormalizer();
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectDelay = 5000; // 5 sekund
     
     // Pro harvester VŽDY použít testovací databázi během vývoje
     const currentBranch = this.getCurrentBranch();
@@ -21,7 +24,11 @@ export class DatabaseManager {
       user: process.env.MYSQL_USER,
       password: process.env.MYSQL_PASSWORD,
       database: targetDatabase,
-      charset: 'utf8mb4'
+      charset: 'utf8mb4',
+      // Přidat connection pooling vlastnosti
+      acquireTimeout: 60000,
+      timeout: 60000,
+      reconnect: true
     };
     
     console.log(`🗄️  Používám databázi: ${targetDatabase} (větev: ${currentBranch})`);
@@ -47,13 +54,43 @@ export class DatabaseManager {
   }
 
   /**
-   * Připojení k databázi
+   * Připojení k databázi s automatickým obnovovým mechanismem
    */
   async connect() {
-    if (!this.connection) {
+    try {
+      // Pokud již máme připojení, otestujeme ho
+      if (this.connection) {
+        try {
+          await this.connection.ping();
+          return this.connection; // Připojení funguje
+        } catch (error) {
+          console.log('🔄 Detekováno mrtvé připojení, obnovuji...');
+          this.connection = null; // Vyresetovat mrtvé připojení
+        }
+      }
+
+      // Vytvořit nové připojení
       this.connection = await mysql.createConnection(this.config);
+      this.reconnectAttempts = 0; // Reset počitadla při úspěšném připojení
+      console.log('✅ Databázové připojení obnoveno');
+      
+      return this.connection;
+      
+    } catch (error) {
+      this.reconnectAttempts++;
+      console.error(`❌ Chyba připojení k databázi (pokus ${this.reconnectAttempts}/${this.maxReconnectAttempts}):`, error.message);
+      
+      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        throw new Error(`Nepodařilo se připojit k databázi po ${this.maxReconnectAttempts} pokusech`);
+      }
+      
+      // Čekat 5 sekund před dalším pokusem
+      console.log(`⏳ Čekám ${this.reconnectDelay/1000}s před dalším pokusem...`);
+      await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
+      
+      // Rekurzivní pokus o připojení
+      return this.connect();
     }
-    return this.connection;
   }
 
   /**
@@ -77,10 +114,36 @@ export class DatabaseManager {
   }
 
   /**
+   * Wrapper pro bezpečné databázové operace s automatickým obnovovám připojení
+   */
+  async executeWithReconnect(operation) {
+    try {
+      return await operation();
+    } catch (error) {
+      // Zkontrolovat jestli jde o connection error
+      if (error.message.includes('closed state') || 
+          error.code === 'PROTOCOL_CONNECTION_LOST' ||
+          error.code === 'ECONNRESET') {
+        
+        console.log('🔄 Spojení ztraceno během operace, obnovuji a opakuji...');
+        this.connection = null; // Vynutit nové připojení
+        await this.connect(); // Obnovit připojení
+        
+        // Opakovat operaci s novým připojením
+        return await operation();
+      }
+      
+      // Jiné chyby přehodit
+      throw error;
+    }
+  }
+
+  /**
    * Import citátu do databáze
    */
   async importQuote(quote, sourceName) {
-    const conn = await this.connect();
+    return this.executeWithReconnect(async () => {
+      const conn = await this.connect();
     
     // Normalizovat text před uložením
     const normalizedQuote = this.textNormalizer.normalizeQuote(quote);
@@ -113,22 +176,25 @@ export class DatabaseManager {
       hash
     ];
     
-    await conn.execute(query, values);
+      await conn.execute(query, values);
+    });
   }
 
   /**
    * Kontrola existence citátu podle hash
    */
   async quoteExists(textForHash) {
-    const conn = await this.connect();
-    const hash = crypto.createHash('md5').update(textForHash).digest('hex');
-    
-    const [rows] = await conn.execute(
-      'SELECT id FROM quotes WHERE hash = ?',
-      [hash]
-    );
-    
-    return rows.length > 0;
+    return this.executeWithReconnect(async () => {
+      const conn = await this.connect();
+      const hash = crypto.createHash('md5').update(textForHash).digest('hex');
+      
+      const [rows] = await conn.execute(
+        'SELECT id FROM quotes WHERE hash = ?',
+        [hash]
+      );
+      
+      return rows.length > 0;
+    });
   }
 
   /**
@@ -158,44 +224,46 @@ export class DatabaseManager {
    * Statistiky citátů
    */
   async getQuoteStats() {
-    const conn = await this.connect();
-    
-    // Celkový počet
-    const [totalRows] = await conn.execute('SELECT COUNT(*) as total FROM quotes');
-    const total = totalRows[0].total;
-    
-    // Podle jazyků
-    const [langRows] = await conn.execute(`
-      SELECT 
-        q.language_code,
-        l.name_cs as language_name,
-        COUNT(*) as count
-      FROM quotes q
-      LEFT JOIN c_languages l ON q.language_code COLLATE utf8mb4_unicode_ci = l.code
-      GROUP BY q.language_code, l.name_cs
-      ORDER BY count DESC
-    `);
-    
-    // S/bez autorů
-    const [authorRows] = await conn.execute(`
-      SELECT 
-        SUM(CASE WHEN author IS NOT NULL AND author != '' THEN 1 ELSE 0 END) as with_author,
-        SUM(CASE WHEN author IS NULL OR author = '' THEN 1 ELSE 0 END) as without_author
-      FROM quotes
-    `);
-    
-    // S originálním textem
-    const [originalRows] = await conn.execute(`
-      SELECT COUNT(*) as with_original FROM quotes WHERE original_text IS NOT NULL
-    `);
-    
-    return {
-      total,
-      byLanguage: langRows,
-      withAuthor: authorRows[0].with_author,
-      withoutAuthor: authorRows[0].without_author,
-      withOriginal: originalRows[0].with_original
-    };
+    return this.executeWithReconnect(async () => {
+      const conn = await this.connect();
+      
+      // Celkový počet
+      const [totalRows] = await conn.execute('SELECT COUNT(*) as total FROM quotes');
+      const total = totalRows[0].total;
+      
+      // Podle jazyků
+      const [langRows] = await conn.execute(`
+        SELECT 
+          q.language_code,
+          l.name_cs as language_name,
+          COUNT(*) as count
+        FROM quotes q
+        LEFT JOIN c_languages l ON q.language_code COLLATE utf8mb4_unicode_ci = l.code
+        GROUP BY q.language_code, l.name_cs
+        ORDER BY count DESC
+      `);
+      
+      // S/bez autorů
+      const [authorRows] = await conn.execute(`
+        SELECT 
+          SUM(CASE WHEN author IS NOT NULL AND author != '' THEN 1 ELSE 0 END) as with_author,
+          SUM(CASE WHEN author IS NULL OR author = '' THEN 1 ELSE 0 END) as without_author
+        FROM quotes
+      `);
+      
+      // S originálním textem
+      const [originalRows] = await conn.execute(`
+        SELECT COUNT(*) as with_original FROM quotes WHERE original_text IS NOT NULL
+      `);
+      
+      return {
+        total,
+        byLanguage: langRows,
+        withAuthor: authorRows[0].with_author,
+        withoutAuthor: authorRows[0].without_author,
+        withOriginal: originalRows[0].with_original
+      };
+    });
   }
 
   /**
