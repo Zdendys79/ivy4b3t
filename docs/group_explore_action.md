@@ -17,23 +17,10 @@
 
 ## Workflow akce
 
-### 1. Navigační systém (2 úrovně)
-```
-Cache → Feed loading
-```
-
-**A) Cache navigace:**
-- Použije `global.groupUrlsCache` s uloženými URL
-- Vybere náhodnou skupinu, odebere z cache
-- Rychlá navigace bez načítání feedu
-
-**B) Feed loading:**
-- Naviguje na `https://www.facebook.com/groups/feed/`
-- Scrolluje 3x pro načtení více skupin
-- Extrahuje všechny group URL, ukládá do cache
-- Pak naviguje na náhodnou skupinu z cache
-
-**❌ Žádný fallback** - dodržuje absolutní zákaz legacy funkcí
+### 1. Předpoklad spuštění
+- **Musí být spuštěna když už jsme ve FB skupině**
+- **Neprovádí vlastní navigaci** - tu řeší wheel systém
+- **Pouze analyzuje a prohlíží aktuální skupinu**
 
 ### 2. Analýza skupiny
 - **Extrahuje název skupiny** (prioritní pro kategorizaci)
@@ -41,14 +28,14 @@ Cache → Feed loading
 - **Typ vždy = Z** (operátoři B3 přeřadí ručně)
 - **Uloží do tabulky fb_groups**
 
-### 3. Prohlížecí aktivity (nová procenta)
-- **60%** - scrollování a "čtení" příspěvků
-- **30%** - prozkoumat členy skupiny  
-- **10%** - ukončit
-- **0%** - navigace na další skupinu (řeší wheel, ne duplikace)
+### 3. Prohlížecí aktivity (váhový systém)
+- **Váha 60** - scrollování a "čtení" příspěvků
+- **Váha 30** - prozkoumat členy skupiny  
+- **Váha 10** - ukončit
+- **Po použití akce se váha nastaví na 0** - nemůže být opětovně vybrána
 
 ### 4. Session management
-- **Sledování:** Každá prohlížecí aktivita se provede max 1x v session
+- **Váhový systém:** Akce s váhou 0 už nelze vybrat
 - **Limit průzkumů:** 10-15 průzkumů na session
 - **Reset:** Po vyčerpání session reset a plánování za 30-60 minut
 
@@ -73,10 +60,13 @@ Cache → Feed loading
 
 ### Global proměnné
 ```javascript
-global.groupUrlsCache = []; // Cache pro group URLs
 global.exploreSession = {   // Session tracking
   [userId]: {
-    completedActivities: [],
+    actionWeights: {
+      scroll_and_read: 60,
+      explore_members: 30,
+      finish: 10
+    },
     explorationCount: 0
   }
 };
