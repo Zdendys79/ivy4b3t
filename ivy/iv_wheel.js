@@ -410,8 +410,8 @@ async function handleNoAction(user, invasiveLock, availableActions) {
  */
 function calculateInvasiveCooldown() {
   const cooldownConfig = config.get('cfg_posting_cooldown', { 
-    min_seconds: 120, 
-    max_seconds: 240 
+    min_seconds: 150, 
+    max_seconds: 300 
   });
   
   return (cooldownConfig.min_seconds + 
