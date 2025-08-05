@@ -24,12 +24,15 @@ let testPool = null;
  * Initialize database connections for both prod and test
  */
 function initDatabase() {
+  const prodDbName = process.env.MYSQL_DATABASE;           // ivy
+  const testDbName = `${process.env.MYSQL_DATABASE}_test`; // ivy_test
+  
   if (!prodPool) {
     prodPool = mysql.createPool({
       host: process.env.MYSQL_HOST,
       user: process.env.MYSQL_USER,
       password: process.env.MYSQL_PASSWORD,
-      database: 'ivy',
+      database: prodDbName,
       waitForConnections: true,
       connectionLimit: 5,
       queueLimit: 0
@@ -41,7 +44,7 @@ function initDatabase() {
       host: process.env.MYSQL_HOST,
       user: process.env.MYSQL_USER,
       password: process.env.MYSQL_PASSWORD,
-      database: 'ivy_test',
+      database: testDbName,
       waitForConnections: true,
       connectionLimit: 5,
       queueLimit: 0
