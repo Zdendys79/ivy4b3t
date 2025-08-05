@@ -63,16 +63,6 @@ export class GroupExploreAction {
       const nextAction = await this.decideNextAction(user, analyzer, options);
       
       switch (nextAction) {
-        case 'navigate_to_another':
-          const navigated = await analyzer.navigateToRandomGroup();
-          if (navigated) {
-            Log.info(`[${user.id}]`, 'Navigoval jsem na další skupinu');
-            // Analyzuj i tu novou skupinu
-            await Wait.toSeconds(4, 'Načtení skupiny');
-            await analyzer.analyzeCurrentGroup(user.id);
-          }
-          break;
-
         case 'scroll_and_read':
           await this.scrollAndReadPosts(user, fbBot);
           break;
@@ -80,6 +70,20 @@ export class GroupExploreAction {
         case 'explore_members':
           await this.exploreGroupMembers(user, fbBot);
           break;
+
+        case 'finish_session':
+          Log.info(`[${user.id}]`, '🏁 Session dokončena, plánuji další group_explore za delší čas');
+          // Naplánuj další spuštění za delší dobu (30-60 minut)
+          const sessionBreakMinutes = Math.floor(Math.random() * 31) + 30;
+          await db.updateActionPlan(user.id, this.actionCode, sessionBreakMinutes);
+          
+          return {
+            success: true,
+            reason: 'Exploration session completed',
+            groupInfo: groupInfo,
+            nextAction: nextAction,
+            nextExecutionInMinutes: sessionBreakMinutes
+          };
 
         default:
           Log.info(`[${user.id}]`, '😴 Žádná další akce, končím group_explore');
@@ -123,7 +127,7 @@ export class GroupExploreAction {
 
   /**
    * Najde a naviguje na novou neznámou skupinu z nalezených URL
-   * Nejprve zkusí použít cache, pak načte ze skupinového feedu
+   * Používá cache nebo načte ze skupinového feedu
    */
   async navigateToRandomGroup(user, fbBot) {
     try {
@@ -140,8 +144,7 @@ export class GroupExploreAction {
         return true;
       }
       
-      // Fallback - použij původní metodu
-      return await this.navigateFromCurrentPage(user, fbBot);
+      throw new Error('Nepodařilo se načíst žádné skupiny ani z cache ani ze feedu');
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při navigaci na novou skupinu: ${err.message}`);
@@ -222,59 +225,69 @@ export class GroupExploreAction {
     }
   }
 
-  /**
-   * Fallback navigace z aktuální stránky (původní metoda)
-   */
-  async navigateFromCurrentPage(user, fbBot) {
-    try {
-      // Získej analýzu aktuální stránky včetně všech group URL
-      const pageAnalysis = await fbBot.pageAnalyzer.analyzeFullPage();
-      
-      if (!pageAnalysis.links?.groups || pageAnalysis.links.groups.length === 0) {
-        throw new Error('Na aktuální stránce nejsou nalezeny žádné odkazy na skupiny. Nelze pokračovat v exploration.');
-      }
-      
-      Log.info(`[${user.id}]`, `Nalezeno ${pageAnalysis.links.groups.length} odkazů na skupiny`);
-      
-      // Vyber náhodnou skupinu z nalezených
-      const randomGroupUrl = pageAnalysis.links.groups[Math.floor(Math.random() * pageAnalysis.links.groups.length)];
-      
-      Log.info(`[${user.id}]`, `Naviguji na novou skupinu: ${randomGroupUrl}`);
-      await fbBot.navigateToPage(randomGroupUrl, { waitUntil: 'networkidle2' });
-      await Wait.toSeconds(4, 'Načtení nové skupiny');
-      return true;
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při navigaci z aktuální stránky: ${err.message}`);
-      throw err;
-    }
-  }
 
   /**
-   * Rozhoduje o další aktivitě na základě kontextu
+   * Rozhoduje o další aktivitě v rámci průzkumu
+   * Sleduje už provedené akce aby se neopakovaly
    */
   async decideNextAction(user, analyzer, options) {
     try {
-      // Získej statistiky uživatele
-      const stats = await analyzer.getUserExplorationStats(user.id);
-      
-      // Rozhodovací logika
-      const actions = ['navigate_to_another', 'scroll_and_read', 'explore_members', 'finish'];
-      const weights = [40, 30, 20, 10]; // Procenta pravděpodobnosti
-
-      // Upravuj váhy podle kontextu
-      if (stats && stats.groups_discovered < 5) {
-        weights[0] += 20; // Více navigace pro nové uživatele
+      // Inicializace session tracking
+      if (!global.exploreSession) {
+        global.exploreSession = {};
       }
-
-      // Náhodný výběr podle vah
-      const random = Math.random() * 100;
+      if (!global.exploreSession[user.id]) {
+        global.exploreSession[user.id] = {
+          completedActivities: [],
+          explorationCount: 0
+        };
+      }
+      
+      const session = global.exploreSession[user.id];
+      
+      // Zvýšení počtu průzkumů
+      session.explorationCount++;
+      
+      // Kontrola limitu průzkumů (10-15)
+      const maxExplorations = Math.floor(Math.random() * 6) + 10; // 10-15
+      if (session.explorationCount >= maxExplorations) {
+        Log.info(`[${user.id}]`, `Dosažen limit průzkumů (${session.explorationCount}/${maxExplorations}), ukončuji session`);
+        delete global.exploreSession[user.id]; // Reset pro příští session
+        return 'finish_session';
+      }
+      
+      // Dostupné akce s novými procenty
+      const availableActions = [];
+      
+      if (!session.completedActivities.includes('scroll_and_read')) {
+        availableActions.push({ action: 'scroll_and_read', weight: 60 });
+      }
+      
+      if (!session.completedActivities.includes('explore_members')) {
+        availableActions.push({ action: 'explore_members', weight: 30 });
+      }
+      
+      // Finish je vždy možné
+      availableActions.push({ action: 'finish', weight: 10 });
+      
+      // Pokud žádné akce nejsou dostupné, ukončit
+      if (availableActions.length === 1 && availableActions[0].action === 'finish') {
+        return 'finish';
+      }
+      
+      // Weighted random selection
+      const totalWeight = availableActions.reduce((sum, a) => sum + a.weight, 0);
+      const random = Math.random() * totalWeight;
       let cumulative = 0;
       
-      for (let i = 0; i < actions.length; i++) {
-        cumulative += weights[i];
+      for (const activityOption of availableActions) {
+        cumulative += activityOption.weight;
         if (random <= cumulative) {
-          return actions[i];
+          // Označit jako dokončenou pokud není finish
+          if (activityOption.action !== 'finish') {
+            session.completedActivities.push(activityOption.action);
+          }
+          return activityOption.action;
         }
       }
 
