@@ -55,14 +55,31 @@ export class FBGroupAnalyzer {
       
       const fbId = fbIdMatch[1];
       
-      // Extrakce názvu skupiny
+      // Extrakce názvu skupiny - NEJDŮLEŽITĚJŠÍ pro kategorizaci
       const name = await this.page.evaluate(() => {
-        // Hledáš v h1, title a meta tags
-        const h1 = document.querySelector('h1');
-        if (h1 && h1.textContent.trim()) return h1.textContent.trim();
+        // Prioritní hledání názvu skupiny
+        const selectors = [
+          'h1[dir="auto"]', // Hlavní název skupiny
+          'h1', 
+          '[role="banner"] h1',
+          '[data-pagelet="GroupsPageBanner"] h1',
+          'span[dir="auto"]' // Záložní selector
+        ];
         
+        for (const selector of selectors) {
+          const element = document.querySelector(selector);
+          if (element && element.textContent.trim() && 
+              !element.textContent.includes('Facebook') &&
+              element.textContent.length > 3) {
+            return element.textContent.trim();
+          }
+        }
+        
+        // Fallback na title
         const title = document.title;
-        if (title && !title.includes('Facebook')) return title.trim();
+        if (title && !title.includes('Facebook') && title.length > 3) {
+          return title.split('|')[0].trim(); // Odstraň " | Facebook" část
+        }
         
         return null;
       });
@@ -120,25 +137,32 @@ export class FBGroupAnalyzer {
                        text.includes('group settings');
         
         // Kontrola zájmových témat (Z - zájmová skupina)
+        // Název skupiny je nejdůležitější pro kategorizaci
         const interestKeywords = [
           'foto', 'photography', 'umění', 'art', 'hudba', 'music',
           'cestování', 'travel', 'vaření', 'cooking', 'sport',
           'fitness', 'zvířata', 'animals', 'knihy', 'books',
           'film', 'movie', 'technologie', 'technology', 'gaming',
-          'zahrada', 'garden', 'móda', 'fashion', 'auto', 'car'
+          'zahrada', 'garden', 'móda', 'fashion', 'auto', 'car',
+          'cyklistika', 'cycling', 'běh', 'running', 'plavání', 'swimming',
+          'turistika', 'hiking', 'kolo', 'bike', 'pes', 'dog', 'kočka', 'cat'
         ];
         
+        // Priorita: název skupiny má nejvyšší váhu pro kategorizaci
         const isInterestGroup = interestKeywords.some(keyword => 
           title.includes(keyword) || text.includes(keyword)
         );
         
         // Kontrola prodejních skupin (P - prodejní)
+        // Název skupiny má prioritu pro detekci prodejních skupin
         const sellKeywords = [
           'prodej', 'sale', 'sell', 'bazar', 'bazaar', 'inzerát',
           'advertisement', 'kup', 'buy', 'směna', 'exchange',
-          'nákup', 'shopping', 'obchod', 'shop'
+          'nákup', 'shopping', 'obchod', 'shop', 'market', 'marketplace',
+          'výměna', 'swap', 'auctions', 'auction', 'aukce'
         ];
         
+        // Název skupiny má nejvyšší prioritu pro detekci prodeje
         const isSellGroup = sellKeywords.some(keyword => 
           title.includes(keyword) || text.includes(keyword)
         );

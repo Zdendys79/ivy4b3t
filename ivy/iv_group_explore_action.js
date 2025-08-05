@@ -123,8 +123,109 @@ export class GroupExploreAction {
 
   /**
    * Najde a naviguje na novou neznámou skupinu z nalezených URL
+   * Nejprve zkusí použít cache, pak načte ze skupinového feedu
    */
   async navigateToRandomGroup(user, fbBot) {
+    try {
+      // Pokus o navigaci z cache
+      if (await this.navigateFromCache(user, fbBot)) {
+        return true;
+      }
+      
+      // Pokud cache je prázdná, načti nové skupiny ze feedu
+      await this.loadGroupsFromFeed(user, fbBot);
+      
+      // Zkus znovu z cache
+      if (await this.navigateFromCache(user, fbBot)) {
+        return true;
+      }
+      
+      // Fallback - použij původní metodu
+      return await this.navigateFromCurrentPage(user, fbBot);
+
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při navigaci na novou skupinu: ${err.message}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Pokusí se navigovat na skupinu z global cache
+   */
+  async navigateFromCache(user, fbBot) {
+    try {
+      if (!global.groupUrlsCache || global.groupUrlsCache.length === 0) {
+        return false;
+      }
+      
+      // Vyber náhodnou URL z cache
+      const randomIndex = Math.floor(Math.random() * global.groupUrlsCache.length);
+      const groupUrl = global.groupUrlsCache.splice(randomIndex, 1)[0]; // Odeber z cache
+      
+      Log.info(`[${user.id}]`, `Naviguji na skupinu z cache: ${groupUrl}`);
+      await fbBot.navigateToPage(groupUrl, { waitUntil: 'networkidle2' });
+      await Wait.toSeconds(4, 'Načtení skupiny z cache');
+      return true;
+      
+    } catch (err) {
+      await Log.warn(`[${user.id}]`, `Chyba při navigaci z cache: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Načte seznam skupin ze skupinového feedu a uloží do cache
+   */
+  async loadGroupsFromFeed(user, fbBot) {
+    try {
+      Log.info(`[${user.id}]`, 'Načítám skupiny ze feedu...');
+      
+      // Naviguj na skupinový feed
+      await fbBot.navigateToPage('https://www.facebook.com/groups/feed/', { 
+        waitUntil: 'networkidle2' 
+      });
+      await Wait.toSeconds(5, 'Načtení skupinového feedu');
+      
+      // Scrolluj pro načtení více skupin
+      for (let i = 0; i < 3; i++) {
+        await fbBot.page.evaluate(() => {
+          window.scrollBy(0, 800);
+        });
+        await Wait.toSeconds(2, 'Načtení dalších skupin');
+      }
+      
+      // Extrahuj odkazy na skupiny
+      const groupUrls = await fbBot.page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('a[href*="/groups/"]'))
+          .map(a => a.href)
+          .filter(href => {
+            const match = href.match(/facebook\.com\/groups\/([^\/\?&]+)/);
+            return match && match[1] !== 'feed';
+          });
+        
+        return [...new Set(links)]; // Unikátní odkazy
+      });
+      
+      // Uložení do global cache
+      if (!global.groupUrlsCache) {
+        global.groupUrlsCache = [];
+      }
+      
+      // Přidej nové URLs, které ještě nejsou v cache
+      const newUrls = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
+      global.groupUrlsCache.push(...newUrls);
+      
+      Log.info(`[${user.id}]`, `Načteno ${newUrls.length} nových skupinových URL (celkem v cache: ${global.groupUrlsCache.length})`);
+      
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při načítání ze feedu: ${err.message}`);
+    }
+  }
+
+  /**
+   * Fallback navigace z aktuální stránky (původní metoda)
+   */
+  async navigateFromCurrentPage(user, fbBot) {
     try {
       // Získej analýzu aktuální stránky včetně všech group URL
       const pageAnalysis = await fbBot.pageAnalyzer.analyzeFullPage();
@@ -144,8 +245,8 @@ export class GroupExploreAction {
       return true;
 
     } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při navigaci na novou skupinu: ${err.message}`);
-      throw err; // Předej chybu výše - nedostatek URL je problém
+      await Log.error(`[${user.id}]`, `Chyba při navigaci z aktuální stránky: ${err.message}`);
+      throw err;
     }
   }
 
