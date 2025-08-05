@@ -81,8 +81,12 @@ export class PostUtioGAction extends BasePostAction {
       throw new Error('Cannot bring Facebook to front at start');
     }
 
-    // Navigace na Facebook skupinu
-    const groupUrl = `https://www.facebook.com/groups/${group.fb_id}`;
+    // Navigace na Facebook skupinu - s kontrolou buy_sell
+    let groupUrl = `https://www.facebook.com/groups/${group.fb_id}`;
+    if (group.is_buy_sell_group === 1) {
+      groupUrl += '/buy_sell_discussion';
+      Log.info(`[${user.id}]`, `Skupina je buy_sell - přidávám /buy_sell_discussion`);
+    }
     Log.info(`[${user.id}]`, `Naviguji na ${groupUrl}...`);
     
     const pageReady = await fbBot.navigateToPage(groupUrl, {
@@ -101,20 +105,44 @@ export class PostUtioGAction extends BasePostAction {
   }
 
   /**
-   * KROK 2: Kliknout na "Napište něco"
+   * KROK 2: Pokus o postování s workflow buy_sell skupin
    */
-  async step2_clickPostInput(user, fbBot) {
+  async step2_clickPostInput(user, fbBot, group) {
     Log.info(`[${user.id}]`, 'KROK 2: Klikám na "Napište něco"...');
 
-    const clicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', { matchType: 'startsWith' });
+    // Krok 4.1: Pokus o "Napište něco"
+    const postClicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', { matchType: 'startsWith' });
     
-    if (!clicked) {
-      // Zkusit kliknout na "Přidat se ke skupině"
-      await fbBot.pageAnalyzer.clickElementWithText('Přidat se ke skupině');
-      throw new Error('Cannot find post input field - page not ready');
+    if (postClicked) {
+      Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
+      return;
     }
+
+    // Krok 4.2: "Napište něco" neexistuje - zkusit "Diskuze"
+    Log.info(`[${user.id}]`, '"Napište něco" nenalezeno - zkouším "Diskuze"...');
+    const discussionClicked = await fbBot.pageAnalyzer.clickElementWithText('Diskuze');
     
-    Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
+    if (discussionClicked) {
+      Log.info(`[${user.id}]`, '"Diskuze" stisknuto - označuji skupinu jako buy_sell a čekám 5s');
+      
+      // Označit skupinu jako buy_sell v databázi
+      await db.safeExecute('UPDATE fb_groups SET is_buy_sell_group = 1 WHERE id = ?', [group.id]);
+      
+      // Počkat 5 sekund
+      await Wait.toSeconds(5, 'Po kliknutí na Diskuze');
+      
+      // Krok 5: Druhý pokus o "Napište něco"
+      Log.info(`[${user.id}]`, 'Druhý pokus o "Napište něco"...');
+      const secondPostClicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', { matchType: 'startsWith' });
+      
+      if (secondPostClicked) {
+        Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole (druhý pokus)');
+        return;
+      }
+    }
+
+    // Nic nefunguje - zablokovat skupinu a skončit
+    throw new Error('Cannot find post input field or discussion - blocking group');
   }
 
   /**
@@ -145,7 +173,7 @@ export class PostUtioGAction extends BasePostAction {
       await this.step1_openFacebook(user, fbBot, data);
 
       // KROK 2: Kliknout na "Co se vám honí hlavou"
-      await this.step2_clickPostInput(user, fbBot);
+      await this.step2_clickPostInput(user, fbBot, data);
 
       // KROK 3: Vložit obsah (abstract)
       await this.step3_insertContent(user, fbBot, data, utioBot);
