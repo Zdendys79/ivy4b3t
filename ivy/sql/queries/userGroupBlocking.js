@@ -10,12 +10,13 @@ export const USER_GROUP_BLOCKING = {
   // ===== BLOKOVÁNÍ SKUPINY PRO UŽIVATELE =====
 
   blockUserGroup: `
-    UPDATE user_groups 
-    SET blocked_until = ?, 
-        block_count = block_count + 1,
-        last_block_reason = ?,
-        last_block_date = NOW()
-    WHERE user_id = ? AND group_id = ?
+    INSERT INTO user_groups (user_id, group_id, type, blocked_until, block_count, last_block_reason, last_block_date, time)
+    VALUES (?, ?, 0, ?, 1, ?, NOW(), NOW())
+    ON DUPLICATE KEY UPDATE
+      blocked_until = VALUES(blocked_until),
+      block_count = block_count + 1,
+      last_block_reason = VALUES(last_block_reason),
+      last_block_date = NOW()
   `,
 
   // ===== KONTROLA BLOKACE =====
