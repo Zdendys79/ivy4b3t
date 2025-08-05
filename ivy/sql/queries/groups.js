@@ -3,6 +3,12 @@
  * Umístění: ~/ivy/sql/queries/groups.js
  *
  * Popis: OPRAVENÉ SQL dotazy pro správu FB skupin (fb_groups)
+ * 
+ * Typy skupin:
+ * G = group - cizí skupina pro UTIO příspěvky (nevlastníme)
+ * GV = vlastní skupina - B3 vlastní, správce z B3 (vlastníme)
+ * P = prodejní skupina - zatím neřešíme
+ * Z = zájmová skupina - speciální obsah, ne realitní příspěvky
  */
 
 export const GROUPS = {
