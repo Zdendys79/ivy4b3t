@@ -387,5 +387,29 @@ export const GROUPS = {
     GROUP BY fg.id, fg.type, fg.name
     HAVING total_posts >= ?
     ORDER BY total_posts DESC
+  `,
+
+  // ===== DOTAZY PRO FB GROUP ANALYZER =====
+
+  upsertGroupInfo: `
+    INSERT INTO fb_groups (
+      fb_id, name, member_count, type, discovered_by_user_id, 
+      discovered_at, last_analysis, status, priority
+    ) VALUES (?, ?, ?, ?, ?, NOW(), NOW(), 'discovered', 3)
+    ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      member_count = VALUES(member_count),
+      type = VALUES(type),
+      last_analysis = NOW(),
+      analysis_count = analysis_count + 1
+  `,
+
+  getUserExplorationStats: `
+    SELECT 
+      COUNT(*) as groups_discovered,
+      COUNT(CASE WHEN fg.discovered_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as groups_today,
+      COUNT(CASE WHEN fg.discovered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as groups_this_week
+    FROM fb_groups fg
+    WHERE fg.discovered_by_user_id = ?
   `
 };
