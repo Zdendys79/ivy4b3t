@@ -139,6 +139,10 @@ export class PostUtioGAction extends BasePostAction {
         Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole (druhý pokus)');
         return;
       }
+      
+      // Třetí pokus - "Přidat se ke skupině"
+      Log.info(`[${user.id}]`, 'Druhý pokus o "Napište něco" selhal - zkouším "Přidat se ke skupině"...');
+      await fbBot.pageAnalyzer.clickElementWithText('Přidat se ke skupině');
     }
 
     // Nic nefunguje - zablokovat skupinu a skončit
