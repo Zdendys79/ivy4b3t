@@ -20,7 +20,7 @@ export class BasePostAction extends BaseAction {
     const { fbBot, browser } = context;
 
     try {
-      Log.info(`[${user.id}]`, `Spouštím ${this.actionName}...`);
+      Log.info(`[${user.id}]`, `Spouštím ${this.actionCode}...`);
 
       // KROK 0: Vybrat data z databáze (abstract)
       const data = await this.step0_selectData(user);
