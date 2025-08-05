@@ -85,19 +85,38 @@ export class ActionRouter {
   }
 
   /**
+   * Pomocná metoda pro získání Action třídy podle action_code
+   * @param {string} actionCode 
+   * @returns {Class|null}
+   */
+  getActionClass(actionCode) {
+    // Nejprve zkus přímé vyhledání
+    if (this.actionMap.has(actionCode)) {
+      return this.actionMap.get(actionCode);
+    }
+    
+    // Pokud začíná post_utio_ (kromě post_utio_p), použij univerzální akci
+    if (actionCode.startsWith('post_utio_') && actionCode !== 'post_utio_p') {
+      return UtioPostAction;
+    }
+    
+    return null;
+  }
+
+  /**
    * Získá požadavky konkrétní akce na služby
    * @param {string} actionCode - Kód akce
    * @returns {object} - {needsFB: boolean, needsUtio: boolean}
    */
   async getActionRequirements(actionCode) {
-    const ActionClass = this.actionMap.get(actionCode);
+    const ActionClass = this.getActionClass(actionCode);
     if (!ActionClass) {
       await Log.warn('[ACTION_ROUTER]', `Neznámý action_code: ${actionCode}`);
       return { needsFB: false, needsUtio: false };
     }
 
     // Vytvoř dočasnou instanci pro získání požadavků
-    const tempInstance = new ActionClass();
+    const tempInstance = new ActionClass(actionCode);
     return tempInstance.getRequirements();
   }
 
@@ -109,7 +128,7 @@ export class ActionRouter {
    * @returns {Promise<Object>} Výsledek ověření
    */
   async verifyActionReadiness(actionCode, user, context) {
-    const ActionClass = this.actionMap.get(actionCode);
+    const ActionClass = this.getActionClass(actionCode);
     if (!ActionClass) {
       return {
         ready: false,
@@ -144,7 +163,7 @@ export class ActionRouter {
   async executeAction(actionCode, user, context, pickedAction) {
     this.ensureInitialized();
 
-    const ActionClass = this.actionMap.get(actionCode);
+    const ActionClass = this.getActionClass(actionCode);
     if (!ActionClass) {
       await Log.error(`[${user.id}]`, `Neznámá akce: ${actionCode}`);
       return false;

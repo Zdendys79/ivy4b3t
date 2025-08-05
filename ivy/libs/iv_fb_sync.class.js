@@ -19,8 +19,6 @@ export class FBSync {
    */
   async executeSync(query, params = []) {
     try {
-      await Log.info('[FB_SYNC]', `Preparing synchronized query: ${query.substring(0, 50)}...`);
-      await Log.info('[FB_SYNC]', `Parameters: ${JSON.stringify(params)}`);
       
       // Execute na obou poolech současně
       const [mainResult, prodResult] = await Promise.all([
@@ -28,9 +26,6 @@ export class FBSync {
         this.prodPool.execute(query, params)
       ]);
       
-      await Log.info('[FB_SYNC]', 'Query executed on both databases successfully');
-      await Log.info('[FB_SYNC]', `Main DB affected rows: ${mainResult[0].affectedRows || 0}`);
-      await Log.info('[FB_SYNC]', `Prod DB affected rows: ${prodResult[0].affectedRows || 0}`);
       
       return mainResult[0]; // Vrátit výsledek z hlavní DB
       
@@ -53,7 +48,6 @@ export class FBSync {
       throw new Error('FBSync can only be used for fb_users and fb_groups tables');
     }
     
-    await Log.info('[FB_SYNC]', 'FB table detected - using synchronized write');
     
     return await this.executeSync(query, params);
   }
