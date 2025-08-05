@@ -15,10 +15,9 @@ import { db } from '../iv_sql.js';
 import { Wait } from './iv_wait.class.js';
 
 export class BaseUtioPostAction extends BasePostAction {
-  constructor(actionName, groupType, globalBatchKey) {
+  constructor(actionName, groupType) {
     super(actionName);
     this.groupType = groupType;
-    this.globalBatchKey = globalBatchKey;
   }
 
   /**
@@ -384,12 +383,14 @@ export class BaseUtioPostAction extends BasePostAction {
    * Inicializuje systém pracovních dávek pro uživatele
    */
   async initializeBatchSystem(user) {
-    // Zkontroluj zda už existuje dávka pro tohoto uživatele
-    if (!global[this.globalBatchKey]) {
-      global[this.globalBatchKey] = {};
+    // Zkontroluj zda už existuje sloučený objekt pro všechny UTIO dávky
+    if (!global.utioBatches) {
+      global.utioBatches = {};
     }
 
-    if (global[this.globalBatchKey][user.id]) {
+    // Klíč je kombinace user.id a groupType
+    const batchKey = `${user.id}_${this.groupType}`;
+    if (global.utioBatches[batchKey]) {
       return; // Dávka už existuje
     }
 
@@ -407,12 +408,14 @@ export class BaseUtioPostAction extends BasePostAction {
     const maxBatchSize = Math.max(1, Math.ceil(userLimit.max_posts / 2));
     const batchSize = Math.floor(minBatchSize + Math.random() * (maxBatchSize - minBatchSize + 1));
 
-    // Ulož do global
-    global[this.globalBatchKey][user.id] = {
+    // Ulož do global sloučeného objektu
+    global.utioBatches[batchKey] = {
       batchSize: batchSize,
       currentCount: 0,
       dailyLimit: userLimit.max_posts,
-      startedAt: new Date()
+      startedAt: new Date(),
+      userId: user.id,
+      groupType: this.groupType
     };
 
     Log.info(`[${user.id}]`, `Inicializována pracovní dávka: ${batchSize} akcí (z denního limitu ${userLimit.max_posts})`);
@@ -422,7 +425,8 @@ export class BaseUtioPostAction extends BasePostAction {
    * Zkontroluje zda můžeme pokračovat v dávce
    */
   async checkBatchLimit(user) {
-    const batch = global[this.globalBatchKey][user.id];
+    const batchKey = `${user.id}_${this.groupType}`;
+    const batch = global.utioBatches?.[batchKey];
     if (!batch) {
       return false; // Nemělo by se stát
     }
@@ -436,7 +440,8 @@ export class BaseUtioPostAction extends BasePostAction {
    * Zvýší počítadlo v dávce
    */
   async incrementBatchCounter(user) {
-    const batch = global[this.globalBatchKey][user.id];
+    const batchKey = `${user.id}_${this.groupType}`;
+    const batch = global.utioBatches?.[batchKey];
     if (!batch) {
       return;
     }
@@ -446,8 +451,8 @@ export class BaseUtioPostAction extends BasePostAction {
 
     // Pokud je dávka dokončena, vymaž ji
     if (batch.currentCount >= batch.batchSize) {
-      delete global[this.globalBatchKey][user.id];
-      Log.info(`[${user.id}]`, `Pracovní dávka dokončena (${batch.currentCount}/${batch.batchSize})`);
+      delete global.utioBatches[batchKey];
+      Log.info(`[${user.id}]`, `Pracovní dávka ${this.groupType} dokončena (${batch.currentCount}/${batch.batchSize})`);
     }
   }
 
@@ -478,8 +483,9 @@ export class BaseUtioPostAction extends BasePostAction {
     ]);
 
     // Vymaž dokončenou dávku
-    if (global[this.globalBatchKey] && global[this.globalBatchKey][user.id]) {
-      delete global[this.globalBatchKey][user.id];
+    const batchKey = `${user.id}_${this.groupType}`;
+    if (global.utioBatches && global.utioBatches[batchKey]) {
+      delete global.utioBatches[batchKey];
     }
 
     const timeInfo = isNight ? 'noc - za 8-12h' : 'den - za 4-8h';
