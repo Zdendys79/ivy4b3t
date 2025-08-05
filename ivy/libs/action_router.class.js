@@ -12,8 +12,7 @@ import { Log } from './iv_log.class.js';
 import { BaseAction } from './base_action.class.js';
 
 // Import všech action tříd
-import { PostUtioGAction } from '../actions/post_utio_g.action.js';
-import { PostUtioGvAction } from '../actions/post_utio_gv.action.js';
+import { UtioPostAction } from '../actions/utio_post.action.js';
 import { PostUtioPAction } from '../actions/post_utio_p.action.js';
 import { AccountDelayAction } from '../actions/account_delay.action.js';
 import { AccountSleepAction } from '../actions/account_sleep.action.js';
@@ -42,9 +41,9 @@ export class ActionRouter {
     }
 
     try {
-      // Registrace UTIO akcí
-      this.registerAction('post_utio_g', PostUtioGAction);
-      this.registerAction('post_utio_gv', PostUtioGvAction);
+      // Registrace UTIO akcí - univerzální pattern
+      // post_utio_g, post_utio_gv budou používat UtioPostAction
+      // post_utio_p zůstává samostatně (jiná implementace)
       this.registerAction('post_utio_p', PostUtioPAction);
 
       // Registrace account akcí
@@ -120,7 +119,7 @@ export class ActionRouter {
     }
 
     try {
-      const actionInstance = new ActionClass();
+      const actionInstance = new ActionClass(actionCode);
       await actionInstance.init();
       return await actionInstance.verifyReadiness(user, context);
 
@@ -155,7 +154,7 @@ export class ActionRouter {
       Log.info(`[${user.id}]`, `Spouštím akci: ${actionCode}`);
 
       // Vytvoř instanci akce
-      const actionInstance = new ActionClass();
+      const actionInstance = new ActionClass(actionCode);
       await actionInstance.init();
 
       // Předběžné ověření připravenosti
