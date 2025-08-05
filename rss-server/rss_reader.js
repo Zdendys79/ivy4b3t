@@ -17,25 +17,68 @@ import { consoleLogger } from './libs/iv_console_logger.class.js';
 // RSS Parser - dynamic import for compatibility
 let Parser;
 
-// Database connection pool
-let dbPool = null;
+// Database connection pools
+let prodPool = null;
+let testPool = null;
 
 /**
- * Initialize database connection
+ * Initialize database connections for both prod and test
  */
 function initDatabase() {
-  if (!dbPool) {
-    dbPool = mysql.createPool({
+  if (!prodPool) {
+    prodPool = mysql.createPool({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
       password: process.env.DB_PASS,
-      database: process.env.DB_NAME || 'ivy',
+      database: 'ivy',
       waitForConnections: true,
-      connectionLimit: 10,
+      connectionLimit: 5,
       queueLimit: 0
     });
   }
-  return dbPool;
+  
+  if (!testPool) {
+    testPool = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: 'ivy_test',
+      waitForConnections: true,
+      connectionLimit: 5,
+      queueLimit: 0
+    });
+  }
+  
+  return { prodPool, testPool };
+}
+
+/**
+ * Execute query on both databases
+ */
+async function executeOnBoth(query, params = []) {
+  const { prodPool, testPool } = initDatabase();
+  
+  try {
+    const [prodResult, testResult] = await Promise.all([
+      prodPool.execute(query, params),
+      testPool.execute(query, params)
+    ]);
+    
+    Log.debug('[RSS]', `Query executed on both databases: ${prodResult[0].affectedRows || prodResult[0].length} prod, ${testResult[0].affectedRows || testResult[0].length} test`);
+    
+    return prodResult; // Return prod result for compatibility
+  } catch (err) {
+    Log.error('[RSS]', `Failed to execute on both databases: ${err.message}`);
+    throw err;
+  }
+}
+
+/**
+ * Query only production database (for reading metadata)
+ */
+async function queryProd(query, params = []) {
+  const { prodPool } = initDatabase();
+  return await prodPool.execute(query, params);
 }
 
 /**
@@ -57,8 +100,7 @@ async function initParser() {
  */
 async function getNextRSSChannel() {
   try {
-    const db = initDatabase();
-    const [rows] = await db.execute(`
+    const [rows] = await queryProd(`
       SELECT id, name, url, COALESCE(last_fetched, '1970-01-01') as last_fetched
       FROM rss_channels 
       WHERE active = 1 
@@ -89,8 +131,7 @@ async function processRSSFeed(channel, parser) {
       if (!item.link) continue;
       
       try {
-        const db = initDatabase();
-        await db.execute(`
+        await executeOnBoth(`
           INSERT INTO rss_urls (channel_id, url, title, created_at) 
           VALUES (?, ?, ?, NOW())
         `, [
@@ -110,8 +151,7 @@ async function processRSSFeed(channel, parser) {
     }
     
     // Update channel last_fetched timestamp
-    const db = initDatabase();
-    await db.execute(`
+    await executeOnBoth(`
       UPDATE rss_channels 
       SET last_fetched = NOW() 
       WHERE id = ?
@@ -131,8 +171,7 @@ async function processRSSFeed(channel, parser) {
  */
 async function cleanOldUrls() {
   try {
-    const db = initDatabase();
-    const [result] = await db.execute(`
+    const [result] = await executeOnBoth(`
       DELETE FROM rss_urls 
       WHERE created_at < NOW() - INTERVAL 2 DAY 
          OR (used_count > 0 AND last_used < NOW() - INTERVAL 1 DAY)
@@ -140,7 +179,7 @@ async function cleanOldUrls() {
     
     const deletedCount = result.affectedRows || 0;
     if (deletedCount > 0) {
-      Log.info('[RSS]', `Cleaned ${deletedCount} old/used URLs from database`);
+      Log.info('[RSS]', `Cleaned ${deletedCount} old/used URLs from both databases`);
     }
     
     return deletedCount;
@@ -155,8 +194,7 @@ async function cleanOldUrls() {
  */
 async function getRSSStats() {
   try {
-    const db = initDatabase();
-    const [rows] = await db.execute(`
+    const [rows] = await queryProd(`
       SELECT 
         COUNT(*) as total_urls,
         COUNT(CASE WHEN used_count = 0 THEN 1 END) as unused_urls,
@@ -230,8 +268,7 @@ async function processRSS() {
  */
 export async function getAvailableUrl() {
   try {
-    const db = initDatabase();
-    const [rows] = await db.execute(`
+    const [rows] = await queryProd(`
       SELECT id, url, title 
       FROM rss_urls 
       WHERE used_count = 0 
@@ -251,8 +288,7 @@ export async function getAvailableUrl() {
  */
 export async function markUrlAsUsed(urlId) {
   try {
-    const db = initDatabase();
-    await db.execute(`
+    await executeOnBoth(`
       UPDATE rss_urls 
       SET used_count = used_count + 1, last_used = NOW() 
       WHERE id = ?
