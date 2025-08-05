@@ -126,7 +126,7 @@ export class PostUtioGAction extends BasePostAction {
       Log.info(`[${user.id}]`, '"Diskuze" stisknuto - označuji skupinu jako buy_sell a čekám 5s');
       
       // Označit skupinu jako buy_sell v databázi
-      await db.safeExecute('UPDATE fb_groups SET is_buy_sell_group = 1 WHERE id = ?', [group.id]);
+      await db.safeExecute('groups.updateBuySellFlag', [1, group.id]);
       
       // Počkat 5 sekund
       await Wait.toSeconds(5, 'Po kliknutí na Diskuze');
