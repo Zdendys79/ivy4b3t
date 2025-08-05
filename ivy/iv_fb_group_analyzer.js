@@ -117,85 +117,22 @@ export class FBGroupAnalyzer {
   }
 
   /**
-   * Určí typ skupiny podle její povahy a účelu
+   * Určí typ skupiny - prozatím všechny jako Z (zájmová)
+   * Operátoři B3 si je později přeřadí ručně do správných kategorií
    * G = group - cizí skupina pro UTIO příspěvky
-   * GV = vlastní skupina - B3 vlastní skupinu, správce je z B3
-   * P = prodejní skupina - zatím neřešíme
-   * Z = zájmová skupina - speciální obsah, ne realitní příspěvky
+   * GV = vlastní skupina - B3 vlastní skupinu, správce je z B3  
+   * P = prodejní skupina
+   * Z = zájmová skupina - prozatím všechny nové skupiny
    */
   async determineGroupType() {
     try {
-      const groupAnalysis = await this.page.evaluate(() => {
-        const text = document.body.textContent.toLowerCase();
-        const title = document.title.toLowerCase();
-        const url = window.location.href.toLowerCase();
-        
-        // Kontrola zda jsme správci (indikuje GV - vlastní skupina)
-        const isAdmin = text.includes('spravovat skupinu') || 
-                       text.includes('manage group') ||
-                       text.includes('nastavení skupiny') ||
-                       text.includes('group settings');
-        
-        // Kontrola zájmových témat (Z - zájmová skupina)
-        // Název skupiny je nejdůležitější pro kategorizaci
-        const interestKeywords = [
-          'foto', 'photography', 'umění', 'art', 'hudba', 'music',
-          'cestování', 'travel', 'vaření', 'cooking', 'sport',
-          'fitness', 'zvířata', 'animals', 'knihy', 'books',
-          'film', 'movie', 'technologie', 'technology', 'gaming',
-          'zahrada', 'garden', 'móda', 'fashion', 'auto', 'car',
-          'cyklistika', 'cycling', 'běh', 'running', 'plavání', 'swimming',
-          'turistika', 'hiking', 'kolo', 'bike', 'pes', 'dog', 'kočka', 'cat'
-        ];
-        
-        // Priorita: název skupiny má nejvyšší váhu pro kategorizaci
-        const isInterestGroup = interestKeywords.some(keyword => 
-          title.includes(keyword) || text.includes(keyword)
-        );
-        
-        // Kontrola prodejních skupin (P - prodejní)
-        // Název skupiny má prioritu pro detekci prodejních skupin
-        const sellKeywords = [
-          'prodej', 'sale', 'sell', 'bazar', 'bazaar', 'inzerát',
-          'advertisement', 'kup', 'buy', 'směna', 'exchange',
-          'nákup', 'shopping', 'obchod', 'shop', 'market', 'marketplace',
-          'výměna', 'swap', 'auctions', 'auction', 'aukce'
-        ];
-        
-        // Název skupiny má nejvyšší prioritu pro detekci prodeje
-        const isSellGroup = sellKeywords.some(keyword => 
-          title.includes(keyword) || text.includes(keyword)
-        );
-        
-        return {
-          isAdmin,
-          isInterestGroup,
-          isSellGroup,
-          text: text.substring(0, 1000), // První 1000 znaků pro debug
-          title,
-          url
-        };
-      });
-      
-      // Rozhodovací logika
-      if (groupAnalysis.isAdmin) {
-        return 'GV'; // Vlastní skupina - jsme správci
-      }
-      
-      if (groupAnalysis.isSellGroup) {
-        return 'P'; // Prodejní skupina
-      }
-      
-      if (groupAnalysis.isInterestGroup) {
-        return 'Z'; // Zájmová skupina
-      }
-      
-      // Výchozí: cizí skupina pro UTIO příspěvky
-      return 'G';
+      // Prozatím všechny nově objevené skupiny klasifikujeme jako Z
+      // Operátoři B3 si je pak přeřadí ručně podle potřeby
+      return 'Z';
       
     } catch (err) {
       await Log.warn('[GROUP_ANALYZER]', `Chyba při určování typu: ${err.message}`);
-      return 'G'; // Výchozí cizí skupina
+      return 'Z'; // Výchozí zájmová skupina
     }
   }
 
@@ -208,7 +145,6 @@ export class FBGroupAnalyzer {
         groupInfo.fb_id,
         groupInfo.name,
         groupInfo.member_count,
-        groupInfo.type,
         userId
       ]);
       

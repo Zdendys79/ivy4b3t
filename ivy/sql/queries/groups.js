@@ -170,7 +170,7 @@ export const GROUPS = {
 
   insertDiscoveredLink: `
     INSERT IGNORE INTO fb_groups (fb_id, discovery_url, discovered_by_user_id, status, type, priority)
-    VALUES (?, ?, ?, 'discovered', 'G', 3)
+    VALUES (?, ?, ?, 'discovered', 'Z', 3)
   `,
 
   markDiscoveryAsProcessed: `
@@ -401,11 +401,10 @@ export const GROUPS = {
     INSERT INTO fb_groups (
       fb_id, name, member_count, type, discovered_by_user_id, 
       discovered_at, last_analysis, status, priority
-    ) VALUES (?, ?, ?, ?, ?, NOW(), NOW(), 'discovered', 3)
+    ) VALUES (?, ?, ?, 'Z', ?, NOW(), NOW(), 'discovered', 3)
     ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       member_count = VALUES(member_count),
-      type = VALUES(type),
       last_analysis = NOW(),
       analysis_count = analysis_count + 1
   `,
