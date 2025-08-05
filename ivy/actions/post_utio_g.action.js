@@ -109,6 +109,8 @@ export class PostUtioGAction extends BasePostAction {
     const clicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', { matchType: 'startsWith' });
     
     if (!clicked) {
+      // Zkusit kliknout na "Přidat se ke skupině"
+      await fbBot.pageAnalyzer.clickElementWithText('Přidat se ke skupině');
       throw new Error('Cannot find post input field - page not ready');
     }
     
