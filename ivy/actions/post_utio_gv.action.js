@@ -11,6 +11,6 @@ import { BaseUtioPostAction } from '../libs/base_utio_post_action.class.js';
 
 export class PostUtioGvAction extends BaseUtioPostAction {
   constructor() {
-    super('post_utio_gv', 'GV', 'postUtioGvBatches');
+    super('post_utio_gv', 'GV');
   }
 }

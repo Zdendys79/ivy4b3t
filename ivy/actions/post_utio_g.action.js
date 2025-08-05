@@ -11,6 +11,6 @@ import { BaseUtioPostAction } from '../libs/base_utio_post_action.class.js';
 
 export class PostUtioGAction extends BaseUtioPostAction {
   constructor() {
-    super('post_utio_g', 'G', 'postUtioBatches');
+    super('post_utio_g', 'G');
   }
 }
