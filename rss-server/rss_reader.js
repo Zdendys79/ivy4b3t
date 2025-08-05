@@ -12,7 +12,6 @@
 
 import mysql from 'mysql2/promise';
 import { Log } from './libs/iv_log.class.js';
-import { consoleLogger } from './libs/iv_console_logger.class.js';
 
 // RSS Parser - dynamic import for compatibility
 let Parser;
@@ -27,9 +26,9 @@ let testPool = null;
 function initDatabase() {
   if (!prodPool) {
     prodPool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASS,
+      host: process.env.MYSQL_HOST,
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
       database: 'ivy',
       waitForConnections: true,
       connectionLimit: 5,
@@ -39,9 +38,9 @@ function initDatabase() {
   
   if (!testPool) {
     testPool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASS,
+      host: process.env.MYSQL_HOST,
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
       database: 'ivy_test',
       waitForConnections: true,
       connectionLimit: 5,
@@ -217,8 +216,6 @@ async function processRSS() {
   const startTime = Date.now();
   
   try {
-    // Initialize console logger
-    consoleLogger.init();
     Log.info('[RSS]', 'Starting RSS processing cycle');
     
     // Clean old URLs first
@@ -301,8 +298,15 @@ export async function markUrlAsUsed(urlId) {
   }
 }
 
-// Export main function
+// Export main functions
 export { processRSS };
+
+// Export as rssReader object for compatibility
+export const rssReader = {
+  processAllFeeds: processRSS,
+  getAvailableUrl,
+  markUrlAsUsed
+};
 
 // Allow direct execution: node rss_reader.js
 if (import.meta.url === `file://${process.argv[1]}`) {
