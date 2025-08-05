@@ -15,18 +15,18 @@ import { Log } from './libs/iv_log.class.js';
 let sql_setup;
 
 // Use ONLY environment variables for database connection - NO config files
-if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.DB_HOST || !process.env.DB_NAME) {
-  await Log.error('[SQL]', 'CHYBA: Chybí povinné systémové proměnné: DB_HOST, DB_USER, DB_PASS, DB_NAME');
+if (!process.env.MYSQL_USER || !process.env.MYSQL_PASSWORD || !process.env.MYSQL_HOST || !process.env.MYSQL_DATABASE) {
+  await Log.error('[SQL]', 'CHYBA: Chybí povinné systémové proměnné: MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE');
   await Log.error('[SQL]', 'Restartuj terminál nebo spusť: source ~/.bashrc');
   process.exit(1);
 }
 
 Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
 sql_setup = {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE
 };
 
 
