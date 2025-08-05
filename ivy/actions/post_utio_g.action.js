@@ -331,10 +331,10 @@ export class PostUtioGAction extends BasePostAction {
       blockUntil.setHours(blockUntil.getHours() + 24);
       
       await db.safeExecute('userGroupBlocking.blockUserGroup', [
-        blockUntil.toISOString().slice(0, 19).replace('T', ' '),
-        'UTIO post failed - Facebook checkpoint or other issue',
         user.id,
-        group.id
+        group.id,
+        blockUntil.toISOString().slice(0, 19).replace('T', ' '),
+        'UTIO post failed - Facebook checkpoint or other issue'
       ]);
       
       Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) zablokována kvůli selhání`);
