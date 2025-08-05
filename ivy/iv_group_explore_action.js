@@ -37,12 +37,9 @@ export class GroupExploreAction {
 
       const currentUrl = fbBot.page.url();
       
-      // Pokud nejsme ve skupině, zkusíme najít nějakou
+      // Musíme být ve skupině pro analýzu
       if (!currentUrl.includes('facebook.com/groups/')) {
-        const navigated = await this.navigateToRandomGroup(user, fbBot);
-        if (!navigated) {
-          throw new Error('Nepodařilo se navigovat do žádné skupiny');
-        }
+        throw new Error('Group explore může běžet pouze když už jsme ve FB skupině');
       }
 
       // Inicializace analyzátoru
@@ -125,110 +122,11 @@ export class GroupExploreAction {
     }
   }
 
-  /**
-   * Najde a naviguje na novou neznámou skupinu z nalezených URL
-   * Používá cache nebo načte ze skupinového feedu
-   */
-  async navigateToRandomGroup(user, fbBot) {
-    try {
-      // Pokus o navigaci z cache
-      if (await this.navigateFromCache(user, fbBot)) {
-        return true;
-      }
-      
-      // Pokud cache je prázdná, načti nové skupiny ze feedu
-      await this.loadGroupsFromFeed(user, fbBot);
-      
-      // Zkus znovu z cache
-      if (await this.navigateFromCache(user, fbBot)) {
-        return true;
-      }
-      
-      throw new Error('Nepodařilo se načíst žádné skupiny ani z cache ani ze feedu');
-
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při navigaci na novou skupinu: ${err.message}`);
-      throw err;
-    }
-  }
-
-  /**
-   * Pokusí se navigovat na skupinu z global cache
-   */
-  async navigateFromCache(user, fbBot) {
-    try {
-      if (!global.groupUrlsCache || global.groupUrlsCache.length === 0) {
-        return false;
-      }
-      
-      // Vyber náhodnou URL z cache
-      const randomIndex = Math.floor(Math.random() * global.groupUrlsCache.length);
-      const groupUrl = global.groupUrlsCache.splice(randomIndex, 1)[0]; // Odeber z cache
-      
-      Log.info(`[${user.id}]`, `Naviguji na skupinu z cache: ${groupUrl}`);
-      await fbBot.navigateToPage(groupUrl, { waitUntil: 'networkidle2' });
-      await Wait.toSeconds(4, 'Načtení skupiny z cache');
-      return true;
-      
-    } catch (err) {
-      await Log.warn(`[${user.id}]`, `Chyba při navigaci z cache: ${err.message}`);
-      return false;
-    }
-  }
-
-  /**
-   * Načte seznam skupin ze skupinového feedu a uloží do cache
-   */
-  async loadGroupsFromFeed(user, fbBot) {
-    try {
-      Log.info(`[${user.id}]`, 'Načítám skupiny ze feedu...');
-      
-      // Naviguj na skupinový feed
-      await fbBot.navigateToPage('https://www.facebook.com/groups/feed/', { 
-        waitUntil: 'networkidle2' 
-      });
-      await Wait.toSeconds(5, 'Načtení skupinového feedu');
-      
-      // Scrolluj pro načtení více skupin
-      for (let i = 0; i < 3; i++) {
-        await fbBot.page.evaluate(() => {
-          window.scrollBy(0, 800);
-        });
-        await Wait.toSeconds(2, 'Načtení dalších skupin');
-      }
-      
-      // Extrahuj odkazy na skupiny
-      const groupUrls = await fbBot.page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('a[href*="/groups/"]'))
-          .map(a => a.href)
-          .filter(href => {
-            const match = href.match(/facebook\.com\/groups\/([^\/\?&]+)/);
-            return match && match[1] !== 'feed';
-          });
-        
-        return [...new Set(links)]; // Unikátní odkazy
-      });
-      
-      // Uložení do global cache
-      if (!global.groupUrlsCache) {
-        global.groupUrlsCache = [];
-      }
-      
-      // Přidej nové URLs, které ještě nejsou v cache
-      const newUrls = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
-      global.groupUrlsCache.push(...newUrls);
-      
-      Log.info(`[${user.id}]`, `Načteno ${newUrls.length} nových skupinových URL (celkem v cache: ${global.groupUrlsCache.length})`);
-      
-    } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při načítání ze feedu: ${err.message}`);
-    }
-  }
 
 
   /**
    * Rozhoduje o další aktivitě v rámci průzkumu
-   * Sleduje už provedené akce aby se neopakovaly
+   * Používá váhy, po použití akce se váha nastaví na 0
    */
   async decideNextAction(user, analyzer, options) {
     try {
@@ -238,7 +136,11 @@ export class GroupExploreAction {
       }
       if (!global.exploreSession[user.id]) {
         global.exploreSession[user.id] = {
-          completedActivities: [],
+          actionWeights: {
+            scroll_and_read: 60,
+            explore_members: 30,
+            finish: 10
+          },
           explorationCount: 0
         };
       }
@@ -256,22 +158,16 @@ export class GroupExploreAction {
         return 'finish_session';
       }
       
-      // Dostupné akce s novými procenty
+      // Vytvoř seznam dostupných akcí s jejich váhami
       const availableActions = [];
-      
-      if (!session.completedActivities.includes('scroll_and_read')) {
-        availableActions.push({ action: 'scroll_and_read', weight: 60 });
+      for (const [action, weight] of Object.entries(session.actionWeights)) {
+        if (weight > 0) {
+          availableActions.push({ action, weight });
+        }
       }
-      
-      if (!session.completedActivities.includes('explore_members')) {
-        availableActions.push({ action: 'explore_members', weight: 30 });
-      }
-      
-      // Finish je vždy možné
-      availableActions.push({ action: 'finish', weight: 10 });
       
       // Pokud žádné akce nejsou dostupné, ukončit
-      if (availableActions.length === 1 && availableActions[0].action === 'finish') {
+      if (availableActions.length === 0) {
         return 'finish';
       }
       
@@ -283,9 +179,9 @@ export class GroupExploreAction {
       for (const activityOption of availableActions) {
         cumulative += activityOption.weight;
         if (random <= cumulative) {
-          // Označit jako dokončenou pokud není finish
+          // Nastav váhu na 0 po použití (kromě finish)
           if (activityOption.action !== 'finish') {
-            session.completedActivities.push(activityOption.action);
+            session.actionWeights[activityOption.action] = 0;
           }
           return activityOption.action;
         }
