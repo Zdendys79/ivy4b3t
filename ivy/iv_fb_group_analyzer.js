@@ -100,20 +100,78 @@ export class FBGroupAnalyzer {
   }
 
   /**
-   * Určí typ skupiny (G = soukromá, GV = veřejná)
+   * Určí typ skupiny podle její povahy a účelu
+   * G = group - cizí skupina pro UTIO příspěvky
+   * GV = vlastní skupina - B3 vlastní skupinu, správce je z B3
+   * P = prodejní skupina - zatím neřešíme
+   * Z = zájmová skupina - speciální obsah, ne realitní příspěvky
    */
   async determineGroupType() {
     try {
-      const isPrivate = await this.page.evaluate(() => {
-        // Hledáš indikátory soukromé skupiny
+      const groupAnalysis = await this.page.evaluate(() => {
         const text = document.body.textContent.toLowerCase();
-        return text.includes('soukromá') || text.includes('private') || 
-               text.includes('žádost o připojení') || text.includes('request to join');
+        const title = document.title.toLowerCase();
+        const url = window.location.href.toLowerCase();
+        
+        // Kontrola zda jsme správci (indikuje GV - vlastní skupina)
+        const isAdmin = text.includes('spravovat skupinu') || 
+                       text.includes('manage group') ||
+                       text.includes('nastavení skupiny') ||
+                       text.includes('group settings');
+        
+        // Kontrola zájmových témat (Z - zájmová skupina)
+        const interestKeywords = [
+          'foto', 'photography', 'umění', 'art', 'hudba', 'music',
+          'cestování', 'travel', 'vaření', 'cooking', 'sport',
+          'fitness', 'zvířata', 'animals', 'knihy', 'books',
+          'film', 'movie', 'technologie', 'technology', 'gaming',
+          'zahrada', 'garden', 'móda', 'fashion', 'auto', 'car'
+        ];
+        
+        const isInterestGroup = interestKeywords.some(keyword => 
+          title.includes(keyword) || text.includes(keyword)
+        );
+        
+        // Kontrola prodejních skupin (P - prodejní)
+        const sellKeywords = [
+          'prodej', 'sale', 'sell', 'bazar', 'bazaar', 'inzerát',
+          'advertisement', 'kup', 'buy', 'směna', 'exchange',
+          'nákup', 'shopping', 'obchod', 'shop'
+        ];
+        
+        const isSellGroup = sellKeywords.some(keyword => 
+          title.includes(keyword) || text.includes(keyword)
+        );
+        
+        return {
+          isAdmin,
+          isInterestGroup,
+          isSellGroup,
+          text: text.substring(0, 1000), // První 1000 znaků pro debug
+          title,
+          url
+        };
       });
       
-      return isPrivate ? 'G' : 'GV';
+      // Rozhodovací logika
+      if (groupAnalysis.isAdmin) {
+        return 'GV'; // Vlastní skupina - jsme správci
+      }
+      
+      if (groupAnalysis.isSellGroup) {
+        return 'P'; // Prodejní skupina
+      }
+      
+      if (groupAnalysis.isInterestGroup) {
+        return 'Z'; // Zájmová skupina
+      }
+      
+      // Výchozí: cizí skupina pro UTIO příspěvky
+      return 'G';
+      
     } catch (err) {
-      return 'G'; // Výchozí soukromá
+      await Log.warn('[GROUP_ANALYZER]', `Chyba při určování typu: ${err.message}`);
+      return 'G'; // Výchozí cizí skupina
     }
   }
 
