@@ -220,11 +220,32 @@ export class GroupExploreAction {
         global.groupUrlsCache = [];
       }
       
-      // Přidej nové URLs, které ještě nejsou v cache
-      const newUrls = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
-      global.groupUrlsCache.push(...newUrls);
+      // Filtruj URLs - jen ty které ještě nejsou v cache
+      const notInCache = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
       
-      Log.info(`[${user.id}]`, `Načteno ${newUrls.length} nových skupinových URL (celkem v cache: ${global.groupUrlsCache.length})`);
+      // Odfiltruj známé skupiny z databáze PŘED přidáním do cache
+      const unknownUrls = [];
+      let knownCount = 0;
+      
+      for (const url of notInCache) {
+        const fbIdMatch = url.match(/facebook\.com\/groups\/([^\/\?&]+)/);
+        if (fbIdMatch && fbIdMatch[1]) {
+          const fbId = fbIdMatch[1];
+          
+          // Zkontroluj zda skupina není už v databázi
+          const existingGroup = await db.safeQueryFirst('groups.getByFbId', [fbId]);
+          if (!existingGroup) {
+            unknownUrls.push(url); // Přidej jen neznámé skupiny
+          } else {
+            knownCount++;
+          }
+        }
+      }
+      
+      // Do cache přidej POUZE neznámé skupiny
+      global.groupUrlsCache.push(...unknownUrls);
+      
+      Log.info(`[${user.id}]`, `Ze feedu: ${groupUrls.length} celkem, ${knownCount} známých přeskočeno, ${unknownUrls.length} neznámých přidáno do cache`);
       
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při načítání ze feedu: ${err.message}`);
