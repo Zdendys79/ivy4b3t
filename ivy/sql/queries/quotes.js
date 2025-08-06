@@ -30,7 +30,7 @@ export const QUOTES = {
   getRandomQuote: `
     SELECT * FROM quotes
     WHERE (next_seen IS NULL OR next_seen <= NOW())
-    ORDER BY RAND()
+    ORDER BY COALESCE(next_seen, NOW() - INTERVAL 90 DAY) ASC
     LIMIT 1
   `,
 
@@ -58,7 +58,7 @@ export const QUOTES = {
       q.next_seen IS NULL
       OR q.next_seen <= NOW()
     )
-  ORDER BY RAND()
+  ORDER BY COALESCE(q.next_seen, NOW() - INTERVAL 90 DAY) ASC
   LIMIT 1
 `,
 
