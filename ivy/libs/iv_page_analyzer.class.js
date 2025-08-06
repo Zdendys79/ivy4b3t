@@ -546,15 +546,7 @@ export class PageAnalyzer {
         groupInfo.supplementary_actions.push({ type: 'ACCEPT_EXPERT_INVITE' });
       }
 
-      const config = await getAllConfig();
-      const joinText = config.cfg_group_join_text || 'Přidat se ke skupině';
-      
-      const joinButton = await fbSupport.findByText(this.page, joinText, { match: 'exact' });
-      if (joinButton.length > 0) {
-        groupInfo.hasJoinButton = true;
-        groupInfo.joinButtonText = joinText;
-        groupInfo.membershipStatus = 'not_member';
-      } else if (groupInfo.isMember) {
+      if (groupInfo.isMember) {
         groupInfo.membershipStatus = 'member';
       } else if (groupInfo.isPending) {
         groupInfo.membershipStatus = 'pending';
