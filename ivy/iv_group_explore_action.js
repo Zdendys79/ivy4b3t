@@ -130,6 +130,13 @@ export class GroupExploreAction {
    */
   async navigateToRandomGroup(user, fbBot) {
     try {
+      // Občas (20% šance) načti nové skupiny ze feedu i když cache není prázdná
+      const shouldRefreshFeed = Math.random() < 0.2;
+      if (shouldRefreshFeed) {
+        Log.info(`[${user.id}]`, '🔄 Obnovuji skupiny ze feedu (náhodná obnova)');
+        await this.loadGroupsFromFeed(user, fbBot);
+      }
+      
       // Pokus o navigaci z cache
       if (await this.navigateFromCache(user, fbBot)) {
         return true;
