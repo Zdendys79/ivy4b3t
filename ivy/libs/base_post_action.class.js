@@ -134,26 +134,63 @@ export class BasePostAction extends BaseAction {
    * KROK 6: Ověřit úspěšné odeslání (použije validaci z quote_post)
    */
   async step6_waitForSuccess(user, fbBot) {
-    Log.info(`[${user.id}]`, 'KROK 6: Čekám na potvrzení odeslání...');
+    Log.info(`[${user.id}]`, 'KROK 6: Čekám na dokončení odeslání...');
     
-    // Po kliknutí na Přidat čekat až 10 sekund než tlačítko zmizí
-    await Wait.toSeconds(10, 'Po kliknutí na Přidat');
+    // Zaznamenat počáteční stav DOM před čekáním
+    const initialElementCount = await fbBot.page.evaluate(() => {
+      return document.querySelectorAll('*').length;
+    });
     
-    // Zkontrolovat zda tlačítko "Přidat" zmizelo (původní logika)
-    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    // Čekat na změny v DOM nebo síťový provoz
+    let success = false;
+    let attempts = 0;
+    const maxAttempts = 20; // 20 x 0.5s = 10 sekund
     
-    // Hledat tlačítko "Přidat" v textech
-    const submitButtonVisible = visibleTexts.some(text => 
-      text === 'Přidat' || text.includes('Přidat')
-    );
-    
-    if (submitButtonVisible) {
-      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
-      return false;
-    } else {
-      Log.info(`[${user.id}]`, 'KROK 6 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');
-      return true;
+    while (attempts < maxAttempts && !success) {
+      await Wait.toMS(500); // Krátké intervaly pro rychlejší detekci
+      attempts++;
+      
+      // Zkontrolovat zda se DOM změnil (nové elementy byly přidány)
+      const currentElementCount = await fbBot.page.evaluate(() => {
+        return document.querySelectorAll('*').length;
+      });
+      
+      const elementChange = currentElementCount - initialElementCount;
+      
+      // Pokud přibylo více než 5 elementů, pravděpodobně se příspěvek odeslal
+      if (elementChange > 5) {
+        Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Detekována změna DOM (+${elementChange} elementů) - příspěvek byl pravděpodobně odeslán`);
+        success = true;
+        break;
+      }
+      
+      // Alternativně zkontroluj zda zmizl konkrétní submit button
+      const submitButtonExists = await fbBot.page.evaluate(() => {
+        // Hledat konkrétní submit button (ne všechny texty "Přidat")
+        const buttons = document.querySelectorAll('div[role="button"]');
+        for (let button of buttons) {
+          if (button.textContent === 'Přidat' && 
+              button.getAttribute('aria-label') === null && 
+              getComputedStyle(button).display !== 'none') {
+            return true;
+          }
+        }
+        return false;
+      });
+      
+      if (!submitButtonExists) {
+        Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Submit tlačítko zmizelo - příspěvek byl odeslán`);
+        success = true;
+        break;
+      }
     }
+    
+    if (!success) {
+      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Žádné změny nebyly detekovány během ${maxAttempts * 0.5}s - příspěvek nebyl odeslán`);
+      return false;
+    }
+    
+    return true;
   }
 
   // ==========================================
