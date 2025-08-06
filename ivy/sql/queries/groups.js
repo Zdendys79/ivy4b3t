@@ -107,23 +107,14 @@ export const GROUPS = {
 
   insertOrUpdateGroup: `
     INSERT INTO fb_groups (
-      fb_id, name, member_count, description, category, privacy_type,
-      discovered_by_user_id, is_relevant, posting_allowed, language,
-      activity_level, analysis_notes, status, type, priority
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      fb_id, name, member_count, description, category, type, priority
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       member_count = VALUES(member_count),
       description = VALUES(description),
       category = VALUES(category),
-      privacy_type = VALUES(privacy_type),
-      is_relevant = VALUES(is_relevant),
-      posting_allowed = VALUES(posting_allowed),
-      language = VALUES(language),
-      activity_level = VALUES(activity_level),
-      analysis_notes = VALUES(analysis_notes),
-      status = VALUES(status),
-      last_updated = CURRENT_TIMESTAMP
+      last_seen = NOW()
   `,
 
   saveGroupExplorationDetails: `
@@ -133,56 +124,43 @@ export const GROUPS = {
       member_count = ?,
       description = ?,
       category = ?,
-      privacy_type = ?,
-      is_relevant = ?,
-      posting_allowed = ?,
-      language = ?,
-      activity_level = ?,
-      analysis_notes = ?,
-      analysis_count = analysis_count + 1,
-      last_analysis = CURRENT_TIMESTAMP,
-      status = CASE 
-        WHEN ? = 1 THEN 'active'
-        WHEN ? = 0 THEN 'inactive'
-        ELSE 'analyzed'
-      END
+      last_seen = NOW()
     WHERE fb_id = ?
   `,
 
   getGroupsForExploration: `
     SELECT * FROM fb_groups
-    WHERE (is_relevant IS NULL OR last_analysis < DATE_SUB(NOW(), INTERVAL 7 DAY))
-      AND status NOT IN ('banned', 'inactive')
+    WHERE type = 'Z'
+      AND priority > 0
     ORDER BY 
       CASE WHEN name IS NULL THEN 0 ELSE 1 END ASC,
-      CASE WHEN is_relevant IS NULL THEN 0 ELSE 1 END ASC,
-      priority DESC,
-      RAND()
+      priority DESC
     LIMIT ?
   `,
 
   getRelevantGroups: `
     SELECT * FROM fb_groups
-    WHERE is_relevant = 1
-      AND status = 'active'
+    WHERE priority > 0
+      AND type IN ('G', 'GV', 'Z')
     ORDER BY member_count DESC, priority DESC
   `,
 
   insertDiscoveredLink: `
-    INSERT IGNORE INTO fb_groups (fb_id, discovery_url, discovered_by_user_id, status, type, priority)
-    VALUES (?, ?, ?, 'discovered', 'Z', 3)
+    INSERT IGNORE INTO fb_groups (fb_id, type, priority)
+    VALUES (?, 'Z', 3)
   `,
 
   markDiscoveryAsProcessed: `
     UPDATE fb_groups
-    SET discovery_processed = TRUE
+    SET note = 'processed'
     WHERE fb_id = ?
   `,
 
   getUnprocessedDiscoveries: `
     SELECT * FROM fb_groups
-    WHERE discovery_processed = FALSE
-    ORDER BY discovered_at ASC
+    WHERE (note IS NULL OR note != 'processed')
+      AND type = 'Z'
+    ORDER BY id ASC
     LIMIT ?
   `,
 
@@ -399,22 +377,20 @@ export const GROUPS = {
 
   upsertGroupInfo: `
     INSERT INTO fb_groups (
-      fb_id, name, member_count, type, discovered_by_user_id, 
-      discovered_at, last_analysis, status, priority
-    ) VALUES (?, ?, ?, 'Z', ?, NOW(), NOW(), 'discovered', 3)
+      fb_id, name, member_count, type, priority
+    ) VALUES (?, ?, ?, 'Z', 3)
     ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       member_count = VALUES(member_count),
-      last_analysis = NOW(),
-      analysis_count = analysis_count + 1
+      last_seen = NOW()
   `,
 
   getUserExplorationStats: `
     SELECT 
       COUNT(*) as groups_discovered,
-      COUNT(CASE WHEN fg.discovered_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as groups_today,
-      COUNT(CASE WHEN fg.discovered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as groups_this_week
+      COUNT(CASE WHEN fg.last_seen >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as groups_today,
+      COUNT(CASE WHEN fg.last_seen >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as groups_this_week
     FROM fb_groups fg
-    WHERE fg.discovered_by_user_id = ?
+    WHERE fg.type = 'Z'
   `
 };
