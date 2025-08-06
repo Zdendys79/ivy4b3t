@@ -134,40 +134,29 @@ export class BasePostAction extends BaseAction {
    * KROK 6: Ověřit úspěšné odeslání (použije validaci z quote_post)
    */
   async step6_waitForSuccess(user, fbBot) {
-    Log.info(`[${user.id}]`, 'KROK 6: Čekám na potvrzení odeslání...');
+    Log.info(`[${user.id}]`, 'KROK 6: Čekám na dokončení odeslání...');
     
-    // Po kliknutí na Přidat čekat až 10 sekund 
+    // Po kliknutí na Přidat čekat až proces odeslání proběhne
     await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
-    // Zkontrolovat indikátory úspěchu
+    // Hledat chybové zprávy které by indikovaly selhání
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    const errorIndicators = visibleTexts.filter(text => {
+      const lowerText = text.toLowerCase();
+      return lowerText.includes('chyba') ||
+             lowerText.includes('error') ||
+             lowerText.includes('selhal') ||
+             lowerText.includes('failed') ||
+             lowerText.includes('nezdařilo') ||
+             lowerText.includes('nepovedlo') ||
+             lowerText.includes('problém');
+    });
     
-    // 1. Hledat pozitivní zprávy o úspěchu
-    const successIndicators = visibleTexts.filter(text => 
-      text.includes('váš příspěvek') || 
-      text.includes('publikovat') ||
-      text.includes('sdílet') ||
-      text.includes('příspěvek byl') ||
-      text.toLowerCase().includes('success') ||
-      text.includes('hotovo') ||
-      text.includes('dokončeno')
-    );
-    
-    // 2. Hledar tlačítko "Přidat" (záložní kontrola)
-    const submitButtonVisible = visibleTexts.some(text => 
-      text === 'Přidat' || text.includes('Přidat')
-    );
-    
-    // Vyhodnotit úspěch podle kombinace faktorů
-    const hasSuccessSignals = successIndicators.length > 0;
-    const noFailureSignals = !submitButtonVisible;
-    
-    if (hasSuccessSignals || noFailureSignals) {
-      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl pravděpodobně odeslán (úspěšné indikátory: ${successIndicators.length}, tlačítko Přidat: ${submitButtonVisible ? 'viditelné' : 'skryté'})`);
+    if (errorIndicators.length === 0) {
+      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl pravděpodobně odeslán - žádné chybové zprávy nenalezeny`);
       return true;
     } else {
-      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Příspěvek nebyl odeslán - žádné pozitivní indikátory`);
-      Log.debug(`[${user.id}]`, `Debug info: indikátory: ${successIndicators.join(', ')}`);
+      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Nalezeny možné chybové zprávy: ${errorIndicators.join(', ')}`);
       return false;
     }
   }
