@@ -134,25 +134,25 @@ export class BasePostAction extends BaseAction {
    * KROK 6: Ověřit úspěšné odeslání (použije validaci z quote_post)
    */
   async step6_waitForSuccess(user, fbBot) {
-    Log.info(`[${user.id}]`, 'KROK 6: Čekám na dokončení odeslání...');
+    Log.info(`[${user.id}]`, 'KROK 6: Čekám na potvrzení odeslání...');
     
-    // Po kliknutí na Přidat čekat až proces odeslání proběhne
+    // Po kliknutí na Přidat čekat až 10 sekund než tlačítko zmizí
     await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
-    // Zkontrolovat viditelnost klíčových editačních prvků
-    const postInputVisible = await fbBot.pageAnalyzer.elementExists('Co se vám honí hlavou', { matchType: 'contains' });
-    const addButtonVisible = await fbBot.pageAnalyzer.elementExists('Přidat', { matchType: 'exact' });
-    const publishButtonVisible = await fbBot.pageAnalyzer.elementExists('Zveřejnit', { matchType: 'exact' });
+    // Zkontrolovat zda tlačítko "Přidat" zmizelo (původní logika)
+    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     
-    const anyEditElementVisible = postInputVisible || addButtonVisible || publishButtonVisible;
+    // Hledat tlačítko "Přidat" v textech
+    const submitButtonVisible = visibleTexts.some(text => 
+      text === 'Přidat' || text.includes('Přidat')
+    );
     
-    if (!anyEditElementVisible) {
-      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl odeslán - editační rozhraní se skrylo`);
-      return true;
-    } else {
-      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Editační rozhraní je stále viditelné - příspěvek nebyl odeslán`);
-      Log.debug(`[${user.id}]`, `Debug: Viditelné prvky - Input: ${postInputVisible}, Přidat: ${addButtonVisible}, Zveřejnit: ${publishButtonVisible}`);
+    if (submitButtonVisible) {
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
       return false;
+    } else {
+      Log.info(`[${user.id}]`, 'KROK 6 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');
+      return true;
     }
   }
 
