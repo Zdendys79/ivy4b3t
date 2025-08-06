@@ -118,12 +118,12 @@ export class UserSelector {
    * @returns {Promise<Object|null>}
    */
   async _selectUserForMainBranch() {
-    Log.info('[USER_SELECTOR]', 'MAIN větev - používám rotační výběr uživatele s dostupnými akcemi');
+    Log.info('[USER_SELECTOR]', 'MAIN větev - používám rotační výběr uživatele podle worktime');
     
-    const user = await db.getUserWithAvailableActions(os.hostname());
+    const user = await db.getUserWithAvailableActionsRotational(os.hostname());
     if (user) {
       await db.updateUserWorktime(user.id, 15);
-      Log.info('[USER_SELECTOR]', `MAIN větev: Čas aktivity uživatele ${user.id} posunut o ${Log.formatTime(15, 'm')}`);
+      Log.info('[USER_SELECTOR]', `MAIN větev: Čas aktivity uživatele ${user.id} (${user.name} ${user.surname}) posunut o ${Log.formatTime(15, 'm')}`);
     }
     
     return user;
