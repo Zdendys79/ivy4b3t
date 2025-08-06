@@ -136,20 +136,13 @@ export class BasePostAction extends BaseAction {
   async step6_waitForSuccess(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 6: Čekám na potvrzení odeslání...');
     
-    // Zaznamenat původní URL před čekáním
-    const originalUrl = fbBot.page.url();
-    
     // Po kliknutí na Přidat čekat až 10 sekund 
     await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
-    // Zkontrolovat více indikátorů úspěchu
-    const currentUrl = fbBot.page.url();
+    // Zkontrolovat indikátory úspěchu
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     
-    // 1. Změna URL může indikovat přesměrování po úspěšném odeslání
-    const urlChanged = currentUrl !== originalUrl;
-    
-    // 2. Hledat pozitivní zprávy o úspěchu
+    // 1. Hledat pozitivní zprávy o úspěchu
     const successIndicators = visibleTexts.filter(text => 
       text.includes('váš příspěvek') || 
       text.includes('publikovat') ||
@@ -160,21 +153,21 @@ export class BasePostAction extends BaseAction {
       text.includes('dokončeno')
     );
     
-    // 3. Hledar tlačítko "Přidat" (záložní kontrola)
+    // 2. Hledar tlačítko "Přidat" (záložní kontrola)
     const submitButtonVisible = visibleTexts.some(text => 
       text === 'Přidat' || text.includes('Přidat')
     );
     
     // Vyhodnotit úspěch podle kombinace faktorů
-    const hasSuccessSignals = urlChanged || successIndicators.length > 0;
+    const hasSuccessSignals = successIndicators.length > 0;
     const noFailureSignals = !submitButtonVisible;
     
     if (hasSuccessSignals || noFailureSignals) {
-      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl pravděpodobně odeslán (URL změna: ${urlChanged}, úspěšné indikátory: ${successIndicators.length}, tlačítko Přidat: ${submitButtonVisible ? 'viditelné' : 'skryté'})`);
+      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl pravděpodobně odeslán (úspěšné indikátory: ${successIndicators.length}, tlačítko Přidat: ${submitButtonVisible ? 'viditelné' : 'skryté'})`);
       return true;
     } else {
       await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Příspěvek nebyl odeslán - žádné pozitivní indikátory`);
-      Log.debug(`[${user.id}]`, `Debug info: URL ${originalUrl} → ${currentUrl}, indikátory: ${successIndicators.join(', ')}`);
+      Log.debug(`[${user.id}]`, `Debug info: indikátory: ${successIndicators.join(', ')}`);
       return false;
     }
   }
