@@ -113,15 +113,7 @@ export const USERS = {
             )
         )
       )
-    ORDER BY (
-      -- Get the oldest scheduled action time for this user
-      SELECT MIN(COALESCE(uap.next_time, '1970-01-01 00:00:00'))
-      FROM user_action_plan uap
-      JOIN action_definitions ad ON uap.action_code = ad.action_code
-      WHERE uap.user_id = u.id
-        AND ad.active = 1
-        AND ad.action_code NOT IN ('account_sleep','account_delay')
-    ) ASC
+    ORDER BY COALESCE(u.next_worktime, '1970-01-01 00:00:00') ASC
     LIMIT 1
   `,
 
