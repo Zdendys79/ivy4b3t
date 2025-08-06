@@ -139,8 +139,9 @@ export class BasePostAction extends BaseAction {
     // Po kliknutí na Přidat čekat až proces odeslání proběhne
     await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
-    // Hledat chybové zprávy které by indikovaly selhání
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    
+    // 1. Hledat chybové zprávy které by indikovaly selhání
     const errorIndicators = visibleTexts.filter(text => {
       const lowerText = text.toLowerCase();
       return lowerText.includes('chyba') ||
@@ -152,11 +153,24 @@ export class BasePostAction extends BaseAction {
              lowerText.includes('problém');
     });
     
-    if (errorIndicators.length === 0) {
-      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl pravděpodobně odeslán - žádné chybové zprávy nenalezeny`);
+    // 2. Zkontrolovat zda editační pole zmizelo (indikátor úspěchu)
+    const postInputVisible = visibleTexts.some(text => 
+      text.includes('Co se vám honí hlavou') ||
+      text.includes('Na co myslíte') ||
+      text.includes('Přidat') ||
+      text.includes('Zveřejnit')
+    );
+    
+    // 3. Vyhodnotit úspěch
+    if (errorIndicators.length > 0) {
+      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Nalezeny chybové zprávy: ${errorIndicators.join(', ')}`);
+      return false;
+    } else if (!postInputVisible) {
+      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl odeslán - editační rozhraní zmizelo`);
       return true;
     } else {
-      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Nalezeny možné chybové zprávy: ${errorIndicators.join(', ')}`);
+      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Editační rozhraní je stále viditelné - příspěvek nebyl odeslán`);
+      Log.debug(`[${user.id}]`, `Debug: Stále viditelné prvky editace`);
       return false;
     }
   }
