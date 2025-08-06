@@ -81,23 +81,7 @@ export async function runWheelOfFortune(user, browser, context) {
     throw err;
   }
 
-  // Iniciuj UtioBot pro UTIO akce
-  try {
-    utioBot = new UtioBot(context);
-    await utioBot.init();
-    Log.info(`[${user.id}]`, 'UtioBot úspěšně inicializován');
-    
-    // Přihlásit uživatele do UTIO
-    const utioLoginSuccess = await utioBot.openUtio(user);
-    if (utioLoginSuccess) {
-      Log.info(`[${user.id}]`, 'Uživatel úspěšně přihlášen do UTIO');
-    } else {
-      Log.warn(`[${user.id}]`, 'Přihlášení do UTIO se nezdařilo - UTIO akce nebudou dostupné');
-    }
-  } catch (err) {
-    await Log.warn(`[${user.id}]`, `Chyba při inicializaci UtioBot: ${err.message}`);
-    // UTIO není kritické - pokračuji bez něj
-  }
+  // UtioBot se inicializuje až když je potřeba (podmíněně)
 
   try {
     // Hlavní smyčka
@@ -121,6 +105,7 @@ export async function runWheelOfFortune(user, browser, context) {
 
       // 2. Získání dostupných akcí
       const availableActions = await getAvailableActions(user.id, invasiveLock);
+      
       
       // 3. Kontrola prázdného kola (kromě test módu)
       if (!global.isTestBranch && isWheelEmpty(availableActions)) {
@@ -170,6 +155,30 @@ export async function runWheelOfFortune(user, browser, context) {
       }
 
       Log.info(`[${user.id}]`, `Vylosována akce #${actionCount + 1}: ${pickedAction.code}`);
+
+      // 4.5. Podmíněná inicializace UtioBot pro vylosovanou akci
+      if (!utioBot) {
+        const requirements = await actionRouter.getActionRequirements(pickedAction.code);
+        if (requirements.needsUtio) {
+          try {
+            Log.info(`[${user.id}]`, `Akce ${pickedAction.code} potřebuje UTIO - inicializuji UtioBot`);
+            utioBot = new UtioBot(context);
+            await utioBot.init();
+            Log.info(`[${user.id}]`, 'UtioBot úspěšně inicializován pro vylosovanou akci');
+            
+            // Přihlásit uživatele do UTIO
+            const utioLoginSuccess = await utioBot.openUtio(user);
+            if (utioLoginSuccess) {
+              Log.info(`[${user.id}]`, 'Uživatel úspěšně přihlášen do UTIO');
+            } else {
+              Log.warn(`[${user.id}]`, 'Přihlášení do UTIO se nezdařilo - akce může selhat');
+            }
+          } catch (err) {
+            await Log.warn(`[${user.id}]`, `Chyba při inicializaci UtioBot: ${err.message}`);
+            // UTIO není kritické - pokračuji bez něj, ale akce pravděpodobně selže
+          }
+        }
+      }
 
       // 5. Provedení akce
       const actionContext = {
