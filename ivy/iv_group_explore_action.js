@@ -374,7 +374,7 @@ export class GroupExploreAction {
     try {
       const logText = `Prozkoumána skupina: ${groupInfo.name} (${groupInfo.member_count} členů, ${groupInfo.category || 'neznámá kategorie'})`;
       
-      await db.logAction(user.id, this.actionCode, groupInfo.fb_group_id, logText);
+      await db.logAction(user.id, this.actionCode, groupInfo.fb_id || null, logText);
       
     } catch (err) {
       await Log.warn(`[${user.id}]`, `Chyba při logování: ${err.message}`);
