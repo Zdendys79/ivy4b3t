@@ -16,8 +16,7 @@ import { UtioPostAction } from '../actions/utio_post.action.js';
 import { PostUtioPAction } from '../actions/post_utio_p.action.js';
 import { AccountDelayAction } from '../actions/account_delay.action.js';
 import { AccountSleepAction } from '../actions/account_sleep.action.js';
-import { QuotePostAction } from '../actions/quote_post.action.js';
-import { NewsPostAction } from '../actions/news_post.action.js';
+import { UniversalPostAction } from '../actions/universal_post.action.js';
 import { GroupPostAction } from '../actions/group_post.action.js';
 import { TimelinePostAction } from '../actions/timeline_post.action.js';
 import { CommentAction } from '../actions/comment.action.js';
@@ -50,9 +49,13 @@ export class ActionRouter {
       this.registerAction('account_delay', AccountDelayAction);
       this.registerAction('account_sleep', AccountSleepAction);
 
-      // Registrace ostatních akcí
-      this.registerAction('quote_post', QuotePostAction);
-      this.registerAction('news_post', NewsPostAction);
+      // Registrace univerzálních post akcí
+      this.registerAction('quote_post', UniversalPostAction);
+      this.registerAction('news_post', UniversalPostAction);
+
+      // Záložní registrace starých akcí (pro postupný přechod)
+      // this.registerAction('quote_post', QuotePostAction);
+      // this.registerAction('news_post', NewsPostAction);
       this.registerAction('group_post', GroupPostAction);
       this.registerAction('timeline_post', TimelinePostAction);
       this.registerAction('comment', CommentAction);
@@ -116,7 +119,7 @@ export class ActionRouter {
     }
 
     // Vytvoř dočasnou instanci pro získání požadavků
-    const tempInstance = new ActionClass(actionCode);
+    const tempInstance = this._createActionInstance(ActionClass, actionCode);
     return tempInstance.getRequirements();
   }
 
@@ -138,7 +141,7 @@ export class ActionRouter {
     }
 
     try {
-      const actionInstance = new ActionClass(actionCode);
+      const actionInstance = this._createActionInstance(ActionClass, actionCode);
       await actionInstance.init();
       return await actionInstance.verifyReadiness(user, context);
 
@@ -173,7 +176,7 @@ export class ActionRouter {
       Log.info(`[${user.id}]`, `Spouštím akci: ${actionCode}`);
 
       // Vytvoř instanci akce
-      const actionInstance = new ActionClass(actionCode);
+      const actionInstance = this._createActionInstance(ActionClass, actionCode);
       await actionInstance.init();
 
       // Předběžné ověření připravenosti
@@ -209,6 +212,27 @@ export class ActionRouter {
    */
   getRegisteredActions() {
     return Array.from(this.actionMap.keys());
+  }
+
+  /**
+   * Vytvoří instanci akce se správnými parametry
+   * @private
+   * @param {Class} ActionClass - Třída akce
+   * @param {string} actionCode - Kód akce
+   * @returns {BaseAction} Instance akce
+   */
+  _createActionInstance(ActionClass, actionCode) {
+    // Speciální handling pro UniversalPostAction
+    if (ActionClass === UniversalPostAction) {
+      if (actionCode === 'quote_post') {
+        return new UniversalPostAction('quote');
+      } else if (actionCode === 'news_post') {
+        return new UniversalPostAction('news');
+      }
+    }
+    
+    // Standardní vytvoření instance
+    return new ActionClass(actionCode);
   }
 
   /**
