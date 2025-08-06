@@ -139,38 +139,19 @@ export class BasePostAction extends BaseAction {
     // Po kliknutí na Přidat čekat až proces odeslání proběhne
     await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
-    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    // Zkontrolovat viditelnost klíčových editačních prvků
+    const postInputVisible = await fbBot.pageAnalyzer.elementExists('Co se vám honí hlavou', { matchType: 'contains' });
+    const addButtonVisible = await fbBot.pageAnalyzer.elementExists('Přidat', { matchType: 'exact' });
+    const publishButtonVisible = await fbBot.pageAnalyzer.elementExists('Zveřejnit', { matchType: 'exact' });
     
-    // 1. Hledat chybové zprávy které by indikovaly selhání
-    const errorIndicators = visibleTexts.filter(text => {
-      const lowerText = text.toLowerCase();
-      return lowerText.includes('chyba') ||
-             lowerText.includes('error') ||
-             lowerText.includes('selhal') ||
-             lowerText.includes('failed') ||
-             lowerText.includes('nezdařilo') ||
-             lowerText.includes('nepovedlo') ||
-             lowerText.includes('problém');
-    });
+    const anyEditElementVisible = postInputVisible || addButtonVisible || publishButtonVisible;
     
-    // 2. Zkontrolovat zda editační pole zmizelo (indikátor úspěchu)
-    const postInputVisible = visibleTexts.some(text => 
-      text.includes('Co se vám honí hlavou') ||
-      text.includes('Na co myslíte') ||
-      text.includes('Přidat') ||
-      text.includes('Zveřejnit')
-    );
-    
-    // 3. Vyhodnotit úspěch
-    if (errorIndicators.length > 0) {
-      await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Nalezeny chybové zprávy: ${errorIndicators.join(', ')}`);
-      return false;
-    } else if (!postInputVisible) {
-      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl odeslán - editační rozhraní zmizelo`);
+    if (!anyEditElementVisible) {
+      Log.info(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl odeslán - editační rozhraní se skrylo`);
       return true;
     } else {
       await Log.error(`[${user.id}]`, `KROK 6 SELHAL: Editační rozhraní je stále viditelné - příspěvek nebyl odeslán`);
-      Log.debug(`[${user.id}]`, `Debug: Stále viditelné prvky editace`);
+      Log.debug(`[${user.id}]`, `Debug: Viditelné prvky - Input: ${postInputVisible}, Přidat: ${addButtonVisible}, Zveřejnit: ${publishButtonVisible}`);
       return false;
     }
   }
