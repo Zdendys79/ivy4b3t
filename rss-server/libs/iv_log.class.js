@@ -46,7 +46,7 @@ export class Log {
    * Pomocná metoda pro interactive debugging - žádná duplicita kódu!
    */
   static async _handleInteractiveDebug(level, prefix, message, context = {}) {
-    const { pauseOnError } = await import('../iv_interactive_debugger.js');
+    const { pauseOnError } = await import('../../ivy/iv_interactive_debugger.js');
     const result = await pauseOnError(level, `${prefix}: ${message}`, context);
     
     // Pouze skutečný 'quit' příkaz má ukončit program
@@ -105,7 +105,7 @@ export class Log {
 
   static async warnInteractive(module, message, context = {}) {
     this.warn(module, message);
-    const { pauseOnError } = await import('../iv_interactive_debugger.js');
+    const { pauseOnError } = await import('../../ivy/iv_interactive_debugger.js');
     return await pauseOnError('WARNING', `${module}: ${message}`, context);
   }
 
@@ -115,7 +115,7 @@ export class Log {
     if (error.stack) {
       this.debug(error.stack);
     }
-    const { pauseOnError } = await import('../iv_interactive_debugger.js');
+    const { pauseOnError } = await import('../../ivy/iv_interactive_debugger.js');
     return await pauseOnError('ERROR', `${module}: ${message}`, { ...context, stack: error.stack });
   }
 
