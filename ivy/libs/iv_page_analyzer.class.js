@@ -1482,7 +1482,14 @@ export class PageAnalyzer {
     } = options;
 
     try {
-      const elements = await this.getCurrentElements();
+      // Použij pokročilou metodu pro hledání všech viditelných textů včetně span elementů
+      const elements = await this.findElementsWithShortText({
+        maxWords: 5, // Krátké texty jako "Zveřejnit"
+        includeInputs: true,
+        includeButtons: true,
+        onlyVisible: true
+      });
+      
       let filteredTexts = elements
         .filter(el => {
           if (elementType !== 'any' && el.tagName.toLowerCase() !== elementType.toLowerCase()) {

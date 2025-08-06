@@ -396,15 +396,10 @@ export class UtioBot {
       await this.page.select("#regionId", regionId.toString());
       await Wait.toSeconds(1);
 
-      // Vyber okres (náhodný pokud je 0)
-      if (districtId === 0) {
-        districtId = this._getRandomDistrict(regionId);
-        Log.info('[UTIO]', `Použit náhodný okres: ${districtId}`);
-      }
-
-      Log.info('[UTIO]', `Vybírám okres ${districtId}...`);
+      // Vždy použij okres 0 (všechny okresy)
+      Log.info('[UTIO]', `Vybírám okres 0 (všechny okresy)...`);
       await this.page.waitForSelector("#districtId", { timeout: 5000 });
-      await this.page.select("#districtId", districtId.toString());
+      await this.page.select("#districtId", "0");
       await Wait.toSeconds(1);
 
       return true;
