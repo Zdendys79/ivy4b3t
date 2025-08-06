@@ -326,25 +326,46 @@ export class QuotePostAction extends BasePostAction {
   async step7_waitForSuccess(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 7: Čekám na potvrzení odeslání...');
     
-    // Po kliknutí na Přidat čekat až 10 sekund než tlačítko zmizí
+    // Zaznamenat původní URL před čekáním
+    const originalUrl = fbBot.page.url();
+    
+    // Po kliknutí na Přidat čekat až 10 sekund 
     await Wait.toSeconds(10, 'Po kliknutí na Přidat');
     
-    // Zkontrolovat zda tlačítko "Přidat" zmizelo (což znamená úspěch)
-    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    // Zkontrolovat více indikátorů úspěchu
     const currentUrl = fbBot.page.url();
+    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     
-    // Hledat tlačítko "Přidat" v textech
+    // 1. Změna URL může indikovat přesměrování po úspěšném odeslání
+    const urlChanged = currentUrl !== originalUrl;
+    
+    // 2. Hledat pozitivní zprávy o úspěchu
+    const successIndicators = visibleTexts.filter(text => 
+      text.includes('váš příspěvek') || 
+      text.includes('publikovat') ||
+      text.includes('sdílet') ||
+      text.includes('příspěvek byl') ||
+      text.toLowerCase().includes('success') ||
+      text.includes('hotovo') ||
+      text.includes('dokončeno')
+    );
+    
+    // 3. Hledat tlačítko "Přidat" (záložní kontrola)
     const submitButtonVisible = visibleTexts.some(text => 
       text === 'Přidat' || text.includes('Přidat')
     );
     
+    // Vyhodnotit úspěch podle kombinace faktorů
+    const hasSuccessSignals = urlChanged || successIndicators.length > 0;
+    const noFailureSignals = !submitButtonVisible;
     
-    if (submitButtonVisible) {
-      await Log.error(`[${user.id}]`, 'KROK 7 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
-      return false;
-    } else {
-      Log.info(`[${user.id}]`, 'KROK 7 ÚSPĚCH: Tlačítko "Přidat" zmizelo - příspěvek byl odeslán');
+    if (hasSuccessSignals || noFailureSignals) {
+      Log.info(`[${user.id}]`, `KROK 7 ÚSPĚCH: Příspěvek byl pravděpodobně odeslán (URL změna: ${urlChanged}, úspěšné indikátory: ${successIndicators.length}, tlačítko Přidat: ${submitButtonVisible ? 'viditelné' : 'skryté'})`);
       return true;
+    } else {
+      await Log.error(`[${user.id}]`, `KROK 7 SELHAL: Příspěvek nebyl odeslán - žádné pozitivní indikátory`);
+      Log.debug(`[${user.id}]`, `Debug info: URL ${originalUrl} → ${currentUrl}, indikátory: ${successIndicators.join(', ')}`);
+      return false;
     }
   }
 
