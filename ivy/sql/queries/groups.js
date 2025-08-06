@@ -24,6 +24,11 @@ export const GROUPS = {
     WHERE fb_id = ?
   `,
 
+  getMultipleByFbIds: `
+    SELECT * FROM fb_groups
+    WHERE fb_id IN (?)
+  `,
+
   getByType: `
     SELECT * FROM fb_groups
     WHERE type = ?

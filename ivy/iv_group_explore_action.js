@@ -223,24 +223,29 @@ export class GroupExploreAction {
       // Filtruj URLs - jen ty které ještě nejsou v cache
       const notInCache = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
       
-      // Odfiltruj známé skupiny z databáze PŘED přidáním do cache
-      const unknownUrls = [];
-      let knownCount = 0;
-      
-      for (const url of notInCache) {
+      // Extrahuj všechna FB ID najednou
+      const urlsWithIds = notInCache.map(url => {
         const fbIdMatch = url.match(/facebook\.com\/groups\/([^\/\?&]+)/);
-        if (fbIdMatch && fbIdMatch[1]) {
-          const fbId = fbIdMatch[1];
-          
-          // Zkontroluj zda skupina není už v databázi
-          const existingGroup = await db.safeQueryFirst('groups.getByFbId', [fbId]);
-          if (!existingGroup) {
-            unknownUrls.push(url); // Přidej jen neznámé skupiny
-          } else {
-            knownCount++;
-          }
-        }
-      }
+        return {
+          url: url,
+          fbId: fbIdMatch && fbIdMatch[1] ? fbIdMatch[1] : null
+        };
+      }).filter(item => item.fbId !== null);
+      
+      // Jeden SQL dotaz pro všechna ID najednou
+      const allFbIds = urlsWithIds.map(item => item.fbId);
+      const existingGroups = allFbIds.length > 0 ? 
+        await db.safeQueryAll('groups.getMultipleByFbIds', [allFbIds]) : [];
+      
+      // Vytvoř Set existujících ID pro rychlé vyhledávání
+      const existingFbIds = new Set(existingGroups.map(group => group.fb_id));
+      
+      // Filtruj pouze neznámé skupiny
+      const unknownUrls = urlsWithIds
+        .filter(item => !existingFbIds.has(item.fbId))
+        .map(item => item.url);
+      
+      const knownCount = urlsWithIds.length - unknownUrls.length;
       
       // Do cache přidej POUZE neznámé skupiny
       global.groupUrlsCache.push(...unknownUrls);
