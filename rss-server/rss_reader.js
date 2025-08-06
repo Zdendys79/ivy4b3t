@@ -66,7 +66,9 @@ async function executeOnBoth(query, params = []) {
       testPool.execute(query, params)
     ]);
     
-    Log.debug('[RSS]', `Query executed on both databases: ${prodResult[0].affectedRows || prodResult[0].length} prod, ${testResult[0].affectedRows || testResult[0].length} test`);
+    const prodCount = prodResult[0]?.affectedRows ?? prodResult[0]?.length ?? 0;
+    const testCount = testResult[0]?.affectedRows ?? testResult[0]?.length ?? 0;
+    Log.debug('[RSS]', `Query executed on both databases: ${prodCount} prod, ${testCount} test`);
     
     return prodResult; // Return prod result for compatibility
   } catch (err) {

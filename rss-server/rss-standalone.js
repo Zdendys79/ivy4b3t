@@ -15,7 +15,7 @@ async function runRSSProcessing() {
     const result = await rssReader.processAllFeeds();
     
     if (result && result.success) {
-      Log.info('[RSS-STANDALONE]', `RSS zpracování dokončeno: ${result.totalNewUrls} nových URL`);
+      Log.info('[RSS-STANDALONE]', `RSS zpracování dokončeno: ${result.newUrls || 0} nových URL`);
       process.exit(0);
     } else {
       Log.error('[RSS-STANDALONE]', 'RSS zpracování selhalo');
