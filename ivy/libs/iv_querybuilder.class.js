@@ -35,6 +35,10 @@ export class QueryBuilder {
     return await this.safeQueryFirst('users.getWithAvailableActions', [host]);
   }
 
+  async getUserWithAvailableActionsRotational(host = hostname) {
+    return await this.safeQueryFirst('users.getWithAvailableActionsRotational', [host]);
+  }
+
   async getOldestReadyUser(host = hostname) {
     return await this.safeQueryFirst('users.getOldestReadyForHost', [host]);
   }
