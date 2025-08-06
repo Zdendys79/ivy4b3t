@@ -35,11 +35,10 @@ export class GroupExploreAction {
         throw new Error('FBBot není dostupný');
       }
 
-      const currentUrl = fbBot.page.url();
-      
-      // Musíme být ve skupině pro analýzu
-      if (!currentUrl.includes('facebook.com/groups/')) {
-        throw new Error('Group explore může běžet pouze když už jsme ve FB skupině');
+      // Vždy navigujeme na první skupinu
+      const navigated = await this.navigateToRandomGroup(user, fbBot);
+      if (!navigated) {
+        throw new Error('Nepodařilo se navigovat do žádné skupiny');
       }
 
       // Inicializace analyzátoru
@@ -122,7 +121,105 @@ export class GroupExploreAction {
     }
   }
 
+  /**
+   * Najde a naviguje na skupinu pro začátek průzkumu
+   * Používá cache nebo načte ze skupinového feedu
+   */
+  async navigateToRandomGroup(user, fbBot) {
+    try {
+      // Pokus o navigaci z cache
+      if (await this.navigateFromCache(user, fbBot)) {
+        return true;
+      }
+      
+      // Pokud cache je prázdná, načti nové skupiny ze feedu
+      await this.loadGroupsFromFeed(user, fbBot);
+      
+      // Zkus znovu z cache
+      if (await this.navigateFromCache(user, fbBot)) {
+        return true;
+      }
+      
+      throw new Error('Nepodařilo se načíst žádné skupiny ani z cache ani ze feedu');
 
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při navigaci na skupinu: ${err.message}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Pokusí se navigovat na skupinu z global cache
+   */
+  async navigateFromCache(user, fbBot) {
+    try {
+      if (!global.groupUrlsCache || global.groupUrlsCache.length === 0) {
+        return false;
+      }
+      
+      // Vyber náhodnou URL z cache
+      const randomIndex = Math.floor(Math.random() * global.groupUrlsCache.length);
+      const groupUrl = global.groupUrlsCache.splice(randomIndex, 1)[0]; // Odeber z cache
+      
+      Log.info(`[${user.id}]`, `Naviguji na skupinu z cache: ${groupUrl}`);
+      await fbBot.navigateToPage(groupUrl, { waitUntil: 'networkidle2' });
+      await Wait.toSeconds(4, 'Načtení skupiny z cache');
+      return true;
+      
+    } catch (err) {
+      await Log.warn(`[${user.id}]`, `Chyba při navigaci z cache: ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Načte seznam skupin ze skupinového feedu a uloží do cache
+   */
+  async loadGroupsFromFeed(user, fbBot) {
+    try {
+      Log.info(`[${user.id}]`, 'Načítám skupiny ze feedu...');
+      
+      // Naviguj na skupinový feed
+      await fbBot.navigateToPage('https://www.facebook.com/groups/feed/', { 
+        waitUntil: 'networkidle2' 
+      });
+      await Wait.toSeconds(5, 'Načtení skupinového feedu');
+      
+      // Scrolluj pro načtení více skupin
+      for (let i = 0; i < 3; i++) {
+        await fbBot.page.evaluate(() => {
+          window.scrollBy(0, 800);
+        });
+        await Wait.toSeconds(2, 'Načtení dalších skupin');
+      }
+      
+      // Extrahuj odkazy na skupiny
+      const groupUrls = await fbBot.page.evaluate(() => {
+        const links = Array.from(document.querySelectorAll('a[href*="/groups/"]'))
+          .map(a => a.href)
+          .filter(href => {
+            const match = href.match(/facebook\.com\/groups\/([^\/\?&]+)/);
+            return match && match[1] !== 'feed';
+          });
+        
+        return [...new Set(links)]; // Unikátní odkazy
+      });
+      
+      // Uložení do global cache
+      if (!global.groupUrlsCache) {
+        global.groupUrlsCache = [];
+      }
+      
+      // Přidej nové URLs, které ještě nejsou v cache
+      const newUrls = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
+      global.groupUrlsCache.push(...newUrls);
+      
+      Log.info(`[${user.id}]`, `Načteno ${newUrls.length} nových skupinových URL (celkem v cache: ${global.groupUrlsCache.length})`);
+      
+    } catch (err) {
+      await Log.error(`[${user.id}]`, `Chyba při načítání ze feedu: ${err.message}`);
+    }
+  }
 
   /**
    * Rozhoduje o další aktivitě v rámci průzkumu

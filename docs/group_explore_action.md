@@ -17,10 +17,27 @@
 
 ## Workflow akce
 
-### 1. Předpoklad spuštění
-- **Musí být spuštěna když už jsme ve FB skupině**
-- **Neprovádí vlastní navigaci** - tu řeší wheel systém
-- **Pouze analyzuje a prohlíží aktuální skupinu**
+### 1. Navigační systém (vždy na začátku)
+```
+Cache → Feed loading
+```
+
+**Akce vždy naviguje na první skupinu:**
+- Nikdy neanalyzuje aktuální pozici
+- Vždy se přesune na novou skupinu pro průzkum
+
+**A) Cache navigace:**
+- Použije `global.groupUrlsCache` s uloženými URL
+- Vybere náhodnou skupinu, odebere z cache
+- Rychlá navigace bez načítání feedu
+
+**B) Feed loading:**
+- Naviguje na `https://www.facebook.com/groups/feed/`
+- Scrolluje 3x pro načtení více skupin
+- Extrahuje všechny group URL, ukládá do cache
+- Pak naviguje na náhodnou skupinu z cache
+
+**❌ Žádný fallback** - dodržuje absolutní zákaz legacy funkcí
 
 ### 2. Analýza skupiny
 - **Extrahuje název skupiny** (prioritní pro kategorizaci)
@@ -60,6 +77,7 @@
 
 ### Global proměnné
 ```javascript
+global.groupUrlsCache = []; // Cache pro group URLs
 global.exploreSession = {   // Session tracking
   [userId]: {
     actionWeights: {
