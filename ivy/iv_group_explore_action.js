@@ -234,8 +234,16 @@ export class GroupExploreAction {
       
       // Jeden SQL dotaz pro všechna ID najednou
       const allFbIds = urlsWithIds.map(item => item.fbId);
-      const existingGroups = allFbIds.length > 0 ? 
-        await db.safeQueryAll('groups.getMultipleByFbIds', [allFbIds]) : [];
+      let existingGroups = [];
+      
+      if (allFbIds.length > 0) {
+        // Přímý přístup k databázi pro dynamický SQL s IN klauzulí
+        const { pool } = await import('./iv_sql.js');
+        const placeholders = allFbIds.map(() => '?').join(',');
+        const sql = `SELECT * FROM fb_groups WHERE fb_id IN (${placeholders})`;
+        const [rows] = await pool.execute(sql, allFbIds);
+        existingGroups = rows;
+      }
       
       // Vytvoř Set existujících ID pro rychlé vyhledávání
       const existingFbIds = new Set(existingGroups.map(group => group.fb_id));
