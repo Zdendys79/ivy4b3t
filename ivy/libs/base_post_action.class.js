@@ -68,6 +68,9 @@ export class BasePostAction extends BaseAction {
   async step1_openFacebook(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 1: Otevírám Facebook...');
 
+    // Přenést FB záložku na popředí
+    await fbBot.bringToFront();
+    
     // Navigace na Facebook - čekáme na networkidle2
     Log.info(`[${user.id}]`, 'Naviguji na facebook.com...');
     

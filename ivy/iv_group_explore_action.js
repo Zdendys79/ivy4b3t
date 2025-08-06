@@ -35,6 +35,9 @@ export class GroupExploreAction {
         throw new Error('FBBot není dostupný');
       }
 
+      // Přenést FB záložku na popředí
+      await fbBot.bringToFront();
+
       // Vždy navigujeme na první skupinu
       const navigated = await this.navigateToRandomGroup(user, fbBot);
       if (!navigated) {
