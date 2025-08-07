@@ -144,7 +144,66 @@ export class FBGroupAnalyzer {
   }
 
   /**
-   * Detekce kategorie/oboru skupiny podle názvu
+   * Extrahuje klíčová slova z názvu skupiny pro databázové ukládání
+   */
+  extractKeywords(groupName) {
+    if (!groupName || typeof groupName !== 'string') {
+      return [];
+    }
+
+    // Normalizace textu
+    const normalized = this.textNormalizer.normalize(groupName.toLowerCase());
+    
+    // Rozdělení na slova, odstranění interpunkce a krátkých slov
+    const words = normalized
+      .split(/[\s\-_.,!?()[\]{}]+/)
+      .filter(word => word.length >= 2)
+      .map(word => word.trim())
+      .filter(word => word.length > 0);
+
+    // Odstranění duplicit zachováním pořadí
+    return [...new Set(words)];
+  }
+
+  /**
+   * Uloží klíčová slova ze skupiny do databáze
+   */
+  async saveKeywordsToDatabase(groupId, keywords) {
+    if (!keywords || keywords.length === 0) return;
+
+    try {
+      for (let i = 0; i < keywords.length; i++) {
+        const word = keywords[i];
+        
+        // Ulož/aktualizuj klíčové slovo
+        await db.safeExecute(`
+          INSERT INTO group_keywords (word, frequency) 
+          VALUES (?, 1)
+          ON DUPLICATE KEY UPDATE frequency = frequency + 1
+        `, [word]);
+        
+        // Získej ID klíčového slova
+        const keywordRow = await db.safeQueryFirst(`
+          SELECT id FROM group_keywords WHERE word = ?
+        `, [word]);
+        
+        if (keywordRow) {
+          // Vytvoř asociaci mezi skupinou a klíčovým slovem
+          await db.safeExecute(`
+            INSERT IGNORE INTO group_word_associations (group_id, keyword_id, position_in_name)
+            VALUES (?, ?, ?)
+          `, [groupId, keywordRow.id, i]);
+        }
+      }
+      
+      Log.debug('[GROUP_ANALYZER]', `Uloženo ${keywords.length} klíčových slov pro skupinu ${groupId}`);
+    } catch (err) {
+      await Log.warn('[GROUP_ANALYZER]', `Chyba při ukládání klíčových slov: ${err.message}`);
+    }
+  }
+
+  /**
+   * Detekce kategorie/oboru skupiny podle názvu - nyní může vrátit více kategorií
    */
   detectGroupCategory(groupName) {
     if (!groupName || typeof groupName !== 'string') {
@@ -168,16 +227,19 @@ export class FBGroupAnalyzer {
       'Lokální': ['praha', 'brno', 'ostrava', 'plzeň', 'liberec', 'hradec', 'pardubice', 'zlín', 'olomouc', 'ústí', 'město', 'okres', 'region']
     };
 
-    // Najdi první odpovídající kategorii
+    // Najdi VŠECHNY odpovídající kategorie
+    const foundCategories = [];
     for (const [category, keywords] of Object.entries(categoryMap)) {
       for (const keyword of keywords) {
         if (name.includes(keyword)) {
-          return category;
+          foundCategories.push(category);
+          break; // Další klíčová slova ze stejné kategorie už nehledej
         }
       }
     }
 
-    return null; // Žádná kategorie nenalezena
+    // Vrať kategorie oddělené čárkami nebo null
+    return foundCategories.length > 0 ? foundCategories.join(', ') : null;
   }
 
   /**
@@ -193,13 +255,30 @@ export class FBGroupAnalyzer {
         return;
       }
       
-      await db.safeExecute('groups.upsertGroupInfo', [
+      const result = await db.safeExecute('groups.upsertGroupInfo', [
         groupInfo.fb_id,
         sanitizedName,
         groupInfo.member_count,
         groupInfo.category || null,
         userId
       ]);
+      
+      // Pokud byla skupina nově vytvořena, ulož klíčová slova
+      if (result && (result.insertId || result.affectedRows > 0)) {
+        const keywords = this.extractKeywords(groupInfo.name);
+        if (keywords.length > 0) {
+          // Potřebujeme ID skupiny - buď z insertId nebo z databázového dotazu
+          let groupDbId = result.insertId;
+          if (!groupDbId) {
+            const groupRow = await db.safeQueryFirst('SELECT id FROM fb_groups WHERE fb_id = ?', [groupInfo.fb_id]);
+            groupDbId = groupRow?.id;
+          }
+          
+          if (groupDbId) {
+            await this.saveKeywordsToDatabase(groupDbId, keywords);
+          }
+        }
+      }
       
       const categoryInfo = groupInfo.category ? ` [${groupInfo.category}]` : '';
       Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} (ID: ${groupInfo.fb_id})${categoryInfo} uložena do databáze`);
