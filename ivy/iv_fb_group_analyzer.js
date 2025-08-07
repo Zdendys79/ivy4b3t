@@ -48,44 +48,67 @@ export class FBGroupAnalyzer {
    */
   async extractGroupInfo() {
     try {
-      const url = this.page.url();
-      const fbIdMatch = url.match(/facebook\.com\/groups\/([^\/\?]+)/);
-      
-      if (!fbIdMatch) {
-        throw new Error('Nejsme na stránce FB skupiny');
-      }
-      
-      const fbId = fbIdMatch[1];
-      
-      // Extrakce názvu skupiny - NEJDŮLEŽITĚJŠÍ pro kategorizaci
-      const name = await this.page.evaluate(() => {
-        // Prioritní hledání názvu skupiny - specifický selector pro odkaz skupiny
-        const selectors = [
-          'a[href*="/groups/"][role="link"]', // Specifický odkaz na skupinu
-          'h1[dir="auto"]', // Hlavní název skupiny
-          'h1', 
-          '[role="banner"] h1',
-          '[data-pagelet="GroupsPageBanner"] h1',
-          'span[dir="auto"]' // Záložní selector
-        ];
+      // Extrakce názvu skupiny a Facebook ID z odkazu skupiny - JEDEN ELEMENT MA OBOJE!
+      const groupInfo = await this.page.evaluate(() => {
+        // Najdi odkaz na skupinu s názvem - tento element obsahuje URL i název
+        const groupLink = document.querySelector('a[href*="/groups/"][role="link"]');
         
-        for (const selector of selectors) {
-          const element = document.querySelector(selector);
-          if (element && element.textContent.trim() && 
-              !element.textContent.includes('Facebook') &&
-              element.textContent.length > 3) {
-            return element.textContent.trim();
+        if (groupLink && groupLink.textContent.trim() && groupLink.href) {
+          const name = groupLink.textContent.trim();
+          const hrefMatch = groupLink.href.match(/facebook\.com\/groups\/([^\/\?]+)/);
+          
+          if (hrefMatch && !name.includes('Facebook') && name.length > 3) {
+            return {
+              fbId: hrefMatch[1],
+              name: name
+            };
           }
-        }
-        
-        // Fallback na title
-        const title = document.title;
-        if (title && !title.includes('Facebook') && title.length > 3) {
-          return title.split('|')[0].trim(); // Odstraň " | Facebook" část
         }
         
         return null;
       });
+      
+      // Fallback na původní metodu pokud specifický odkaz nebyl nalezen
+      if (!groupInfo) {
+        const url = this.page.url();
+        const fbIdMatch = url.match(/facebook\.com\/groups\/([^\/\?]+)/);
+        
+        if (!fbIdMatch) {
+          throw new Error('Nejsme na stránce FB skupiny');
+        }
+        
+        const fbId = fbIdMatch[1];
+        
+        // Fallback hledání názvu pomocí obecných selektorů
+        const name = await this.page.evaluate(() => {
+          const selectors = [
+            'h1[dir="auto"]', 'h1', '[role="banner"] h1',
+            '[data-pagelet="GroupsPageBanner"] h1', 'span[dir="auto"]'
+          ];
+          
+          for (const selector of selectors) {
+            const element = document.querySelector(selector);
+            if (element && element.textContent.trim() && 
+                !element.textContent.includes('Facebook') &&
+                element.textContent.length > 3) {
+              return element.textContent.trim();
+            }
+          }
+          
+          const title = document.title;
+          if (title && !title.includes('Facebook') && title.length > 3) {
+            return title.split('|')[0].trim();
+          }
+          
+          return null;
+        });
+        
+        if (!name) {
+          throw new Error('Nelze extrahovat název skupiny');
+        }
+        
+        groupInfo = { fbId, name };
+      }
       
       // Extrakce počtu členů
       const memberCount = await this.page.evaluate(() => {
@@ -106,11 +129,11 @@ export class FBGroupAnalyzer {
       const type = await this.determineGroupType();
       
       return {
-        fb_id: fbId,
-        name: name || 'Neznámý název',
+        fb_id: groupInfo.fbId,
+        name: groupInfo.name || 'Neznámý název',
         member_count: memberCount,
         type: type,
-        url: url
+        url: this.page.url()
       };
       
     } catch (err) {
