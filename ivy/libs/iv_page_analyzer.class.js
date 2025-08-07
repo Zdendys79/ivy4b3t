@@ -32,6 +32,35 @@ export class PageAnalyzer {
 
 
   /**
+   * Základní analýza stránky bez cookies/login detekce (pro skupiny)
+   * @param {Object} options - Možnosti analýzy
+   * @returns {Promise<Object>} Výsledek analýzy
+   */
+  async analyzeBasicPage(options = {}) {
+    try {
+      if (!this.page || this.page.isClosed()) {
+        throw new Error('Stránka není dostupná pro analýzu');
+      }
+
+      // Pouze základní kontrola komplexnosti bez chybových vzorů
+      const complexityAnalysis = await this._performComplexityAnalysis();
+      
+      return {
+        complexity: complexityAnalysis,
+        patterns: { detected: false, reason: 'Základní analýza - bez detekce vzorů' },
+        severity: 'none'
+      };
+    } catch (err) {
+      Log.error('[ANALYZER]', `Chyba při základní analýze: ${err.message}`);
+      return {
+        complexity: { isNormal: false, suspiciouslySimple: true },
+        patterns: { detected: true, reason: `Chyba analýzy: ${err.message}` },
+        severity: 'error'
+      };
+    }
+  }
+
+  /**
    * Hlavní metoda pro kompletní analýzu stránky
    * @param {Object} options - Možnosti analýzy
    * @returns {Promise<Object>} Výsledek analýzy
