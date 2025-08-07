@@ -11,12 +11,14 @@
 import { Log } from './libs/iv_log.class.js';
 import { Wait } from './libs/iv_wait.class.js';
 import { db } from './iv_sql.js';
+import { TextNormalizer } from '../quote_harvester/src/text_normalizer.class.js';
 
 export class FBGroupAnalyzer {
   constructor(page, fbBot = null) {
     this.page = page;
     this.fbBot = fbBot;
     this.currentGroupInfo = null;
+    this.textNormalizer = new TextNormalizer();
   }
 
   /**
@@ -256,24 +258,17 @@ export class FBGroupAnalyzer {
   }
 
   /**
-   * Vyčistí string od nevalidních UTF-8 znaků pro bezpečné uložení do databáze
+   * Vyčistí string pomocí TextNormalizer - správná funkce pro ASCII+české znaky
    */
   sanitizeString(str) {
     if (!str || typeof str !== 'string') {
       return '';
     }
     
-    // Remove invalid UTF-8 sequences and control characters - AGRESIVNĚJŠÍ ČIŠTĚNÍ
-    return str
-      // Remove všechny nevalidní znaky včetně \x80, \x00, atd.
-      .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
-      // Remove invalid UTF-8 sequences
-      .replace(/[\uFFFD\uFFFE\uFFFF]/g, '')
-      // Remove pouze základní ASCII + češtinu
-      .replace(/[^\x20-\x7E\u00C0-\u017F]/g, '')
-      // Trim whitespace
-      .trim()
-      // Limit length for database compatibility
-      .substring(0, 250);
+    // Použij existující TextNormalizer místo vlastní logiky
+    const normalized = this.textNormalizer.normalize(str);
+    
+    // Dodatečné omezení délky pro databázi
+    return normalized.substring(0, 250).trim();
   }
 }
