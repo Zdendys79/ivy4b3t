@@ -28,6 +28,13 @@ export class InvasiveLock {
    * @param {number} cooldownMs - Doba locknutí v ms
    */
   set(cooldownMs) {
+    Log.debug('[INVASIVE_LOCK]', `Nastavuji lock na ${cooldownMs}ms (${typeof cooldownMs})`);
+    
+    if (!cooldownMs || isNaN(cooldownMs) || cooldownMs <= 0) {
+      Log.warn('[INVASIVE_LOCK]', `Neplatná hodnota cooldownMs: ${cooldownMs}, používám 180000ms (3min)`);
+      cooldownMs = 180000; // 3 minuty fallback
+    }
+    
     this.lockUntil = Date.now() + cooldownMs;
     const lockUntilDate = new Date(this.lockUntil);
     Log.debug('[INVASIVE_LOCK]', `Lock nastaven do ${lockUntilDate.toLocaleTimeString()}`);
