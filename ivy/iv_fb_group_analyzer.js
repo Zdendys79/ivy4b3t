@@ -125,14 +125,11 @@ export class FBGroupAnalyzer {
         return null;
       });
       
-      // Určení typu skupiny (G/GV)
-      const type = await this.determineGroupType();
-      
       return {
         fb_id: groupInfo.fbId,
         name: groupInfo.name || 'Neznámý název',
         member_count: memberCount,
-        type: type,
+        type: 'Z', // Všechny nové skupiny jsou typ Z
         url: this.page.url()
       };
       
@@ -142,25 +139,6 @@ export class FBGroupAnalyzer {
     }
   }
 
-  /**
-   * Určí typ skupiny - prozatím všechny jako Z (zájmová)
-   * Operátoři B3 si je později přeřadí ručně do správných kategorií
-   * G = group - cizí skupina pro UTIO příspěvky
-   * GV = vlastní skupina - B3 vlastní skupinu, správce je z B3  
-   * P = prodejní skupina
-   * Z = zájmová skupina - prozatím všechny nové skupiny
-   */
-  async determineGroupType() {
-    try {
-      // Prozatím všechny nově objevené skupiny klasifikujeme jako Z
-      // Operátoři B3 si je pak přeřadí ručně podle potřeby
-      return 'Z';
-      
-    } catch (err) {
-      await Log.warn('[GROUP_ANALYZER]', `Chyba při určování typu: ${err.message}`);
-      return 'Z'; // Výchozí zájmová skupina
-    }
-  }
 
   /**
    * Uloží informace o skupině do databáze (INSERT ON DUPLICATE KEY UPDATE)
