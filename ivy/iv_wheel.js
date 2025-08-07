@@ -423,8 +423,15 @@ function calculateInvasiveCooldown() {
     max_seconds: 300 
   });
   
-  return (cooldownConfig.min_seconds + 
-          Math.random() * (cooldownConfig.max_seconds - cooldownConfig.min_seconds)) * 1000;
+  // Fallback pro neplatné konfigurace
+  const minSeconds = cooldownConfig?.min_seconds || 150;
+  const maxSeconds = cooldownConfig?.max_seconds || 300;
+  
+  const cooldownMs = (minSeconds + Math.random() * (maxSeconds - minSeconds)) * 1000;
+  
+  Log.debug('[INVASIVE_LOCK]', `Vypočítán cooldown: ${Math.round(cooldownMs/1000)}s (${minSeconds}-${maxSeconds}s range)`);
+  
+  return cooldownMs;
 }
 
 // Export pro kompatibilitu
