@@ -110,7 +110,7 @@ export class PageAnalyzer {
         timestamp: new Date().toISOString(),
         url: url,
         status: this._determineOverallStatus(basicAnalysis, errorAnalysis, complexityAnalysis),
-        links: complexityAnalysis.links, // Přidání odkazů do výsledku
+        // links: odebrány - sběr odkazů na skupiny je v jiné akci
         basic: basicAnalysis,
         errors: errorAnalysis,
         complexity: complexityAnalysis,
@@ -357,25 +357,7 @@ export class PageAnalyzer {
         const allLinks = document.querySelectorAll('a');
         const currentHostname = window.location.hostname;
 
-        const extractedLinks = {
-            groups: [],
-        };
-
-        allLinks.forEach(link => {
-            const href = link.href;
-            if (!href) return;
-
-            try {
-                const url = new URL(href);
-                // Hledáme odkazy na skupiny na stejné doméně
-                if (url.hostname === currentHostname && href.includes('/groups/')) {
-                    // Jednoduchý filtr pro relevantní odkazy na skupiny
-                    if (href.match(/\/groups\/(\d+|\w+)\/?$/)) {
-                       extractedLinks.groups.push(href);
-                    }
-                }
-            } catch (e) { /* Ignorovat nevalidní URL */ }
-        });
+        // Sběr odkazů na skupiny odebrán - tato funkcionalita je v jiné akci
 
         return {
           metrics: {
@@ -389,17 +371,12 @@ export class PageAnalyzer {
             documentReady: document.readyState,
             hasBody: !!document.body,
             title: document.title || 'No title'
-          },
-          links: {
-              groups: [...new Set(extractedLinks.groups)] // Odstranění duplicit
           }
+          // links: objekt odebrán - sběr odkazů na skupiny je v jiné akci
         };
       });
 
       Log.debug('[ANALYZER]', `Raw metrics: ${JSON.stringify(data.metrics)}`);
-      if (data.links.groups.length > 0) {
-        Log.info('[ANALYZER]', `Nalezeno ${data.links.groups.length} unikátních odkazů na skupiny.`);
-      }
 
       // Hodnocení komplexnosti (upravené pro moderní Facebook)
       const isNormal = data.metrics.elements > 1500 &&
@@ -413,7 +390,7 @@ export class PageAnalyzer {
 
       return {
         metrics: data.metrics,
-        links: data.links, // Předání odkazů dál
+        // links: odebrány - sběr odkazů na skupiny je v jiné akci
         isNormal: isNormal,
         suspiciouslySimple: suspiciouslySimple,
         complexityScore: this._calculateComplexityScore(data.metrics)
