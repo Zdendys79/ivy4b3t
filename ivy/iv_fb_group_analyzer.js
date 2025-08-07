@@ -267,8 +267,7 @@ export class FBGroupAnalyzer {
         groupInfo.fb_id,
         sanitizedName,
         groupInfo.member_count,
-        groupInfo.category || null,
-        userId
+        groupInfo.category || null
       ]);
       
       // Pokud byla skupina nově vytvořena, ulož klíčová slova
