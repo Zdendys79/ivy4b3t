@@ -382,11 +382,12 @@ export const GROUPS = {
 
   upsertGroupInfo: `
     INSERT INTO fb_groups (
-      fb_id, name, member_count, type, priority
-    ) VALUES (?, ?, ?, 'Z', 3)
+      fb_id, name, member_count, type, priority, category
+    ) VALUES (?, ?, ?, 'Z', 3, ?)
     ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       member_count = VALUES(member_count),
+      category = VALUES(category),
       last_seen = NOW()
   `,
 

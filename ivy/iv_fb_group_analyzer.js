@@ -125,11 +125,15 @@ export class FBGroupAnalyzer {
         return null;
       });
       
+      // Detekce kategorie/oboru skupiny ze jména
+      const category = this.detectGroupCategory(groupInfo.name);
+
       return {
         fb_id: groupInfo.fbId,
         name: groupInfo.name || 'Neznámý název',
         member_count: memberCount,
         type: 'Z', // Všechny nové skupiny jsou typ Z
+        category: category,
         url: this.page.url()
       };
       
@@ -139,6 +143,42 @@ export class FBGroupAnalyzer {
     }
   }
 
+  /**
+   * Detekce kategorie/oboru skupiny podle názvu
+   */
+  detectGroupCategory(groupName) {
+    if (!groupName || typeof groupName !== 'string') {
+      return null;
+    }
+
+    const name = groupName.toLowerCase();
+
+    // Kategorie podle klíčových slov v názvu
+    const categoryMap = {
+      'Bazar/Prodej': ['bazar', 'prodej', 'inzerce', 'inzerát', 'koupit', 'prodat', 'výkup', 'market', 'obchod', 'aukce'],
+      'Technologie/IT': ['linux', 'windows', 'android', 'ios', 'programming', 'programování', 'developer', 'it ', 'tech', 'software', 'hardware', 'computer', 'počítač'],
+      'Fotografie': ['foto', 'fotograf', 'photography', 'camera', 'canon', 'nikon', 'sony', 'objektiv'],
+      'Auta/Motorky': ['auto', 'car', 'motor', 'bmw', 'audi', 'škoda', 'ford', 'tuning', 'motocykl', 'bike'],
+      'Zdraví/Fitness': ['fitness', 'gym', 'cvičení', 'zdraví', 'sport', 'běh', 'yoga', 'wellness'],
+      'Cestování': ['cestování', 'travel', 'dovolená', 'výlet', 'turistika', 'backpack'],
+      'Vaření/Jídlo': ['vaření', 'recept', 'jídlo', 'kuchyň', 'food', 'cooking', 'chef'],
+      'Zvířata': ['pes', 'kočka', 'dog', 'cat', 'zvířata', 'pets', 'veterinář'],
+      'Hudba': ['hudba', 'music', 'koncert', 'kapela', 'band', 'festival'],
+      'Rodiče/Děti': ['maminky', 'rodiče', 'děti', 'baby', 'těhotenství', 'family'],
+      'Lokální': ['praha', 'brno', 'ostrava', 'plzeň', 'liberec', 'hradec', 'pardubice', 'zlín', 'olomouc', 'ústí', 'město', 'okres', 'region']
+    };
+
+    // Najdi první odpovídající kategorii
+    for (const [category, keywords] of Object.entries(categoryMap)) {
+      for (const keyword of keywords) {
+        if (name.includes(keyword)) {
+          return category;
+        }
+      }
+    }
+
+    return null; // Žádná kategorie nenalezena
+  }
 
   /**
    * Uloží informace o skupině do databáze (INSERT ON DUPLICATE KEY UPDATE)
@@ -157,10 +197,12 @@ export class FBGroupAnalyzer {
         groupInfo.fb_id,
         sanitizedName,
         groupInfo.member_count,
+        groupInfo.category || null,
         userId
       ]);
       
-      Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} (ID: ${groupInfo.fb_id}) uložena do databáze`);
+      const categoryInfo = groupInfo.category ? ` [${groupInfo.category}]` : '';
+      Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} (ID: ${groupInfo.fb_id})${categoryInfo} uložena do databáze`);
     } catch (err) {
       await Log.error('[GROUP_ANALYZER]', `Chyba při ukládání: ${err.message}`, {
         fb_id: groupInfo.fb_id,
