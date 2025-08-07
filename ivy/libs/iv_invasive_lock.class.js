@@ -29,7 +29,8 @@ export class InvasiveLock {
    */
   set(cooldownMs) {
     this.lockUntil = Date.now() + cooldownMs;
-    Log.debug('[INVASIVE_LOCK]', `Lock nastaven do ${new Date(this.lockUntil).toLocaleTimeString()}`);
+    const lockUntilDate = new Date(this.lockUntil);
+    Log.debug('[INVASIVE_LOCK]', `Lock nastaven do ${lockUntilDate.toLocaleTimeString()}`);
   }
 
   /**
