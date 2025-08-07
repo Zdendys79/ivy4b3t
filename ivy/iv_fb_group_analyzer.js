@@ -198,7 +198,7 @@ export class FBGroupAnalyzer {
       
       Log.debug('[GROUP_ANALYZER]', `Uloženo ${keywords.length} klíčových slov pro skupinu ${groupId}`);
     } catch (err) {
-      await Log.warn('[GROUP_ANALYZER]', `Chyba při ukládání klíčových slov: ${err.message}`);
+      Log.info('[GROUP_ANALYZER]', `Klíčová slova se nepodařilo uložit (není problém): ${err.message}`);
     }
   }
 
@@ -239,7 +239,15 @@ export class FBGroupAnalyzer {
     }
 
     // Vrať kategorie oddělené čárkami nebo null
-    return foundCategories.length > 0 ? foundCategories.join(', ') : null;
+    const result = foundCategories.length > 0 ? foundCategories.join(', ') : null;
+    
+    if (result) {
+      Log.debug('[GROUP_ANALYZER]', `Detekované kategorie pro "${groupName}": ${result}`);
+    } else {
+      Log.debug('[GROUP_ANALYZER]', `Žádná kategorie detekována pro: "${groupName}"`);
+    }
+    
+    return result;
   }
 
   /**
@@ -280,7 +288,7 @@ export class FBGroupAnalyzer {
         }
       }
       
-      const categoryInfo = groupInfo.category ? ` [${groupInfo.category}]` : '';
+      const categoryInfo = groupInfo.category ? ` [${groupInfo.category}]` : ' [bez kategorie]';
       Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} (ID: ${groupInfo.fb_id})${categoryInfo} uložena do databáze`);
     } catch (err) {
       await Log.error('[GROUP_ANALYZER]', `Chyba při ukládání: ${err.message}`, {
