@@ -198,7 +198,7 @@ export class FBGroupAnalyzer {
       
       Log.debug('[GROUP_ANALYZER]', `Uloženo ${keywords.length} klíčových slov pro skupinu ${groupId}`);
     } catch (err) {
-      Log.info('[GROUP_ANALYZER]', `Klíčová slova se nepodařilo uložit (není problém): ${err.message}`);
+      await Log.error('[GROUP_ANALYZER]', `Chyba při ukládání klíčových slov: ${err.message}`);
     }
   }
 
