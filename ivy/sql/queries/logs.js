@@ -2,28 +2,28 @@
  * Název souboru: logs.js
  * Umístění: ~/ivy/sql/queries/logs.js
  *
- * Popis: SQL dotazy pro logování systému (log, log_s, log_u, action_log)
- * Obsahuje různé typy logů - systémové, uživatelské, akce
+ * Popis: SQL dotazy pro logování systému (action_log, log_system)
+ * Obsahuje pouze existující tabulky - odstraněny neexistující log_s, log_u, log
  */
 
 export const LOGS = {
-  // ===== SYSTÉMOVÝ LOG (log_s) =====
+  // ===== SYSTÉMOVÝ LOG (log_system) =====
 
   insertSystemLog: `
-    INSERT INTO log_s (time, hostname, title, text, data)
+    INSERT INTO log_system (time, hostname, title, text, data)
     VALUES (NOW(), ?, ?, ?, ?)
   `,
 
   getSystemLogs: `
     SELECT time, hostname, title, text, data
-    FROM log_s
+    FROM log_system
     ORDER BY time DESC
     LIMIT ?
   `,
 
   getSystemLogsByHostname: `
     SELECT time, hostname, title, text, data
-    FROM log_s
+    FROM log_system
     WHERE hostname = ?
     ORDER BY time DESC
     LIMIT ?
@@ -31,66 +31,9 @@ export const LOGS = {
 
   getRecentSystemErrors: `
     SELECT time, hostname, title, text, data
-    FROM log_s
+    FROM log_system
     WHERE title LIKE '%error%' OR title LIKE '%failed%'
     ORDER BY time DESC
-    LIMIT ?
-  `,
-
-  customCleanup: ``,
-
-  // ===== UŽIVATELSKÝ LOG (log_u) =====
-
-  insertUserLog: `
-    INSERT INTO log_u (time, user_id, type, data, text)
-    VALUES (NOW(), ?, ?, ?, CONCAT('User ',? ,' ',? ,' [',? ,'] says: ', ?))
-  `,
-
-  getUserLogs: `
-    SELECT time, type, data, text
-    FROM log_u
-    WHERE user_id = ?
-    ORDER BY time DESC
-    LIMIT ?
-  `,
-
-  getAllUserLogs: `
-    SELECT lu.time, u.name, u.surname, lu.type, lu.data, lu.text
-    FROM log_u lu
-    JOIN fb_users u ON lu.user_id = u.id
-    ORDER BY lu.time DESC
-    LIMIT ?
-  `,
-
-  getUserLogsByType: `
-    SELECT time, data, text
-    FROM log_u
-    WHERE user_id = ? AND type = ?
-    ORDER BY time DESC
-    LIMIT ?
-  `,
-
-  // ===== LEGACY LOG (log) =====
-
-  insertLegacyLog: `
-    INSERT LOW_PRIORITY INTO log
-    (inserted, user_id, group_id, region_id, district_id, portal_id, hostname, posted_data, md5)
-    VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
-  `,
-
-  getLegacyLogsByUser: `
-    SELECT inserted, group_id, region_id, district_id, portal_id, hostname, posted_data
-    FROM log
-    WHERE user_id = ?
-    ORDER BY inserted DESC
-    LIMIT ?
-  `,
-
-  getLegacyLogsByHostname: `
-    SELECT inserted, user_id, group_id, posted_data
-    FROM log
-    WHERE hostname = ?
-    ORDER BY inserted DESC
     LIMIT ?
   `,
 
@@ -140,18 +83,8 @@ export const LOGS = {
   `,
 
   clearOldSystemLogs: `
-    DELETE FROM log_s
+    DELETE FROM log_system
     WHERE time < DATE_SUB(NOW(), INTERVAL ? DAY)
-  `,
-
-  clearOldUserLogs: `
-    DELETE FROM log_u
-    WHERE time < DATE_SUB(NOW(), INTERVAL ? DAY)
-  `,
-
-  clearOldLegacyLogs: `
-    DELETE FROM log
-    WHERE inserted < DATE_SUB(NOW(), INTERVAL ? DAY)
   `,
 
   getLogTableSizes: `
@@ -161,7 +94,7 @@ export const LOGS = {
       table_rows
     FROM information_schema.TABLES
     WHERE table_schema = DATABASE()
-      AND table_name IN ('action_log', 'log_s', 'log_u', 'log')
+      AND table_name IN ('action_log', 'log_system')
     ORDER BY (data_length + index_length) DESC
   `,
 
@@ -181,15 +114,7 @@ export const LOGS = {
       COUNT(*) as total_records,
       MAX(time) as latest_entry,
       COUNT(DISTINCT hostname) as active_hosts
-    FROM log_s
-    WHERE time >= NOW() - INTERVAL 24 HOUR
-    UNION ALL
-    SELECT
-      'user_log' as log_type,
-      COUNT(*) as total_records,
-      MAX(time) as latest_entry,
-      COUNT(DISTINCT user_id) as active_users
-    FROM log_u
+    FROM log_system
     WHERE time >= NOW() - INTERVAL 24 HOUR
   `,
 
@@ -210,7 +135,7 @@ export const LOGS = {
       hostname as user_name,
       title as activity,
       LEFT(text, 100) as details
-    FROM log_s
+    FROM log_system
     WHERE time >= NOW() - INTERVAL ? HOUR
     ORDER BY time DESC
     LIMIT ?
@@ -241,7 +166,7 @@ export const LOGS = {
       COUNT(*) as occurrences,
       MAX(time) as last_occurrence,
       COUNT(DISTINCT hostname) as affected_hosts
-    FROM log_s
+    FROM log_system
     WHERE (title LIKE '%error%' OR title LIKE '%failed%' OR text LIKE '%error%')
       AND time >= NOW() - INTERVAL ? HOUR
     GROUP BY LEFT(text, 50)

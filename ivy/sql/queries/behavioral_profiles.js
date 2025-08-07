@@ -1,6 +1,6 @@
 /**
- * Název souboru: behavioralProfiles.js
- * Umístění: ~/ivy/sql/queries/behavioralProfiles.js
+ * Název souboru: behavioral_profiles.js
+ * Umístění: ~/ivy/sql/queries/behavioral_profiles.js
  * 
  * Popis: SQL dotazy pro správu behavioral profiles a human behavior simulation
  * POZOR: Tato data jsou citlivá a nesmí být nikdy commitnuta do Gitu
