@@ -140,9 +140,22 @@ export class BaseUtioPostAction extends BasePostAction {
         return;
       }
       
-      // Třetí pokus - "Přidat se ke skupině"
+      // Třetí pokus - "Přidat se ke skupině" (s cooldown kontrolou)
       Log.info(`[${user.id}]`, 'Druhý pokus o "Napište něco" selhal - zkouším "Přidat se ke skupině"...');
-      await fbBot.pageAnalyzer.clickElementWithText('Přidat se ke skupině');
+      
+      // Kontrola cooldown před pokusem o join
+      const canJoin = await this._checkGroupJoinCooldown(user);
+      if (!canJoin.allowed) {
+        Log.warn(`[${user.id}]`, `Join cooldown aktivní - zbývá ${canJoin.minutesRemaining} minut`);
+        throw new Error(`Group join cooldown active - ${canJoin.minutesRemaining} minutes remaining`);
+      }
+      
+      const joinClicked = await fbBot.pageAnalyzer.clickElementWithText('Přidat se ke skupině');
+      if (joinClicked) {
+        // Aktualizuj timestamp při úspěšném joinu
+        await db.safeExecute('users.updateLastGroupJoin', [user.id]);
+        Log.info(`[${user.id}]`, 'Úspěšně kliknuto na "Přidat se ke skupině" - cooldown nastaven');
+      }
     }
 
     // Nic nefunguje - zablokovat skupinu a skončit
@@ -490,5 +503,34 @@ export class BaseUtioPostAction extends BasePostAction {
 
     const timeInfo = isNight ? 'noc - za 8-12h' : 'den - za 4-8h';
     Log.info(`[${user.id}]`, `Akce ${this.actionCode} přeplánována na ${futureTime.toLocaleString()} (${timeInfo})`);
+  }
+
+  /**
+   * Zkontroluje zda může uživatel použít "Přidat se ke skupině"
+   */
+  async _checkGroupJoinCooldown(user) {
+    try {
+      // Získej cooldown z variables
+      const cooldownHours = await db.getVariable('join_cooldown_hours', 6);
+      
+      // Zkontroluj poslední join
+      const result = await db.safeQueryFirst('users.canJoinGroup', [
+        cooldownHours, 
+        cooldownHours, 
+        user.id
+      ]);
+      
+      if (!result) {
+        return { allowed: true, minutesRemaining: 0 };
+      }
+      
+      return {
+        allowed: result.can_join === 1,
+        minutesRemaining: Math.max(0, -result.minutes_remaining)
+      };
+    } catch (err) {
+      Log.error(`[${user.id}]`, `Chyba při kontrole join cooldown: ${err.message}`);
+      return { allowed: true, minutesRemaining: 0 }; // V případě chyby povolit
+    }
   }
 }

@@ -822,12 +822,12 @@ export async function verifyFBReadinessForUtio(user, group, fbBot, existingAnaly
                   Log.success('[FB]', `Úspěšně kliknuto na "Přidat se ke skupině" - tlačítko zmizelo`);
                   Log.success(`[${user.id}]`, `Automatické přidání úspěšné: Úspěšně použito tlačítko: "Přidat se ke skupině"`);
                   
-                  // Zaloguj akci do action_log pro budoucí časové omezení
+                  // Aktualizuj last_add_group timestamp pro cooldown kontrolu
                   try {
-                    await db.logAction(user.id, 'join_group', group.fb_id, `Automaticky přidán do skupiny: ${group.name}`);
-                    Log.info(`[${user.id}]`, '📝 Akce join_group zalogována pro časové omezení');
+                    await db.safeExecute('users.updateLastGroupJoin', [user.id]);
+                    Log.info(`[${user.id}]`, '📝 Časové razítko join_group aktualizováno');
                   } catch (logErr) {
-                    await Log.warn(`[${user.id}]`, `Nepodařilo se zalogovat join_group akci: ${logErr.message}`);
+                    await Log.warn(`[${user.id}]`, `Nepodařilo se aktualizovat join_group razítko: ${logErr.message}`);
                   }
                   
                   // Vrátí ready: true s informací o úspěšném přidání
