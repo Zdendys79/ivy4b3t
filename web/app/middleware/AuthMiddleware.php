@@ -16,9 +16,7 @@ class AuthMiddleware
      * Public routes that don't require authentication
      */
     private static $publicRoutes = [
-        '/login',
-        '/auth/google',
-        '/auth/google/callback'
+        '/login'
     ];
     
     /**
@@ -78,16 +76,6 @@ class AuthMiddleware
             
             if (!$isAuth) {
                 error_log("REDIRECTING TO LOGIN - user not authenticated");
-                
-                // BLOCK REDIRECT - show debug info instead
-                die("DEBUG: Session lost!<br><br>
-                Current Session ID: " . session_id() . "<br>
-                Session Data: " . htmlspecialchars(json_encode($_SESSION)) . "<br>
-                Requested Path: " . htmlspecialchars($path) . "<br>
-                Cookie Data: " . htmlspecialchars(json_encode($_COOKIE)) . "<br>
-                Session Save Path: " . session_save_path() . "<br>
-                Session Cookie Params: " . htmlspecialchars(json_encode(session_get_cookie_params())) . "<br>
-                <br><a href='/auth/google'>Try OAuth again</a>");
                 
                 // Store intended URL for redirect after login
                 $_SESSION['intended_url'] = $path;

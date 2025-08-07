@@ -289,8 +289,8 @@ export class BaseUtioPostAction extends BasePostAction {
   async step6_waitForSuccess(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 6: Ověřujem úspěšné odeslání příspěvku...');
     
-    // Počkat na reakci po kliknutí
-    await Wait.toSeconds(3);
+    // Počkat na reakci po kliknutí (větší pauza pro UTIO)
+    await Wait.toSeconds(12);
     
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     

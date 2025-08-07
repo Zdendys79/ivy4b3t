@@ -38,10 +38,10 @@ class Database
      */
     private function load_config()
     {
-        // Load configuration from environment variables
+        // Load configuration from DB_ environment variables (available in PHP)
         $this->config = [
             'host' => getenv('DB_HOST'),
-            'user' => getenv('DB_USER'),
+            'user' => getenv('DB_USER'), 
             'password' => getenv('DB_PASS'),
             'database' => getenv('DB_NAME'),
             'charset' => 'utf8mb4'
@@ -450,4 +450,5 @@ class Database
     {
         return isset($this->queries[$category]) ? array_keys($this->queries[$category]) : [];
     }
+
 }

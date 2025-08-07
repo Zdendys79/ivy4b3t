@@ -141,16 +141,28 @@ export class FBGroupAnalyzer {
    */
   async saveGroupToDatabase(groupInfo, userId = null) {
     try {
+      // Sanitize group name - remove invalid UTF-8 characters
+      const sanitizedName = this.sanitizeString(groupInfo.name);
+      
+      if (!sanitizedName || sanitizedName.trim().length === 0) {
+        await Log.warn('[GROUP_ANALYZER]', `Přeskakuji skupinu s nevalidním názvem: ${groupInfo.fb_id}`);
+        return;
+      }
+      
       await db.safeExecute('groups.upsertGroupInfo', [
         groupInfo.fb_id,
-        groupInfo.name,
+        sanitizedName,
         groupInfo.member_count,
         userId
       ]);
       
-      Log.info('[GROUP_ANALYZER]', `Skupina ${groupInfo.name} uložena do databáze`);
+      Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} uložena do databáze`);
     } catch (err) {
-      await Log.error('[GROUP_ANALYZER]', `Chyba při ukládání: ${err.message}`);
+      await Log.error('[GROUP_ANALYZER]', `Chyba při ukládání: ${err.message}`, {
+        fb_id: groupInfo.fb_id,
+        name_length: groupInfo.name?.length,
+        name_sample: groupInfo.name?.substring(0, 50)
+      });
     }
   }
   
@@ -201,5 +213,25 @@ export class FBGroupAnalyzer {
       await Log.error('[GROUP_ANALYZER]', `Chyba při získávání statistik: ${err.message}`);
       return { groups_discovered: 0 };
     }
+  }
+
+  /**
+   * Vyčistí string od nevalidních UTF-8 znaků pro bezpečné uložení do databáze
+   */
+  sanitizeString(str) {
+    if (!str || typeof str !== 'string') {
+      return '';
+    }
+    
+    // Remove invalid UTF-8 sequences and control characters
+    return str
+      // Remove null bytes and other control characters
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+      // Remove invalid UTF-8 sequences
+      .replace(/[\uFFFD\uFFFE\uFFFF]/g, '')
+      // Trim whitespace
+      .trim()
+      // Limit length for database compatibility
+      .substring(0, 250);
   }
 }
