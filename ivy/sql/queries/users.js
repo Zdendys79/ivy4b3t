@@ -194,6 +194,29 @@ export const USERS = {
     WHERE id = ?
   `,
 
+  updateLastGroupJoin: `
+    UPDATE fb_users
+    SET last_add_group = NOW()
+    WHERE id = ?
+  `,
+
+  canJoinGroup: `
+    SELECT 
+      id,
+      last_add_group,
+      CASE 
+        WHEN last_add_group IS NULL THEN 1
+        WHEN last_add_group <= NOW() - INTERVAL ? HOUR THEN 1
+        ELSE 0
+      END as can_join,
+      CASE 
+        WHEN last_add_group IS NULL THEN 0
+        ELSE TIMESTAMPDIFF(MINUTE, last_add_group, NOW() - INTERVAL ? HOUR)
+      END as minutes_remaining
+    FROM fb_users
+    WHERE id = ?
+  `,
+
   updateDayCount: `
     UPDATE fb_users 
     SET day_count = (
