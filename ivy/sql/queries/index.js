@@ -7,7 +7,7 @@
  */
 
 import { ACTIONS } from './actions.js';
-import { BEHAVIORAL_PROFILES } from './behavioralProfiles.js';
+import { BEHAVIORAL_PROFILES } from './behavioral_profiles.js';
 import { GROUPS } from './groups.js';
 import { LIMITS } from './limits.js';
 import { LOGS } from './logs.js';

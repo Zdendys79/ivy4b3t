@@ -212,17 +212,17 @@ export class QueryBuilder {
   // =========================================================
 
   async getBehavioralProfile(userId) {
-    const result = await this.safeQueryFirst('behavioralProfiles.getUserProfile', [userId]);
+    const result = await this.safeQueryFirst('behavioral_profiles.getUserProfile', [userId]);
     if (!result) {
       // Vytvoř default profil pokud neexistuje
-      await this.safeExecute('behavioralProfiles.createDefaultProfile', [userId]);
-      return await this.safeQueryFirst('behavioralProfiles.getUserProfile', [userId]);
+      await this.safeExecute('behavioral_profiles.createDefaultProfile', [userId]);
+      return await this.safeQueryFirst('behavioral_profiles.getUserProfile', [userId]);
     }
     return result;
   }
 
   async updateBehavioralMood(userId, mood, energyLevel) {
-    return await this.safeExecute('behavioralProfiles.updateMoodAndEnergy', [
+    return await this.safeExecute('behavioral_profiles.updateMoodAndEnergy', [
       mood, energyLevel, userId
     ]);
   }
@@ -235,7 +235,7 @@ export class QueryBuilder {
   // ODSTRANĚNO: getCachedBehaviorPattern - žádná cache vzorů
 
   async initializeBehavioralProfiles() {
-    return await this.safeExecute('behavioralProfiles.initializeAllProfiles');
+    return await this.safeExecute('behavioral_profiles.initializeAllProfiles');
   }
 
   // =========================================================
