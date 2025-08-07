@@ -146,13 +146,6 @@ try {
             callController('AuthController', 'logout');
             break;
             
-        case '/auth/google':
-            callController('AuthController', 'googleLogin');
-            break;
-            
-        case '/auth/google/callback':
-            callController('AuthController', 'googleCallback');
-            break;
             
             
         default:

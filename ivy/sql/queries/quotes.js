@@ -48,7 +48,7 @@ export const QUOTES = {
   `,
 
   getRandomForUser: `
-  SELECT q.id, q.text, q.original_text, q.language_code, q.author, q.hash
+  SELECT q.id, q.translated_text, q.original_text, q.language_code, q.author, q.hash
   FROM quotes q
   LEFT JOIN action_log al ON al.reference_id = q.id
     AND al.action_code = 'quote_post'

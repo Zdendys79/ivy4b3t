@@ -28,7 +28,7 @@ class AuthController extends BaseController
     }
 
     /**
-     * Show login form
+     * Show login form or handle password authentication
      */
     public function login()
     {
@@ -38,6 +38,18 @@ class AuthController extends BaseController
                 $this->redirect('/dashboard');
             }
 
+            // Handle POST request (login attempt)
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                return $this->handlePasswordLogin();
+            }
+
+            // Check for active timeout
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            $timeout_info = $this->checkLoginTimeout($ip);
+            
+            // Get current failed attempts for display
+            $failed_attempts = $this->getFailedAttempts($ip);
+
             // Get system information for display
             $system_info = $this->get_login_system_info();
             $flash = $this->get_flash();
@@ -46,11 +58,78 @@ class AuthController extends BaseController
                 'page_title' => 'IVY4B3T - Přihlášení',
                 'system_info' => $system_info,
                 'flash' => $flash,
-                'csrf_token' => $this->csrf_token()
+                'csrf_token' => $this->csrf_token(),
+                'timeout_info' => $timeout_info,
+                'failed_attempts' => $failed_attempts
             ]);
         } catch (Exception $e) {
             http_response_code(500);
             die("Login Error: " . $e->getMessage() . "\nFile: " . $e->getFile() . "\nLine: " . $e->getLine());
+        }
+    }
+
+    /**
+     * Handle password-only authentication
+     */
+    private function handlePasswordLogin()
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        
+        if ($this->debug_mode) {
+            error_log("[AuthController] handlePasswordLogin - Method: " . $_SERVER['REQUEST_METHOD'] . ", IP: {$ip}");
+        }
+        
+        // CSRF protection removed - session ID provides sufficient protection
+        
+        // Check for timeout
+        $timeout_info = $this->checkLoginTimeout($ip);
+        if ($timeout_info) {
+            if ($this->debug_mode) {
+                error_log("[AuthController] IP {$ip} is in timeout - {$timeout_info['remaining_seconds']} seconds remaining");
+            }
+            $this->flash('error', "Příliš mnoho pokusů. Zkuste to znovu za {$timeout_info['remaining_seconds']} sekund.");
+            $this->redirect('/login');
+        }
+        
+        // Get password from POST
+        $password = trim($_POST['password'] ?? '');
+        
+        if ($this->debug_mode) {
+            error_log("[AuthController] Password length: " . strlen($password));
+        }
+        
+        if (empty($password)) {
+            $this->recordFailedAttempt($ip);
+            $this->flash('error', 'Heslo je povinné.');
+            $this->redirect('/login');
+        }
+        
+        // Check password against database variables (web_pass_*)
+        if ($this->verifyPasswordAgainstDatabase($password)) {
+            // Successful login
+            if ($this->debug_mode) {
+                error_log("[AuthController] LOGIN SUCCESS for IP {$ip} with password length " . strlen($password));
+            }
+            
+            $this->clearFailedAttempts($ip);
+            $this->createAdminSession();
+            
+            // Successful login - no logging needed for simplicity
+            
+            $this->flash('success', 'Přihlášení úspěšné!');
+            $this->redirect('/dashboard');
+        } else {
+            // Failed login
+            if ($this->debug_mode) {
+                error_log("[AuthController] LOGIN FAILED for IP {$ip} with password: '{$password}' (length: " . strlen($password) . ")");
+            }
+            
+            $this->recordFailedAttempt($ip);
+            
+            // Failed login - no logging needed for simplicity
+            
+            $this->flash('error', 'Nesprávné heslo.');
+            $this->redirect('/login');
         }
     }
 
@@ -146,25 +225,175 @@ class AuthController extends BaseController
     }
 
     /**
-     * Create user session
+     * Create admin session (simplified)
      */
-    private function create_user_session($user)
+    private function createAdminSession()
     {
         // Regenerate session ID for security
         session_regenerate_id(true);
 
         // Set session variables
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_name'] = $user['name'] . ' ' . $user['surname'];
+        $_SESSION['user_id'] = 'admin';
+        $_SESSION['user_name'] = 'Administrator';
+        $_SESSION['auth_method'] = 'password';
+        $_SESSION['is_authenticated'] = true;
         $_SESSION['login_time'] = time();
         $_SESSION['last_activity'] = time();
-        $_SESSION['user_data'] = $user;
-
-        // Clear rate limiting for successful login
-        unset($_SESSION['login_attempts']);
 
         if ($this->debug_mode) {
-            error_log("[AuthController] User session created for user ID: {$user['id']}");
+            error_log("[AuthController] Admin session created");
+        }
+    }
+
+    /**
+     * Check if IP has active timeout
+     */
+    private function checkLoginTimeout($ip)
+    {
+        try {
+            $stmt = $this->db->getPDO()->prepare("
+                SELECT failed_attempts, timeout_until, 
+                       TIMESTAMPDIFF(SECOND, NOW(), timeout_until) as remaining_seconds
+                FROM login_timeouts 
+                WHERE ip_address = ? AND timeout_until > NOW()
+            ");
+            $stmt->execute([$ip]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                // Calculate next timeout (double the current one)
+                $next_timeout = min(5 * pow(2, $result['failed_attempts']), 3600); // Max 1 hour
+                
+                return [
+                    'failed_attempts' => $result['failed_attempts'],
+                    'remaining_seconds' => max(0, $result['remaining_seconds']),
+                    'timeout_until_js' => date('c', strtotime('+' . $result['remaining_seconds'] . ' seconds')),
+                    'next_timeout_seconds' => $next_timeout
+                ];
+            }
+            
+            return null;
+        } catch (Exception $e) {
+            error_log("[AuthController] Error checking timeout: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get failed attempts for IP (without timeout)
+     */
+    private function getFailedAttempts($ip)
+    {
+        try {
+            $stmt = $this->db->getPDO()->prepare("
+                SELECT failed_attempts FROM login_timeouts WHERE ip_address = ?
+            ");
+            $stmt->execute([$ip]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result ? $result['failed_attempts'] : 0;
+        } catch (Exception $e) {
+            error_log("[AuthController] Error getting failed attempts: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Record failed login attempt with immediate escalating timeout
+     * Timeout starts from first failed attempt: 5s, 10s, 20s, 40s, 80s...
+     */
+    private function recordFailedAttempt($ip)
+    {
+        try {
+            // Get current attempts
+            $stmt = $this->db->getPDO()->prepare("
+                SELECT failed_attempts FROM login_timeouts WHERE ip_address = ?
+            ");
+            $stmt->execute([$ip]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $failed_attempts = $result ? $result['failed_attempts'] + 1 : 1;
+            
+            // Calculate timeout: IMMEDIATE from first attempt
+            // 1st attempt = 5s, 2nd = 10s, 3rd = 20s, 4th = 40s, 5th = 80s... (max 1 hour)
+            $timeout_seconds = min(5 * pow(2, $failed_attempts - 1), 3600);
+            
+            // Upsert timeout record - ALWAYS create timeout, even for first attempt
+            $stmt = $this->db->getPDO()->prepare("
+                INSERT INTO login_timeouts (ip_address, failed_attempts, timeout_until) 
+                VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))
+                ON DUPLICATE KEY UPDATE 
+                    failed_attempts = ?,
+                    timeout_until = DATE_ADD(NOW(), INTERVAL ? SECOND),
+                    last_attempt = NOW()
+            ");
+            $stmt->execute([$ip, $failed_attempts, $timeout_seconds, $failed_attempts, $timeout_seconds]);
+            
+            if ($this->debug_mode) {
+                error_log("[AuthController] IMMEDIATE timeout for IP {$ip}: attempt #{$failed_attempts}, timeout {$timeout_seconds}s");
+            }
+        } catch (Exception $e) {
+            error_log("[AuthController] Error recording failed attempt: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Clear failed attempts for IP
+     */
+    private function clearFailedAttempts($ip)
+    {
+        try {
+            $stmt = $this->db->getPDO()->prepare("DELETE FROM login_timeouts WHERE ip_address = ?");
+            $stmt->execute([$ip]);
+            
+            if ($this->debug_mode) {
+                error_log("[AuthController] Cleared failed attempts for IP {$ip}");
+            }
+        } catch (Exception $e) {
+            error_log("[AuthController] Error clearing failed attempts: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verify password against database variables with pattern web_pass_*
+     */
+    private function verifyPasswordAgainstDatabase($inputPassword)
+    {
+        try {
+            // First, get all web_pass_* variables
+            $stmt = $this->db->getPDO()->prepare("
+                SELECT name, value FROM variables 
+                WHERE name LIKE 'web_pass_%'
+            ");
+            $stmt->execute();
+            $allPasswords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if ($this->debug_mode) {
+                error_log("[AuthController] Found " . count($allPasswords) . " password variables");
+                foreach ($allPasswords as $pass) {
+                    error_log("[AuthController] " . $pass['name'] . " = " . $pass['value']);
+                }
+                error_log("[AuthController] Input password: " . $inputPassword);
+            }
+            
+            // Check if input matches any of them
+            foreach ($allPasswords as $passData) {
+                if ($passData['value'] === $inputPassword) {
+                    if ($this->debug_mode) {
+                        error_log("[AuthController] Password MATCH found in " . $passData['name']);
+                    }
+                    return true;
+                }
+            }
+            
+            if ($this->debug_mode) {
+                error_log("[AuthController] Password verification: INVALID - no matches");
+            }
+            
+            return false;
+        } catch (Exception $e) {
+            error_log("[AuthController] Error verifying password: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -269,117 +498,5 @@ class AuthController extends BaseController
         }
     }
     
-    /**
-     * Redirect to Google OAuth
-     */
-    public function googleLogin()
-    {
-        require_once dirname(__DIR__) . '/services/GoogleOAuthService.php';
-        
-        try {
-            $oauth = new GoogleOAuthService();
-            $authUrl = $oauth->getAuthUrl();
-            
-            header('Location: ' . $authUrl);
-            exit;
-            
-        } catch (Exception $e) {
-            $this->flash('error', 'Google OAuth error: ' . $e->getMessage());
-            $this->redirect('/login');
-        }
-    }
-    
-    /**
-     * Handle Google OAuth callback
-     */
-    public function googleCallback()
-    {
-        // Debug mode - log everything
-        error_log("=== OAuth Callback Started ===");
-        error_log("GET params: " . json_encode($_GET));
-        error_log("POST params: " . json_encode($_POST));
-        error_log("Session before: " . json_encode($_SESSION));
-        error_log("Session ID: " . session_id());
-        error_log("Session save path: " . session_save_path());
-        error_log("Session cookie params: " . json_encode(session_get_cookie_params()));
-        
-        require_once dirname(__DIR__) . '/services/GoogleOAuthService.php';
-        
-        if (!isset($_GET['code']) || !isset($_GET['state'])) {
-            error_log("FATAL: Missing code or state parameter");
-            die("OAuth Error: Missing required parameters. Code: " . (isset($_GET['code']) ? 'present' : 'MISSING') . ", State: " . (isset($_GET['state']) ? 'present' : 'MISSING'));
-        }
-        
-        try {
-            $oauth = new GoogleOAuthService();
-            error_log("GoogleOAuthService created successfully");
-            
-            // Exchange code for token
-            error_log("Attempting token exchange...");
-            $tokenData = $oauth->exchangeCodeForToken($_GET['code'], $_GET['state']);
-            error_log("Token exchange successful: " . json_encode($tokenData));
-            
-            // Get user info
-            error_log("Attempting to get user info...");
-            $userInfo = $oauth->getUserInfo($tokenData['access_token']);
-            error_log("User info received: " . json_encode($userInfo));
-            
-            // Check if user is allowed (basic whitelist)
-            $allowedEmails = ['b3.remotes@gmail.com', 'zdendys79@gmail.com'];
-            
-            if (!in_array($userInfo['email'], $allowedEmails)) {
-                error_log("FATAL: Email not whitelisted: " . $userInfo['email']);
-                die("Access Denied: Email " . htmlspecialchars($userInfo['email']) . " is not authorized. Contact administrator.");
-            }
-            
-            error_log("Email whitelisted, creating session...");
-            
-            // Create session for Google user
-            $this->create_google_user_session($userInfo);
-            
-            error_log("Session creation completed");
-            error_log("Session after creation: " . json_encode($_SESSION));
-            error_log("is_authenticated check: " . ($this->is_authenticated() ? 'TRUE' : 'FALSE'));
-            
-            // Verify session was created properly
-            if (!$this->is_authenticated()) {
-                error_log("FATAL: Session creation failed - user not authenticated after session creation");
-                die("Session Error: Authentication failed after session creation. Please try again.");
-            }
-            
-            error_log("Authentication verified, redirecting to dashboard");
-            
-            $this->flash('success', 'Welcome ' . $userInfo['name'] . '!');
-            $this->redirect('/dashboard');
-            
-        } catch (Exception $e) {
-            error_log("FATAL OAuth exception: " . $e->getMessage());
-            error_log("Exception file: " . $e->getFile());
-            error_log("Exception line: " . $e->getLine());
-            error_log("Full stack trace: " . $e->getTraceAsString());
-            
-            // Don't redirect on error - show detailed error instead
-            die("OAuth Error: " . htmlspecialchars($e->getMessage()) . "<br><br>File: " . htmlspecialchars($e->getFile()) . "<br>Line: " . $e->getLine() . "<br><br>Check server logs for detailed stack trace.");
-        }
-    }
-    
-    /**
-     * Create session for Google OAuth user
-     */
-    private function create_google_user_session($userInfo)
-    {
-        $_SESSION['user_id'] = 'google_' . $userInfo['id'];
-        $_SESSION['user_name'] = $userInfo['name'];
-        $_SESSION['user_email'] = $userInfo['email'];
-        $_SESSION['user_picture'] = $userInfo['picture'] ?? '';
-        $_SESSION['auth_method'] = 'google';
-        $_SESSION['is_authenticated'] = true;
-        $_SESSION['login_time'] = time();
-        $_SESSION['last_activity'] = time();
-        
-        error_log("Google OAuth session created for: " . $userInfo['email']);
-        error_log("Session ID: " . session_id());
-        error_log("Session data after creation: " . json_encode($_SESSION));
-    }
     
 }
