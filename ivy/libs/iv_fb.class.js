@@ -332,10 +332,20 @@ export class FBBot {
         await this.initializeAnalyzer();
       }
       
-      // b) Komplexní analýza stránky místo jednoduchého počtu elementů
-      const analysis = await this.pageAnalyzer.analyzeFullPage({
-        includePostingCapability: false
-      });
+      // Rozlišení mezi prvním otevřením FB a navigací na skupiny
+      const isMainFacebookPage = url === 'https://www.facebook.com/' || url === 'https://facebook.com/';
+      
+      // b) Komplexní analýza pouze pro hlavní FB stránku, pro skupiny jen základní kontrola
+      let analysis;
+      if (isMainFacebookPage) {
+        // Plná analýza včetně cookies/login detekce pouze pro hlavní FB stránku
+        analysis = await this.pageAnalyzer.analyzeFullPage({
+          includePostingCapability: false
+        });
+      } else {
+        // Pro skupiny pouze základní kontrola bez cookies/login vzorů
+        analysis = await this.pageAnalyzer.analyzeBasicPage();
+      }
       
       if (analysis.complexity.isNormal && !analysis.complexity.suspiciouslySimple) {
         Log.success('[FB]', `Navigace na ${url} úspěšná - stránka je v pořádku`);
