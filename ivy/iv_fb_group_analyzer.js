@@ -59,8 +59,9 @@ export class FBGroupAnalyzer {
       
       // Extrakce názvu skupiny - NEJDŮLEŽITĚJŠÍ pro kategorizaci
       const name = await this.page.evaluate(() => {
-        // Prioritní hledání názvu skupiny
+        // Prioritní hledání názvu skupiny - specifický selector pro odkaz skupiny
         const selectors = [
+          'a[href*="/groups/"][role="link"]', // Specifický odkaz na skupinu
           'h1[dir="auto"]', // Hlavní název skupiny
           'h1', 
           '[role="banner"] h1',
