@@ -103,29 +103,22 @@ export class BrowserManager {
     }
 
     try {
-      // Krátká pauza před zavřením
-      Log.debug('[BROWSER]', `Čekám ${Log.formatTime(1)} před zavřením prohlížeče...`);
-      await Wait.toSeconds(1);
+      // Pauza před zavřením odstraněna - zbytečná
 
       // Nejdřív zavři všechny stránky
       try {
         const pages = await browser.pages();
-        Log.info('[BROWSER]', `Zavírám ${pages.length} stránek...`);
-        
         for (const page of pages) {
           if (!page.isClosed()) {
-            Log.debug('[BROWSER]', `Zavírám stránku: ${page.url()}`);
             await page.close();
           }
         }
-        Log.debug('[BROWSER]', 'Všechny stránky zavřeny');
       } catch (pageErr) {
         await Log.warn('[BROWSER]', `Chyba při zavírání stránek: ${pageErr.message}`);
       }
 
       // Pak zavři browser s timeoutem
       const timeoutSeconds = config.getBrowserCloseTimeoutSeconds();
-      Log.info('[BROWSER]', `Zavírám browser s timeout ${timeoutSeconds}s...`);
       
       const closePromise = browser.close();
       const timeoutPromise = new Promise((_, reject) =>
@@ -133,7 +126,6 @@ export class BrowserManager {
       );
 
       await Promise.race([closePromise, timeoutPromise]);
-      Log.success('[BROWSER]', 'BrowserManager úspěšně zavřel prohlížeč');
 
     } catch (err) {
       await Log.warn('[BROWSER]', `Chyba při uzavírání prohlížeče: ${err.message}`);

@@ -56,7 +56,7 @@ export class AccountDelayAction extends BaseAction {
       await this.db.updateUserWorktime(user.id, delayMinutes);
       await this.logAction(user, null, `Account delay: ${Math.round(delayMinutes)}min`);
       
-      Log.info(`[${user.id}]`, `⏳ Account delay: ${Math.round(delayMinutes)}min`);
+      Log.info(`[${user.id}]`, `Account delay: ${Math.round(delayMinutes)}min`);
       return true;
 
     } catch (err) {

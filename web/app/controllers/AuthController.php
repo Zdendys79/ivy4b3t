@@ -254,7 +254,7 @@ class AuthController extends BaseController
             $stmt = $this->db->getPDO()->prepare("
                 SELECT failed_attempts, timeout_until, 
                        TIMESTAMPDIFF(SECOND, NOW(), timeout_until) as remaining_seconds
-                FROM login_timeouts 
+                FROM web_login_timeouts 
                 WHERE ip_address = ? AND timeout_until > NOW()
             ");
             $stmt->execute([$ip]);
@@ -286,7 +286,7 @@ class AuthController extends BaseController
     {
         try {
             $stmt = $this->db->getPDO()->prepare("
-                SELECT failed_attempts FROM login_timeouts WHERE ip_address = ?
+                SELECT failed_attempts FROM web_login_timeouts WHERE ip_address = ?
             ");
             $stmt->execute([$ip]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -307,7 +307,7 @@ class AuthController extends BaseController
         try {
             // Get current attempts
             $stmt = $this->db->getPDO()->prepare("
-                SELECT failed_attempts FROM login_timeouts WHERE ip_address = ?
+                SELECT failed_attempts FROM web_login_timeouts WHERE ip_address = ?
             ");
             $stmt->execute([$ip]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -320,7 +320,7 @@ class AuthController extends BaseController
             
             // Upsert timeout record - ALWAYS create timeout, even for first attempt
             $stmt = $this->db->getPDO()->prepare("
-                INSERT INTO login_timeouts (ip_address, failed_attempts, timeout_until) 
+                INSERT INTO web_login_timeouts (ip_address, failed_attempts, timeout_until) 
                 VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))
                 ON DUPLICATE KEY UPDATE 
                     failed_attempts = ?,
@@ -343,7 +343,7 @@ class AuthController extends BaseController
     private function clearFailedAttempts($ip)
     {
         try {
-            $stmt = $this->db->getPDO()->prepare("DELETE FROM login_timeouts WHERE ip_address = ?");
+            $stmt = $this->db->getPDO()->prepare("DELETE FROM web_login_timeouts WHERE ip_address = ?");
             $stmt->execute([$ip]);
             
             if ($this->debug_mode) {
