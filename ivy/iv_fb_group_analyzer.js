@@ -141,7 +141,7 @@ export class FBGroupAnalyzer {
    */
   async saveGroupToDatabase(groupInfo, userId = null) {
     try {
-      // Sanitize group name - remove invalid UTF-8 characters
+      // Sanitize group name - AGRESIVNĚJŠÍ čištění UTF-8
       const sanitizedName = this.sanitizeString(groupInfo.name);
       
       if (!sanitizedName || sanitizedName.trim().length === 0) {
@@ -156,7 +156,7 @@ export class FBGroupAnalyzer {
         userId
       ]);
       
-      Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} uložena do databáze`);
+      Log.info('[GROUP_ANALYZER]', `Skupina ${sanitizedName} (ID: ${groupInfo.fb_id}) uložena do databáze`);
     } catch (err) {
       await Log.error('[GROUP_ANALYZER]', `Chyba při ukládání: ${err.message}`, {
         fb_id: groupInfo.fb_id,
@@ -216,6 +216,46 @@ export class FBGroupAnalyzer {
   }
 
   /**
+   * Parsuje Facebook ID z názvu skupiny typu Z
+   * Název typu Z má formát: "FACEBOOK_ID[oddělovač]NázevSkupiny"
+   */
+  parseFacebookIdFromName(groupName) {
+    if (!groupName || typeof groupName !== 'string') {
+      return null;
+    }
+    
+    // Hledej číselné ID na začátku názvu (Facebook ID jsou čísla)
+    const match = groupName.match(/^(\d{10,15})/); // Facebook IDs jsou obvykle 10-15 číslic
+    
+    if (match) {
+      const fbId = match[1];
+      Log.debug('[GROUP_ANALYZER]', `Extrahoval Facebook ID: ${fbId} z názvu: ${groupName.substring(0, 50)}...`);
+      return fbId;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Očistí název skupiny od Facebook ID (pro skupiny typu Z)
+   */
+  cleanGroupName(groupName, facebookId) {
+    if (!groupName || !facebookId) {
+      return groupName;
+    }
+    
+    // Odstraň Facebook ID a běžné oddělovače ze začátku názvu
+    let cleanName = groupName.replace(new RegExp(`^${facebookId}[^a-zA-ZÀ-žА-я]*`), '');
+    
+    // Fallback - pokud se nepodařilo odstranit ID, vezmi původní název
+    if (!cleanName || cleanName.length < 3) {
+      cleanName = groupName;
+    }
+    
+    return cleanName.trim();
+  }
+
+  /**
    * Vyčistí string od nevalidních UTF-8 znaků pro bezpečné uložení do databáze
    */
   sanitizeString(str) {
@@ -223,12 +263,14 @@ export class FBGroupAnalyzer {
       return '';
     }
     
-    // Remove invalid UTF-8 sequences and control characters
+    // Remove invalid UTF-8 sequences and control characters - AGRESIVNĚJŠÍ ČIŠTĚNÍ
     return str
-      // Remove null bytes and other control characters
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+      // Remove všechny nevalidní znaky včetně \x80, \x00, atd.
+      .replace(/[\x00-\x1F\x7F-\xFF]/g, '')
       // Remove invalid UTF-8 sequences
       .replace(/[\uFFFD\uFFFE\uFFFF]/g, '')
+      // Remove pouze základní ASCII + češtinu
+      .replace(/[^\x20-\x7E\u00C0-\u017F]/g, '')
       // Trim whitespace
       .trim()
       // Limit length for database compatibility
