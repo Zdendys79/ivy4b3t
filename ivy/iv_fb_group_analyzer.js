@@ -49,7 +49,7 @@ export class FBGroupAnalyzer {
   async extractGroupInfo() {
     try {
       // Extrakce názvu skupiny a Facebook ID z odkazu skupiny - JEDEN ELEMENT MA OBOJE!
-      const groupInfo = await this.page.evaluate(() => {
+      let groupInfo = await this.page.evaluate(() => {
         // Najdi odkaz na skupinu s názvem - tento element obsahuje URL i název
         const groupLink = document.querySelector('a[href*="/groups/"][role="link"]');
         
