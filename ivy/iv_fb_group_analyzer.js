@@ -11,7 +11,7 @@
 import { Log } from './libs/iv_log.class.js';
 import { Wait } from './libs/iv_wait.class.js';
 import { db } from './iv_sql.js';
-import { TextNormalizer } from '../quote_harvester/src/text_normalizer.class.js';
+import { TextNormalizer } from './libs/iv_text_normalizer.class.js';
 
 export class FBGroupAnalyzer {
   constructor(page, fbBot = null) {
