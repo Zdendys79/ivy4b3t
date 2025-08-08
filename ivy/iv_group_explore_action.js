@@ -240,25 +240,28 @@ export class GroupExploreAction {
         // Přímý přístup k databázi pro dynamický SQL s IN klauzulí
         const { pool } = await import('./iv_sql.js');
         const placeholders = allFbIds.map(() => '?').join(',');
-        const sql = `SELECT * FROM fb_groups WHERE fb_id IN (${placeholders})`;
+        // Vyber skupiny které nemají member_count nebo byly viděny před více než 24 hodinami
+        const sql = `SELECT * FROM fb_groups WHERE fb_id IN (${placeholders}) 
+                     AND member_count IS NOT NULL 
+                     AND last_seen > NOW() - INTERVAL 24 HOUR`;
         const [rows] = await pool.execute(sql, allFbIds);
         existingGroups = rows;
       }
       
-      // Vytvoř Set existujících ID pro rychlé vyhledávání
-      const existingFbIds = new Set(existingGroups.map(group => group.fb_id));
+      // Vytvoř Set ID skupin, které nepotřebují aktualizaci
+      const skipFbIds = new Set(existingGroups.map(group => group.fb_id));
       
-      // Filtruj pouze neznámé skupiny
-      const unknownUrls = urlsWithIds
-        .filter(item => !existingFbIds.has(item.fbId))
+      // Filtruj skupiny které potřebují prozkoumání (neznámé nebo staré)
+      const urlsToExplore = urlsWithIds
+        .filter(item => !skipFbIds.has(item.fbId))
         .map(item => item.url);
       
-      const knownCount = urlsWithIds.length - unknownUrls.length;
+      const skipCount = urlsWithIds.length - urlsToExplore.length;
       
-      // Do cache přidej POUZE neznámé skupiny
-      global.groupUrlsCache.push(...unknownUrls);
+      // Do cache přidej skupiny k prozkoumání
+      global.groupUrlsCache.push(...urlsToExplore);
       
-      Log.info(`[${user.id}]`, `Ze feedu: ${groupUrls.length} celkem, ${knownCount} známých přeskočeno, ${unknownUrls.length} neznámých přidáno do cache`);
+      Log.info(`[${user.id}]`, `Ze feedu: ${groupUrls.length} celkem, ${skipCount} nedávno viděných přeskočeno, ${urlsToExplore.length} přidáno do cache`);
       
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při načítání ze feedu: ${err.message}`);
