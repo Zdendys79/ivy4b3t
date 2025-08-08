@@ -110,20 +110,8 @@ export class FBGroupAnalyzer {
         groupInfo = { fbId, name };
       }
       
-      // Extrakce počtu členů
-      const memberCount = await this.page.evaluate(() => {
-        const memberTexts = Array.from(document.querySelectorAll('*')).map(el => el.textContent)
-          .filter(text => text && (text.includes('člen') || text.includes('member')));
-        
-        for (const text of memberTexts) {
-          const match = text.match(/([\d\s,\.]+)\s*(?:člen|členů|member)/i);
-          if (match) {
-            const num = match[1].replace(/[\s,\.]/g, '');
-            return parseInt(num) || null;
-          }
-        }
-        return null;
-      });
+      // Extrakce počtu členů pomocí robustní metody
+      const memberCount = await this.readUserCounter();
       
       // Detekce kategorie/oboru skupiny ze jména
       const category = this.detectGroupCategory(groupInfo.name);
@@ -347,6 +335,93 @@ export class FBGroupAnalyzer {
     }
   }
 
+  /**
+   * Čte počet členů skupiny z různých možných formátů
+   * Podporuje formáty: "1,6 tis. členů", "1234 členů", "sledujících" atd.
+   */
+  async readUserCounter() {
+    try {
+      // Pokus o nalezení počtu členů
+      const memberCount = await this.page.evaluate(() => {
+        // Hledání všech elementů obsahujících text s počtem členů/sledujících
+        const elements = Array.from(document.querySelectorAll('span, div'))
+          .filter(el => {
+            const text = el.textContent || '';
+            return text.includes('členů') || text.includes('člen') || 
+                   text.includes('sledujících') || text.includes('sledující');
+          });
+        
+        for (const element of elements) {
+          const text = element.textContent || '';
+          // Hledání číselné hodnoty před klíčovým slovem
+          const regex = /([0-9]+(?:[,\.\s][0-9]+)*)\s*(?:tis\.?)?\s*(?:členů|člen|sledujících|sledující)/i;
+          const match = text.match(regex);
+          
+          if (match) {
+            return {
+              rawText: text,
+              numberPart: match[1],
+              hasTis: text.includes('tis.')
+            };
+          }
+        }
+        return null;
+      });
+      
+      if (!memberCount) {
+        Log.warn('[GROUP_ANALYZER]', 'Nepodařilo se najít počet členů skupiny');
+        return null;
+      }
+      
+      // Převod na číslo pomocí getCounterValue
+      return this.getCounterValue(memberCount.rawText);
+      
+    } catch (err) {
+      Log.error('[GROUP_ANALYZER]', `Chyba při čtení počtu členů: ${err.message}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Převede textový formát počtu členů na číslo
+   * Např. "2.6 tis. členů" -> 2600
+   */
+  getCounterValue(str) {
+    try {
+      if (!str) return null;
+      
+      // Nahraď čárky tečkami pro správné parsování desetinných čísel
+      const normalized = str.replace(',', '.');
+      
+      // Extrahuj všechna čísla ze stringu
+      const regex = /[+-]?\d+(\.\d+)?/g;
+      const matches = normalized.match(regex);
+      
+      if (!matches || matches.length === 0) {
+        return null;
+      }
+      
+      // Vezmi první nalezenou číselnou hodnotu
+      let value = parseFloat(matches[0]);
+      
+      // Pokud text obsahuje "tis.", vynásob 1000
+      if (str.includes('tis.')) {
+        value *= 1000;
+      }
+      
+      // Pokud text obsahuje "mil.", vynásob 1000000
+      if (str.includes('mil.')) {
+        value *= 1000000;
+      }
+      
+      return Math.round(value);
+      
+    } catch (err) {
+      Log.error('[GROUP_ANALYZER]', `Chyba při parsování počtu: ${err.message}`);
+      return null;
+    }
+  }
+  
   /**
    * Parsuje Facebook ID z názvu skupiny typu Z
    * Název typu Z má formát: "FACEBOOK_ID[oddělovač]NázevSkupiny"
