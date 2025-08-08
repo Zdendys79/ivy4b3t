@@ -81,16 +81,18 @@ mysqldump -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD ivy_test > backups/ivy
 
 **KRITICKÉ ROZDÍLY ZJIŠTĚNÉ:**
 
-**fb_groups tabulka:** ivy_test chybí 11 sloupců z produkce:
+**Směr migrace:** ivy_test → ivy (pouze jeden směr!)
+
+**fb_groups tabulka:** produkce má 11 nadbytečných sloupců které se smažou:
 - `discovery_url`, `discovered_by_user_id`, `status`
 - `privacy_type`, `language`, `activity_level` 
 - `is_relevant`, `posting_allowed`, `analysis_notes`
 - `analysis_count`, `last_analysis`
 
-**Chybějící tabulky v produkci:**
-- `group_keywords` (nová funkcionalita)
-- `group_word_associations` (nová funkcionalita)
-- `login_timeouts` (vs produkční `web_login_timeouts`)
+**Tabulky k vytvoření v produkci:**
+- `group_keywords` (nová funkcionalita z ivy_test)
+- `group_word_associations` (nová funkcionalita z ivy_test)
+- `login_timeouts` (z ivy_test, `web_login_timeouts` se smaže)
 
 ### 3. Datová migrace
 

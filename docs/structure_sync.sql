@@ -16,22 +16,22 @@ CREATE TABLE IF NOT EXISTS ivy.group_keywords LIKE ivy_test.group_keywords;
 CREATE TABLE IF NOT EXISTS ivy.group_word_associations LIKE ivy_test.group_word_associations;
 CREATE TABLE IF NOT EXISTS ivy.login_timeouts LIKE ivy_test.login_timeouts;
 
--- 2. CHYBĚJÍCÍ SLOUPCE V ivy_test.fb_groups
+-- 2. ODSTRANĚNÍ NADBYTEČNÝCH SLOUPCŮ Z ivy.fb_groups
 -- ===============================================
 
--- Přidání sloupců které má produkce navíc
-ALTER TABLE ivy_test.fb_groups 
-ADD COLUMN IF NOT EXISTS discovery_url varchar(2048) NULL AFTER is_buy_sell_group,
-ADD COLUMN IF NOT EXISTS discovered_by_user_id smallint(5) unsigned NULL AFTER member_count,
-ADD COLUMN IF NOT EXISTS status varchar(20) NULL DEFAULT 'active' AFTER discovered_by_user_id,
-ADD COLUMN IF NOT EXISTS privacy_type varchar(50) NULL AFTER category,
-ADD COLUMN IF NOT EXISTS language varchar(10) NULL DEFAULT 'cs' AFTER privacy_type,
-ADD COLUMN IF NOT EXISTS activity_level varchar(50) NULL AFTER language,
-ADD COLUMN IF NOT EXISTS is_relevant tinyint(1) NULL AFTER activity_level,
-ADD COLUMN IF NOT EXISTS posting_allowed tinyint(1) NULL AFTER is_relevant,
-ADD COLUMN IF NOT EXISTS analysis_notes text NULL AFTER posting_allowed,
-ADD COLUMN IF NOT EXISTS analysis_count int(11) NULL DEFAULT 0 AFTER analysis_notes,
-ADD COLUMN IF NOT EXISTS last_analysis timestamp NULL AFTER analysis_count;
+-- Směr je pouze ivy_test → ivy, odstraníme sloupce které ivy_test nemá
+ALTER TABLE ivy.fb_groups 
+DROP COLUMN IF EXISTS discovery_url,
+DROP COLUMN IF EXISTS discovered_by_user_id,
+DROP COLUMN IF EXISTS status,
+DROP COLUMN IF EXISTS privacy_type,
+DROP COLUMN IF EXISTS language,
+DROP COLUMN IF EXISTS activity_level,
+DROP COLUMN IF EXISTS is_relevant,
+DROP COLUMN IF EXISTS posting_allowed,
+DROP COLUMN IF EXISTS analysis_notes,
+DROP COLUMN IF EXISTS analysis_count,
+DROP COLUMN IF EXISTS last_analysis;
 
 -- 3. ODSTRANĚNÍ VÝVOJOVÝCH TABULEK Z PRODUKCE
 -- ===============================================
@@ -41,10 +41,16 @@ DROP TABLE IF EXISTS ivy.translation_issues;
 DROP TABLE IF EXISTS ivy.debug_incidents;
 DROP TABLE IF EXISTS ivy.scheme;
 
--- 4. OVĚŘENÍ STRUKTURY
+-- 4. ODSTRANĚNÍ NEPOUŽÍVANÝCH TABULEK Z PRODUKCE
 -- ===============================================
 
--- Kontrolní dotazy pro ověření struktury
+-- Smazat produkční tabulku která už není potřeba
+DROP TABLE IF EXISTS ivy.web_login_timeouts;
+
+-- 5. OVĚŘENÍ STRUKTURY
+-- ===============================================
+
+-- Kontrolní dotazy pro ověření struktury - obě by měly mít stejný počet sloupců
 SELECT 'ivy_test.fb_groups' as tabulka, COUNT(*) as sloupcu FROM information_schema.columns WHERE table_schema='ivy_test' AND table_name='fb_groups'
 UNION
 SELECT 'ivy.fb_groups', COUNT(*) FROM information_schema.columns WHERE table_schema='ivy' AND table_name='fb_groups';
