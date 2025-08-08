@@ -47,10 +47,14 @@ export class BaseAccountAction extends BaseAction {
       const maxMinutes = pickedAction.max_minutes;
       
       const minutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
-      const value = this.displayUnit === 'h' ? Math.round(minutes / 60) : Math.round(minutes);
+      
+      // Validace hodnoty - MySQL INTERVAL má omezení (max ~30 dní = 43200 minut)
+      const validatedMinutes = Math.min(Math.max(Math.round(minutes), 1), 43200);
+      
+      const value = this.displayUnit === 'h' ? Math.round(validatedMinutes / 60) : validatedMinutes;
       const logText = `Account ${this.actionName.replace('account_', '')}: ${value}${this.displayUnit}`;
       
-      await this.db.updateUserWorktime(user.id, minutes);
+      await this.db.updateUserWorktime(user.id, validatedMinutes);
       await this.logAction(user, null, logText);
       
       Log.info(`[${user.id}]`, logText);
