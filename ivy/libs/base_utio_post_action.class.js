@@ -100,6 +100,9 @@ export class BaseUtioPostAction extends BasePostAction {
 
     // Jedna lidská pauza
     await Wait.toSeconds(5, 'Po načtení skupiny');
+    
+    // Aktualizace počtu členů skupiny
+    await this.updateGroupMemberCount(user, fbBot, group);
 
     Log.success(`[${user.id}]`, `KROK 1 DOKONČEN: Jsme ve skupině ${group.name}`);
   }
@@ -531,6 +534,34 @@ export class BaseUtioPostAction extends BasePostAction {
     } catch (err) {
       Log.error(`[${user.id}]`, `Chyba při kontrole join cooldown: ${err.message}`);
       return { allowed: true, minutesRemaining: 0 }; // V případě chyby povolit
+    }
+  }
+  
+  /**
+   * Aktualizuje počet členů skupiny v databázi
+   * Používá FBGroupAnalyzer pro extrakci počtu členů
+   */
+  async updateGroupMemberCount(user, fbBot, group) {
+    try {
+      // Import FBGroupAnalyzer
+      const { FBGroupAnalyzer } = await import('../iv_fb_group_analyzer.js');
+      
+      // Inicializace analyzátoru s aktuální stránkou
+      const analyzer = new FBGroupAnalyzer(fbBot.page);
+      
+      // Přečti počet členů
+      const memberCount = await analyzer.readUserCounter();
+      
+      if (memberCount && memberCount > 0) {
+        // Aktualizuj počet členů v databázi
+        await db.safeExecute('groups.updateMemberCount', [memberCount, group.id]);
+        Log.info(`[${user.id}]`, `Aktualizován počet členů skupiny ${group.name}: ${memberCount}`);
+      } else {
+        Log.warn(`[${user.id}]`, `Nepodařilo se zjistit počet členů skupiny ${group.name}`);
+      }
+    } catch (err) {
+      // Nezastavovat akci kvůli chybě aktualizace počtu členů
+      Log.warn(`[${user.id}]`, `Chyba při aktualizaci počtu členů: ${err.message}`);
     }
   }
 }
