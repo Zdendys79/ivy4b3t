@@ -13,6 +13,7 @@ import { Log } from './iv_log.class.js';
 export class BaseAccountAction extends BaseAction {
   constructor(actionName, displayUnit = 'min') {
     super(actionName);
+    this.actionName = actionName; // Explicitně nastavit actionName
     this.displayUnit = displayUnit;
   }
 
