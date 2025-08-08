@@ -60,25 +60,37 @@ Tento dokument definuje migrační strategie pro synchronizaci databáze `ivy_te
 
 ## Migrační skripty
 
+### 0. KRITICKÉ: Strukturní synchronizace
+
+⚠️ **PŘED MIGRACÍ DAT JE NUTNÉ SJEDNOTIT STRUKTURU DATABÁZÍ!**
+
+```bash
+# Spustit synchronizaci struktury
+mysql -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD < docs/structure_sync.sql
+```
+
 ### 1. Příprava migrace
 
 ```sql
 -- Záloha produkční databáze
 mysqldump -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD ivy > backups/ivy_backup_$(date +%Y%m%d_%H%M%S).sql
+mysqldump -h $MYSQL_HOST -u $MYSQL_USER -p$MYSQL_PASSWORD ivy_test > backups/ivy_test_backup_$(date +%Y%m%d_%H%M%S).sql
 ```
 
-### 2. Strukturní změny
+### 2. Strukturní změny (již v structure_sync.sql)
 
-```sql
--- Vytvoření chybějících tabulek v produkci
-CREATE TABLE ivy.group_keywords LIKE ivy_test.group_keywords;
-CREATE TABLE ivy.group_word_associations LIKE ivy_test.group_word_associations;
+**KRITICKÉ ROZDÍLY ZJIŠTĚNÉ:**
 
--- Odstranění tabulek které nemají být v produkci
-DROP TABLE IF EXISTS ivy.translation_issues;
-DROP TABLE IF EXISTS ivy.debug_incidents;
-DROP TABLE IF EXISTS ivy.scheme;
-```
+**fb_groups tabulka:** ivy_test chybí 11 sloupců z produkce:
+- `discovery_url`, `discovered_by_user_id`, `status`
+- `privacy_type`, `language`, `activity_level` 
+- `is_relevant`, `posting_allowed`, `analysis_notes`
+- `analysis_count`, `last_analysis`
+
+**Chybějící tabulky v produkci:**
+- `group_keywords` (nová funkcionalita)
+- `group_word_associations` (nová funkcionalita)
+- `login_timeouts` (vs produkční `web_login_timeouts`)
 
 ### 3. Datová migrace
 
