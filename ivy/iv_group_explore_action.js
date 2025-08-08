@@ -133,7 +133,7 @@ export class GroupExploreAction {
       // Občas (20% šance) načti nové skupiny ze feedu i když cache není prázdná
       const shouldRefreshFeed = Math.random() < 0.2;
       if (shouldRefreshFeed) {
-        Log.info(`[${user.id}]`, '🔄 Obnovuji skupiny ze feedu (náhodná obnova)');
+        Log.info(`[${user.id}]`, '🔄 Obnovuji skupiny z discover (náhodná obnova)');
         await this.loadGroupsFromFeed(user, fbBot);
       }
       
@@ -142,7 +142,7 @@ export class GroupExploreAction {
         return true;
       }
       
-      // Pokud cache je prázdná, načti nové skupiny ze feedu
+      // Pokud cache je prázdná, načti nové skupiny z discover
       await this.loadGroupsFromFeed(user, fbBot);
       
       // Zkus znovu z cache
@@ -150,7 +150,7 @@ export class GroupExploreAction {
         return true;
       }
       
-      throw new Error('Nepodařilo se načíst žádné skupiny ani z cache ani ze feedu');
+      throw new Error('Nepodařilo se načíst žádné skupiny ani z cache ani z discover');
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při navigaci na skupinu: ${err.message}`);
@@ -187,13 +187,13 @@ export class GroupExploreAction {
    */
   async loadGroupsFromFeed(user, fbBot) {
     try {
-      Log.info(`[${user.id}]`, 'Načítám skupiny ze feedu...');
+      Log.info(`[${user.id}]`, 'Načítám skupiny z discover...');
       
-      // Naviguj na skupinový feed
-      await fbBot.navigateToPage('https://www.facebook.com/groups/feed/', { 
+      // Naviguj na skupinový discover
+      await fbBot.navigateToPage('https://www.facebook.com/groups/discover', { 
         waitUntil: 'networkidle2' 
       });
-      await Wait.toSeconds(5, 'Načtení skupinového feedu');
+      await Wait.toSeconds(5, 'Načtení discover stránky');
       
       // Scrolluj pro načtení více skupin
       for (let i = 0; i < 3; i++) {
@@ -261,10 +261,10 @@ export class GroupExploreAction {
       // Do cache přidej skupiny k prozkoumání
       global.groupUrlsCache.push(...urlsToExplore);
       
-      Log.info(`[${user.id}]`, `Ze feedu: ${groupUrls.length} celkem, ${skipCount} nedávno viděných přeskočeno, ${urlsToExplore.length} přidáno do cache`);
+      Log.info(`[${user.id}]`, `Z discover: ${groupUrls.length} celkem, ${skipCount} nedávno viděných přeskočeno, ${urlsToExplore.length} přidáno do cache`);
       
     } catch (err) {
-      await Log.error(`[${user.id}]`, `Chyba při načítání ze feedu: ${err.message}`);
+      await Log.error(`[${user.id}]`, `Chyba při načítání z discover: ${err.message}`);
     }
   }
 
