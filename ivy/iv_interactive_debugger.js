@@ -51,6 +51,18 @@ export class InteractiveDebugger {
    * Hlavní funkce pro zastavení při chybě/varování - ZJEDNODUŠENÁ
    */
   async pauseOnError(errorLevel, message, context = {}) {
+    // PRODUKČNÍ REŽIM - vypnout celý debugger
+    if (process.env.NODE_ENV === 'production' || global.systemState?.gitBranch === 'production') {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      console.log(`${timestamp} [PRODUKCE] [${errorLevel}] ${message}`);
+      if (Object.keys(context).length > 0) {
+        console.log(`[PRODUKCE] Context:`, JSON.stringify(context, null, 2));
+      }
+      // V produkci NIKDY nezastavit - jen zobrazit chybu a pokračovat
+      return false;
+    }
+    
+    // VÝVOJOVÝ REŽIM - plná funkcionalita debuggeru
     // Automaticky loguj každou ERROR do databáze
     if (errorLevel === 'ERROR') {
       await this.saveToDatabase(errorLevel, message, context);
@@ -130,27 +142,30 @@ export class InteractiveDebugger {
       
       const userId = global.systemState?.currentUserId || null;
       
-      // Pokus o uložení pouze pokud běžíme ve vývojovém prostředí
-      // V produkci se debug_incidents nelogují do databáze
-      if (process.env.NODE_ENV !== 'production' && global.systemState?.gitBranch !== 'production') {
-        // Generuj unikátní incident_id
-        const incidentId = `INC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        try {
-          await db.safeExecute('system.insertDebugIncident', [
-            incidentId,                     // incident_id (nový první parametr)
-            userId,                         // user_id  
-            errorLevel,                     // error_level
-            message,                        // error_message
-            JSON.stringify(context),        // error_context
-            null,                          // page_url
-            context.stack || null,         // stack_trace
-            'NEW'                          // status
-          ]);
-        } catch (dbErr) {
-          // V produkci nebo pokud tabulka neexistuje - nelogovat do DB
-          // Tiše ignorovat - debug incident se neuloží, ale aplikace pokračuje
-        }
+      // PRODUKČNÍ REŽIM - žádný zápis do databáze
+      if (process.env.NODE_ENV === 'production' || global.systemState?.gitBranch === 'production') {
+        // V produkci se debug incidents neukládají do DB vůbec
+        return;
+      }
+      
+      // VÝVOJOVÝ REŽIM - uložit do debug_incidents tabulky
+      // Generuj unikátní incident_id
+      const incidentId = `INC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      try {
+        await db.safeExecute('system.insertDebugIncident', [
+          incidentId,                     // incident_id (nový první parametr)
+          userId,                         // user_id  
+          errorLevel,                     // error_level
+          message,                        // error_message
+          JSON.stringify(context),        // error_context
+          null,                          // page_url
+          context.stack || null,         // stack_trace
+          'NEW'                          // status
+        ]);
+      } catch (dbErr) {
+        // Pokud tabulka neexistuje nebo jiná DB chyba - tiše ignorovat
+        // Debug incident se neuloží, ale aplikace pokračuje
       }
       
     } catch (err) {
