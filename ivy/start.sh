@@ -214,7 +214,7 @@ trap cleanup SIGINT SIGTERM
 
 # Úvodní informace
 echo "======================================================"
-echo "IVY START SCRIPT - VĚTEV: $BRANCH"
+echo "IVY START SCRIPT - VĚTEV: $BRANCH (verze sync fix)"
 echo "======================================================"
 echo "Datum: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "Hostitel: $(hostname)"
