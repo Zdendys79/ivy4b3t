@@ -34,8 +34,8 @@ REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
 SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
 TARGET_DIR=${TARGET_DIR:-~/ivy}
 
-# Vždy použij branch "production"
-BRANCH="production"
+# Volba větve - parametr nebo výchozí production
+BRANCH=${1:-"production"}
 
 # Limity pro pokusy
 MAX_RETRIES=3
@@ -156,7 +156,7 @@ main_loop() {
 
 
         # Spuštění aplikace
-        export IVY_GIT_BRANCH="production"
+        export IVY_GIT_BRANCH="$BRANCH"
         node --trace-warnings ivy.js
 
         local exit_code=$?
@@ -214,7 +214,7 @@ trap cleanup SIGINT SIGTERM
 
 # Úvodní informace
 echo "======================================================"
-echo "IVY START SCRIPT"
+echo "IVY START SCRIPT - VĚTEV: $BRANCH"
 echo "======================================================"
 echo "Datum: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "Hostitel: $(hostname)"
@@ -223,6 +223,11 @@ echo "Repozitář: $REPO_DIR"
 echo "Cíl: $TARGET_DIR"
 echo "Větev: $BRANCH"
 echo "Limit restartů: $MAX_RETRIES za $TIME_WINDOW sekund"
+echo ""
+echo "Použití: ./start.sh [větev]"
+echo "Příklady:"
+echo "  ./start.sh              # production větev (výchozí)"
+echo "  ./start.sh main         # main větev"
 echo "======================================================"
 
 # Kontrola základních závislostí

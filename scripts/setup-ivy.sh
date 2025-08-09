@@ -226,14 +226,14 @@ echo "https://$REPO_USER:$GITHUB_PAT@github.com" > ~/.git-credentials
 echo -e "\n🧹 Mažu předchozí složky ~/git a ~/ivy..."
 rm -rf ~/git "$IVY_DIR"
 
-# === 7. KOPÍROVÁNÍ SLOŽKY IVY Z GIT REPO ===
-echo -e "\n🔄 Klonuji pouze složku ivy z GitHub repozitáře..."
-git clone --depth 1 --filter=blob:none --sparse "$REPO_URL" "$REPO_DIR"
+# === 7. KOPÍROVÁNÍ SLOŽKY IVY Z GIT REPO (PRODUCTION VĚTEV) ===
+echo -e "\n🔄 Klonuji pouze složku ivy z GitHub repozitáře (production větev)..."
+git clone --depth 1 --filter=blob:none --sparse -b production "$REPO_URL" "$REPO_DIR"
 cd "$REPO_DIR"
 git sparse-checkout init --cone
 git sparse-checkout set ivy
 
-echo -e "\n📂 Kopíruji složku ivy do $IVY_DIR..."
+echo -e "\n📂 Kopíruji složku ivy do $IVY_DIR (z production větve)..."
 mkdir -p "$IVY_DIR"
 rsync -av --delete "$REPO_DIR/ivy/" "$IVY_DIR/"
 
@@ -293,8 +293,7 @@ echo "   1) Restartovat celé VM (doporučeno pro všechny)"
 echo "   2) Pro SSH: Odhlásit se a znovu přihlásit"
 echo "   3) Pro Chrome Remote Desktop: Otevřít nový terminál nebo source ~/.bashrc"
 echo -e "\nPo restartu/přihlášení můžete spustit IVY pomocí:"
-echo "   - ~/ivy/start.sh (pro větev production)"
-echo "   - ~/ivy/main-start.sh (pro větev main)"
+echo "   - ~/ivy/start.sh (production větev - PRODUKČNÍ PROSTŘEDÍ)"
 
 # Nabídka restartu VM
 echo -e "\n🔄 Chcete restartovat VM nyní? (doporučeno)"
