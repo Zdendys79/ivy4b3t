@@ -199,7 +199,14 @@ nvm use default
 echo -e "\n🔄 Aktualizuji NPM..."
 npm install -g npm
 
-# === 4. INSTALACE / AKTUALIZACE GIT A DALŠÍCH NÁSTROJŮ ===
+# === 4. SYNCHRONIZACE ČASU ===
+echo -e "\n🕐 Synchronizuji systémový čas..."
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd
+sleep 5
+echo "✅ Čas po synchronizaci: $(date)"
+
+# === 5. INSTALACE / AKTUALIZACE GIT A DALŠÍCH NÁSTROJŮ ===
 echo -e "\n📦 Instalace nebo aktualizace GIT a nástrojů..."
 
 # Kontrola a oprava duplicitních APT konfigurací pro Chrome Remote Desktop
@@ -216,7 +223,7 @@ echo "✅ Git verze: $(git --version)"
 echo "✅ Node.js: $(node -v)"
 echo "✅ npm: $(npm -v)"
 
-# === 5. NASTAVENÍ GIT CREDENTIALS ===
+# === 6. NASTAVENÍ GIT CREDENTIALS ===
 echo -e "\n🔐 Zadej svůj GitHub Personal Access Token (PAT):"
 read -rsp "PAT: " GITHUB_PAT
 
@@ -226,11 +233,11 @@ git config --global user.email "$REPO_EMAIL"
 git config --global credential.helper store
 echo "https://$REPO_USER:$GITHUB_PAT@github.com" > ~/.git-credentials
 
-# === 6. MAZÁNÍ SLOŽEK ~/git a ~/ivy_test ===
+# === 7. MAZÁNÍ SLOŽEK ~/git a ~/ivy_test ===
 echo -e "\n🧹 Mažu předchozí složky ~/git a ~/ivy_test..."
 rm -rf ~/git "$IVY_DIR"
 
-# === 7. KOPÍROVÁNÍ SLOŽKY IVY Z GIT REPO (MAIN VĚTEV) ===
+# === 8. KOPÍROVÁNÍ SLOŽKY IVY Z GIT REPO (MAIN VĚTEV) ===
 echo -e "\n🔄 Klonuji pouze složku ivy z GitHub repozitáře (main větev)..."
 git clone --depth 1 --filter=blob:none --sparse -b main "$REPO_URL" "$REPO_DIR"
 cd "$REPO_DIR"
@@ -241,7 +248,7 @@ echo -e "\n📂 Kopíruji složku ivy do $IVY_DIR (z main větve)..."
 mkdir -p "$IVY_DIR"
 rsync -av --delete "$REPO_DIR/ivy/" "$IVY_DIR/"
 
-# === 8. NASTAVENÍ ENVIRONMENT VARIABLES ===
+# === 9. NASTAVENÍ ENVIRONMENT VARIABLES ===
 echo -e "\n🌍 Nastavuji environment variables pro testování..."
 
 # Přidat do .bashrc pokud ještě není
