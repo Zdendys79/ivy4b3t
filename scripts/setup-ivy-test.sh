@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ------------------------------------------------------------------------
-# setup-ivy.sh – Kompletní instalace/aktualizace prostředí IVY4B3T klienta
+# setup-ivy-test.sh – Kompletní instalace/aktualizace testovacího prostředí IVY4B3T klienta
 # ------------------------------------------------------------------------
 #
 # Provádí:
@@ -9,10 +9,10 @@
 #   - instalaci nejnovější verze Node.js (ne nutně LTS)
 #   - aktualizaci NPM
 #   - instalaci GITu
-#   - klonování pouze složky "ivy" z repozitáře Zdendys79/ivy4b3t
+#   - klonování pouze složky "ivy" z repozitáře Zdendys79/ivy4b3t (main větev)
 #   - vytvoření konfiguračního souboru sql_config.json (s možností ponechat původní heslo)
 #   - instalaci Node.js závislostí
-#   - spuštění start.sh
+#   - spuštění start.sh z testovací složky
 # ------------------------------------------------------------------------
 
 set -e
@@ -25,7 +25,7 @@ SCRIPT_MTIME=$(stat -c %y "$SCRIPT_PATH" 2>/dev/null | cut -d'.' -f1 || echo "ne
 echo "========================================"
 echo "📄 Skript: $SCRIPT_NAME"
 echo "📅 Poslední úprava: $SCRIPT_MTIME"
-echo "========================================"
+echo "========================================="
 echo ""
 
 # === DEFINICE PROMĚNNÝCH ===
@@ -34,7 +34,7 @@ REPO_URL="https://github.com/Zdendys79/ivy4b3t.git"
 REPO_USER="Zdendys79"
 REPO_EMAIL="zdendys79@gmail.com"
 REPO_DIR=~/git/ivy4b3t
-IVY_DIR=~/ivy
+IVY_DIR=~/ivy_test
 
 # Databázové údaje - načteme z env nebo config
 DB_HOST=""
@@ -110,8 +110,9 @@ if [ -f ~/.bashrc ]; then
 fi
 
 # === INTERAKTIVNÍ ZÍSKÁNÍ DATABÁZOVÝCH ÚDAJŮ ===
-echo -e "\n🔐 KONFIGURACE DATABÁZOVÉHO PŘIPOJENÍ"
-echo "======================================"
+echo -e "\n🔐 KONFIGURACE DATABÁZOVÉHO PŘIPOJENÍ (TESTOVACÍ PROSTŘEDÍ)"
+echo "============================================================"
+echo "ℹ️  Pro testování doporučujeme nastavit DB_NAME na 'ivy_test'"
 echo "ℹ️  Pro použití původní hodnoty stiskni ENTER"
 echo ""
 
@@ -135,14 +136,17 @@ else
   read -rp "DB User: " DB_USER
 fi
 
-# DB Name
+# DB Name - pro testování nabídnout ivy_test
 if [ -n "$ORIG_DB_NAME" ]; then
-  read -rp "DB Name [$ORIG_DB_NAME]: " DB_NAME
+  read -rp "DB Name pro testování [ivy_test]: " DB_NAME
   if [ -z "$DB_NAME" ]; then
-    DB_NAME="$ORIG_DB_NAME"
+    DB_NAME="ivy_test"
   fi
 else
-  read -rp "DB Name: " DB_NAME
+  read -rp "DB Name pro testování [ivy_test]: " DB_NAME
+  if [ -z "$DB_NAME" ]; then
+    DB_NAME="ivy_test"
+  fi
 fi
 
 # DB Password
@@ -172,7 +176,7 @@ if [ -z "$DB_HOST" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS
   exit 1
 fi
 
-echo -e "\n✅ Databázová konfigurace:"
+echo -e "\n✅ Databázová konfigurace pro testování:"
 echo "   Host: $DB_HOST"
 echo "   User: $DB_USER"
 echo "   Database: $DB_NAME"
@@ -222,47 +226,47 @@ git config --global user.email "$REPO_EMAIL"
 git config --global credential.helper store
 echo "https://$REPO_USER:$GITHUB_PAT@github.com" > ~/.git-credentials
 
-# === 6. MAZÁNÍ SLOŽEK ~/git a ~/ivy ===
-echo -e "\n🧹 Mažu předchozí složky ~/git a ~/ivy..."
+# === 6. MAZÁNÍ SLOŽEK ~/git a ~/ivy_test ===
+echo -e "\n🧹 Mažu předchozí složky ~/git a ~/ivy_test..."
 rm -rf ~/git "$IVY_DIR"
 
-# === 7. KOPÍROVÁNÍ SLOŽKY IVY Z GIT REPO (PRODUCTION VĚTEV) ===
-echo -e "\n🔄 Klonuji pouze složku ivy z GitHub repozitáře (production větev)..."
-git clone --depth 1 --filter=blob:none --sparse -b production "$REPO_URL" "$REPO_DIR"
+# === 7. KOPÍROVÁNÍ SLOŽKY IVY Z GIT REPO (MAIN VĚTEV) ===
+echo -e "\n🔄 Klonuji pouze složku ivy z GitHub repozitáře (main větev)..."
+git clone --depth 1 --filter=blob:none --sparse -b main "$REPO_URL" "$REPO_DIR"
 cd "$REPO_DIR"
 git sparse-checkout init --cone
 git sparse-checkout set ivy
 
-echo -e "\n📂 Kopíruji složku ivy do $IVY_DIR (z production větve)..."
+echo -e "\n📂 Kopíruji složku ivy do $IVY_DIR (z main větve)..."
 mkdir -p "$IVY_DIR"
 rsync -av --delete "$REPO_DIR/ivy/" "$IVY_DIR/"
 
 # === 8. NASTAVENÍ ENVIRONMENT VARIABLES ===
-echo -e "\n🌍 Nastavuji environment variables..."
+echo -e "\n🌍 Nastavuji environment variables pro testování..."
 
 # Přidat do .bashrc pokud ještě není
-if ! grep -q "# IVY Database Config" ~/.bashrc; then
+if ! grep -q "# IVY TEST Database Config" ~/.bashrc; then
   echo "" >> ~/.bashrc
-  echo "# IVY Database Config" >> ~/.bashrc
-  echo "export DB_HOST=\"$DB_HOST\"" >> ~/.bashrc
-  echo "export DB_USER=\"$DB_USER\"" >> ~/.bashrc
-  echo "export DB_PASS=\"$DB_PASS\"" >> ~/.bashrc
-  echo "export DB_NAME=\"$DB_NAME\"" >> ~/.bashrc
-  echo "✅ Environment variables přidány do ~/.bashrc"
+  echo "# IVY TEST Database Config" >> ~/.bashrc
+  echo "export DB_HOST_TEST=\"$DB_HOST\"" >> ~/.bashrc
+  echo "export DB_USER_TEST=\"$DB_USER\"" >> ~/.bashrc
+  echo "export DB_PASS_TEST=\"$DB_PASS\"" >> ~/.bashrc
+  echo "export DB_NAME_TEST=\"$DB_NAME\"" >> ~/.bashrc
+  echo "✅ Test environment variables přidány do ~/.bashrc"
 else
   # Aktualizovat existující hodnoty
-  sed -i "/export DB_HOST=/c\export DB_HOST=\"$DB_HOST\"" ~/.bashrc
-  sed -i "/export DB_USER=/c\export DB_USER=\"$DB_USER\"" ~/.bashrc
-  sed -i "/export DB_PASS=/c\export DB_PASS=\"$DB_PASS\"" ~/.bashrc
-  sed -i "/export DB_NAME=/c\export DB_NAME=\"$DB_NAME\"" ~/.bashrc
-  echo "✅ Environment variables aktualizovány v ~/.bashrc"
+  sed -i "/export DB_HOST_TEST=/c\export DB_HOST_TEST=\"$DB_HOST\"" ~/.bashrc
+  sed -i "/export DB_USER_TEST=/c\export DB_USER_TEST=\"$DB_USER\"" ~/.bashrc
+  sed -i "/export DB_PASS_TEST=/c\export DB_PASS_TEST=\"$DB_PASS\"" ~/.bashrc
+  sed -i "/export DB_NAME_TEST=/c\export DB_NAME_TEST=\"$DB_NAME\"" ~/.bashrc
+  echo "✅ Test environment variables aktualizovány v ~/.bashrc"
 fi
 
 # Nastavit pro současnou session
-export DB_HOST="$DB_HOST"
-export DB_USER="$DB_USER"
-export DB_PASS="$DB_PASS"
-export DB_NAME="$DB_NAME"
+export DB_HOST_TEST="$DB_HOST"
+export DB_USER_TEST="$DB_USER"
+export DB_PASS_TEST="$DB_PASS"
+export DB_NAME_TEST="$DB_NAME"
 
 # === 10. INSTALACE NODE.JS ZÁVISLOSTÍ ===
 echo -e "\n📦 Instaluji závislosti..."
@@ -275,25 +279,25 @@ source ~/.bashrc
 echo "✅ Environment variables načteny"
 
 # Ověření že proměnné jsou dostupné
-echo -e "\n🔍 Ověřuji databázové proměnné:"
-echo "   DB_HOST: ${DB_HOST:-CHYBÍ}"
-echo "   DB_USER: ${DB_USER:-CHYBÍ}"
-echo "   DB_NAME: ${DB_NAME:-CHYBÍ}"
-echo "   DB_PASS: ${DB_PASS:+[NASTAVENO]}"
+echo -e "\n🔍 Ověřuji testovací databázové proměnné:"
+echo "   DB_HOST_TEST: ${DB_HOST_TEST:-CHYBÍ}"
+echo "   DB_USER_TEST: ${DB_USER_TEST:-CHYBÍ}"
+echo "   DB_NAME_TEST: ${DB_NAME_TEST:-CHYBÍ}"
+echo "   DB_PASS_TEST: ${DB_PASS_TEST:+[NASTAVENO]}"
 
-if [ -z "$DB_HOST" ] || [ -z "$DB_USER" ] || [ -z "$DB_NAME" ] || [ -z "$DB_PASS" ]; then
-    echo "⚠️  VAROVÁNÍ: Některé databázové proměnné chybí!"
+if [ -z "$DB_HOST_TEST" ] || [ -z "$DB_USER_TEST" ] || [ -z "$DB_NAME_TEST" ] || [ -z "$DB_PASS_TEST" ]; then
+    echo "⚠️  VAROVÁNÍ: Některé testovací databázové proměnné chybí!"
     echo "   Možná bude potřeba restartovat terminál."
 fi
 
 # === 12. DOKONČENÍ INSTALACE ===
-echo -e "\n✅ Instalace dokončena!"
+echo -e "\n✅ Instalace testovacího prostředí dokončena!"
 echo -e "\n⚠️  DŮLEŽITÉ: Pro správné načtení databázových proměnných je nutné:"
 echo "   1) Restartovat celé VM (doporučeno pro všechny)"
 echo "   2) Pro SSH: Odhlásit se a znovu přihlásit"
 echo "   3) Pro Chrome Remote Desktop: Otevřít nový terminál nebo source ~/.bashrc"
 echo -e "\nPo restartu/přihlášení můžete spustit IVY pomocí:"
-echo "   - ~/ivy/start.sh (production větev - PRODUKČNÍ PROSTŘEDÍ)"
+echo "   - ~/ivy_test/start.sh (main větev - TESTOVACÍ PROSTŘEDÍ)"
 
 # Nabídka restartu VM
 echo -e "\n🔄 Chcete restartovat VM nyní? (doporučeno)"
@@ -306,6 +310,6 @@ case $restart_choice in
         ;;
     *)
         echo -e "\n📌 Nezapomeňte se odhlásit a přihlásit nebo spustit: source ~/.bashrc"
-        echo "🎉 Instalace dokončena. IVY klient je připraven k použití po načtení proměnných."
+        echo "🎉 Instalace testovacího prostředí dokončena. IVY klient je připraven k použití po načtení proměnných."
         ;;
 esac
