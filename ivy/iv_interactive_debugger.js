@@ -130,19 +130,28 @@ export class InteractiveDebugger {
       
       const userId = global.systemState?.currentUserId || null;
       
-      // Generuj unikátní incident_id
-      const incidentId = `INC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      await db.safeExecute('system.insertDebugIncident', [
-        incidentId,                     // incident_id (nový první parametr)
-        userId,                         // user_id  
-        errorLevel,                     // error_level
-        message,                        // error_message
-        JSON.stringify(context),        // error_context
-        null,                          // page_url
-        context.stack || null,         // stack_trace
-        'NEW'                          // status
-      ]);
+      // Pokus o uložení pouze pokud běžíme ve vývojovém prostředí
+      // V produkci se debug_incidents nelogují do databáze
+      if (process.env.NODE_ENV !== 'production' && global.systemState?.gitBranch !== 'production') {
+        // Generuj unikátní incident_id
+        const incidentId = `INC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        try {
+          await db.safeExecute('system.insertDebugIncident', [
+            incidentId,                     // incident_id (nový první parametr)
+            userId,                         // user_id  
+            errorLevel,                     // error_level
+            message,                        // error_message
+            JSON.stringify(context),        // error_context
+            null,                          // page_url
+            context.stack || null,         // stack_trace
+            'NEW'                          // status
+          ]);
+        } catch (dbErr) {
+          // V produkci nebo pokud tabulka neexistuje - nelogovat do DB
+          // Tiše ignorovat - debug incident se neuloží, ale aplikace pokračuje
+        }
+      }
       
     } catch (err) {
       // Nelogovat chyby logování aby nedošlo k zacyklení
