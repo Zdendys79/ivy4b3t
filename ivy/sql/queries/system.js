@@ -497,8 +497,8 @@ export const SYSTEM = {
   // ===== DEBUG INCIDENTS SYSTEM =====
 
   insertDebugIncident: `
-    INSERT INTO debug_incidents (user_id, error_level, error_message, error_context, page_url, stack_trace, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO debug_incidents (incident_id, user_id, error_level, error_message, error_context, page_url, stack_trace, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
 
   // Removed getDebugIncidents - table debug_incidents_summary no longer exists
