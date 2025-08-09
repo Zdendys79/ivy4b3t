@@ -130,7 +130,11 @@ export class InteractiveDebugger {
       
       const userId = global.systemState?.currentUserId || null;
       
+      // Generuj unikátní incident_id
+      const incidentId = `INC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
       await db.safeExecute('system.insertDebugIncident', [
+        incidentId,                     // incident_id (nový první parametr)
         userId,                         // user_id  
         errorLevel,                     // error_level
         message,                        // error_message
