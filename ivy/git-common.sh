@@ -71,9 +71,14 @@ update_git_repo() {
         return 1
     fi
 
+    # Pokus o přepnutí na větev, pokud neexistuje, vytvoř ji z origin
     if ! git checkout "$branch" 2>/dev/null; then
-        log_error "Nepodařilo se přepnout na větev $branch"
-        return 1
+        log_info "Větev $branch neexistuje lokálně, vytvářím z origin/$branch..."
+        if ! git checkout -b "$branch" "origin/$branch" 2>/dev/null; then
+            log_error "Nepodařilo se vytvořit a přepnout na větev $branch"
+            return 1
+        fi
+        log_success "Větev $branch úspěšně vytvořena a přepnuta"
     fi
 
     # Pokus o normální pull
