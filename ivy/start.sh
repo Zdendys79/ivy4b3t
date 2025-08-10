@@ -19,6 +19,46 @@ clear
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GIT_COMMON_PATH="$SCRIPT_DIR/git-common.sh"
 
+# Volba větve - parametr nebo výchozí production
+BRANCH=${1:-"production"}
+
+# KRITICKÉ: Nejprve musíme aktualizovat git-common.sh z repozitáře
+# Jinak používáme starou verzi která nefunguje správně
+REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
+if [[ -d "$REPO_DIR" ]]; then
+    echo "[START] Aktualizuji git-common.sh z repozitáře..."
+    cd "$REPO_DIR" || exit 1
+    
+    # Stáhni všechny změny
+    git fetch origin 2>/dev/null || {
+        echo "[START] VAROVÁNÍ: git fetch selhal - možný problém s připojením"
+    }
+    
+    # Pokus se přepnout na větev, pokud neexistuje, vytvoř ji
+    if ! git checkout "$BRANCH" 2>/dev/null; then
+        echo "[START] Větev $BRANCH neexistuje lokálně, vytvářím z origin/$BRANCH..."
+        if ! git checkout -b "$BRANCH" "origin/$BRANCH" 2>/dev/null; then
+            echo "[START] VAROVÁNÍ: Nepodařilo se vytvořit větev $BRANCH"
+            echo "[START] Používám main větev jako záložní řešení..."
+            BRANCH="main"
+            git checkout main 2>/dev/null || true
+        fi
+    fi
+    
+    # Reset na nejnovější stav
+    git reset --hard "origin/$BRANCH" 2>/dev/null || {
+        echo "[START] VAROVÁNÍ: Nepodařilo se synchronizovat s origin/$BRANCH"
+    }
+    
+    # Zkopíruj aktuální git-common.sh
+    if [[ -f "$REPO_DIR/ivy/git-common.sh" ]]; then
+        cp "$REPO_DIR/ivy/git-common.sh" "$SCRIPT_DIR/git-common.sh"
+        echo "[START] git-common.sh aktualizován z repozitáře"
+    fi
+    
+    cd "$SCRIPT_DIR" || exit 1
+fi
+
 # Zkontroluj git-common.sh
 if [[ ! -f "$GIT_COMMON_PATH" ]]; then
     echo "[START] CHYBA: git-common.sh nenalezen v $SCRIPT_DIR"
@@ -34,8 +74,7 @@ REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
 SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
 TARGET_DIR=${TARGET_DIR:-~/ivy}
 
-# Volba větve - parametr nebo výchozí production
-BRANCH=${1:-"production"}
+# BRANCH je již definován na začátku skriptu
 
 # Limity pro pokusy
 MAX_RETRIES=3
@@ -214,7 +253,7 @@ trap cleanup SIGINT SIGTERM
 
 # Úvodní informace
 echo "======================================================"
-echo "IVY START SCRIPT - VĚTEV: $BRANCH"
+echo "IVY START SCRIPT - VĚTEV: $BRANCH (verze sync fix)"
 echo "======================================================"
 echo "Datum: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "Hostitel: $(hostname)"

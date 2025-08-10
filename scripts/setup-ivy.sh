@@ -220,10 +220,36 @@ echo "✅ Node.js: $(node -v)"
 echo "✅ npm: $(npm -v)"
 
 # === 6. NASTAVENÍ GIT CREDENTIALS ===
-echo -e "\n🔐 Zadej svůj GitHub Personal Access Token (PAT):"
-read -rsp "PAT: " GITHUB_PAT
+echo -e "\n🔐 KONFIGURACE GITHUB CREDENTIALS"
 
-echo -e "\n\n💾 Nastavuji Git config..."
+# Zkusit načíst existující PAT z ~/.git-credentials
+ORIG_PAT=""
+if [ -f ~/.git-credentials ]; then
+  # Extrahuj PAT z URL formátu
+  ORIG_PAT=$(grep "github.com" ~/.git-credentials 2>/dev/null | sed -n 's/.*:\([^@]*\)@github.com/\1/p')
+  if [ -n "$ORIG_PAT" ]; then
+    echo "🔑 Nalezen existující GitHub PAT v ~/.git-credentials"
+  fi
+fi
+
+# Interaktivní zadání PAT s možností použít existující
+if [ -n "$ORIG_PAT" ]; then
+  echo "🔑 Nalezen existující GitHub Personal Access Token"
+  read -rp "Použít původní PAT? [Y/n]: " USE_PAT
+  if [[ "$USE_PAT" =~ ^[Nn]$ ]]; then
+    read -rsp "Zadej nový GitHub PAT: " GITHUB_PAT
+    echo ""
+  else
+    GITHUB_PAT="$ORIG_PAT"
+    echo "✅ Používám původní GitHub PAT"
+  fi
+else
+  echo "🔑 Zadej svůj GitHub Personal Access Token (PAT):"
+  read -rsp "PAT: " GITHUB_PAT
+  echo ""
+fi
+
+echo -e "\n💾 Nastavuji Git config..."
 git config --global user.name "$REPO_USER"
 git config --global user.email "$REPO_EMAIL"
 git config --global credential.helper store
