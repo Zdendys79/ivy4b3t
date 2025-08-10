@@ -6,6 +6,13 @@
 
 set -e
 
+echo "[FIX] Nastavuji UTC čas před instalací..."
+sudo timedatectl set-timezone UTC
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd
+sleep 2
+echo "[FIX] ✅ Čas nastaven na UTC: $(date -u)"
+
 echo "[FIX] Vytvářím ~/.chrome-remote-desktop-session..."
 echo "exec /usr/bin/xfce4-session" > ~/.chrome-remote-desktop-session
 chmod +x ~/.chrome-remote-desktop-session

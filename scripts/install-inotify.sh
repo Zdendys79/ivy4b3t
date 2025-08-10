@@ -6,6 +6,14 @@ SERVICE_FILE="/etc/systemd/system/scripts-sync.service"
 
 echo "📦 Instaluji inotify-tools a nastavuji automatické spouštění..."
 
+# Nastavení UTC času
+echo "⏰ Nastavuji UTC čas před instalací..."
+sudo timedatectl set-timezone UTC
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd
+sleep 2
+echo "✅ Čas nastaven na UTC: $(date -u)"
+
 # Instalace inotify-tools
 if ! command -v inotifywait &> /dev/null; then
     echo "🔧 Instaluji inotify-tools..."

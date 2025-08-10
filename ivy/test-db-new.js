@@ -9,7 +9,7 @@ async function testDatabaseConnection() {
     console.log('========================================');
     console.log('🔍 TEST DATABÁZOVÉHO PŘIPOJENÍ');
     console.log('========================================');
-    console.log(`Čas: ${new Date().toLocaleString('cs-CZ')}`);
+    console.log(`Čas: ${new Date().toISOString().replace('T', ' ').substring(0, 19)} UTC`);
     
     // Načti verzi z package.json
     try {

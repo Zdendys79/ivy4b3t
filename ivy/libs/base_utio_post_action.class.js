@@ -505,7 +505,7 @@ export class BaseUtioPostAction extends BasePostAction {
     }
 
     const timeInfo = isNight ? 'noc - za 8-12h' : 'den - za 4-8h';
-    Log.info(`[${user.id}]`, `Akce ${this.actionCode} přeplánována na ${futureTime.toLocaleString()} (${timeInfo})`);
+    Log.info(`[${user.id}]`, `Akce ${this.actionCode} přeplánována na ${futureTime.toISOString().substring(11, 19)} UTC (${timeInfo})`);
   }
 
   /**

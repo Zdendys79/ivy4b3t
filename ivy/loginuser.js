@@ -55,7 +55,7 @@ process.on('SIGINT', async () => {
     // Zobraz seznam dostupných uživatelů
     console.log('\n=== DOSTUPNÍ UŽIVATELÉ ===');
     users.forEach(user => {
-      const workTime = user.next_worktime ? new Date(user.next_worktime).toLocaleString('cs-CZ') : 'N/A';
+      const workTime = user.next_worktime ? new Date(user.next_worktime).toISOString().replace('T', ' ').substring(0, 19) + ' UTC' : 'N/A';
       console.log(`${user.id} - ${user.name} ${user.surname} / ${user.e_mail || user.fb_login} (limit: ${user.day_limit}, next_worktime: ${workTime})`);
     });
     console.log('');
