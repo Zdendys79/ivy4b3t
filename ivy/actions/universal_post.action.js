@@ -264,18 +264,25 @@ export class UniversalPostAction extends BasePostAction {
    * Vybrat náhodnou variantu zobrazení citátu
    */
   selectDisplayVariant(quote) {
-    // Kontrola dostupnosti překladů
-    const hasTranslation = quote.translated_text && quote.translated_text.trim() !== '';
+    // Kontrola dostupnosti překladů - MUSÍ BÝT SCHVÁLEN!
+    const hasApprovedTranslation = quote.translated_text && 
+                                   quote.translated_text.trim() !== '' && 
+                                   quote.translation_approved === 1;
     const hasOriginal = quote.original_text && quote.original_text.trim() !== '';
+    
+    // Pokud má překlad, ale NENÍ schválen - pouze originál
+    if (quote.translated_text && !quote.translation_approved) {
+      return 'original_only';
+    }
     
     // Definice variant podle dostupnosti dat
     let variants = [];
     
-    if (hasTranslation) {
+    if (hasApprovedTranslation) {
       variants.push('czech_only');
     }
     
-    if (hasTranslation && hasOriginal) {
+    if (hasApprovedTranslation && hasOriginal) {
       variants.push('original_plus_czech');
     }
     
@@ -285,7 +292,7 @@ export class UniversalPostAction extends BasePostAction {
     
     // Fallback pokud nejsou definované žádné varianty
     if (variants.length === 0) {
-      variants = hasTranslation ? ['czech_only'] : ['original_only'];
+      variants = hasApprovedTranslation ? ['czech_only'] : ['original_only'];
     }
     
     const randomIndex = Math.floor(Math.random() * variants.length);
