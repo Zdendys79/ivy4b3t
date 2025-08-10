@@ -270,9 +270,13 @@ export class UniversalPostAction extends BasePostAction {
                                    quote.translation_approved === 1;
     const hasOriginal = quote.original_text && quote.original_text.trim() !== '';
     
-    // Pokud má překlad, ale NENÍ schválen - pouze originál
-    if (quote.translated_text && !quote.translation_approved) {
-      return 'original_only';
+    // Pokud má překlad, ale NENÍ schválen - pouze originál (pokud existuje)
+    if (quote.translated_text && quote.translation_approved !== 1) {
+      if (hasOriginal) {
+        return 'original_only';
+      } else {
+        throw new Error('Citát má neschválený překlad a neexistuje originál');
+      }
     }
     
     // Definice variant podle dostupnosti dat
@@ -292,7 +296,11 @@ export class UniversalPostAction extends BasePostAction {
     
     // Fallback pokud nejsou definované žádné varianty
     if (variants.length === 0) {
-      variants = hasApprovedTranslation ? ['czech_only'] : ['original_only'];
+      if (hasOriginal) {
+        variants = ['original_only'];
+      } else {
+        throw new Error('Citát nemá ani originál ani schválený překlad');
+      }
     }
     
     const randomIndex = Math.floor(Math.random() * variants.length);
