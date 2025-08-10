@@ -60,21 +60,21 @@ export const ACTIONS = {
   `,
 
   updatePlan: `
-    UPDATE user_action_plan
-    SET next_time = DATE_ADD(NOW(), INTERVAL ? MINUTE)
-    WHERE user_id = ? AND action_code = ?
+    INSERT INTO user_action_plan (next_time, user_id, action_code)
+    VALUES (DATE_ADD(NOW(), INTERVAL ? MINUTE), ?, ?)
+    ON DUPLICATE KEY UPDATE next_time = VALUES(next_time)
   `,
 
   scheduleNext: `
-    UPDATE user_action_plan
-    SET next_time = DATE_ADD(NOW(), INTERVAL ? MINUTE)
-    WHERE user_id = ? AND action_code = ?
+    INSERT INTO user_action_plan (next_time, user_id, action_code)
+    VALUES (DATE_ADD(NOW(), INTERVAL ? MINUTE), ?, ?)
+    ON DUPLICATE KEY UPDATE next_time = VALUES(next_time)
   `,
 
   scheduleSpecific: `
-    UPDATE user_action_plan
-    SET next_time = ?
-    WHERE user_id = ? AND action_code = ?
+    INSERT INTO user_action_plan (next_time, user_id, action_code)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE next_time = VALUES(next_time)
   `,
 
   insertToPlan: `
