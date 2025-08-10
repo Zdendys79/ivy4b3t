@@ -9,6 +9,8 @@
 # spuštění na Ubuntu pomocí:
 # cd ~/ivy && chmod +x start.sh && ./start.sh
 
+clear
+
 
 # ===========================================
 # KONFIGURACE A INICIALIZACE
