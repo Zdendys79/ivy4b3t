@@ -402,7 +402,7 @@ export class AdvancedHumanBehavior {
     return {
       user_id: this.userId,
       avg_typing_speed: 150.0, typing_variance: 0.3,
-      mistake_rate: 0.005, // Sníženo z 0.05
+      mistake_rate: 0.002, // Sníženo 25x z původní 0.05
       correction_style: 'casual',
       double_key_chance: 0.10,
       backspace_delay: 200,
