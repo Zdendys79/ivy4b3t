@@ -1654,8 +1654,15 @@ export class FBBot {
 
   async getCounterValue(str) {
     try {
+      // Normalizace textu pro správné parsování
+      const normalized = str
+        .replace(/,/g, ".")                    // čárky → tečky  
+        .replace(/\s+/g, " ")                  // všechny mezery → normální mezera
+        .replace(/&nbsp;/g, " ")               // explicitně &nbsp; → mezera
+        .trim();
+        
       let regex = /[+-]?\d+(\.\d+)?/g;
-      let [floats] = str.replace(",", ".").match(regex).map(v => parseFloat(v));
+      let [floats] = normalized.match(regex).map(v => parseFloat(v));
       if (str.includes("tis.")) floats *= 1000;
       return floats;
     } catch (err) {

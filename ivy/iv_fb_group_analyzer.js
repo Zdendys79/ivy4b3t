@@ -373,8 +373,14 @@ export class FBGroupAnalyzer {
         return null;
       }
       
+      Log.debug('[GROUP_ANALYZER]', `Surový text počtu členů: "${memberCount.rawText}"`);
+      Log.debug('[GROUP_ANALYZER]', `Číselná část: "${memberCount.numberPart}", obsahuje 'tis.': ${memberCount.hasTis}`);
+      
       // Převod na číslo pomocí getCounterValue
-      return this.getCounterValue(memberCount.rawText);
+      const parsedCount = this.getCounterValue(memberCount.rawText);
+      Log.debug('[GROUP_ANALYZER]', `Výsledný počet členů: ${parsedCount}`);
+      
+      return parsedCount;
       
     } catch (err) {
       Log.error('[GROUP_ANALYZER]', `Chyba při čtení počtu členů: ${err.message}`);
@@ -390,31 +396,46 @@ export class FBGroupAnalyzer {
     try {
       if (!str) return null;
       
-      // Nahraď čárky tečkami pro správné parsování desetinných čísel
-      const normalized = str.replace(',', '.');
+      Log.debug('[GROUP_ANALYZER]', `getCounterValue vstup: "${str}"`);
+      
+      // Normalizace textu: čárky na tečky, všechny mezery na normální mezery
+      const normalized = str
+        .replace(/,/g, '.')                    // čárky → tečky
+        .replace(/\s+/g, ' ')                  // všechny mezery (včetně &nbsp;) → normální mezera
+        .replace(/&nbsp;/g, ' ')               // explicitně &nbsp; → mezera
+        .trim();                               // odstraň mezery na začátku/konci
+      Log.debug('[GROUP_ANALYZER]', `Normalized text: "${normalized}"`);
       
       // Extrahuj všechna čísla ze stringu
       const regex = /[+-]?\d+(\.\d+)?/g;
       const matches = normalized.match(regex);
       
       if (!matches || matches.length === 0) {
+        Log.debug('[GROUP_ANALYZER]', 'Žádná čísla nenalezena');
         return null;
       }
       
+      Log.debug('[GROUP_ANALYZER]', `Nalezená čísla: [${matches.join(', ')}]`);
+      
       // Vezmi první nalezenou číselnou hodnotu
       let value = parseFloat(matches[0]);
+      Log.debug('[GROUP_ANALYZER]', `Základní hodnota: ${value}`);
       
       // Pokud text obsahuje "tis.", vynásob 1000
       if (str.includes('tis.')) {
         value *= 1000;
+        Log.debug('[GROUP_ANALYZER]', `Po násobení 1000: ${value}`);
       }
       
       // Pokud text obsahuje "mil.", vynásob 1000000
       if (str.includes('mil.')) {
         value *= 1000000;
+        Log.debug('[GROUP_ANALYZER]', `Po násobení 1000000: ${value}`);
       }
       
-      return Math.round(value);
+      const result = Math.round(value);
+      Log.debug('[GROUP_ANALYZER]', `Finální výsledek: ${result}`);
+      return result;
       
     } catch (err) {
       Log.error('[GROUP_ANALYZER]', `Chyba při parsování počtu: ${err.message}`);
