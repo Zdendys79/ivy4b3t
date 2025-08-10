@@ -32,12 +32,12 @@ export class AdvancedHumanBehavior {
   async initialize() {
     try {
       // Načti profil z databáze
-      this.profile = await db.safeQueryFirst('behavioral_profiles.getUserProfile', [this.userId]);
+      this.profile = await db.safeQueryFirst('behavioralProfiles.getUserProfile', [this.userId]);
       
       if (!this.profile) {
         Log.info(`[${this.userId}]`, '🧠 Vytvářím nový behavioral profil');
-        await db.safeExecute('behavioral_profiles.createDefaultProfile', [this.userId]);
-        this.profile = await db.safeQueryFirst('behavioral_profiles.getUserProfile', [this.userId]);
+        await db.safeExecute('behavioralProfiles.createDefaultProfile', [this.userId]);
+        this.profile = await db.safeQueryFirst('behavioralProfiles.getUserProfile', [this.userId]);
       }
       
       // Fallback pokud databáze stále nevrátí profil
