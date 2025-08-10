@@ -29,12 +29,20 @@ else
   echo "[CLEANUP] Žádné duplicitní .list soubory nenalezeny" | tee -a "$LOG_FILE"
 fi
 
-# 2. Aktualizace systému včetně phased balíků
+# 2. Nastavení UTC času před aktualizací
+echo "[TIME] Nastavuji systémový čas na UTC..." | tee -a "$LOG_FILE"
+sudo timedatectl set-timezone UTC
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd
+sleep 2
+echo "[TIME] ✅ Čas nastaven na UTC: $(date -u)" | tee -a "$LOG_FILE"
+
+# 3. Aktualizace systému včetně phased balíků
 echo "[UPDATE] Spouštím plnou aktualizaci včetně phased updates..." | tee -a "$LOG_FILE"
 sudo apt-get -o APT::Get::Always-Include-Phased-Updates=true update | tee -a "$LOG_FILE"
 sudo apt-get -o APT::Get::Always-Include-Phased-Updates=true upgrade -y | tee -a "$LOG_FILE"
 
-# 3. Instalace Noto Mono fontu pro Unicode podporu v terminálu
+# 4. Instalace Noto Mono fontu pro Unicode podporu v terminálu
 echo "[FONTS] Instaluji Noto Mono font pro Unicode podporu..." | tee -a "$LOG_FILE"
 sudo apt-get install -y fonts-noto-mono | tee -a "$LOG_FILE"
 

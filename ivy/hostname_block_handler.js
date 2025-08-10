@@ -64,7 +64,7 @@ export async function handleNewAccountBlock(user, lockReason, lockType) {
     
     await Log.error(`[${user.id}]`, `ACCOUNT BLOCKED: ${lockReason}`);
     await Log.error('[WORKER]', `HOSTNAME ${hostname} BLOCKED for ${Math.round(blockMinutes)} minutes`);
-    await Log.error('[WORKER]', `NO MORE ACCOUNTS from this VM until ${new Date(Date.now() + blockMinutes * 60 * 1000).toLocaleString()}`);
+    await Log.error('[WORKER]', `NO MORE ACCOUNTS from this VM until ${new Date(Date.now() + blockMinutes * 60 * 1000).toISOString().substring(11, 19)} UTC`);
     
   } catch (err) {
     await Log.error('[HOSTNAME_BLOCK]', `Error handling account block: ${err.message}`);

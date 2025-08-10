@@ -209,6 +209,14 @@ echo "✅ Čas po synchronizaci: $(date)"
 # === 5. INSTALACE / AKTUALIZACE GIT A DALŠÍCH NÁSTROJŮ ===
 echo -e "\n📦 Instalace nebo aktualizace GIT a nástrojů..."
 
+# NASTAVENÍ UTC ČASU - KRITICKÉ PRO KONZISTENCI LOGŮ
+echo -e "\n⏰ Nastavuji systémový čas na UTC..."
+sudo timedatectl set-timezone UTC
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd
+sleep 2
+echo "✅ Čas nastaven na UTC: $(date -u)"
+
 # Kontrola a oprava duplicitních APT konfigurací pro Chrome Remote Desktop
 if [ -f "/etc/apt/sources.list.d/chrome-remote-desktop.list" ] && [ -f "/etc/apt/sources.list.d/chrome-remote-desktop.sources" ]; then
     echo "🔧 Opravuji duplicitní APT konfigurace pro Chrome Remote Desktop..."

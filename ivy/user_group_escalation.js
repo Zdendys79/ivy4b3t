@@ -105,7 +105,7 @@ export async function blockUserGroup(userId, groupId, reason) {
     
     // Logování
     await Log.warn(`[${userId}]`, `Skupina ${groupId} zablokovana na ${blockDays} dni (${blockCount + 1}. problem)`);
-    await Log.warn(`[${userId}]`, `Dostupna opet: ${blockedUntil.toLocaleString()}`);
+    await Log.warn(`[${userId}]`, `Dostupna opet: ${blockedUntil.toISOString().substring(11, 19)} UTC`);
     
     // Systémový log
     await db.logSystemEvent(

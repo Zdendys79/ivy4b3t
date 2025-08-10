@@ -87,7 +87,7 @@ export class Wait {
     const wait_ms = wait_minutes * 60000;
     
     const target_time = new Date(Date.now() + wait_ms);
-    const target_formatted = target_time.toTimeString().substring(0, 8);
+    const target_formatted = target_time.toISOString().substring(11, 19) + ' UTC';
     
     const final_comment = comment || 'Čekám';
     Log.info('[WAIT]', `${final_comment} - ${Log.formatTime(wait_minutes, 'm')} do ${target_formatted}`);
@@ -111,7 +111,7 @@ export class Wait {
     const wait_ms = wait_minutes * 60000;
     
     const target_time = new Date(Date.now() + wait_ms);
-    const target_formatted = target_time.toTimeString().substring(0, 8);
+    const target_formatted = target_time.toISOString().substring(11, 19) + ' UTC';
     
     const final_comment = comment || 'Čekám';
     Log.info('[WAIT]', `${final_comment} - ${Log.formatTime(wait_minutes, 'm')} do ${target_formatted} (přerušitelné)`);
@@ -134,7 +134,7 @@ export class Wait {
     const wait_ms = wait_minutes * 60000;
     
     const target_time = new Date(Date.now() + wait_ms);
-    const target_formatted = target_time.toTimeString().substring(0, 8);
+    const target_formatted = target_time.toISOString().substring(11, 19) + ' UTC';
     
     Log.info('[WAIT]', `Čekání na další cyklus - ${Log.formatTime(wait_minutes, 'm')} do ${target_formatted} (přerušitelné s UI)`);
     
@@ -166,7 +166,7 @@ export class Wait {
       return;
     }
     
-    const target_formatted = target_date.toTimeString().substring(0, 8);
+    const target_formatted = target_date.toISOString().substring(11, 19) + ' UTC';
     const final_comment = comment || 'Čekám';
     
     Log.info('[WAIT]', `${final_comment} - do ${target_formatted}`);
@@ -325,7 +325,7 @@ export class Wait {
     
     if (verbose && delay_time >= 1000) {
       const target_time = new Date(Date.now() + delay_time);
-      const target_formatted = target_time.toTimeString().substring(0, 8);
+      const target_formatted = target_time.toISOString().substring(11, 19) + ' UTC';
       
       Log.info('[WAIT]', `Čekám ${Log.formatTime(delay_time)} do ${target_formatted}`);
     }
