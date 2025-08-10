@@ -96,9 +96,12 @@ export async function runWheelOfFortune(user, browser, context) {
       if (consecutiveFailures >= config.consecutive_failures_limit) {
         await Log.error(`[${user.id}]`, `${consecutiveFailures} neúspěšných akcí za sebou`);
         
+        // Načíst account_delay akci z databáze pro získání min/max_minutes
+        const delayActionData = await db.safeQueryOne('SELECT action_code as code, min_minutes, max_minutes, weight, invasive FROM action_definitions WHERE action_code = ?', ['account_delay']);
+        
         // Pro ukončovací akce nepotřebujeme FBBot
         const endingContext = { browser, ...context };
-        await actionRouter.executeAction('account_delay', user, endingContext, {});
+        await actionRouter.executeAction('account_delay', user, endingContext, delayActionData);
         
         break;
       }
@@ -146,7 +149,7 @@ export async function runWheelOfFortune(user, browser, context) {
           if (endingAction) {
             Log.info(`[${user.id}]`, `Vylosována ukončovací akce: ${endingAction.code}`);
             const endingContext = { browser, ...context };
-            await actionRouter.executeAction(endingAction.code, user, endingContext, {});
+            await actionRouter.executeAction(endingAction.code, user, endingContext, endingAction);
           }
         } else {
           await Log.error(`[${user.id}]`, 'KRITICKÁ CHYBA: Nelze vytvořit ukončovací akce!');
