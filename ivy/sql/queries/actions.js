@@ -71,6 +71,12 @@ export const ACTIONS = {
     ON DUPLICATE KEY UPDATE next_time = VALUES(next_time)
   `,
 
+  scheduleNextHours: `
+    INSERT INTO user_action_plan (next_time, user_id, action_code)
+    VALUES (DATE_ADD(NOW(), INTERVAL ? HOUR), ?, ?)
+    ON DUPLICATE KEY UPDATE next_time = VALUES(next_time)
+  `,
+
   scheduleSpecific: `
     INSERT INTO user_action_plan (next_time, user_id, action_code)
     VALUES (?, ?, ?)
