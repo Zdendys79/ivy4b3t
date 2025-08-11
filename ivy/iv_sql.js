@@ -264,6 +264,7 @@ export function getConnectionStats() {
 }
 
 export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute, fbSync);
+db.pool = pool; // Pro přímý přístup k pool objektu
 
 export async function initializeDatabase() {
   const maxRetries = 6;
