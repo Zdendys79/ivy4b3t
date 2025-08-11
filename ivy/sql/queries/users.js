@@ -130,17 +130,10 @@ export const USERS = {
     FROM fb_users u
     WHERE u.host LIKE ?
       AND u.locked IS NULL
-      -- User's sleep/delay periods have expired (if they exist)
-      AND NOT EXISTS (
-        SELECT 1
-        FROM user_action_plan uap_sleep
-        WHERE uap_sleep.user_id = u.id
-          AND uap_sleep.action_code IN ('account_sleep', 'account_delay')
-          AND uap_sleep.next_time > NOW()
-      )
-      -- User has at least one available non-sleep/delay action
+      -- Main branch: ignorujeme ukončovací akce, vybíráme podle next_worktime
+      -- User has at least one available action (včetně ending actions)
       AND (
-        -- User has available regular actions in their action plan
+        -- User has available actions in their action plan
         EXISTS (
           SELECT 1
           FROM user_action_plan uap
@@ -148,15 +141,13 @@ export const USERS = {
           WHERE uap.user_id = u.id
             AND (uap.next_time IS NULL OR uap.next_time <= NOW())
             AND ad.active = 1
-            AND ad.action_code NOT IN ('account_sleep','account_delay')
         )
         OR
-        -- User has missing action plans for regular actions (treat as available)
+        -- User has missing action plans for active actions (treat as available)
         EXISTS (
           SELECT 1
           FROM action_definitions ad
           WHERE ad.active = 1
-            AND ad.action_code NOT IN ('account_sleep','account_delay')
             AND NOT EXISTS (
               SELECT 1 
               FROM user_action_plan uap 
