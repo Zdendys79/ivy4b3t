@@ -1,9 +1,9 @@
 <?php
 /**
- * File: login.php
+ * File: login.php  
  * Location: ~/web/app/views/auth/login.php
- *
- * Purpose: Simple password-only authentication with escalating timeouts
+ * 
+ * Purpose: Ultra-minimalist terminal-style authentication
  */
 
 // Security check
@@ -12,55 +12,117 @@ if (!defined('IVY_FRAMEWORK')) {
     die('Direct access not allowed');
 }
 ?>
-
-<div class="minimal-login">
-    <?php if (isset($timeout_info) && $timeout_info): ?>
-        <div id="countdown-display"><?php echo $timeout_info['remaining_seconds']; ?></div>
-        <div id="timeout-warning" data-timeout-until="<?php echo $timeout_info['timeout_until_js']; ?>"></div>
-    <?php else: ?>
-        <form method="POST" action="/login" id="loginForm">
-            <input 
-                type="password" 
-                id="password" 
-                name="password" 
-                placeholder="🔑"
-                autocomplete="off"
-                autofocus
-                required
-            >
-        </form>
-    <?php endif; ?>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const passwordFromUrl = urlParams.get('pass');
-    const passwordField = document.getElementById('password');
-    const loginForm = document.getElementById('loginForm');
-    const timeoutWarning = document.getElementById('timeout-warning');
-    const countdownDisplay = document.getElementById('countdown-display');
-    
-    // Countdown timer
-    if (timeoutWarning && countdownDisplay) {
-        const timeoutUntil = timeoutWarning.dataset.timeoutUntil;
-        if (timeoutUntil) {
-            const interval = setInterval(function() {
-                const distance = new Date(timeoutUntil).getTime() - new Date().getTime();
-                if (distance <= 0) {
-                    clearInterval(interval);
-                    window.location.reload();
-                } else {
-                    countdownDisplay.textContent = Math.floor(distance / 1000);
-                }
-            }, 1000);
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>_</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html {
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            height: 100%;
+            overflow: hidden;
         }
-    }
-    
-    // URL password parameter
-    if (passwordFromUrl && passwordField && loginForm && !timeoutWarning) {
-        passwordField.value = passwordFromUrl;
-        setTimeout(() => loginForm.submit(), 1000);
-    }
-});
-</script>
+        
+        .terminal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        #cursor {
+            animation: blink 1s infinite;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        #password {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            outline: none;
+            text-align: center;
+            letter-spacing: 2px;
+            caret-color: transparent;
+        }
+        
+        #countdown {
+            font-size: 24px;
+            color: #ff4444;
+            animation: pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <?php if (isset($timeout_info) && $timeout_info): ?>
+            <div id="countdown"><?php echo $timeout_info['remaining_seconds']; ?></div>
+            <script>
+                let timeLeft = <?php echo $timeout_info['remaining_seconds']; ?>;
+                const countdown = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('countdown').textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(countdown);
+                        location.reload();
+                    }
+                }, 1000);
+            </script>
+        <?php else: ?>
+            <form method="POST" action="/login" id="form">
+                <input type="password" id="password" name="password" autocomplete="off" class="hidden">
+            </form>
+            <div id="cursor">_</div>
+            
+            <script>
+                const cursor = document.getElementById('cursor');
+                const passwordField = document.getElementById('password');
+                const form = document.getElementById('form');
+                
+                let inputBuffer = '';
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        passwordField.value = inputBuffer;
+                        form.submit();
+                    } else if (e.key === 'Backspace') {
+                        inputBuffer = inputBuffer.slice(0, -1);
+                        updateCursor();
+                    } else if (e.key.length === 1) {
+                        inputBuffer += e.key;
+                        updateCursor();
+                    }
+                });
+                
+                function updateCursor() {
+                    cursor.textContent = inputBuffer + '_';
+                }
+                
+                // Focus na stránku pro zachycení kláves
+                window.focus();
+            </script>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
