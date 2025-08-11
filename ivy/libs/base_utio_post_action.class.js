@@ -212,16 +212,16 @@ export class BaseUtioPostAction extends BasePostAction {
         await this.handleSuccess(user, data, pickedAction);
         return true;
       } else {
-        await this.handleFailure(user, fbBot, data);
+        await this.handleFailure(user, fbBot, data, 'Post failed - normal posting error');
         return false;
       }
 
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při ${this.actionCode}: ${err.message}`);
       
-      // Pokud se pokusilo o skupinu, zablokuj ji
+      // Pokud se pokusilo o skupinu, zpracuj selhání s důvodem
       if (data) {
-        await this.handleFailure(user, fbBot, data);
+        await this.handleFailure(user, fbBot, data, err.message);
       }
       
       return false;
@@ -372,11 +372,12 @@ export class BaseUtioPostAction extends BasePostAction {
   /**
    * Zpracovat selhání
    */
-  async handleFailure(user, fbBot, group) {
+  async handleFailure(user, fbBot, group, reason = null) {
     await Log.error(`[${user.id}]`, 'UTIO post selhal');
     
-    if (group) {
-      // Zablokovat skupinu pro uživatele na 24 hodin
+    // NEBLOKOVAT skupiny při Facebook checkpoint - to není chyba skupiny!
+    if (group && reason && !reason.includes('Facebook checkpoint')) {
+      // Zablokovat skupinu pro uživatele na 24 hodin pouze při skutečných chybách skupiny
       const blockUntil = new Date();
       blockUntil.setHours(blockUntil.getHours() + 24);
       
@@ -384,10 +385,12 @@ export class BaseUtioPostAction extends BasePostAction {
         user.id,
         group.id,
         blockUntil.toISOString().slice(0, 19).replace('T', ' '),
-        'UTIO post failed - Facebook checkpoint or other issue'
+        `UTIO post failed: ${reason}`
       ]);
       
-      Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) zablokována kvůli selhání`);
+      Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) zablokována kvůli selhání: ${reason}`);
+    } else if (group && reason && reason.includes('Facebook checkpoint')) {
+      Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) NEZABLOKOVÁNA - důvod: ${reason} (systémový problém)`);
     }
   }
 
