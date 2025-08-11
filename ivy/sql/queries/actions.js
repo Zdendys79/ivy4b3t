@@ -253,9 +253,11 @@ export const ACTIONS = {
         ad.action_code IN ('account_sleep','account_delay')
         AND EXISTS (
           SELECT 1
-          FROM user_action_plan uap2
+          FROM action_definitions ad2
+          JOIN user_action_plan uap2 ON ad2.action_code = uap2.action_code
           WHERE uap2.user_id = ?
-            AND uap2.action_code NOT IN ('account_sleep','account_delay')
+            AND ad2.action_code NOT IN ('account_sleep','account_delay')
+            AND ad2.active = 1
             AND (uap2.next_time IS NULL OR uap2.next_time <= NOW())
         )
       )
