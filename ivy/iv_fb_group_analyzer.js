@@ -53,15 +53,43 @@ export class FBGroupAnalyzer {
         // Najdi odkaz na skupinu s názvem - tento element obsahuje URL i název
         const groupLink = document.querySelector('a[href*="/groups/"][role="link"]');
         
-        if (groupLink && groupLink.textContent.trim() && groupLink.href) {
-          const name = groupLink.textContent.trim();
+        if (groupLink && groupLink.href) {
           const hrefMatch = groupLink.href.match(/facebook\.com\/groups\/([^\/\?]+)/);
           
-          if (hrefMatch && !name.includes('Facebook') && name.length > 3) {
-            return {
-              fbId: hrefMatch[1],
-              name: name
-            };
+          if (hrefMatch) {
+            // Místo textContent použij jen první textNode nebo specifický element
+            let name = null;
+            
+            // Pokus najít přímý textový obsah (první text node)
+            for (const child of groupLink.childNodes) {
+              if (child.nodeType === Node.TEXT_NODE && child.textContent.trim()) {
+                name = child.textContent.trim();
+                break;
+              }
+            }
+            
+            // Pokud není přímý text, zkus najít první span/div element
+            if (!name) {
+              const nameElement = groupLink.querySelector('span, div, strong, h1, h2, h3');
+              if (nameElement) {
+                // Vezmi jen obsah tohoto elementu, ne jeho potomků
+                name = nameElement.childNodes[0]?.textContent?.trim() || nameElement.textContent.trim();
+              }
+            }
+            
+            // Fallback na textContent, ale omez délku
+            if (!name) {
+              const fullText = groupLink.textContent.trim();
+              // Vezmi jen prvních N znaků nebo do prvního speciálního znaku
+              name = fullText.split(/[\.]{3}|Nepřečteno|Označit|Přivítejme/)[0].trim();
+            }
+            
+            if (name && !name.includes('Facebook') && name.length > 3 && name.length < 100) {
+              return {
+                fbId: hrefMatch[1],
+                name: name
+              };
+            }
           }
         }
         
