@@ -541,13 +541,14 @@ export class BaseUtioPostAction extends BasePostAction {
   }
   
   /**
-   * Aktualizuje počet členů skupiny v databázi
-   * Používá FBGroupAnalyzer pro extrakci počtu členů
+   * Aktualizuje počet členů a název skupiny v databázi
+   * Používá FBGroupAnalyzer pro extrakci počtu členů a GroupNameExtractor pro název
    */
   async updateGroupMemberCount(user, fbBot, group) {
     try {
-      // Import FBGroupAnalyzer
+      // Import modulů
       const { FBGroupAnalyzer } = await import('../iv_fb_group_analyzer.js');
+      const { GroupNameExtractor } = await import('./iv_group_name_extractor.class.js');
       
       // Inicializace analyzátoru s aktuální stránkou
       const analyzer = new FBGroupAnalyzer(fbBot.page);
@@ -562,9 +563,22 @@ export class BaseUtioPostAction extends BasePostAction {
       } else {
         Log.warn(`[${user.id}]`, `Nepodařilo se zjistit počet členů skupiny ${group.name}`);
       }
+      
+      // Aktualizuj také název skupiny (může se změnit v čase)
+      const currentGroupName = await GroupNameExtractor.extractGroupNameOnly(fbBot.page);
+      
+      if (currentGroupName && currentGroupName !== group.name) {
+        // Aktualizuj název v databázi
+        await db.safeExecute('groups.updateGroupName', [currentGroupName, group.id]);
+        Log.info(`[${user.id}]`, `Aktualizován název skupiny: "${group.name}" → "${currentGroupName}"`);
+        
+        // Aktualizuj lokální objekt pro zbytek akce
+        group.name = currentGroupName;
+      }
+      
     } catch (err) {
-      // Nezastavovat akci kvůli chybě aktualizace počtu členů
-      Log.warn(`[${user.id}]`, `Chyba při aktualizaci počtu členů: ${err.message}`);
+      // Nezastavovat akci kvůli chybě aktualizace
+      Log.warn(`[${user.id}]`, `Chyba při aktualizaci skupiny: ${err.message}`);
     }
   }
 }
