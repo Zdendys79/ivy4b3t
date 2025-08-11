@@ -136,11 +136,14 @@ export async function runWheelOfFortune(user, browser, context) {
         break;
       }
 
-      // 3. Získání dostupných akcí
+      // 3. Zajistit existence všech aktivních akcí v plánu
+      await ensureAllActiveActionsExist(user.id);
+      
+      // 4. Získání dostupných akcí
       const availableActions = await getAvailableActions(user.id, invasiveLock);
       
       
-      // 4. Kontrola prázdného kola (kromě test módu)
+      // 5. Kontrola prázdného kola (kromě test módu)
       if (!global.isTestBranch && isWheelEmpty(availableActions)) {
         const endingAction = await handleEmptyWheel(user, availableActions);
         if (endingAction) {
@@ -479,5 +482,52 @@ function calculateInvasiveCooldown() {
   return cooldownMs;
 }
 
-// Export pro kompatibilitu
+/**
+ * Zajistí že všechny aktivní akce existují v user_action_plan
+ * Chybějící akce vytvoří s next_time = now() - 1 hour pro okamžitou dostupnost
+ */
+async function ensureAllActiveActionsExist(userId) {
+  try {
+    // Získej všechny aktivní akce z action_definitions
+    const activeActions = await db.safeQueryAll('actions.getAllActiveActions');
+    
+    if (!activeActions || activeActions.length === 0) {
+      Log.warn('[WHEEL]', `Žádné aktivní akce nalezeny v action_definitions`);
+      return;
+    }
+    
+    // Získej existující akce uživatele v plánu  
+    const existingActions = await db.safeQueryAll('actions.getUserPlanActions', [userId]);
+    
+    const existingCodes = new Set(existingActions?.map(a => a.action_code) || []);
+    
+    // Najdi chybějící akce
+    const missingActions = activeActions.filter(action => 
+      !existingCodes.has(action.action_code)
+    );
+    
+    if (missingActions.length > 0) {
+      Log.info('[WHEEL]', `Vytvářím ${missingActions.length} chybějících akcí pro uživatele ${userId}: [${missingActions.map(a => a.action_code).join(', ')}]`);
+      
+      // Vytvoř chybějící akce s next_time = now() - 1 hour (okamžitě dostupné)
+      const pastTime = new Date();
+      pastTime.setHours(pastTime.getHours() - 1);
+      const pastTimeStr = pastTime.toISOString().slice(0, 19).replace('T', ' ');
+      
+      for (const action of missingActions) {
+        await db.safeExecute('actions.createUserActionWithTime', [
+          userId,
+          action.action_code,
+          pastTimeStr
+        ]);
+      }
+      
+      Log.info('[WHEEL]', `Úspěšně vytvořeno ${missingActions.length} chybějících akcí`);
+    }
+    
+  } catch (err) {
+    Log.error('[WHEEL]', `Chyba při zajišťování existence aktivních akcí: ${err.message}`);
+  }
+}
+
 export { InvasiveLock };
