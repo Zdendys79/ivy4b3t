@@ -43,10 +43,20 @@ export class BaseAccountAction extends BaseAction {
   async execute(user, context, pickedAction) {
     try {
       // Wheel už předal kompletní akci s parametry
-      const minMinutes = pickedAction.min_minutes;
-      const maxMinutes = pickedAction.max_minutes;
+      const minMinutes = pickedAction.min_minutes || 60;  // Fallback hodnoty
+      const maxMinutes = pickedAction.max_minutes || 240;
+      
+      // Kontrola platnosti hodnot
+      if (!Number.isInteger(minMinutes) || !Number.isInteger(maxMinutes) || minMinutes <= 0 || maxMinutes <= 0) {
+        throw new Error(`Neplatné hodnoty min_minutes=${minMinutes}, max_minutes=${maxMinutes}`);
+      }
       
       const minutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
+      
+      // Kontrola na NaN před validací
+      if (isNaN(minutes) || !isFinite(minutes)) {
+        throw new Error(`Vypočítaná hodnota minutes je neplatná: ${minutes}`);
+      }
       
       // Validace hodnoty - MySQL INTERVAL má omezení (max ~30 dní = 43200 minut)
       const validatedMinutes = Math.min(Math.max(Math.round(minutes), 1), 43200);
