@@ -79,12 +79,22 @@ class AuthController extends BaseController
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
+        // DOUBLE-CHECK timeout - safety measure
+        $timeout_info = $this->checkLoginTimeout($ip);
+        if ($timeout_info) {
+            error_log("[AuthController] POST login blocked - IP {$ip} still in timeout ({$timeout_info['remaining_seconds']}s remaining)");
+            $this->render('auth/login', [
+                'page_title' => 'IVY4B3T - Timeout',
+                'timeout_info' => $timeout_info,
+            ]);
+            return;
+        }
+        
         if ($this->debug_mode) {
             error_log("[AuthController] handlePasswordLogin - Method: " . $_SERVER['REQUEST_METHOD'] . ", IP: {$ip}");
         }
         
         // CSRF protection removed - session ID provides sufficient protection
-        // Note: Timeout already checked in main login() method
         
         // Get password from POST
         $password = trim($_POST['password'] ?? '');
@@ -495,11 +505,20 @@ class AuthController extends BaseController
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         
+        // DOUBLE-CHECK timeout - safety measure
+        $timeout_info = $this->checkLoginTimeout($ip);
+        if ($timeout_info) {
+            error_log("[AuthController] GET login blocked - IP {$ip} still in timeout ({$timeout_info['remaining_seconds']}s remaining)");
+            $this->render('auth/login', [
+                'page_title' => 'IVY4B3T - Timeout',
+                'timeout_info' => $timeout_info,
+            ]);
+            return;
+        }
+        
         if ($this->debug_mode) {
             error_log("[AuthController] handleGetLogin - Password: '{$password}', IP: {$ip}");
         }
-        
-        // Note: Timeout already checked in main login() method
         
         // Verify password against database
         if ($this->verifyPasswordAgainstDatabase($password)) {
