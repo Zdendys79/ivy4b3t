@@ -10,6 +10,7 @@ import { Log } from './libs/iv_log.class.js';
 import { FBGroupAnalyzer } from './iv_fb_group_analyzer.js';
 import { db } from './iv_sql.js';
 import { Wait } from './libs/iv_wait.class.js';
+import { GroupCache } from './libs/iv_group_cache.class.js';
 
 export class GroupExploreAction {
   constructor() {
@@ -159,17 +160,21 @@ export class GroupExploreAction {
   }
 
   /**
-   * Pokusí se navigovat na skupinu z global cache
+   * Pokusí se navigovat na skupinu z cache
    */
   async navigateFromCache(user, fbBot) {
     try {
-      if (!global.groupUrlsCache || global.groupUrlsCache.length === 0) {
+      const groupCache = GroupCache.getInstance();
+      
+      if (groupCache.isEmpty()) {
         return false;
       }
       
       // Vyber náhodnou URL z cache
-      const randomIndex = Math.floor(Math.random() * global.groupUrlsCache.length);
-      const groupUrl = global.groupUrlsCache.splice(randomIndex, 1)[0]; // Odeber z cache
+      const groupUrl = groupCache.getRandomUrl();
+      if (!groupUrl) {
+        return false;
+      }
       
       Log.info(`[${user.id}]`, `Naviguji na skupinu z cache: ${groupUrl}`);
       await fbBot.navigateToPage(groupUrl, { waitUntil: 'networkidle2' });
@@ -215,16 +220,10 @@ export class GroupExploreAction {
         return [...new Set(links)]; // Unikátní odkazy
       });
       
-      // Uložení do global cache
-      if (!global.groupUrlsCache) {
-        global.groupUrlsCache = [];
-      }
-      
-      // Filtruj URLs - jen ty které ještě nejsou v cache
-      const notInCache = groupUrls.filter(url => !global.groupUrlsCache.includes(url));
+      const groupCache = GroupCache.getInstance();
       
       // Extrahuj všechna FB ID najednou
-      const urlsWithIds = notInCache.map(url => {
+      const urlsWithIds = groupUrls.map(url => {
         const fbIdMatch = url.match(/facebook\.com\/groups\/([^\/\?&]+)/);
         return {
           url: url,
@@ -259,9 +258,9 @@ export class GroupExploreAction {
       const skipCount = urlsWithIds.length - urlsToExplore.length;
       
       // Do cache přidej skupiny k prozkoumání
-      global.groupUrlsCache.push(...urlsToExplore);
+      const addedCount = groupCache.addUrls(urlsToExplore);
       
-      Log.info(`[${user.id}]`, `Z discover: ${groupUrls.length} celkem, ${skipCount} nedávno viděných přeskočeno, ${urlsToExplore.length} přidáno do cache`);
+      Log.info(`[${user.id}]`, `Z discover: ${groupUrls.length} celkem, ${skipCount} nedávno viděných přeskočeno, ${addedCount} přidáno do cache`);
       
     } catch (err) {
       await Log.error(`[${user.id}]`, `Chyba při načítání z discover: ${err.message}`);
