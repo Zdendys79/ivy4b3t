@@ -14,6 +14,27 @@
 # Zjisti adresář skriptu
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Přepis výchozích cest pokud je potřeba
+REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
+SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
+TARGET_DIR=${TARGET_DIR:-~/ivy}
+
+# Detekce aktuální větve z Git repozitáře
+if [[ -d "$REPO_DIR/.git" ]]; then
+    cd "$REPO_DIR" || exit 1
+    CURRENT_BRANCH=$(git branch --show-current)
+    if [[ -n "$CURRENT_BRANCH" ]]; then
+        export BRANCH="$CURRENT_BRANCH"
+        echo "Detekována aktuální větev: $BRANCH"
+    else
+        echo "CHYBA: Nepodařilo se zjistit aktuální větev"
+        exit 1
+    fi
+else
+    echo "CHYBA: Git repozitář $REPO_DIR neexistuje!"
+    exit 1
+fi
+
 # Import společného modulu
 if [[ -f "$SCRIPT_DIR/git-common.sh" ]]; then
     source "$SCRIPT_DIR/git-common.sh"
@@ -21,11 +42,6 @@ else
     echo "CHYBA: Nepodařilo se načíst git-common.sh ze $SCRIPT_DIR"
     exit 1
 fi
-
-# Přepis výchozích cest pokud je potřeba
-REPO_DIR=${REPO_DIR:-~/git/ivy4b3t}
-SOURCE_SUBFOLDER=${SOURCE_SUBFOLDER:-ivy}
-TARGET_DIR=${TARGET_DIR:-~/ivy}
 
 # ===========================================
 # 🔧 FUNKCE SPECIFICKÉ PRO UPDATE-FILES
@@ -111,7 +127,7 @@ main() {
             ;;
         "check"|"c")
             log_info "Kontroluji dostupné aktualizace..."
-            if check_for_updates; then
+            if check_for_updates "$REPO_DIR" "$BRANCH"; then
                 log_success "Jsou dostupné nové aktualizace!"
                 show_changes
             else
@@ -129,7 +145,7 @@ main() {
             show_status
 
             # 2. Zkontroluj aktualizace
-            if ! check_for_updates; then
+            if ! check_for_updates "$REPO_DIR" "$BRANCH"; then
                 log_info "Repozitář je již aktuální. Pokračovat? (y/N)"
                 read -r response
                 if [[ ! "$response" =~ ^[Yy]$ ]]; then
@@ -139,7 +155,7 @@ main() {
             fi
 
             # 3. Aktualizuj a synchronizuj
-            if ! update_and_sync; then
+            if ! update_and_sync "$REPO_DIR" "$SOURCE_SUBFOLDER" "$TARGET_DIR" "$BRANCH"; then
                 log_error "Aktualizace selhala!"
                 exit 1
             fi
