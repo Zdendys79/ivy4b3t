@@ -96,6 +96,12 @@ export const GROUPS = {
     WHERE id = ?
   `,
 
+  updateGroupName: `
+    UPDATE fb_groups
+    SET name = ?, last_seen = NOW()
+    WHERE id = ?
+  `,
+
   updateBuySellFlag: `
     UPDATE fb_groups
     SET is_buy_sell_group = ?

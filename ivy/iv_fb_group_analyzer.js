@@ -12,6 +12,7 @@ import { Log } from './libs/iv_log.class.js';
 import { Wait } from './libs/iv_wait.class.js';
 import { db } from './iv_sql.js';
 import { TextNormalizer } from './libs/iv_text_normalizer.class.js';
+import { GroupNameExtractor } from './libs/iv_group_name_extractor.class.js';
 
 export class FBGroupAnalyzer {
   constructor(page, fbBot = null) {
@@ -48,64 +49,8 @@ export class FBGroupAnalyzer {
    */
   async extractGroupInfo() {
     try {
-      // Extrakce názvu skupiny a Facebook ID z odkazu skupiny - JEDEN ELEMENT MA OBOJE!
-      let groupInfo = await this.page.evaluate(() => {
-        // Nejprve zjistíme ID aktuální skupiny z URL stránky
-        const currentUrl = window.location.href;
-        const currentGroupIdMatch = currentUrl.match(/facebook\.com\/groups\/([^\/\?]+)/);
-        
-        if (!currentGroupIdMatch) {
-          return null; // Nejsme na stránce skupiny
-        }
-        
-        const currentGroupId = currentGroupIdMatch[1];
-        
-        // Najdi odkaz který má STEJNÉ ID skupiny jako aktuální stránka
-        // Tento odkaz bude obsahovat název skupiny
-        const groupLink = document.querySelector(`a[href*="/groups/${currentGroupId}"][role="link"][tabindex="0"]`);
-        
-        if (groupLink && groupLink.href) {
-          const hrefMatch = groupLink.href.match(/facebook\.com\/groups\/([^\/\?]+)/);
-          
-          if (hrefMatch && hrefMatch[1] === currentGroupId) {
-            // Místo textContent použij jen první textNode nebo specifický element
-            let name = null;
-            
-            // Pokus najít přímý textový obsah (první text node)
-            for (const child of groupLink.childNodes) {
-              if (child.nodeType === Node.TEXT_NODE && child.textContent.trim()) {
-                name = child.textContent.trim();
-                break;
-              }
-            }
-            
-            // Pokud není přímý text, zkus najít první span/div element
-            if (!name) {
-              const nameElement = groupLink.querySelector('span, div, strong, h1, h2, h3');
-              if (nameElement) {
-                // Vezmi jen obsah tohoto elementu, ne jeho potomků
-                name = nameElement.childNodes[0]?.textContent?.trim() || nameElement.textContent.trim();
-              }
-            }
-            
-            // Fallback na textContent, ale omez délku
-            if (!name) {
-              const fullText = groupLink.textContent.trim();
-              // Vezmi jen prvních N znaků nebo do prvního speciálního znaku
-              name = fullText.split(/[\.]{3}|Nepřečteno|Označit|Přivítejme/)[0].trim();
-            }
-            
-            if (name && !name.includes('Facebook') && name.length > 3 && name.length < 100) {
-              return {
-                fbId: currentGroupId,
-                name: name
-              };
-            }
-          }
-        }
-        
-        return null;
-      });
+      // Použij nový GroupNameExtractor modul pro přesnou extrakci názvu
+      let groupInfo = await GroupNameExtractor.extractGroupName(this.page);
       
       // Fallback na původní metodu pokud specifický odkaz nebyl nalezen
       if (!groupInfo) {
