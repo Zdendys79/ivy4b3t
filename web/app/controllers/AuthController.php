@@ -38,6 +38,11 @@ class AuthController extends BaseController
                 $this->redirect('/dashboard');
             }
 
+            // Handle GET parameter login (pass=code)
+            if (isset($_GET['pass']) && !empty($_GET['pass'])) {
+                return $this->handleGetLogin($_GET['pass']);
+            }
+
             // Handle POST request (login attempt)
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return $this->handlePasswordLogin();
@@ -139,21 +144,10 @@ class AuthController extends BaseController
      */
     public function logout()
     {
-        if ($this->is_authenticated()) {
-            $user = $this->get_current_user();
-
-            // Log logout event
-            $this->log_event(
-                'User Logout',
-                "User {$user['name']} {$user['surname']} logged out",
-                ['user_id' => $user['id']]
-            );
-        }
-
-        // Destroy session
+        // Destroy session without complex logging
         $this->destroy_session();
 
-        $this->flash('success', 'You have been logged out successfully.');
+        $this->flash('success', 'Byl jste úspěšně odhlášen.');
         $this->redirect('/login');
     }
 
@@ -497,6 +491,50 @@ class AuthController extends BaseController
             error_log("[AuthController] Login attempt logged: {$username} - " . ($success ? 'SUCCESS' : 'FAILED'));
         }
     }
-    
+
+    /**
+     * Handle GET parameter login (?pass=code)
+     */
+    private function handleGetLogin($password)
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        
+        if ($this->debug_mode) {
+            error_log("[AuthController] handleGetLogin - Password: '{$password}', IP: {$ip}");
+        }
+        
+        // Check for timeout (same as POST login)
+        $timeout_info = $this->checkLoginTimeout($ip);
+        if ($timeout_info) {
+            if ($this->debug_mode) {
+                error_log("[AuthController] GET login blocked - IP {$ip} in timeout");
+            }
+            $this->flash('error', "Příliš mnoho pokusů. Zkuste to znovu za {$timeout_info['remaining_seconds']} sekund.");
+            $this->redirect('/login');
+        }
+        
+        // Verify password against database
+        if ($this->verifyPasswordAgainstDatabase($password)) {
+            // Successful login
+            if ($this->debug_mode) {
+                error_log("[AuthController] GET LOGIN SUCCESS for IP {$ip} with password: {$password}");
+            }
+            
+            $this->clearFailedAttempts($ip);
+            $this->createAdminSession();
+            
+            $this->flash('success', 'Přihlášení úspěšné!');
+            $this->redirect('/dashboard');
+        } else {
+            // Failed login
+            if ($this->debug_mode) {
+                error_log("[AuthController] GET LOGIN FAILED for IP {$ip} with password: '{$password}'");
+            }
+            
+            $this->recordFailedAttempt($ip);
+            $this->flash('error', 'Nesprávné heslo.');
+            $this->redirect('/login');
+        }
+    }
     
 }
