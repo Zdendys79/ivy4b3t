@@ -54,6 +54,9 @@ export async function runWheelOfFortune(user, browser, context) {
   let consecutiveFailures = 0;
   let actionCount = 0;
   let fbBot = null;
+  
+  // Načíst max počet akcí pro wheel z databáze
+  const maxActions = config.get('wheel_max_actions', 10);
   let utioBot = null;
 
   // Inicializace
@@ -106,11 +109,38 @@ export async function runWheelOfFortune(user, browser, context) {
         break;
       }
 
-      // 2. Získání dostupných akcí
+      // 2. Kontrola action limitu - ukončit wheel při dosažení max počtu akcí
+      if (actionCount >= maxActions) {
+        Log.info(`[${user.id}]`, `Dosažen limit akcí (${actionCount}/${maxActions}) - ukončuji wheel`);
+        
+        // Získat ukončovací akce přímo z databáze
+        let endingActions = await db.safeQueryAll('actions.getEndingActions', [user.id]);
+        
+        if (!endingActions || endingActions.length === 0) {
+          Log.info(`[${user.id}]`, 'Vytvářím chybějící ukončovací akce pro action limit');
+          await db.safeExecute('actions.createUserAction', [user.id, 'account_sleep']);
+          await db.safeExecute('actions.createUserAction', [user.id, 'account_delay']);
+          endingActions = await db.safeQueryAll('actions.getEndingActions', [user.id]);
+        }
+        
+        if (endingActions && endingActions.length > 0) {
+          const wheel = new Wheel(endingActions);
+          const endingAction = wheel.pick();
+          
+          if (endingAction) {
+            Log.info(`[${user.id}]`, `Vylosována ukončovací akce po limitu: ${endingAction.code}`);
+            const endingContext = { browser, ...context };
+            await actionRouter.executeAction(endingAction.code, user, endingContext, endingAction);
+          }
+        }
+        break;
+      }
+
+      // 3. Získání dostupných akcí
       const availableActions = await getAvailableActions(user.id, invasiveLock);
       
       
-      // 3. Kontrola prázdného kola (kromě test módu)
+      // 4. Kontrola prázdného kola (kromě test módu)
       if (!global.isTestBranch && isWheelEmpty(availableActions)) {
         const endingAction = await handleEmptyWheel(user, availableActions);
         if (endingAction) {
@@ -122,7 +152,7 @@ export async function runWheelOfFortune(user, browser, context) {
         break;
       }
 
-      // 4. Losování akce
+      // 5. Losování akce
       const pickedAction = pickAction(availableActions);
       if (!pickedAction) {
         // Žádné dostupné akce - zkusit ukončovací akce
@@ -159,7 +189,7 @@ export async function runWheelOfFortune(user, browser, context) {
 
       Log.info(`[${user.id}]`, `Vylosována akce #${actionCount + 1}: ${pickedAction.code}`);
 
-      // 4.5. Podmíněná inicializace UtioBot pro vylosovanou akci
+      // 5.5. Podmíněná inicializace UtioBot pro vylosovanou akci
       if (!utioBot) {
         const requirements = await actionRouter.getActionRequirements(pickedAction.code);
         if (requirements.needsUtio) {
@@ -183,7 +213,7 @@ export async function runWheelOfFortune(user, browser, context) {
         }
       }
 
-      // 5. Provedení akce
+      // 6. Provedení akce
       const actionContext = {
         browser,
         fbBot,
@@ -244,7 +274,7 @@ export async function runWheelOfFortune(user, browser, context) {
 
       actionCount++;
 
-      // 6. Kontrola UI příkazů (nejprve cache, pak databáze)
+      // 7. Kontrola UI příkazů (nejprve cache, pak databáze)
       const uiCommand = global.uiCommandCache || await UIBot.quickCheck();
       
       if (uiCommand) {
@@ -253,9 +283,9 @@ export async function runWheelOfFortune(user, browser, context) {
         return { stoppedByUI: true };
       }
       
-      // 6b. restart_needed check is now handled by Wait.toSecondsInterruptible
+      // 7b. restart_needed check is now handled by Wait.toSecondsInterruptible
 
-      // 7. Pauza mezi akcemi (přerušitelná při restart_needed)
+      // 8. Pauza mezi akcemi (přerušitelná při restart_needed)
       await Wait.toSecondsInterruptible(config.getWheelActionDelaySeconds().max, 'Pauza mezi akcemi');
     }
 
