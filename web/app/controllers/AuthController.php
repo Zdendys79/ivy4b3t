@@ -38,6 +38,19 @@ class AuthController extends BaseController
                 $this->redirect('/dashboard');
             }
 
+            // Check for active timeout FIRST - before any login processing
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+            $timeout_info = $this->checkLoginTimeout($ip);
+            
+            // If in timeout, show timeout page immediately
+            if ($timeout_info) {
+                $this->render('auth/login', [
+                    'page_title' => 'IVY4B3T - Timeout',
+                    'timeout_info' => $timeout_info,
+                ]);
+                return;
+            }
+
             // Handle GET parameter login (pass=code)
             if (isset($_GET['pass']) && !empty($_GET['pass'])) {
                 return $this->handleGetLogin($_GET['pass']);
@@ -47,25 +60,11 @@ class AuthController extends BaseController
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 return $this->handlePasswordLogin();
             }
-
-            // Check for active timeout
-            $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-            $timeout_info = $this->checkLoginTimeout($ip);
             
-            // Get current failed attempts for display
-            $failed_attempts = $this->getFailedAttempts($ip);
-
-            // Get system information for display
-            $system_info = $this->get_login_system_info();
-            $flash = $this->get_flash();
-
+            // Normal login form (no timeout)
             $this->render('auth/login', [
                 'page_title' => 'IVY4B3T - Přihlášení',
-                'system_info' => $system_info,
-                'flash' => $flash,
                 'csrf_token' => $this->csrf_token(),
-                'timeout_info' => $timeout_info,
-                'failed_attempts' => $failed_attempts
             ]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -85,16 +84,7 @@ class AuthController extends BaseController
         }
         
         // CSRF protection removed - session ID provides sufficient protection
-        
-        // Check for timeout
-        $timeout_info = $this->checkLoginTimeout($ip);
-        if ($timeout_info) {
-            if ($this->debug_mode) {
-                error_log("[AuthController] IP {$ip} is in timeout - {$timeout_info['remaining_seconds']} seconds remaining");
-            }
-            $this->flash('error', "Příliš mnoho pokusů. Zkuste to znovu za {$timeout_info['remaining_seconds']} sekund.");
-            $this->redirect('/login');
-        }
+        // Note: Timeout already checked in main login() method
         
         // Get password from POST
         $password = trim($_POST['password'] ?? '');
@@ -503,15 +493,7 @@ class AuthController extends BaseController
             error_log("[AuthController] handleGetLogin - Password: '{$password}', IP: {$ip}");
         }
         
-        // Check for timeout (same as POST login)
-        $timeout_info = $this->checkLoginTimeout($ip);
-        if ($timeout_info) {
-            if ($this->debug_mode) {
-                error_log("[AuthController] GET login blocked - IP {$ip} in timeout");
-            }
-            $this->flash('error', "Příliš mnoho pokusů. Zkuste to znovu za {$timeout_info['remaining_seconds']} sekund.");
-            $this->redirect('/login');
-        }
+        // Note: Timeout already checked in main login() method
         
         // Verify password against database
         if ($this->verifyPasswordAgainstDatabase($password)) {
