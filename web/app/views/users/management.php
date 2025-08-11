@@ -60,11 +60,18 @@
         }
         
         td:first-child {
-            width: 60%;
+            width: 40%;
         }
         
         td:nth-child(2) {
-            width: 40%;
+            width: 30%;
+            text-align: center;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        td:nth-child(3) {
+            width: 30%;
             text-align: center;
         }
         th {
@@ -176,6 +183,7 @@
                                     <thead>
                                         <tr>
                                             <th>Uživatel</th>
+                                            <th>Odpočinek</th>
                                             <th>UI příkazy</th>
                                         </tr>
                                     </thead>
@@ -188,6 +196,21 @@
                                                     <?php if ($user['locked']): ?>
                                                         <br><span style="color: #dc3545; font-weight: bold;">🔒 UZAMČEN</span>
                                                     <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php 
+                                                    $rest_color = '#666'; 
+                                                    if (isset($user['rest_display'])) {
+                                                        if ($user['rest_display'] === 've frontě') {
+                                                            $rest_color = '#28a745'; // zelená pro "ve frontě"
+                                                        } elseif ($user['rest_display'] !== 'nenastaveno') {
+                                                            $rest_color = '#dc3545'; // červená pro aktivní odpočinek
+                                                        }
+                                                    }
+                                                    ?>
+                                                    <span style="color: <?= $rest_color ?>; font-weight: bold;">
+                                                        <?= htmlspecialchars($user['rest_display'] ?? 'nenastaveno') ?>
+                                                    </span>
                                                 </td>
                                                 <td>
                                                     <button class="btn btn-primary" 

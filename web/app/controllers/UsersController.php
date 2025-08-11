@@ -20,11 +20,45 @@ class UsersController extends BaseController
             $stmt = $pdo->query("SELECT COUNT(*) as count FROM fb_users");
             $usersCount = $stmt->fetch()['count'];
             
-            // Získat uživatele seskupené podle hostname s informací o zamčení
+            // Získat uživatele seskupené podle hostname s informací o zamčení a odpočinku
             $stmt = $pdo->query("
                 SELECT host, COUNT(*) as user_count, 
-                       GROUP_CONCAT(CONCAT(id, ':', REPLACE(REPLACE(CONCAT(name, ' ', surname), ':', ''), '|', ''), ':', IFNULL(locked, 0)) ORDER BY id SEPARATOR '|') as users_list
+                       GROUP_CONCAT(
+                           CONCAT(
+                               id, ':', 
+                               REPLACE(REPLACE(CONCAT(name, ' ', surname), ':', ''), '|', ''), ':', 
+                               IFNULL(locked, 0), ':',
+                               -- Odpočinek info
+                               CASE
+                                   -- Pokud má aktivní sleep nebo delay (v budoucnosti)
+                                   WHEN sleep_delay.next_time > NOW() THEN 
+                                       CONCAT('active:', TIMESTAMPDIFF(SECOND, NOW(), sleep_delay.next_time))
+                                   -- Pokud má sleep/delay akce v minulosti = ve frontě
+                                   WHEN sleep_delay.next_time IS NOT NULL AND sleep_delay.next_time <= NOW() THEN 
+                                       'queue'
+                                   -- Pokud nemá žádné sleep/delay akce
+                                   WHEN sleep_delay.next_time IS NULL THEN 
+                                       'none'
+                                   ELSE 'none'
+                               END
+                           )
+                           ORDER BY 
+                               -- Řadit podle odpočinku: vypršelé -> ve frontě -> bez nastavení -> nejdéle odpočívající
+                               CASE
+                                   WHEN sleep_delay.next_time IS NULL THEN 1                           -- nenastaveno
+                                   WHEN sleep_delay.next_time <= NOW() THEN 2                         -- ve frontě
+                                   WHEN sleep_delay.next_time > NOW() THEN 3 + TIMESTAMPDIFF(SECOND, NOW(), sleep_delay.next_time)  -- aktivní (podle zbývajícího času)
+                                   ELSE 4
+                               END
+                           SEPARATOR '|'
+                       ) as users_list
                 FROM fb_users 
+                LEFT JOIN (
+                    SELECT user_id, MAX(next_time) as next_time
+                    FROM user_action_plan 
+                    WHERE action_code IN ('account_sleep', 'account_delay')
+                    GROUP BY user_id
+                ) sleep_delay ON fb_users.id = sleep_delay.user_id
                 GROUP BY host 
                 ORDER BY host
             ");
@@ -42,16 +76,53 @@ class UsersController extends BaseController
                             $id = $parts[0];
                             $name_surname = $parts[1];
                             $locked = $parts[2] !== '0' && !empty($parts[2]);
+                            $rest_info = $parts[3];
+                            
+                            // Parse rest info
+                            $rest_display = 'nenastaveno';
+                            $sort_priority = 1; // nenastaveno = nejdříve
+                            
+                            if (strpos($rest_info, 'active:') === 0) {
+                                $seconds = (int)substr($rest_info, 7);
+                                if ($seconds > 0) {
+                                    $hours = floor($seconds / 3600);
+                                    $minutes = floor(($seconds % 3600) / 60);
+                                    $secs = $seconds % 60;
+                                    
+                                    if ($hours > 0) {
+                                        $rest_display = "{$hours}h {$minutes}m {$secs}s";
+                                    } elseif ($minutes > 0) {
+                                        $rest_display = "{$minutes}m {$secs}s";
+                                    } else {
+                                        $rest_display = "{$secs}s";
+                                    }
+                                    $sort_priority = 3 + $seconds; // aktivní podle zbývajícího času
+                                } else {
+                                    $rest_display = 've frontě';
+                                    $sort_priority = 2; // ve frontě = druhé
+                                }
+                            } elseif ($rest_info === 'queue') {
+                                $rest_display = 've frontě';
+                                $sort_priority = 2; // ve frontě = druhé
+                            }
                             
                             $users_array[] = [
                                 'id' => $id,
                                 'name_surname' => $name_surname,
                                 'host' => $host['host'],
-                                'locked' => $locked
+                                'locked' => $locked,
+                                'rest_display' => $rest_display,
+                                'sort_priority' => $sort_priority
                             ];
                         }
                     }
                 }
+                
+                // Seřadit uživatele podle odpočinku - nejdříve vypršelé/nenastavené, pak ve frontě, pak aktivní
+                usort($users_array, function($a, $b) {
+                    return $a['sort_priority'] <=> $b['sort_priority'];
+                });
+                
                 $hosts_data[] = [
                     'host' => $host['host'],
                     'user_count' => $host['user_count'],
