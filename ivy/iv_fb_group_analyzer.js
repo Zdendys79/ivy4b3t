@@ -13,6 +13,7 @@ import { Wait } from './libs/iv_wait.class.js';
 import { db } from './iv_sql.js';
 import { TextNormalizer } from './libs/iv_text_normalizer.class.js';
 import { GroupNameExtractor } from './libs/iv_group_name_extractor.class.js';
+import { QueryUtils } from './sql/queries/index.js';
 
 export class FBGroupAnalyzer {
   constructor(page, fbBot = null) {
@@ -148,23 +149,24 @@ export class FBGroupAnalyzer {
         const word = keywords[i];
         
         // Ulož/aktualizuj klíčové slovo
-        await db.safeExecute(`
+        const [keywordResult] = await db.pool.query(`
           INSERT INTO group_keywords (word, frequency) 
           VALUES (?, 1)
           ON DUPLICATE KEY UPDATE frequency = frequency + 1
         `, [word]);
         
         // Získej ID klíčového slova
-        const keywordRow = await db.safeQueryFirst(`
+        const [keywordRows] = await db.pool.query(`
           SELECT id FROM group_keywords WHERE word = ?
         `, [word]);
         
-        if (keywordRow) {
+        if (keywordRows && keywordRows.length > 0) {
+          const keywordId = keywordRows[0].id;
           // Vytvoř asociaci mezi skupinou a klíčovým slovem
-          await db.safeExecute(`
+          await db.pool.query(`
             INSERT IGNORE INTO group_word_associations (group_id, keyword_id, position_in_name)
             VALUES (?, ?, ?)
-          `, [groupId, keywordRow.id, i]);
+          `, [groupId, keywordId, i]);
         }
       }
       
@@ -235,26 +237,35 @@ export class FBGroupAnalyzer {
         return;
       }
       
-      const result = await db.safeExecute('groups.upsertGroupInfo', [
+      // Použij přímý přístup k pool pro získání insertId
+      const query = QueryUtils.getQuery('groups.upsertGroupInfo');
+      const [result] = await db.pool.query(query, [
         groupInfo.fb_id,
         sanitizedName,
         groupInfo.member_count,
         groupInfo.category || null
       ]);
       
-      // Pokud byla skupina nově vytvořena, ulož klíčová slova
-      if (result && (result.insertId || result.affectedRows > 0)) {
+      // Ulož klíčová slova pro každou skupinu (novou i aktualizovanou)
+      if (result && result.affectedRows > 0) {
         const keywords = this.extractKeywords(groupInfo.name);
+        Log.debug('[GROUP_ANALYZER]', `Extrakce klíčových slov pro "${groupInfo.name}": [${keywords.join(', ')}]`);
+        
         if (keywords.length > 0) {
           // Potřebujeme ID skupiny - buď z insertId nebo z databázového dotazu
           let groupDbId = result.insertId;
           if (!groupDbId) {
-            const groupRow = await db.safeQueryFirst('SELECT id FROM fb_groups WHERE fb_id = ?', [groupInfo.fb_id]);
+            const [groupRows] = await db.pool.query('SELECT id FROM fb_groups WHERE fb_id = ?', [groupInfo.fb_id]);
+            const groupRow = groupRows && groupRows.length > 0 ? groupRows[0] : null;
             groupDbId = groupRow?.id;
           }
           
+          Log.debug('[GROUP_ANALYZER]', `Group DB ID: ${groupDbId}, insertId: ${result.insertId}`);
+          
           if (groupDbId) {
             await this.saveKeywordsToDatabase(groupDbId, keywords);
+          } else {
+            Log.error('[GROUP_ANALYZER]', `Nepodařilo se získat DB ID pro skupinu ${groupInfo.fb_id}`);
           }
         }
       }
