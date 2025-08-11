@@ -50,14 +50,24 @@ export class FBGroupAnalyzer {
     try {
       // Extrakce názvu skupiny a Facebook ID z odkazu skupiny - JEDEN ELEMENT MA OBOJE!
       let groupInfo = await this.page.evaluate(() => {
-        // Najdi odkaz na skupinu s názvem - tento element obsahuje URL i název
-        // Používáme tabindex="0" jako přesnější selektor pro interaktivní FB linky
-        const groupLink = document.querySelector('a[href*="/groups/"][role="link"][tabindex="0"]');
+        // Nejprve zjistíme ID aktuální skupiny z URL stránky
+        const currentUrl = window.location.href;
+        const currentGroupIdMatch = currentUrl.match(/facebook\.com\/groups\/([^\/\?]+)/);
+        
+        if (!currentGroupIdMatch) {
+          return null; // Nejsme na stránce skupiny
+        }
+        
+        const currentGroupId = currentGroupIdMatch[1];
+        
+        // Najdi odkaz který má STEJNÉ ID skupiny jako aktuální stránka
+        // Tento odkaz bude obsahovat název skupiny
+        const groupLink = document.querySelector(`a[href*="/groups/${currentGroupId}"][role="link"][tabindex="0"]`);
         
         if (groupLink && groupLink.href) {
           const hrefMatch = groupLink.href.match(/facebook\.com\/groups\/([^\/\?]+)/);
           
-          if (hrefMatch) {
+          if (hrefMatch && hrefMatch[1] === currentGroupId) {
             // Místo textContent použij jen první textNode nebo specifický element
             let name = null;
             
@@ -87,7 +97,7 @@ export class FBGroupAnalyzer {
             
             if (name && !name.includes('Facebook') && name.length > 3 && name.length < 100) {
               return {
-                fbId: hrefMatch[1],
+                fbId: currentGroupId,
                 name: name
               };
             }
