@@ -51,7 +51,8 @@ export class FBGroupAnalyzer {
       // Extrakce názvu skupiny a Facebook ID z odkazu skupiny - JEDEN ELEMENT MA OBOJE!
       let groupInfo = await this.page.evaluate(() => {
         // Najdi odkaz na skupinu s názvem - tento element obsahuje URL i název
-        const groupLink = document.querySelector('a[href*="/groups/"][role="link"]');
+        // Používáme tabindex="0" jako přesnější selektor pro interaktivní FB linky
+        const groupLink = document.querySelector('a[href*="/groups/"][role="link"][tabindex="0"]');
         
         if (groupLink && groupLink.href) {
           const hrefMatch = groupLink.href.match(/facebook\.com\/groups\/([^\/\?]+)/);
