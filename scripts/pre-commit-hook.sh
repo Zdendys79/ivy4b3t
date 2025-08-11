@@ -1,9 +1,31 @@
 #!/bin/bash
 set -e
 
-# Generuj git hash
-VERSION_CODE=$(git rev-parse --short=7 HEAD)
-echo "[PRE-COMMIT] Verze: $VERSION_CODE"
+# Generuj 3-znakový kód z malých písmen (nesmí být stejný jako předchozí)
+CURRENT_VERSION=$(node -e "
+try {
+  const pkg = JSON.parse(require('fs').readFileSync('ivy/package.json', 'utf8'));
+  console.log(pkg.versionCode || '');
+} catch(e) {
+  console.log('');
+}")
+
+# Generuj nový kód dokud není jiný než současný
+while true; do
+  VERSION_CODE=$(node -e "
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    let result = '';
+    for (let i = 0; i < 3; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    console.log(result);
+  ")
+  if [ "$VERSION_CODE" != "$CURRENT_VERSION" ]; then
+    break
+  fi
+done
+
+echo "[PRE-COMMIT] Nová verze: $VERSION_CODE (předchozí: $CURRENT_VERSION)"
 
 # Aktualizuj package.json
 node -e "
