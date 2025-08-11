@@ -130,7 +130,12 @@ export class Log {
   static async warn(prefix, ...msg) {
     const location = getCallerLocation();
     console.warn(`${now()} ${prefix} ${icons.warn}${location}`, ...msg);
-    await this._handleInteractiveDebug('WARNING', prefix, msg.join(' '));
+    
+    // Debug systém pouze pro hlavní ivy.js, ne pro utility skripty
+    const scriptName = process.argv[1]?.split('/').pop();
+    if (scriptName === 'ivy.js') {
+      await this._handleInteractiveDebug('WARNING', prefix, msg.join(' '));
+    }
   }
 
   static success(prefix, ...msg) {
@@ -158,7 +163,11 @@ export class Log {
       console.error(err.stack);
     }
     
-    await this._handleInteractiveDebug('ERROR', prefix, message, { stack: err?.stack });
+    // Debug systém pouze pro hlavní ivy.js, ne pro utility skripty
+    const scriptName = process.argv[1]?.split('/').pop();
+    if (scriptName === 'ivy.js') {
+      await this._handleInteractiveDebug('ERROR', prefix, message, { stack: err?.stack });
+    }
   }
 
   // Interactive debugging methods
