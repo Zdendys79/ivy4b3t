@@ -64,8 +64,13 @@ export class BaseAccountAction extends BaseAction {
       const value = this.displayUnit === 'h' ? Math.round(validatedMinutes / 60) : validatedMinutes;
       const logText = `Account ${this.actionName.replace('account_', '')}: ${value}${this.displayUnit}`;
       
-      // Aktualizuj action plan místo user worktime pro správné sleep/delay fungování
-      await this.db.safeExecute('actions.scheduleNext', [validatedMinutes, user.id, this.actionName]);
+      // Aktualizuj action plan - pro dlouhé sleep periods použij hodiny místo minut
+      if (this.actionName === 'account_sleep') {
+        const hours = Math.round(validatedMinutes / 60);
+        await this.db.safeExecute('actions.scheduleNextHours', [hours, user.id, this.actionName]);
+      } else {
+        await this.db.safeExecute('actions.scheduleNext', [validatedMinutes, user.id, this.actionName]);
+      }
       await this.logAction(user, null, logText);
       
       Log.info(`[${user.id}]`, logText);
