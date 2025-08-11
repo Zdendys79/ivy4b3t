@@ -53,6 +53,18 @@ rm -f ~/.cache/fontconfig/*.cache-9 2>/dev/null || true
 echo "[FONTS] Aktualizuji font cache..." | tee -a "$LOG_FILE"
 fc-cache -f -v | tee -a "$LOG_FILE" || echo "[FONTS] Font cache refresh selhal - pokračuji..." | tee -a "$LOG_FILE"
 
+# 4a. Potlačení color management authentication výzev
+echo "[POLKIT] Potlačuji authentication výzvy pro color management..." | tee -a "$LOG_FILE"
+sudo tee /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla > /dev/null <<EOF
+[Allow Colord all Users]
+Identity=unix-user:*
+Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+ResultAny=no
+ResultInactive=no
+ResultActive=yes
+EOF
+echo "[POLKIT] ✅ Color management authentication výzvy potlačeny" | tee -a "$LOG_FILE"
+
 # 4. Odstranění nepoužívaných balíků
 echo "[CLEANUP] Odstraňuji nepotřebné balíky..."
 sudo apt-get autoremove -y

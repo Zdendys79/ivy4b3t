@@ -41,6 +41,17 @@ chmod +x ~/.xsessionrc
 echo "[XFCE] Nastavuji počet pracovních ploch na 1..."
 xfconf-query -c xfwm4 -p /general/workspace_count -s 1
 
+echo "[POLKIT] Potlačuji authentication výzvy pro color management..."
+sudo tee /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla > /dev/null <<EOF
+[Allow Colord all Users]
+Identity=unix-user:*
+Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+ResultAny=no
+ResultInactive=no
+ResultActive=yes
+EOF
+echo "[POLKIT] ✅ Color management authentication výzvy potlačeny"
+
 cat > ~/.profile <<'EOF'
 # ~/.profile: spouští se při login shellu
 
