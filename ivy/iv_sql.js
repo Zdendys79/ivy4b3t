@@ -166,6 +166,22 @@ async function safeQueryAll(queryPath, params = [], allowEmpty = false) {
 
 async function safeExecute(queryPath, params = []) {
   try {
+    // Kontrola jestli je to actions query, která potřebuje synchronizaci
+    if (queryPath.startsWith('actions.')) {
+      const query = QueryUtils.getQuery(queryPath);
+      
+      if (query && (query.includes('user_action_plan') || query.includes('action_log'))) {
+        await Log.info('[SQL]', `Using FBSync for synchronized query: ${queryPath}`);
+        const result = await fbSync.queryFB(query, params);
+        
+        if (result && result.affectedRows === 0) {
+          await Log.warn('[SQL]', `safeExecute ${queryPath} affected 0 rows (synchronized)`);
+        }
+        return result ? result.affectedRows > 0 : false;
+      }
+    }
+    
+    // Standardní nesynchronizovaný dotaz
     const result = await executeQuery(queryPath, params);
 
     if (result !== false) {

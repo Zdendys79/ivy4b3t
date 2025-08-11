@@ -115,6 +115,15 @@ export class QueryBuilder {
   }
 
   async logAction(accountId, actionCode, referenceId, text) {
+    const query = this.SQL.actions.logAction;
+    
+    // Pro action_log použijeme synchronizovaný zápis
+    if (this.fbSync && query.includes('action_log')) {
+      await Log.info('[QB]', `Using FBSync for logAction: user ${accountId}, action ${actionCode}`);
+      const result = await this.fbSync.queryFB(query, [accountId, actionCode, referenceId, text]);
+      return result.affectedRows > 0;
+    }
+    
     return await this.safeExecute('actions.logAction', [accountId, actionCode, referenceId, text]);
   }
 
@@ -127,10 +136,28 @@ export class QueryBuilder {
   }
 
   async updateActionPlan(userId, actionCode, minutes) {
+    const query = this.SQL.actions.updatePlan;
+    
+    // Pro user_action_plan použijeme synchronizovaný zápis
+    if (this.fbSync && query.includes('user_action_plan')) {
+      await Log.info('[QB]', `Using FBSync for updateActionPlan: user ${userId}, action ${actionCode}`);
+      const result = await this.fbSync.queryFB(query, [minutes, userId, actionCode]);
+      return result.affectedRows > 0;
+    }
+    
     return await this.safeExecute('actions.updatePlan', [minutes, userId, actionCode]);
   }
 
   async initUserActionPlan(userId) {
+    const query = this.SQL.actions.initPlan;
+    
+    // Pro user_action_plan použijeme synchronizovaný zápis
+    if (this.fbSync && query.includes('user_action_plan')) {
+      await Log.info('[QB]', `Using FBSync for initUserActionPlan: user ${userId}`);
+      const result = await this.fbSync.queryFB(query, [userId]);
+      return result.affectedRows > 0;
+    }
+    
     return await this.safeExecute('actions.initPlan', [userId]);
   }
 
