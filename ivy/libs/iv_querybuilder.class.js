@@ -72,14 +72,9 @@ export class QueryBuilder {
     
     // Pro fb_users použijeme synchronizovaný zápis
     if (this.fbSync && query.includes('fb_users')) {
-      try {
-        await Log.info('[QB]', `Using FBSync for updateUserWorktime: userId ${userId}, minutes ${minutes}`);
-        const result = await this.fbSync.queryFB(query, [minutes, userId]);
-        return result.affectedRows > 0;
-      } catch (err) {
-        await Log.warn('[QB]', `FBSync failed, falling back to regular query: ${err.message}`);
-        return await this.safeExecute('users.updateWorktime', [minutes, userId]);
-      }
+      await Log.info('[QB]', `Using FBSync for updateUserWorktime: userId ${userId}, minutes ${minutes}`);
+      const result = await this.fbSync.queryFB(query, [minutes, userId]);
+      return result.affectedRows > 0;
     }
     
     return await this.safeExecute('users.updateWorktime', [minutes, userId]);
