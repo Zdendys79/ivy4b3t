@@ -222,6 +222,18 @@ export async function runWheelOfFortune(user, browser, context) {
         consecutiveFailures = 0;
         Log.success(`[${user.id}]`, `Akce ${pickedAction.code} úspěšně dokončena`);
         
+        // Zpracování opakování akcí - opakovatelné akce zůstávají dostupné (next_time = NULL)
+        if (!pickedAction.repeatable) {
+          // Pro neopakovatelné akce nastav next_time podle min/max_minutes
+          const minutes = pickedAction.min_minutes + Math.random() * (pickedAction.max_minutes - pickedAction.min_minutes);
+          const validatedMinutes = Math.min(Math.max(Math.round(minutes), 1), 43200);
+          
+          await db.safeExecute('actions.scheduleNext', [validatedMinutes, user.id, pickedAction.code]);
+          Log.info(`[${user.id}]`, `Neopakovatelná akce ${pickedAction.code} naplánována za ${Math.round(validatedMinutes/60)}h`);
+        } else {
+          Log.info(`[${user.id}]`, `Opakovatelná akce ${pickedAction.code} zůstává dostupná pro další kolo`);
+        }
+        
         // Nastavení invasive lock po úspěšné invazivní akci
         if (pickedAction.is_invasive) {
           const cooldownMs = calculateInvasiveCooldown();

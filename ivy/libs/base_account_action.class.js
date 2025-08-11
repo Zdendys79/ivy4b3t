@@ -54,7 +54,8 @@ export class BaseAccountAction extends BaseAction {
       const value = this.displayUnit === 'h' ? Math.round(validatedMinutes / 60) : validatedMinutes;
       const logText = `Account ${this.actionName.replace('account_', '')}: ${value}${this.displayUnit}`;
       
-      await this.db.updateUserWorktime(user.id, validatedMinutes);
+      // Aktualizuj action plan místo user worktime pro správné sleep/delay fungování
+      await this.db.safeExecute('actions.scheduleNext', [validatedMinutes, user.id, this.actionName]);
       await this.logAction(user, null, logText);
       
       Log.info(`[${user.id}]`, logText);
