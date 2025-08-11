@@ -48,7 +48,7 @@ export class QueryBuilder {
   }
 
   async getUsersByHostname(host = hostname) {
-    return await this.safeQueryAll('users.getAllByHostname', [host]);
+    return await this.safeQueryAll('users.getByHostname', [host]);
   }
 
   async lockUser(id) {
