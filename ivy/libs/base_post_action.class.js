@@ -136,8 +136,10 @@ export class BasePostAction extends BaseAction {
   async step6_waitForSuccess(user, fbBot) {
     Log.info(`[${user.id}]`, 'KROK 6: Ověřujem úspěšné odeslání příspěvku...');
     
-    // Počkat na reakci po kliknutí (zkopírováno z fungující UTIO implementace)
-    await Wait.toSeconds(3);
+    // Počkat na reakci po kliknutí - načíst delay z konfigurace
+    const verifyDelay = this.config.get('fb_post_verify_delay_s', 7);
+    Log.info(`[${user.id}]`, `KROK 6: Čekám ${verifyDelay}s před ověřením odeslání příspěvku`);
+    await Wait.toSeconds(verifyDelay);
     
     const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
     
