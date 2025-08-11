@@ -76,11 +76,11 @@ process.on('SIGINT', async () => {
     Log.info('[LOGINUSER]', `Vybraný uživatel: [${selectedUser.id}] ${selectedUser.name} ${selectedUser.surname} (limit: ${selectedUser.day_limit})`);
 
     // Nastav worktime na zítra (zruší automatické spuštění)
-    await db.updateUserWorktime(selectedUser, 24 * 60); // 24 hodin = zítra
+    await db.updateUserWorktime(selectedUser.id, 24 * 60); // 24 hodin = zítra
     Log.success('[LOGINUSER]', 'Worktime nastaven na zítra - automatické spuštění zrušeno');
 
     // Zaloguj ruční přihlášení
-    await db.userLog(selectedUser, 'manual_login', '', 'Uživatel ručně přihlášen (loginuser.js)');
+    await db.logUserAction(selectedUser.id, 'manual_login', null, 'Uživatel ručně přihlášen (loginuser.js)');
 
     // Spusť browser s profilem uživatele
     browser = await launchBrowserForUser(selectedUser);
@@ -99,9 +99,10 @@ process.on('SIGINT', async () => {
 
     if (loginSuccess) {
       Log.success('[LOGINUSER]', `Uživatel ${selectedUser.name} ${selectedUser.surname} úspěšně přihlášen na FB!`);
-      await db.userLogedToFB(selectedUser.id);
+      await db.logUserAction(selectedUser.id, 'facebook_login', null, 'Úspěšné přihlášení na Facebook (loginuser.js)');
     } else {
       await Log.error('[LOGINUSER]', 'Přihlášení na FB selhalo');
+      await db.logUserAction(selectedUser.id, 'facebook_login_failed', null, 'Neúspěšné přihlášení na Facebook (loginuser.js)');
     }
 
     // Počkej hodinu (nebo dokud uživatel browser nezavře)
@@ -192,8 +193,8 @@ async function launchBrowserForUser(user) {
   // Nastav oprávnění pro FB a UTIO
   const context = launchedBrowser.defaultBrowserContext();
   for (const origin of [
-    'https://www.FB.com',
-    'https://m.FB.com',
+    'https://www.facebook.com',
+    'https://m.facebook.com',
     'https://utio.b3group.cz'
   ]) {
     await context.overridePermissions(origin, []);
