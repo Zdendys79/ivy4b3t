@@ -119,6 +119,9 @@ class AuthController extends BaseController
                 error_log("[AuthController] LOGIN FAILED for IP {$ip} with password: '{$password}' (length: " . strlen($password) . ")");
             }
             
+            // ALWAYS log for debugging  
+            error_log("[AuthController] POST LOGIN FAILED - calling recordFailedAttempt for IP: {$ip}");
+            
             $this->recordFailedAttempt($ip);
             
             // Failed login - no logging needed for simplicity
@@ -312,6 +315,9 @@ class AuthController extends BaseController
                     last_attempt = NOW()
             ");
             $stmt->execute([$ip, $failed_attempts, $timeout_seconds, $failed_attempts, $timeout_seconds]);
+            
+            // ALWAYS log for debugging
+            error_log("[AuthController] RECORDED timeout for IP {$ip}: attempt #{$failed_attempts}, timeout {$timeout_seconds}s");
             
             if ($this->debug_mode) {
                 error_log("[AuthController] IMMEDIATE timeout for IP {$ip}: attempt #{$failed_attempts}, timeout {$timeout_seconds}s");
@@ -512,6 +518,9 @@ class AuthController extends BaseController
             if ($this->debug_mode) {
                 error_log("[AuthController] GET LOGIN FAILED for IP {$ip} with password: '{$password}'");
             }
+            
+            // ALWAYS log for debugging  
+            error_log("[AuthController] GET LOGIN FAILED - calling recordFailedAttempt for IP: {$ip}");
             
             $this->recordFailedAttempt($ip);
             $this->flash('error', 'Nesprávné heslo.');
