@@ -210,6 +210,23 @@ export const ACTIONS = {
     INSERT IGNORE INTO user_action_plan (user_id, action_code, next_time)
     VALUES (?, ?, NULL)
   `,
+  
+  createUserActionWithTime: `
+    INSERT IGNORE INTO user_action_plan (user_id, action_code, next_time)
+    VALUES (?, ?, ?)
+  `,
+  
+  getAllActiveActions: `
+    SELECT action_code 
+    FROM action_definitions 
+    WHERE active = 1
+  `,
+  
+  getUserPlanActions: `
+    SELECT action_code 
+    FROM user_action_plan 
+    WHERE user_id = ?
+  `,
 
   getMissingActionsForUser: `
     SELECT ad.action_code

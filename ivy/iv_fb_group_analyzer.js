@@ -127,9 +127,9 @@ export class FBGroupAnalyzer {
     // Normalizace textu
     const normalized = this.textNormalizer.normalize(groupName.toLowerCase());
     
-    // Rozdělení na slova, odstranění interpunkce a krátkých slov
+    // Rozdělení na slova, odstranění interpunkce a krátkých slov (včetně lomítka /)
     const words = normalized
-      .split(/[\s\-_.,!?()[\]{}]+/)
+      .split(/[\s\-_.,!?()[\]{}\/]+/)
       .filter(word => word.length >= 2)
       .map(word => word.trim())
       .filter(word => word.length > 0);
