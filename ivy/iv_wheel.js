@@ -529,5 +529,3 @@ async function ensureAllActiveActionsExist(userId) {
     Log.error('[WHEEL]', `Chyba při zajišťování existence aktivních akcí: ${err.message}`);
   }
 }
-
-export { InvasiveLock };
