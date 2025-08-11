@@ -36,16 +36,19 @@ export class FBSync {
   }
 
   /**
-   * Synchronized query for FB tables (fb_users, fb_groups)
+   * Synchronized query for critical tables (fb_users, fb_groups, user_action_plan, action_log)
    * @param {string} query - SQL query
    * @param {Array} params - Parameters
    * @returns {Promise<any>} Query result
    */
   async queryFB(query, params = []) {
-    // Kontrola zda je to FB tabulka
-    if (!query.includes('fb_users') && !query.includes('fb_groups')) {
-      await Log.error('[FB_SYNC]', `Attempted to use FBSync for non-FB table: ${query}`);
-      throw new Error('FBSync can only be used for fb_users and fb_groups tables');
+    // Kontrola zda je to synchronizovaná tabulka
+    const syncTables = ['fb_users', 'fb_groups', 'user_action_plan', 'action_log'];
+    const isSyncTable = syncTables.some(table => query.includes(table));
+    
+    if (!isSyncTable) {
+      await Log.error('[FB_SYNC]', `Attempted to use FBSync for non-synchronized table: ${query}`);
+      throw new Error('FBSync can only be used for synchronized tables: fb_users, fb_groups, user_action_plan, action_log');
     }
     
     
