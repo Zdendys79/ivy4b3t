@@ -16,7 +16,7 @@ echo "<h2>Debug: Locked Users</h2>";
 echo "<pre>";
 
 try {
-    require_once __DIR__ . '/db-config.php';
+    require_once __DIR__ . '/app/core/DatabaseConnection.php';
     require_once __DIR__ . '/app/core/Database.php';
     
     $db = new Database();

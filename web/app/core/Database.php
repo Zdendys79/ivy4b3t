@@ -51,7 +51,7 @@ class Database
         $required_keys = ['host', 'user', 'password', 'database'];
         foreach ($required_keys as $key) {
             if (!$this->config[$key]) {
-                throw new Exception("Missing required environment variable: MYSQL_" . strtoupper($key === 'database' ? 'DATABASE' : $key));
+                throw new Exception("Missing required environment variable: MYSQL_" . strtoupper($key === 'database' ? 'DATABASE' : ($key === 'password' ? 'PASSWORD' : $key)));
             }
         }
 
