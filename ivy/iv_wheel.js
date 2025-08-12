@@ -4,7 +4,6 @@
  *
  * Popis: Zjednodušené kolo štěstí - pouze losování a orchestrace
  * - Losuje akce podle vah a limitů
- * - Spravuje invasive lock
  * - Iniciuje FBBot pro běžné akce
  * - Deleguje provedení na ActionRouter
  * - Kontroluje consecutive failures
@@ -13,7 +12,6 @@
 import { db } from './iv_sql.js';
 import { Log } from './libs/iv_log.class.js';
 import { getIvyConfig } from './libs/iv_config.class.js';
-import { InvasiveLock } from './libs/iv_invasive_lock.class.js';
 import { ActionRouter } from './libs/action_router.class.js';
 import { FBBot } from './libs/iv_fb.class.js';
 import { UtioBot } from './libs/iv_utio.class.js';
@@ -49,7 +47,6 @@ class Wheel {
  * Hlavní funkce kola štěstí
  */
 export async function runWheelOfFortune(user, browser, context) {
-  const invasiveLock = new InvasiveLock();
   const actionRouter = new ActionRouter();
   let consecutiveFailures = 0;
   let actionCount = 0;
@@ -60,7 +57,6 @@ export async function runWheelOfFortune(user, browser, context) {
   let utioBot = null;
 
   // Inicializace
-  invasiveLock.init();
   await db.initUserActionPlan(user.id);
   
   // Zajistit kompletní action plan pro uživatele
@@ -140,7 +136,7 @@ export async function runWheelOfFortune(user, browser, context) {
       await ensureAllActiveActionsExist(user.id);
       
       // 4. Získání dostupných akcí
-      const availableActions = await getAvailableActions(user.id, invasiveLock);
+      const availableActions = await getAvailableActions(user.id);
       
       
       // 5. Kontrola prázdného kola (kromě test módu)
@@ -267,12 +263,6 @@ export async function runWheelOfFortune(user, browser, context) {
           Log.info(`[${user.id}]`, `Opakovatelná akce ${pickedAction.code} zůstává dostupná pro další kolo`);
         }
         
-        // Nastavení invasive lock po úspěšné invazivní akci
-        if (pickedAction.is_invasive) {
-          const cooldownMs = calculateInvasiveCooldown();
-          invasiveLock.set(cooldownMs);
-          Log.info(`[${user.id}]`, `Invasive lock nastaven na ${invasiveLock.getRemainingSeconds()}s`);
-        }
       }
 
       actionCount++;
@@ -328,7 +318,7 @@ export async function runWheelOfFortune(user, browser, context) {
 /**
  * Získá dostupné akce z databáze s aplikovanými limity
  */
-async function getAvailableActions(userId, invasiveLock) {
+async function getAvailableActions(userId) {
   // Načti akce s limity z DB
   const actionsWithLimits = await db.getUserActionsWithLimits(userId);
   
@@ -344,19 +334,10 @@ async function getAvailableActions(userId, invasiveLock) {
     min_minutes: def.min_minutes,
     max_minutes: def.max_minutes,
     repeatable: def.repeatable,
-    is_invasive: def.invasive === 1 || def.invasive === true
+    // invasive logic removed
   }));
 
-  // Filtruj invazivní akce během invasive lock
-  if (invasiveLock.isActive()) {
-    const originalCount = wheelItems.length;
-    wheelItems = wheelItems.filter(item => !item.is_invasive);
-    
-    const filtered = originalCount - wheelItems.length;
-    if (filtered > 0) {
-      Log.info('[WHEEL]', `Odstraněno ${filtered} invazivních akcí kvůli aktivnímu locku (zbývá ${invasiveLock.getRemainingSeconds()}s)`);
-    }
-  }
+  // invasive lock completely removed
 
   return wheelItems;
 }
@@ -433,12 +414,7 @@ function pickAction(actions) {
  * Zpracuje situaci kdy není k dispozici žádná akce
  * Sekvence podle uživatele: zavřít prohlížeč → losovat account_delay/account_sleep → ukončit wheel
  */
-async function handleNoAction(user, invasiveLock, availableActions) {
-  if (invasiveLock.isActive()) {
-    Log.info(`[${user.id}]`, `Čekání na invasive lock (${invasiveLock.getRemainingSeconds()}s)`);
-    await Wait.toSeconds(10, 'Pauza po selhání');
-    return null; // Pokračovat v wheel
-  } 
+async function handleNoAction(user, availableActions) { 
   
   Log.info(`[${user.id}]`, 'Nejsou dostupné žádné akce - získávám ukončovací akce');
   
@@ -462,25 +438,6 @@ async function handleNoAction(user, invasiveLock, availableActions) {
   return null;
 }
 
-/**
- * Vypočítá cooldown pro invasive lock
- */
-function calculateInvasiveCooldown() {
-  const cooldownConfig = config.get('cfg_posting_cooldown', { 
-    min_seconds: 150, 
-    max_seconds: 300 
-  });
-  
-  // Fallback pro neplatné konfigurace
-  const minSeconds = cooldownConfig?.min_seconds || 150;
-  const maxSeconds = cooldownConfig?.max_seconds || 300;
-  
-  const cooldownMs = (minSeconds + Math.random() * (maxSeconds - minSeconds)) * 1000;
-  
-  Log.debug('[INVASIVE_LOCK]', `Vypočítán cooldown: ${Math.round(cooldownMs/1000)}s (${minSeconds}-${maxSeconds}s range)`);
-  
-  return cooldownMs;
-}
 
 /**
  * Zajistí že všechny aktivní akce existují v user_action_plan
