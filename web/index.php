@@ -138,6 +138,10 @@ try {
             callController('SystemController', 'apiStatus');
             break;
             
+        case '/action-log':
+            callController('ActionLogController', 'dailyOverview');
+            break;
+            
         case '/login':
             callController('AuthController', 'login');
             break;

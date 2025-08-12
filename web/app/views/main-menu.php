@@ -136,6 +136,7 @@
                 <p>Pokročilé přehledy, statistiky a monitoring systému</p>
                 <ul class="module-links">
                     <li><a href="dashboard">📈 Pokročilý dashboard</a></li>
+                    <li><a href="action-log">📋 Přehled akcí podle dnů</a></li>
                     <li><a href="api/status">🔌 API Status</a></li>
                 </ul>
             </div>
