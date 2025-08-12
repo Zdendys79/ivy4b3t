@@ -71,4 +71,188 @@ class ActionLogController extends BaseController
             ]);
         }
     }
+
+    /**
+     * Detail konkrétní akce pro daný den
+     */
+    public function actionDetail()
+    {
+        $date = $_GET['date'] ?? null;
+        $action_code = $_GET['action'] ?? null;
+        
+        if (!$date || !$action_code) {
+            http_response_code(400);
+            echo "Missing date or action parameter";
+            return;
+        }
+
+        try {
+            $pdo = $this->db->getPdo();
+            
+            switch ($action_code) {
+                case 'post_utio_g':
+                case 'post_utio_gv':
+                    $this->handlePostDetails($pdo, $date, $action_code);
+                    break;
+                    
+                case 'group_explore':
+                    $this->handleGroupExploreDetails($pdo, $date);
+                    break;
+                    
+                case 'account_delay':
+                    $this->handleAccountDelayDetails($pdo, $date);
+                    break;
+                    
+                case 'account_sleep':
+                    $this->handleAccountSleepDetails($pdo, $date);
+                    break;
+                    
+                case 'news_post':
+                    $this->handleNewsPostDetails($pdo, $date);
+                    break;
+                    
+                case 'quote_post':
+                    $this->handleQuotePostDetails($pdo, $date);
+                    break;
+                    
+                default:
+                    http_response_code(404);
+                    echo "Unknown action type: " . htmlspecialchars($action_code);
+                    return;
+            }
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo "Error: " . htmlspecialchars($e->getMessage());
+        }
+    }
+
+    private function handlePostDetails($pdo, $date, $action_code)
+    {
+        $query = "
+            SELECT al.*, u.surname, u.name
+            FROM action_log al
+            LEFT JOIN fb_users u ON al.account_id = u.id
+            WHERE DATE(al.timestamp) = ? AND al.action_code = ?
+            ORDER BY al.timestamp DESC
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$date, $action_code]);
+        $actions = $stmt->fetchAll();
+        
+        $this->render_partial('action-log/post-details', [
+            'title' => "Detail: " . strtoupper($action_code) . " (" . date('j.n.Y', strtotime($date)) . ")",
+            'actions' => $actions,
+            'action_type' => $action_code,
+            'date' => $date
+        ]);
+    }
+
+    private function handleGroupExploreDetails($pdo, $date)
+    {
+        $query = "
+            SELECT al.*, u.surname, u.name
+            FROM action_log al
+            LEFT JOIN fb_users u ON al.account_id = u.id
+            WHERE DATE(al.timestamp) = ? AND al.action_code = 'group_explore'
+            ORDER BY al.timestamp DESC
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$date]);
+        $actions = $stmt->fetchAll();
+        
+        $this->render_partial('action-log/group-explore-details', [
+            'title' => "Detail: Průzkum skupin (" . date('j.n.Y', strtotime($date)) . ")",
+            'actions' => $actions,
+            'date' => $date
+        ]);
+    }
+
+    private function handleAccountDelayDetails($pdo, $date)
+    {
+        $query = "
+            SELECT al.*, u.surname, u.name, u.host
+            FROM action_log al
+            LEFT JOIN fb_users u ON al.account_id = u.id
+            WHERE DATE(al.timestamp) = ? AND al.action_code = 'account_delay'
+            ORDER BY u.host, u.surname, al.timestamp ASC
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$date]);
+        $actions = $stmt->fetchAll();
+        
+        $this->render_partial('action-log/account-delay-details', [
+            'title' => "Detail: Uspávání účtů (" . date('j.n.Y', strtotime($date)) . ")",
+            'actions' => $actions,
+            'date' => $date
+        ]);
+    }
+
+    private function handleAccountSleepDetails($pdo, $date)
+    {
+        $query = "
+            SELECT al.*, u.surname, u.name
+            FROM action_log al
+            LEFT JOIN fb_users u ON al.account_id = u.id
+            WHERE DATE(al.timestamp) = ? AND al.action_code = 'account_sleep'
+            ORDER BY al.timestamp DESC
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$date]);
+        $actions = $stmt->fetchAll();
+        
+        $this->render_partial('action-log/account-sleep-details', [
+            'title' => "Detail: Spící účty (" . date('j.n.Y', strtotime($date)) . ")",
+            'actions' => $actions,
+            'date' => $date
+        ]);
+    }
+
+    private function handleNewsPostDetails($pdo, $date)
+    {
+        $query = "
+            SELECT al.*, u.surname, u.name, ru.url, ru.title as rss_title
+            FROM action_log al
+            LEFT JOIN fb_users u ON al.account_id = u.id
+            LEFT JOIN rss_urls ru ON CAST(al.text AS UNSIGNED) = ru.id
+            WHERE DATE(al.timestamp) = ? AND al.action_code = 'news_post'
+            ORDER BY al.timestamp DESC
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$date]);
+        $actions = $stmt->fetchAll();
+        
+        $this->render_partial('action-log/news-post-details', [
+            'title' => "Detail: RSS příspěvky (" . date('j.n.Y', strtotime($date)) . ")",
+            'actions' => $actions,
+            'date' => $date
+        ]);
+    }
+
+    private function handleQuotePostDetails($pdo, $date)
+    {
+        $query = "
+            SELECT al.*, u.surname, u.name, q.text as quote_text, q.author
+            FROM action_log al
+            LEFT JOIN fb_users u ON al.account_id = u.id
+            LEFT JOIN quotes q ON CAST(al.reference_id AS UNSIGNED) = q.id
+            WHERE DATE(al.timestamp) = ? AND al.action_code = 'quote_post'
+            ORDER BY al.timestamp DESC
+        ";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([$date]);
+        $actions = $stmt->fetchAll();
+        
+        $this->render_partial('action-log/quote-post-details', [
+            'title' => "Detail: Citáty (" . date('j.n.Y', strtotime($date)) . ")",
+            'actions' => $actions,
+            'date' => $date
+        ]);
+    }
 }

@@ -37,10 +37,25 @@ class AuthMiddleware
         error_log("Session data: " . json_encode($_SESSION));
         error_log("is_authenticated value: " . (isset($_SESSION['is_authenticated']) ? $_SESSION['is_authenticated'] : 'NOT_SET'));
         
-        $authenticated = isset($_SESSION['is_authenticated']) && $_SESSION['is_authenticated'] === true;
-        error_log("Result: " . ($authenticated ? 'TRUE' : 'FALSE'));
+        // Check if session exists and is authenticated
+        if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== true) {
+            error_log("Result: FALSE - not authenticated");
+            return false;
+        }
         
-        return $authenticated;
+        // Check if session has expired (if expires_at is set)
+        if (isset($_SESSION['expires_at']) && time() > $_SESSION['expires_at']) {
+            error_log("Result: FALSE - session expired");
+            // Clear expired session
+            $_SESSION = [];
+            return false;
+        }
+        
+        // Update last activity
+        $_SESSION['last_activity'] = time();
+        
+        error_log("Result: TRUE - authenticated and valid");
+        return true;
     }
     
     /**
@@ -77,8 +92,13 @@ class AuthMiddleware
             if (!$isAuth) {
                 error_log("REDIRECTING TO LOGIN - user not authenticated");
                 
-                // Store intended URL for redirect after login
-                $_SESSION['intended_url'] = $path;
+                // Store intended URL for redirect after login (only for real pages, not assets)
+                if (!in_array($path, ['/favicon.ico', '/robots.txt']) && !preg_match('/\.(css|js|png|jpg|ico|svg)$/', $path)) {
+                    $_SESSION['intended_url'] = $path;
+                    error_log("Storing intended URL: " . $path);
+                } else {
+                    error_log("Not storing asset URL: " . $path);
+                }
                 
                 header('Location: /login');
                 exit;
