@@ -73,11 +73,11 @@ class SystemController extends BaseController
         }
         
         // Test 2: Environment variables
-        $env_vars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS'];
+        $env_vars = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
         $results['env_vars'] = [];
         foreach ($env_vars as $var) {
             $value = getenv($var);
-            $results['env_vars'][$var] = $value ? ($var === 'DB_PASS' ? '[NASTAVENO]' : $value) : '[NENALEZENO]';
+            $results['env_vars'][$var] = $value ? ($var === 'MYSQL_PASSWORD' ? '[NASTAVENO]' : $value) : '[NENALEZENO]';
         }
         
         // Test 3: Ukázkové tabulky
