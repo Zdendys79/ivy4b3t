@@ -66,6 +66,7 @@ class DashboardController extends BaseController
 
             $this->render('dashboard/index', [
                 'page_title' => 'IVY4B3T Dashboard',
+                'page_css' => ['dashboard'], // Include dashboard.css
                 'system_status' => $system_status,
                 'recent_actions' => $recent_actions,
                 'user_activity' => $user_activity,
