@@ -27,7 +27,7 @@ class UsersController extends BaseController
                            CONCAT(
                                id, ':', 
                                REPLACE(REPLACE(CONCAT(name, ' ', surname), ':', ''), '|', ''), ':', 
-                               IFNULL(locked, 0), ':',
+                               CASE WHEN locked IS NULL THEN 0 ELSE 1 END, ':',
                                -- Odpočinek info
                                CASE
                                    -- Pokud má aktivní sleep nebo delay (v budoucnosti)
@@ -59,6 +59,7 @@ class UsersController extends BaseController
                     WHERE action_code IN ('account_sleep', 'account_delay')
                     GROUP BY user_id
                 ) sleep_delay ON fb_users.id = sleep_delay.user_id
+                WHERE fb_users.locked IS NULL
                 GROUP BY host 
                 ORDER BY host
             ");
