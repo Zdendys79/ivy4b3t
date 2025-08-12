@@ -69,7 +69,7 @@
         
         <!-- Test 1: PDO připojení -->
         <div class="test-section <?= $results['pdo_test']['status'] === 'success' ? 'success' : 'error' ?>">
-            <h2>1. Test přes db-config.php (PDO)</h2>
+            <h2>1. Test přes DatabaseConnection.php (PDO)</h2>
             <p class="<?= $results['pdo_test']['status'] === 'success' ? 'status-ok' : 'status-error' ?>">
                 <?= $results['pdo_test']['status'] === 'success' ? '✓' : '✗' ?> 
                 <?= htmlspecialchars($results['pdo_test']['message']) ?>
