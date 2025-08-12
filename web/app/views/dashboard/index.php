@@ -153,7 +153,7 @@ if (!defined('IVY_FRAMEWORK')) {
                     <div class="monitoring-grid">
                         <a href="/dont_panic" class="monitoring-link dont-panic-link">
                             <div class="monitoring-icon">
-                                <img src="/public/assets/images/dont-panic.svg" alt="Don't Panic!" style="width: 40px; height: auto;">
+                                <img src="/public/assets/images/hitchhiker-symbol.svg" alt="Don't Panic!" style="width: 36px; height: auto; filter: invert(1);">
                             </div>
                             <div class="monitoring-title">Don't panic!</div>
                             <div class="monitoring-desc">Action log overview</div>
