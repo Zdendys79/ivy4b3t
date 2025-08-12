@@ -4,24 +4,25 @@
  * NO hardcoded values allowed!
  */
 
-// Get database configuration from environment
+// Get database configuration from MYSQL_ environment variables
 $db_config = [
-    'host' => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? false,
-    'name' => $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?? false,
-    'user' => $_ENV['DB_USER'] ?? getenv('DB_USER') ?? false,
-    'pass' => $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?? false
+    'host' => $_ENV['MYSQL_HOST'] ?? getenv('MYSQL_HOST') ?? false,
+    'name' => $_ENV['MYSQL_DATABASE'] ?? getenv('MYSQL_DATABASE') ?? false,
+    'user' => $_ENV['MYSQL_USER'] ?? getenv('MYSQL_USER') ?? false,
+    'pass' => $_ENV['MYSQL_PASSWORD'] ?? getenv('MYSQL_PASSWORD') ?? false
 ];
 
 // Validate all required variables are set
 $missing = [];
 foreach (['host', 'name', 'user', 'pass'] as $key) {
     if (!$db_config[$key]) {
-        $missing[] = 'DB_' . strtoupper($key);
+        $missing[] = 'MYSQL_' . strtoupper($key === 'name' ? 'DATABASE' : ($key === 'pass' ? 'PASSWORD' : $key));
     }
 }
 
 if (!empty($missing)) {
     die("ERROR: Missing environment variables: " . implode(', ', $missing) . 
+        "\nUsing MYSQL_* environment variables." .
         "\nPlease ensure Apache envvars are properly configured.");
 }
 
