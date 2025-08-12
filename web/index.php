@@ -142,6 +142,10 @@ try {
             callController('ActionLogController', 'dailyOverview');
             break;
             
+        case '/dont_panic':
+            callController('ActionLogController', 'dailyOverview');
+            break;
+            
         case '/login':
             callController('AuthController', 'login');
             break;
