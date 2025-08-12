@@ -38,12 +38,12 @@ class Database
      */
     private function load_config()
     {
-        // Load configuration from DB_ environment variables (available in PHP)
+        // Load configuration from MYSQL_ environment variables
         $this->config = [
-            'host' => getenv('DB_HOST'),
-            'user' => getenv('DB_USER'), 
-            'password' => getenv('DB_PASS'),
-            'database' => getenv('DB_NAME'),
+            'host' => getenv('MYSQL_HOST'),
+            'user' => getenv('MYSQL_USER'), 
+            'password' => getenv('MYSQL_PASSWORD'),
+            'database' => getenv('MYSQL_DATABASE'),
             'charset' => 'utf8mb4'
         ];
 
@@ -51,7 +51,7 @@ class Database
         $required_keys = ['host', 'user', 'password', 'database'];
         foreach ($required_keys as $key) {
             if (!$this->config[$key]) {
-                throw new Exception("Missing required environment variable: DB_" . strtoupper($key === 'database' ? 'NAME' : $key));
+                throw new Exception("Missing required environment variable: MYSQL_" . strtoupper($key === 'database' ? 'DATABASE' : $key));
             }
         }
 
