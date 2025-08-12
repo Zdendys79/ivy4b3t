@@ -118,8 +118,8 @@ export const GROUPS = {
 
   insertOrUpdateGroup: `
     INSERT INTO fb_groups (
-      fb_id, name, member_count, description, category, type, priority
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      fb_id, name, member_count, description, category, type, priority, last_seen
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
     ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       member_count = VALUES(member_count),
@@ -157,8 +157,12 @@ export const GROUPS = {
   `,
 
   insertDiscoveredLink: `
-    INSERT IGNORE INTO fb_groups (fb_id, type, priority)
-    VALUES (?, 'Z', 3)
+    INSERT INTO fb_groups (fb_id, type, priority, last_seen)
+    VALUES (?, 'Z', 3, NOW())
+    ON DUPLICATE KEY UPDATE
+      type = VALUES(type),
+      priority = GREATEST(priority, VALUES(priority)),
+      last_seen = NOW()
   `,
 
   markDiscoveryAsProcessed: `
@@ -388,8 +392,8 @@ export const GROUPS = {
 
   upsertGroupInfo: `
     INSERT INTO fb_groups (
-      fb_id, name, member_count, type, priority, category
-    ) VALUES (?, ?, ?, 'Z', 3, ?)
+      fb_id, name, member_count, type, priority, category, last_seen
+    ) VALUES (?, ?, ?, 'Z', 3, ?, NOW())
     ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       member_count = VALUES(member_count),
