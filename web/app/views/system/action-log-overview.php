@@ -85,6 +85,17 @@
             margin-bottom: 20px;
             border-left: 4px solid #28a745;
         }
+        .action-code-link {
+            text-decoration: none;
+            color: inherit;
+        }
+        .action-code-link:hover {
+            text-decoration: none;
+        }
+        .action-code-link:hover .action-code {
+            background-color: #007bff;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -133,7 +144,10 @@
                                 <?php foreach ($actions as $action): ?>
                                     <tr>
                                         <td>
-                                            <span class="action-code"><?= htmlspecialchars($action['action_code']) ?></span>
+                                            <a href="/action-log/detail?date=<?= htmlspecialchars($action['action_date']) ?>&action=<?= htmlspecialchars($action['action_code']) ?>" 
+                                               class="action-code-link">
+                                                <span class="action-code"><?= htmlspecialchars($action['action_code']) ?></span>
+                                            </a>
                                         </td>
                                         <td>
                                             <?= number_format($action['action_count']) ?>x

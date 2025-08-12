@@ -35,7 +35,11 @@ class AuthController extends BaseController
         try {
             // Redirect if already authenticated
             if ($this->is_authenticated()) {
-                $this->redirect('/dashboard');
+                // Use intended URL if available, otherwise dashboard
+                $redirect_url = $_SESSION['intended_url'] ?? '/dashboard';
+                error_log("[AuthController] Already authenticated, redirect to: " . $redirect_url);
+                unset($_SESSION['intended_url']); // Clear after use
+                $this->redirect($redirect_url);
             }
 
             // Check for active timeout FIRST - before any login processing
@@ -122,7 +126,12 @@ class AuthController extends BaseController
             // Successful login - no logging needed for simplicity
             
             $this->flash('success', 'Přihlášení úspěšné!');
-            $this->redirect('/dashboard');
+            
+            // Redirect to intended URL if available, otherwise dashboard
+            $redirect_url = $_SESSION['intended_url'] ?? '/dashboard';
+            error_log("[AuthController] POST login redirect to: " . $redirect_url);
+            unset($_SESSION['intended_url']); // Clear after use
+            $this->redirect($redirect_url);
         } else {
             // Failed login
             if ($this->debug_mode) {
@@ -236,6 +245,7 @@ class AuthController extends BaseController
         $_SESSION['is_authenticated'] = true;
         $_SESSION['login_time'] = time();
         $_SESSION['last_activity'] = time();
+        $_SESSION['expires_at'] = time() + (30 * 24 * 60 * 60); // 30 days from now
 
         if ($this->debug_mode) {
             error_log("[AuthController] Admin session created");
@@ -407,7 +417,7 @@ class AuthController extends BaseController
 
         // Delete session cookie
         if (isset($_COOKIE[session_name()])) {
-            setcookie(session_name(), '', time() - 3600, '/');
+            setcookie(session_name(), '', time() - 3600, '/', '', false, true);
         }
 
         // Destroy session
@@ -531,7 +541,12 @@ class AuthController extends BaseController
             $this->createAdminSession();
             
             $this->flash('success', 'Přihlášení úspěšné!');
-            $this->redirect('/dashboard');
+            
+            // Redirect to intended URL if available, otherwise dashboard
+            $redirect_url = $_SESSION['intended_url'] ?? '/dashboard';
+            error_log("[AuthController] POST login redirect to: " . $redirect_url);
+            unset($_SESSION['intended_url']); // Clear after use
+            $this->redirect($redirect_url);
         } else {
             // Failed login
             if ($this->debug_mode) {

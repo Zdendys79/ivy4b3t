@@ -17,6 +17,7 @@ if (!defined('IVY_FRAMEWORK')) {
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>_</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -79,6 +80,34 @@ if (!defined('IVY_FRAMEWORK')) {
             position: absolute;
             left: -9999px;
         }
+        
+        /* Mobile fallback - visible input */
+        @media (max-width: 768px) {
+            #password {
+                display: block !important;
+                position: static !important;
+                left: auto !important;
+                background: transparent;
+                border: 1px solid #333;
+                padding: 15px;
+                margin: 30px 0;
+                width: 300px;
+                text-align: center;
+                color: #fff;
+                font-size: 54px;
+                letter-spacing: 6px;
+            }
+            
+            .hidden {
+                display: block !important;
+                position: static !important;
+                left: auto !important;
+            }
+            
+            #cursor {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -100,7 +129,7 @@ if (!defined('IVY_FRAMEWORK')) {
         <?php else: ?>
             <!-- Normal mode: blinking cursor -->
             <form method="POST" action="/login" id="form">
-                <input type="password" id="password" name="password" autocomplete="off" class="hidden">
+                <input type="tel" id="password" name="password" autocomplete="off" class="hidden">
             </form>
             <div id="cursor">_</div>
             
@@ -130,6 +159,22 @@ if (!defined('IVY_FRAMEWORK')) {
                 
                 // Focus na stránku pro zachycení kláves
                 window.focus();
+                
+                // Pro mobilní zařízení - automatický focus na input
+                function isMobile() {
+                    return window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
+                }
+                
+                if (isMobile()) {
+                    // Na mobilu fokusuj přímo na input
+                    passwordField.focus();
+                    
+                    // Přidej event listener pro změnu hodnoty inputu
+                    passwordField.addEventListener('input', (e) => {
+                        inputBuffer = e.target.value;
+                        updateCursor();
+                    });
+                }
             </script>
         <?php endif; ?>
     </div>

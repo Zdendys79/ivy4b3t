@@ -2,6 +2,11 @@
 // Define framework constant for security
 define('IVY_FRAMEWORK', true);
 
+// Configure session for 30 days
+ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60); // 30 days in seconds
+ini_set('session.cookie_lifetime', 30 * 24 * 60 * 60); // 30 days in seconds
+ini_set('session.cookie_samesite', 'Lax'); // Explicit SameSite for mobile compatibility
+
 // Start session
 session_start();
 
@@ -140,6 +145,10 @@ try {
             
         case '/action-log':
             callController('ActionLogController', 'dailyOverview');
+            break;
+            
+        case '/action-log/detail':
+            callController('ActionLogController', 'actionDetail');
             break;
             
         case '/dont_panic':
