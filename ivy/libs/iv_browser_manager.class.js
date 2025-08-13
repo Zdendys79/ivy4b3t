@@ -59,12 +59,38 @@ export class BrowserManager {
     // Vyčistit SingletonLock
     await this._cleanupSingletonLock(lockFile, profileDir);
 
-    // Spustit prohlížeč
-    const browser = await puppeteer.launch({
-      headless: false,
-      defaultViewport: null,
-      args: this._getBrowserArgs(profileDir)
-    });
+    // Spustit prohlížeč s retry při SingletonLock chybě
+    let browser;
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        browser = await puppeteer.launch({
+          headless: false,
+          defaultViewport: null,
+          args: this._getBrowserArgs(profileDir)
+        });
+        break; // Úspěch - ukončit retry loop
+        
+      } catch (err) {
+        const isSingletonError = err.message.includes('SingletonLock') || 
+                                err.message.includes('Failed to create a ProcessSingleton');
+        
+        if (isSingletonError && attempt < maxRetries) {
+          Log.warn('[BROWSER]', `Pokus ${attempt}/${maxRetries} selhal kvůli SingletonLock - zkouším agresivní cleanup`);
+          
+          // Agresivní cleanup při retry
+          await this._cleanupSingletonLock(lockFile, profileDir);
+          
+          // Delší čekání před dalším pokusem
+          await Wait.toSeconds(2, `Retry ${attempt + 1}/${maxRetries} - po cleanup`);
+          
+        } else {
+          // Buď není SingletonLock chyba, nebo jsme vyčerpali pokusy
+          throw err;
+        }
+      }
+    }
 
     // Nastavit context a permissions
     const context = browser.defaultBrowserContext();
@@ -289,12 +315,34 @@ export class BrowserManager {
   async _cleanupSingletonLock(lockFile, profileDir) {
     try {
       if (fs.existsSync(lockFile)) {
+        // Pokus o odstranění lock souboru
         fs.unlinkSync(lockFile);
         Log.debug('[BROWSER]', `Odstraněn existující SingletonLock pro ${profileDir}`);
         
         // Počkat trochu pro stabilizaci po odstranění lock souboru
         await Wait.toSeconds(1, 'Po odstranění SingletonLock');
       }
+      
+      // Agresivní cleanup - ukončit všechny chrome procesy pro daný profil
+      try {
+        const { exec } = await import('child_process');
+        const util = await import('util');
+        const execPromise = util.promisify(exec);
+        
+        // Najít a ukončit chrome procesy s daným profilem
+        const profilePath = path.join(this.userDataDir, profileDir);
+        await execPromise(`pkill -f "${profilePath}" || true`);
+        
+        Log.debug('[BROWSER]', `Ukončeny chrome procesy pro profil ${profileDir}`);
+        
+        // Další krátká pauza po ukončení procesů
+        await Wait.toSeconds(0.5, 'Po ukončení chrome procesů');
+        
+      } catch (killErr) {
+        // Tichá chyba - pkill může selhat pokud nejsou žádné procesy
+        Log.debug('[BROWSER]', `Pkill pro ${profileDir}: ${killErr.message}`);
+      }
+      
     } catch (err) {
       if (err.code !== 'ENOENT') {
         await Log.warn('[BROWSER]', `Chyba při mazání SingletonLock: ${err.message}`);
