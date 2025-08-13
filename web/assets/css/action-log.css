@@ -1,0 +1,283 @@
+/* Action Log Styles - Kompaktní seznam design */
+
+body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    background-color: #f5f5f5; 
+}
+
+.container { 
+    background: white; 
+    padding: 20px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+}
+
+/* Navigace */
+nav {
+    margin-bottom: 20px;
+}
+
+nav a {
+    margin-right: 15px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* Statistiky */
+.stats {
+    background-color: #d4edda;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid #28a745;
+}
+
+.no-user-note {
+    font-style: italic;
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+/* Kompaktní seznam akcí */
+.action-list {
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    border-bottom: 1px solid #f1f1f1;
+    transition: background-color 0.2s;
+}
+
+.action-item:last-child {
+    border-bottom: none;
+}
+
+.action-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Čas */
+.timestamp {
+    font-family: monospace;
+    color: #6c757d;
+    font-size: 0.85em;
+    min-width: 65px;
+    margin-right: 15px;
+}
+
+/* Účet informace */
+.account-info {
+    font-weight: 500;
+    color: #0066cc;
+    margin-right: 15px;
+    min-width: 140px;
+}
+
+/* Skupina informace */
+.group-info {
+    flex: 1;
+    color: #333;
+    font-size: 0.9em;
+}
+
+/* RSS informace */
+.rss-info {
+    flex: 1;
+    color: #333;
+    font-size: 0.9em;
+}
+
+/* Citát informace */
+.quote-info {
+    flex: 1;
+    color: #333;
+    font-size: 0.9em;
+}
+
+/* Spánek informace */
+.sleep-info {
+    flex: 1;
+    color: #333;
+    font-size: 0.9em;
+}
+
+/* Reference ID a další malé texty */
+.reference-id {
+    color: #666;
+    font-size: 0.8em;
+    margin-left: 10px;
+}
+
+.url-link {
+    color: #666;
+    font-size: 0.8em;
+    margin-top: 2px;
+    display: block;
+    text-decoration: none;
+}
+
+.url-link:hover {
+    text-decoration: underline;
+}
+
+.quote-author {
+    color: #666;
+    font-size: 0.8em;
+    margin-left: 10px;
+    font-style: italic;
+}
+
+.quote-id {
+    color: #666;
+    font-size: 0.8em;
+    margin-left: 10px;
+}
+
+.sleep-duration {
+    color: #6f42c1;
+    font-weight: bold;
+}
+
+/* Account delay specifické styly */
+.container.delay-container {
+    max-width: 1200px;
+    margin: 20px auto;
+}
+
+.timeline-grid {
+    margin: 30px 0;
+    overflow-x: auto;
+}
+
+.time-labels {
+    display: grid;
+    grid-template-columns: repeat(96, 1fr);
+    gap: 1px;
+    margin-bottom: 5px;
+    font-size: 10px;
+    text-align: center;
+}
+
+.time-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    height: 40px;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    color: #666;
+}
+
+.time-blocks {
+    display: grid;
+    grid-template-columns: repeat(96, 1fr);
+    gap: 1px;
+    min-width: 960px;
+}
+
+.time-block {
+    height: 15px;
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    position: relative;
+    cursor: pointer;
+}
+
+.time-block.has-activity {
+    background-color: #dc3545;
+}
+
+.time-block:hover {
+    border-color: #007bff;
+    box-shadow: 0 0 3px rgba(0,123,255,0.5);
+}
+
+.host-group {
+    margin-bottom: 40px;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.host-header {
+    background-color: #007bff;
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.host-content {
+    padding: 20px;
+}
+
+.user-timeline {
+    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.user-header {
+    background-color: #f8f9fa;
+    padding: 6px 15px;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.user-info {
+    color: #495057;
+}
+
+.delay-count {
+    background-color: #dc3545;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8em;
+}
+
+.user-timeline-content {
+    padding: 15px;
+}
+
+.legend {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.legend-item {
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.legend-color {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    vertical-align: middle;
+    border: 1px solid #dee2e6;
+}
