@@ -141,15 +141,21 @@ export class BasePostAction extends BaseAction {
     Log.info(`[${user.id}]`, `KROK 6: Čekám ${verifyDelay}s před ověřením odeslání příspěvku`);
     await Wait.toSeconds(verifyDelay);
     
-    // 1. Kontrola zmizení tlačítka "Přidat" (hlavní indikátor) - přesně stejně jako při klikání
-    const addButtonElement = await fbBot.pageAnalyzer.getElementInfo('Přidat', { matchType: 'exact' });
-    const addButtonVisible = addButtonElement !== null;
+    // 1. Kontrola zmizení KONKRÉTNÍHO tlačítka na které se kliklo (přesný tracking)
+    let clickedElementStillVisible = await fbBot.pageAnalyzer.isLastClickedElementStillVisible();
     
-    Log.debug(`[${user.id}]`, `Tlačítko "Přidat" ${addButtonVisible ? 'STÁLE VIDITELNÉ' : 'zmizelo'}`);
+    if (clickedElementStillVisible === null) {
+      // Fallback - žádný element nebyl trackován, použij původní metodu
+      Log.warn(`[${user.id}]`, 'Žádný kliknutý element k ověření - používám fallback detekci');
+      const addButtonElement = await fbBot.pageAnalyzer.getElementInfo('Přidat', { matchType: 'exact' });
+      clickedElementStillVisible = (addButtonElement !== null);
+    }
     
-    // 2. Hledar pozitivní indikátory úspěchu - pouze pokud tlačítko zmizelo
+    Log.debug(`[${user.id}]`, `Kliknuté tlačítko "Přidat" ${clickedElementStillVisible ? 'STÁLE VIDITELNÉ' : 'zmizelo'}`);
+    
+    // 2. Hledat pozitivní indikátory úspěchu - pouze pokud tlačítko zmizelo
     let hasSuccessIndicator = false;
-    if (!addButtonVisible) {
+    if (!clickedElementStillVisible) {
       const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 100 });
       const successIndicators = [
         'Váš příspěvek byl zveřejněn',
@@ -164,12 +170,12 @@ export class BasePostAction extends BaseAction {
       );
     }
     
-    if (!addButtonVisible || hasSuccessIndicator) {
-      const reason = !addButtonVisible ? 'tlačítko "Přidat" zmizelo' : 'nalezen success indikátor';
+    if (!clickedElementStillVisible || hasSuccessIndicator) {
+      const reason = !clickedElementStillVisible ? 'kliknuté tlačítko "Přidat" zmizelo' : 'nalezen success indikátor';
       Log.success(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl úspěšně odeslán (${reason})`);
       return true;
     } else {
-      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
+      await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Kliknuté tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
       return false;
     }
   }

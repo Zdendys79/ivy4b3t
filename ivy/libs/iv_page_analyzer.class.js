@@ -27,6 +27,9 @@ export class PageAnalyzer {
     this.isElementTrackingActive = false;
     this.updateIntervalMs = 10000; // 10 sekund default
     
+    // Tracking posledního kliknutého elementu pro ověření
+    this.lastClickedElement = null;
+    
     // ŽÁDNÉ automatické trackování! Vše pouze na vyžádání
   }
 
@@ -1342,6 +1345,18 @@ export class PageAnalyzer {
       if (success) {
         Log.success('[ANALYZER]', `Úspěšné kliknutí na element: "${text}"`);
         
+        // Uložit informace o kliknutém elementu pro pozdější ověření
+        this.lastClickedElement = {
+          text: element.text,
+          xpath: element.xpath,
+          id: element.id,
+          className: element.className,
+          tagName: element.tagName,
+          clickedAt: Date.now()
+        };
+        
+        Log.debug('[ANALYZER]', `Uložen kliknutý element pro tracking: ${this.lastClickedElement.xpath || this.lastClickedElement.id || 'no-id'}`);
+        
         // Počkej na reakci stránky po kliknutí
         if (waitAfterClick) {
           Log.debug('[ANALYZER]', 'Čekám na reakci stránky po kliknutí...');
@@ -1512,6 +1527,82 @@ export class PageAnalyzer {
     } catch (err) {
       await Log.error('[ANALYZER]', `Chyba při získávání textů: ${err.message}`);
       return [];
+    }
+  }
+
+  /**
+   * Kontroluje jestli poslední kliknutý element stále existuje na stránce
+   * @returns {Promise<boolean>} true pokud element stále existuje, false pokud zmizел
+   */
+  async isLastClickedElementStillVisible() {
+    try {
+      if (!this.lastClickedElement) {
+        Log.debug('[ANALYZER]', 'Žádný kliknutý element k ověření');
+        return null; // Žádný element nebyl kliknut
+      }
+
+      const { xpath, id, className, text, tagName } = this.lastClickedElement;
+      
+      // Priorita: xpath > id > kombinace className+tagName+text
+      let elementExists = false;
+      let foundMethod = 'none';
+
+      // 1. Pokus přes XPath (nejpřesnější)
+      if (xpath) {
+        try {
+          const element = await this.page.$x(xpath);
+          if (element && element.length > 0) {
+            // Ověřit že element je viditelný
+            const isVisible = await this.page.evaluate(el => {
+              return el && el.offsetParent !== null;
+            }, element[0]);
+            elementExists = isVisible;
+            foundMethod = 'xpath';
+          }
+        } catch (xpathErr) {
+          Log.debug('[ANALYZER]', `XPath hledání selhalo: ${xpathErr.message}`);
+        }
+      }
+
+      // 2. Pokus přes ID (pokud XPath selhal)
+      if (!elementExists && id) {
+        try {
+          const element = await this.page.$(`#${id}`);
+          if (element) {
+            const isVisible = await this.page.evaluate(el => {
+              return el && el.offsetParent !== null;
+            }, element);
+            elementExists = isVisible;
+            foundMethod = 'id';
+          }
+        } catch (idErr) {
+          Log.debug('[ANALYZER]', `ID hledání selhalo: ${idErr.message}`);
+        }
+      }
+
+      // 3. Fallback přes kombinaci vlastností (nejméně přesné)
+      if (!elementExists && className && text) {
+        try {
+          const elements = await this.getCurrentElements();
+          const matchingElement = elements.find(el => 
+            el.className === className && 
+            el.tagName === tagName && 
+            el.text === text
+          );
+          elementExists = !!matchingElement;
+          foundMethod = 'properties';
+        } catch (fallbackErr) {
+          Log.debug('[ANALYZER]', `Fallback hledání selhalo: ${fallbackErr.message}`);
+        }
+      }
+
+      Log.debug('[ANALYZER]', `Kliknutý element ${elementExists ? 'STÁLE EXISTUJE' : 'ZMIZЕL'} (metoda: ${foundMethod})`);
+      
+      return elementExists;
+
+    } catch (err) {
+      await Log.error('[ANALYZER]', `Chyba při ověřování kliknutého elementu: ${err.message}`);
+      return null; // Chyba při ověřování - neznámý stav
     }
   }
 
