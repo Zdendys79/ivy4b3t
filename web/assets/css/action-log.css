@@ -88,6 +88,15 @@ nav a:hover {
     min-width: 140px;
 }
 
+.user-link {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.user-link:hover {
+    text-decoration: underline;
+}
+
 /* Skupina informace */
 .group-info {
     flex: 1;
@@ -285,4 +294,40 @@ nav a:hover {
     margin-right: 5px;
     vertical-align: middle;
     border: 1px solid #dee2e6;
+}
+
+/* User Actions specifické styly */
+.user-profile {
+    background-color: #e7f3ff;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.user-basic-info {
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.action-type {
+    font-weight: 500;
+    color: #333;
+    margin-right: 15px;
+    min-width: 160px;
+    font-size: 0.9em;
+}
+
+.action-details {
+    flex: 1;
+    color: #555;
+    font-size: 0.85em;
+}
+
+.action-date {
+    color: #666;
+    font-size: 0.8em;
+    min-width: 80px;
+    text-align: right;
+    margin-left: 15px;
 }
