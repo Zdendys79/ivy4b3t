@@ -11,6 +11,7 @@
 import { BaseAction } from './base_action.class.js';
 import { Log } from './iv_log.class.js';
 import { Wait } from './iv_wait.class.js';
+import { db } from '../iv_sql.js';
 
 export class BasePostAction extends BaseAction {
   /**
@@ -149,6 +150,12 @@ export class BasePostAction extends BaseAction {
       Log.warn(`[${user.id}]`, 'Žádný kliknutý element k ověření - používám fallback detekci');
       const addButtonElement = await fbBot.pageAnalyzer.getElementInfo('Přidat', { matchType: 'exact' });
       clickedElementStillVisible = (addButtonElement !== null);
+      
+      // Statistika - počítadlo fallback použití
+      await this._incrementFallbackCounter();
+    } else {
+      // Statistika - počítadlo úspěšného tracking použití
+      await this._incrementTrackingCounter();
     }
     
     Log.debug(`[${user.id}]`, `Kliknuté tlačítko "Přidat" ${clickedElementStillVisible ? 'STÁLE VIDITELNÉ' : 'zmizelo'}`);
@@ -220,5 +227,39 @@ export class BasePostAction extends BaseAction {
    */
   async handleFailure(user, fbBot) {
     throw new Error('handleFailure must be implemented by subclass');
+  }
+
+  // ==========================================
+  // PRIVATE METODY - Statistika tracking vs fallback
+  // ==========================================
+
+  /**
+   * Zvýší počítadlo fallback detekce v statistikách
+   * @private
+   */
+  async _incrementFallbackCounter() {
+    try {
+      const currentCount = await db.getVariable('post_verification_fallback_count') || '0';
+      const newCount = parseInt(currentCount) + 1;
+      await db.setVariable('post_verification_fallback_count', newCount.toString());
+      Log.debug('[STATS]', `Fallback detekce použita - celkem: ${newCount}x`);
+    } catch (err) {
+      Log.debug('[STATS]', `Chyba při ukládání fallback statistiky: ${err.message}`);
+    }
+  }
+
+  /**
+   * Zvýší počítadlo úspěšného tracking detekce v statistikách
+   * @private
+   */
+  async _incrementTrackingCounter() {
+    try {
+      const currentCount = await db.getVariable('post_verification_tracking_count') || '0';
+      const newCount = parseInt(currentCount) + 1;
+      await db.setVariable('post_verification_tracking_count', newCount.toString());
+      Log.debug('[STATS]', `Tracking detekce úspěšná - celkem: ${newCount}x`);
+    } catch (err) {
+      Log.debug('[STATS]', `Chyba při ukládání tracking statistiky: ${err.message}`);
+    }
   }
 }
