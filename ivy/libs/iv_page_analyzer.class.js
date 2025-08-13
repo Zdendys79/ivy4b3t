@@ -1543,12 +1543,36 @@ export class PageAnalyzer {
 
       const { xpath, id, className, text, tagName } = this.lastClickedElement;
       
-      // Priorita: id > kombinace className+tagName+text
+      // Priorita: xpath > id > kombinace className+tagName+text
       let elementExists = false;
       let foundMethod = 'none';
 
-      // 1. Pokus přes ID (nejspolehlivější)
-      if (id) {
+      // 1. Pokus přes XPath (nejstabilnější)
+      if (xpath) {
+        try {
+          const elementExists_xpath = await this.page.evaluate((xpathQuery) => {
+            const result = document.evaluate(
+              xpathQuery, 
+              document, 
+              null, 
+              XPathResult.FIRST_ORDERED_NODE_TYPE, 
+              null
+            );
+            const element = result.singleNodeValue;
+            return element && element.offsetParent !== null;
+          }, xpath);
+          
+          if (elementExists_xpath) {
+            elementExists = true;
+            foundMethod = 'xpath';
+          }
+        } catch (xpathErr) {
+          Log.debug('[ANALYZER]', `XPath hledání selhalo: ${xpathErr.message}`);
+        }
+      }
+
+      // 2. Pokus přes ID (fallback)
+      if (!elementExists && id) {
         try {
           const element = await this.page.$(`#${id}`);
           if (element) {
@@ -1563,7 +1587,7 @@ export class PageAnalyzer {
         }
       }
 
-      // 2. Pokus přes kombinaci vlastností
+      // 3. Pokus přes kombinace vlastností (poslední fallback)
       if (!elementExists && className && text) {
         try {
           const elements = await this.getCurrentElements();
@@ -1581,7 +1605,7 @@ export class PageAnalyzer {
 
       Log.debug('[ANALYZER]', `Kliknutý element ${elementExists ? 'STÁLE EXISTUJE' : 'ZMIZЕL'} (metoda: ${foundMethod})`);
       
-      return elementExists;
+      return { exists: elementExists, method: foundMethod };
 
     } catch (err) {
       await Log.error('[ANALYZER]', `Chyba při ověřování kliknutého elementu: ${err.message}`);

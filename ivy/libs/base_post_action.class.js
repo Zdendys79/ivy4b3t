@@ -143,9 +143,10 @@ export class BasePostAction extends BaseAction {
     await Wait.toSeconds(verifyDelay);
     
     // 1. Kontrola zmizení KONKRÉTNÍHO tlačítka na které se kliklo (přesný tracking)
-    let clickedElementStillVisible = await fbBot.pageAnalyzer.isLastClickedElementStillVisible();
+    let trackingResult = await fbBot.pageAnalyzer.isLastClickedElementStillVisible();
+    let clickedElementStillVisible;
     
-    if (clickedElementStillVisible === null) {
+    if (trackingResult === null) {
       // Fallback - žádný element nebyl trackován, použij původní metodu
       Log.warn(`[${user.id}]`, 'Žádný kliknutý element k ověření - používám fallback detekci');
       const addButtonElement = await fbBot.pageAnalyzer.getElementInfo('Přidat', { matchType: 'exact' });
@@ -154,8 +155,14 @@ export class BasePostAction extends BaseAction {
       // Statistika - počítadlo fallback použití
       await this._incrementFallbackCounter();
     } else {
-      // Statistika - počítadlo úspěšného tracking použití
-      await this._incrementTrackingCounter();
+      clickedElementStillVisible = trackingResult.exists;
+      
+      // Statistika podle použité metody
+      if (trackingResult.method === 'xpath') {
+        await this._incrementXPathCounter();
+      } else if (trackingResult.method === 'id' || trackingResult.method === 'properties') {
+        await this._incrementPropertiesCounter();
+      }
     }
     
     Log.debug(`[${user.id}]`, `Kliknuté tlačítko "Přidat" ${clickedElementStillVisible ? 'STÁLE VIDITELNÉ' : 'zmizelo'}`);
@@ -247,15 +254,28 @@ export class BasePostAction extends BaseAction {
   }
 
   /**
-   * Zvýší počítadlo úspěšného tracking detekce v statistikách
+   * Zvýší počítadlo XPath detekce v statistikách
    * @private
    */
-  async _incrementTrackingCounter() {
+  async _incrementXPathCounter() {
     try {
-      const newCount = await db.incrementVariable('post_track_count');
-      Log.debug('[STATS]', `Tracking detekce úspěšná - celkem: ${newCount}x`);
+      const newCount = await db.incrementVariable('xpath_count');
+      Log.debug('[STATS]', `XPath detekce úspěšná - celkem: ${newCount}x`);
     } catch (err) {
-      Log.debug('[STATS]', `Chyba při ukládání tracking statistiky: ${err.message}`);
+      Log.debug('[STATS]', `Chyba při ukládání XPath statistiky: ${err.message}`);
+    }
+  }
+
+  /**
+   * Zvýší počítadlo properties detekce v statistikách  
+   * @private
+   */
+  async _incrementPropertiesCounter() {
+    try {
+      const newCount = await db.incrementVariable('properties_count');
+      Log.debug('[STATS]', `Properties detekce úspěšná - celkem: ${newCount}x`);
+    } catch (err) {
+      Log.debug('[STATS]', `Chyba při ukládání properties statistiky: ${err.message}`);
     }
   }
 }
