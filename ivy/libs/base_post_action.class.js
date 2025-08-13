@@ -239,7 +239,7 @@ export class BasePostAction extends BaseAction {
    */
   async _incrementFallbackCounter() {
     try {
-      const newCount = await db.incrementVariable('post_verification_fallback_count');
+      const newCount = await db.incrementVariable('post_fallback_count');
       Log.debug('[STATS]', `Fallback detekce použita - celkem: ${newCount}x`);
     } catch (err) {
       Log.debug('[STATS]', `Chyba při ukládání fallback statistiky: ${err.message}`);
@@ -252,7 +252,7 @@ export class BasePostAction extends BaseAction {
    */
   async _incrementTrackingCounter() {
     try {
-      const newCount = await db.incrementVariable('post_verification_tracking_count');
+      const newCount = await db.incrementVariable('post_track_count');
       Log.debug('[STATS]', `Tracking detekce úspěšná - celkem: ${newCount}x`);
     } catch (err) {
       Log.debug('[STATS]', `Chyba při ukládání tracking statistiky: ${err.message}`);
