@@ -167,6 +167,21 @@ export const SYSTEM = {
     ON DUPLICATE KEY UPDATE value = VALUES(value), type = VALUES(type), changed = NOW()
   `,
 
+  incrementVariable: `
+    INSERT INTO variables (name, value, type, changed)
+    VALUES (?, ?, 'int', NOW())
+    ON DUPLICATE KEY UPDATE 
+      value = CAST(IFNULL(value, 0) AS SIGNED) + VALUES(value),
+      type = 'int',
+      changed = NOW()
+  `,
+
+  getVariableAfterIncrement: `
+    SELECT CAST(value AS SIGNED) as new_value 
+    FROM variables 
+    WHERE name = ?
+  `,
+
   getAllVariables: `
     SELECT name, value, type, changed
     FROM variables

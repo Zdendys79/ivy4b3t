@@ -298,6 +298,39 @@ export class QueryBuilder {
     return await this.safeExecute('system.setVariable', [name, value]);
   }
 
+  /**
+   * Atomicky zvýší číselnou proměnnou v databázi
+   * @param {string} name - Název proměnné
+   * @param {number} amount - Hodnota o kterou zvýšit (default: 1)
+   * @returns {Promise<number>} Nová hodnota po zvýšení
+   */
+  async incrementVariable(name, amount = 1) {
+    try {
+      // Atomická operace - INSERT/UPDATE s číselným přírůstkem
+      await this.safeExecute('system.incrementVariable', [name, amount.toString()]);
+      
+      // Získej novou hodnotu
+      const result = await this.safeQueryFirst('system.getVariableAfterIncrement', [name]);
+      return result ? parseInt(result.new_value) : amount;
+    } catch (err) {
+      // Fallback - pokud SQL operace selže, použij tradiční způsob
+      const currentValue = await this.getVariable(name) || '0';
+      const newValue = parseInt(currentValue) + amount;
+      await this.setVariable(name, newValue.toString());
+      return newValue;
+    }
+  }
+
+  /**
+   * Atomicky sníží číselnou proměnnou v databázi
+   * @param {string} name - Název proměnné  
+   * @param {number} amount - Hodnota o kterou snížit (default: 1)
+   * @returns {Promise<number>} Nová hodnota po snížení
+   */
+  async decrementVariable(name, amount = 1) {
+    return await this.incrementVariable(name, -amount);
+  }
+
   // =========================================================
   // SYSTEM - Systémové funkce
   // =========================================================
