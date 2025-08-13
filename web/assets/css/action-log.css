@@ -118,9 +118,14 @@ nav a:hover {
 
 /* Reference ID a další malé texty */
 .reference-id {
-    color: #666;
+    color: #007bff;
     font-size: 0.8em;
     margin-left: 10px;
+    text-decoration: none;
+}
+
+.reference-id:hover {
+    text-decoration: underline;
 }
 
 .url-link {

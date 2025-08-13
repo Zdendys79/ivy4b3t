@@ -34,7 +34,11 @@
                         <div class="group-info">
                             🔍 <?= htmlspecialchars($action['text']) ?>
                             <?php if ($action['reference_id']): ?>
-                                <span class="reference-id">ID: <?= htmlspecialchars($action['reference_id']) ?></span>
+                                <a href="https://www.facebook.com/groups/<?= htmlspecialchars($action['reference_id']) ?>" 
+                                   target="_blank" 
+                                   class="reference-id">
+                                    🔗 <?= htmlspecialchars($action['reference_id']) ?>
+                                </a>
                             <?php endif; ?>
                         </div>
                     </div>
