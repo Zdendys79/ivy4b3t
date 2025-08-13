@@ -100,7 +100,7 @@ export async function runWheelOfFortune(user, browser, context) {
         await Log.error(`[${user.id}]`, `${consecutiveFailures} neúspěšných akcí za sebou`);
         
         // Načíst account_delay akci z databáze pro získání min/max_minutes
-        const delayActionData = await db.getActionDefinition('account_delay');
+        const delayActionData = await db.getDefinitionByCode('account_delay');
         
         // Pro ukončovací akce nepotřebujeme FBBot
         const endingContext = { browser, ...context };
