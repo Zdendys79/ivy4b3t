@@ -29,15 +29,17 @@
                     <div class="action-item">
                         <div class="timestamp"><?= date('H:i:s', strtotime($action['timestamp'])) ?></div>
                         <div class="account-info">
-                            👤 ID<?= $action['account_id'] ?> - <?= htmlspecialchars($action['surname'] ?? $action['name'] ?? 'Neznámý') ?>
+                            <a href="/action-log/user?user_id=<?= $action['account_id'] ?>" class="user-link">
+                                👤 ID<?= $action['account_id'] ?> - <?= htmlspecialchars($action['surname'] ?? $action['name'] ?? 'Neznámý') ?>
+                            </a>
                         </div>
                         <div class="group-info">
                             🎯 <?= htmlspecialchars($action['text']) ?>
-                            <?php if ($action['reference_id']): ?>
-                                <a href="https://www.facebook.com/groups/<?= htmlspecialchars($action['reference_id']) ?>" 
+                            <?php if ($action['group_fb_id']): ?>
+                                <a href="https://www.facebook.com/groups/<?= htmlspecialchars($action['group_fb_id']) ?>" 
                                    target="_blank" 
                                    class="reference-id">
-                                    🔗 <?= htmlspecialchars($action['reference_id']) ?>
+                                    🔗 <?= htmlspecialchars($action['group_fb_id']) ?>
                                 </a>
                             <?php endif; ?>
                         </div>

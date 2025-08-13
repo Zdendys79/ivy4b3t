@@ -29,7 +29,9 @@
                     <div class="action-item">
                         <div class="timestamp"><?= date('H:i:s', strtotime($action['timestamp'])) ?></div>
                         <div class="account-info">
-                            👤 ID<?= $action['account_id'] ?> - <?= htmlspecialchars($action['surname'] ?? $action['name'] ?? 'Neznámý') ?>
+                            <a href="/action-log/user?user_id=<?= $action['account_id'] ?>" class="user-link">
+                                👤 ID<?= $action['account_id'] ?> - <?= htmlspecialchars($action['surname'] ?? $action['name'] ?? 'Neznámý') ?>
+                            </a>
                         </div>
                         <div class="sleep-info">
                             💤 

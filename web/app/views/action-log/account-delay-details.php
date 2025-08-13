@@ -95,8 +95,10 @@
                             <div class="user-timeline">
                                 <div class="user-header">
                                     <div class="user-info">
-                                        👤 ID<?= $user_data['user_info']['account_id'] ?> - 
-                                        <?= htmlspecialchars($user_data['user_info']['surname'] ?? $user_data['user_info']['name'] ?? 'Neznámý') ?>
+                                        <a href="/action-log/user?user_id=<?= $user_data['user_info']['account_id'] ?>" class="user-link">
+                                            👤 ID<?= $user_data['user_info']['account_id'] ?> - 
+                                            <?= htmlspecialchars($user_data['user_info']['surname'] ?? $user_data['user_info']['name'] ?? 'Neznámý') ?>
+                                        </a>
                                     </div>
                                     <div class="delay-count">
                                         <?= count($user_data['actions']) ?> uspání

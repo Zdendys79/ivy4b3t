@@ -58,7 +58,6 @@ export class GroupExploreAction extends BaseAction {
       const result = await groupExploreAction.execute(user, fbBot);
       
       if (result.success) {
-        await this.logAction(user, null, 'Group explore successful');
         return true;
       } else {
         await Log.warn(`[${user.id}]`, `Group explore failed: ${result.reason || 'Unknown reason'}`);

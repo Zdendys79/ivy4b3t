@@ -130,9 +130,10 @@ class ActionLogController extends BaseController
     private function handlePostDetails($pdo, $date, $action_code)
     {
         $query = "
-            SELECT al.*, u.surname, u.name
+            SELECT al.*, u.surname, u.name, g.fb_id as group_fb_id
             FROM action_log al
             LEFT JOIN fb_users u ON al.account_id = u.id
+            LEFT JOIN fb_groups g ON al.reference_id = g.id
             WHERE DATE(al.timestamp) = ? AND al.action_code = ?
             ORDER BY al.timestamp DESC
         ";
@@ -152,9 +153,10 @@ class ActionLogController extends BaseController
     private function handleGroupExploreDetails($pdo, $date)
     {
         $query = "
-            SELECT al.*, u.surname, u.name
+            SELECT al.*, u.surname, u.name, g.fb_id as group_fb_id
             FROM action_log al
             LEFT JOIN fb_users u ON al.account_id = u.id
+            LEFT JOIN fb_groups g ON al.reference_id = g.id
             WHERE DATE(al.timestamp) = ? AND al.action_code = 'group_explore'
             ORDER BY al.timestamp DESC
         ";
@@ -254,5 +256,71 @@ class ActionLogController extends BaseController
             'actions' => $actions,
             'date' => $date
         ]);
+    }
+
+    /**
+     * Přehled akcí konkrétního uživatele
+     */
+    public function userActions()
+    {
+        $user_id = $_GET['user_id'] ?? null;
+        
+        if (!$user_id) {
+            http_response_code(400);
+            echo "Missing user_id parameter";
+            return;
+        }
+
+        try {
+            $pdo = $this->db->getPdo();
+            
+            // Získání základních informací o uživateli
+            $user_query = "
+                SELECT id, surname, name, e_mail, host
+                FROM fb_users 
+                WHERE id = ?
+            ";
+            
+            $stmt = $pdo->prepare($user_query);
+            $stmt->execute([$user_id]);
+            $user_info = $stmt->fetch();
+            
+            if (!$user_info) {
+                http_response_code(404);
+                echo "Uživatel s ID {$user_id} nebyl nalezen";
+                return;
+            }
+            
+            // Získání posledních akcí uživatele (24h nebo 25 nejnovějších)
+            $actions_query = "
+                SELECT al.*, 
+                       g.name as group_name, g.fb_id as group_fb_id,
+                       ru.title as rss_title, ru.url as rss_url,
+                       COALESCE(q.translated_text, q.original_text) as quote_text, 
+                       q.author as quote_author
+                FROM action_log al
+                LEFT JOIN fb_groups g ON al.reference_id = g.id
+                LEFT JOIN rss_urls ru ON CAST(al.text AS UNSIGNED) = ru.id
+                LEFT JOIN quotes q ON CAST(al.reference_id AS UNSIGNED) = q.id
+                WHERE al.account_id = ? 
+                ORDER BY al.timestamp DESC
+                LIMIT 50
+            ";
+            
+            $stmt = $pdo->prepare($actions_query);
+            $stmt->execute([$user_id]);
+            $actions = $stmt->fetchAll();
+            
+            $this->render_partial('action-log/user-actions', [
+                'title' => "Akce uživatele: " . ($user_info['surname'] ?? $user_info['name'] ?? 'ID' . $user_id),
+                'user_info' => $user_info,
+                'actions' => $actions,
+                'user_id' => $user_id
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo "Error: " . htmlspecialchars($e->getMessage());
+        }
     }
 }
