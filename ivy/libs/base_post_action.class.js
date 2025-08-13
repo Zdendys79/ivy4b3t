@@ -141,28 +141,32 @@ export class BasePostAction extends BaseAction {
     Log.info(`[${user.id}]`, `KROK 6: Čekám ${verifyDelay}s před ověřením odeslání příspěvku`);
     await Wait.toSeconds(verifyDelay);
     
-    const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 200 });
+    // 1. Kontrola zmizení tlačítka "Přidat" (hlavní indikátor) - přesně stejně jako při klikání
+    const addButtonElement = await fbBot.pageAnalyzer.getElementInfo('Přidat', { matchType: 'exact' });
+    const addButtonVisible = addButtonElement !== null;
     
-    // 1. Kontrola zmizení tlačítka "Přidat" (hlavní indikátor)
-    const addButtonVisible = visibleTexts.some(text => 
-      text === 'Přidat' || text.includes('Přidat')
-    );
+    Log.debug(`[${user.id}]`, `Tlačítko "Přidat" ${addButtonVisible ? 'STÁLE VIDITELNÉ' : 'zmizelo'}`);
     
-    // 2. Hledar pozitivní indikátory úspěchu (zkopírováno z UTIO)
-    const successIndicators = [
-      'Váš příspěvek byl zveřejněn',
-      'příspěvek byl publikován', 
-      'před chvílí',
-      'před několika sekundami',
-      'teď'
-    ];
-    
-    const hasSuccessIndicator = visibleTexts.some(text => 
-      successIndicators.some(indicator => text.toLowerCase().includes(indicator.toLowerCase()))
-    );
+    // 2. Hledar pozitivní indikátory úspěchu - pouze pokud tlačítko zmizelo
+    let hasSuccessIndicator = false;
+    if (!addButtonVisible) {
+      const visibleTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 100 });
+      const successIndicators = [
+        'Váš příspěvek byl zveřejněn',
+        'příspěvek byl publikován', 
+        'před chvílí',
+        'před několika sekundami',
+        'teď'
+      ];
+      
+      hasSuccessIndicator = visibleTexts.some(text => 
+        successIndicators.some(indicator => text.toLowerCase().includes(indicator.toLowerCase()))
+      );
+    }
     
     if (!addButtonVisible || hasSuccessIndicator) {
-      Log.success(`[${user.id}]`, 'KROK 6 ÚSPĚCH: Příspěvek byl úspěšně odeslán');
+      const reason = !addButtonVisible ? 'tlačítko "Přidat" zmizelo' : 'nalezen success indikátor';
+      Log.success(`[${user.id}]`, `KROK 6 ÚSPĚCH: Příspěvek byl úspěšně odeslán (${reason})`);
       return true;
     } else {
       await Log.error(`[${user.id}]`, 'KROK 6 SELHAL: Tlačítko "Přidat" je stále viditelné - příspěvek nebyl odeslán');
