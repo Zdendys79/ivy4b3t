@@ -1348,13 +1348,14 @@ export class PageAnalyzer {
         // Uložit informace o kliknutém elementu pro pozdější ověření
         this.lastClickedElement = {
           text: element.text,
+          xpath: element.xpath,
           id: element.id,
           className: element.className,
           tagName: element.tagName,
           clickedAt: Date.now()
         };
         
-        Log.debug('[ANALYZER]', `Uložen kliknutý element pro tracking: ${this.lastClickedElement.id || this.lastClickedElement.className || 'no-id'}`);
+        Log.debug('[ANALYZER]', `Uložen kliknutý element pro tracking: ${this.lastClickedElement.xpath || this.lastClickedElement.id || 'no-id'}`);
         
         // Počkej na reakci stránky po kliknutí
         if (waitAfterClick) {
@@ -1540,7 +1541,7 @@ export class PageAnalyzer {
         return null; // Žádný element nebyl kliknut
       }
 
-      const { id, className, text, tagName } = this.lastClickedElement;
+      const { xpath, id, className, text, tagName } = this.lastClickedElement;
       
       // Priorita: id > kombinace className+tagName+text
       let elementExists = false;
