@@ -305,20 +305,12 @@ export class QueryBuilder {
    * @returns {Promise<number>} Nová hodnota po zvýšení
    */
   async incrementVariable(name, amount = 1) {
-    try {
-      // Atomická operace - INSERT/UPDATE s číselným přírůstkem
-      await this.safeExecute('system.incrementVariable', [name, amount.toString()]);
-      
-      // Získej novou hodnotu
-      const result = await this.safeQueryFirst('system.getVariableAfterIncrement', [name]);
-      return result ? parseInt(result.new_value) : amount;
-    } catch (err) {
-      // Fallback - pokud SQL operace selže, použij tradiční způsob
-      const currentValue = await this.getVariable(name) || '0';
-      const newValue = parseInt(currentValue) + amount;
-      await this.setVariable(name, newValue.toString());
-      return newValue;
-    }
+    // Atomická operace - INSERT/UPDATE s číselným přírůstkem
+    await this.safeExecute('system.incrementVariable', [name, amount.toString()]);
+    
+    // Získej novou hodnotu
+    const result = await this.safeQueryFirst('system.getVariableAfterIncrement', [name]);
+    return result ? parseInt(result.new_value) : amount;
   }
 
   /**
