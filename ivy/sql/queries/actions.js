@@ -400,5 +400,6 @@ export const ACTIONS = {
     WHERE uap.user_id = ? 
       AND ad.invasive = 1 
       AND ad.active = 1
+      AND (uap.next_time IS NULL OR uap.next_time <= NOW())
   `
 };
