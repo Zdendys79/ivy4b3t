@@ -389,5 +389,16 @@ export const ACTIONS = {
     WHERE al.timestamp >= NOW() - INTERVAL ? HOUR
     GROUP BY DATE_FORMAT(al.timestamp, '%H:%i')
     ORDER BY time_window DESC
+  `,
+
+  // ===== INVASIVE ACTIONS CHECK =====
+  
+  getInvasiveActionsInPlan: `
+    SELECT uap.action_code, uap.next_time
+    FROM user_action_plan uap
+    JOIN action_definitions ad ON uap.action_code = ad.action_code
+    WHERE uap.user_id = ? 
+      AND ad.invasive = 1 
+      AND ad.active = 1
   `
 };

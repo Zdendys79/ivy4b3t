@@ -145,6 +145,16 @@ export async function runWheelOfFortune(user, browser, context) {
       
       // 5. Kontrola prázdného kola (kromě test módu)
       if (!global.isTestBranch && isWheelEmpty(availableActions)) {
+        // Zkontroluj, zda nejsou v plánu invazivní akce čekající na invasive_lock
+        const hasPendingInvasiveActions = await checkPendingInvasiveActions(user.id);
+        
+        if (hasPendingInvasiveActions && invasiveLock.isActive()) {
+          Log.info(`[${user.id}]`, `Čekám na ukončení invasive lock (zbývá ${invasiveLock.getRemainingSeconds()}s) - v plánu jsou invazivní akce`);
+          // Čekej a pokračuj v dalším kole místo ukončení
+          await Wait.toSeconds(Math.min(invasiveLock.getRemainingSeconds() + 1, 30), 'Čekání na invasive lock');
+          continue;
+        }
+        
         const endingAction = await handleEmptyWheel(user, availableActions);
         if (endingAction) {
           // Pro ukončovací akce nepotřebujeme FBBot
@@ -527,5 +537,20 @@ async function ensureAllActiveActionsExist(userId) {
     
   } catch (err) {
     Log.error('[WHEEL]', `Chyba při zajišťování existence aktivních akcí: ${err.message}`);
+  }
+}
+
+/**
+ * Zkontroluje, zda má uživatel v plánu invazivní akce
+ * @param {number} userId - ID uživatele
+ * @returns {Promise<boolean>}
+ */
+async function checkPendingInvasiveActions(userId) {
+  try {
+    const invasiveActions = await db.safeQueryAll('actions.getInvasiveActionsInPlan', [userId]);
+    return invasiveActions && invasiveActions.length > 0;
+  } catch (err) {
+    Log.error('[WHEEL]', `Chyba při kontrole invazivních akcí: ${err.message}`);
+    return false;
   }
 }
