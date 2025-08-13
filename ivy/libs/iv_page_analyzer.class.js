@@ -1348,14 +1348,13 @@ export class PageAnalyzer {
         // Uložit informace o kliknutém elementu pro pozdější ověření
         this.lastClickedElement = {
           text: element.text,
-          xpath: element.xpath,
           id: element.id,
           className: element.className,
           tagName: element.tagName,
           clickedAt: Date.now()
         };
         
-        Log.debug('[ANALYZER]', `Uložen kliknutý element pro tracking: ${this.lastClickedElement.xpath || this.lastClickedElement.id || 'no-id'}`);
+        Log.debug('[ANALYZER]', `Uložen kliknutý element pro tracking: ${this.lastClickedElement.id || this.lastClickedElement.className || 'no-id'}`);
         
         // Počkej na reakci stránky po kliknutí
         if (waitAfterClick) {
@@ -1541,31 +1540,14 @@ export class PageAnalyzer {
         return null; // Žádný element nebyl kliknut
       }
 
-      const { xpath, id, className, text, tagName } = this.lastClickedElement;
+      const { id, className, text, tagName } = this.lastClickedElement;
       
-      // Priorita: xpath > id > kombinace className+tagName+text
+      // Priorita: id > kombinace className+tagName+text
       let elementExists = false;
       let foundMethod = 'none';
 
-      // 1. Pokus přes XPath (nejpřesnější)
-      if (xpath) {
-        try {
-          const element = await this.page.$x(xpath);
-          if (element && element.length > 0) {
-            // Ověřit že element je viditelný
-            const isVisible = await this.page.evaluate(el => {
-              return el && el.offsetParent !== null;
-            }, element[0]);
-            elementExists = isVisible;
-            foundMethod = 'xpath';
-          }
-        } catch (xpathErr) {
-          Log.debug('[ANALYZER]', `XPath hledání selhalo: ${xpathErr.message}`);
-        }
-      }
-
-      // 2. Pokus přes ID (pokud XPath selhal)
-      if (!elementExists && id) {
+      // 1. Pokus přes ID (nejspolehlivější)
+      if (id) {
         try {
           const element = await this.page.$(`#${id}`);
           if (element) {
@@ -1580,7 +1562,7 @@ export class PageAnalyzer {
         }
       }
 
-      // 3. Fallback přes kombinaci vlastností (nejméně přesné)
+      // 2. Pokus přes kombinaci vlastností
       if (!elementExists && className && text) {
         try {
           const elements = await this.getCurrentElements();
