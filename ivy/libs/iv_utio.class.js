@@ -164,7 +164,7 @@ export class UtioBot {
 
     try {
       Log.info('[UTIO]', `Získávám zprávu pro portál ${portalId}, region ${regionId}, okres ${districtId}`);
-      Log.info('[UTIO]', `DŮLEŽITÉ: Okres nebude vybrán - použije se defaultní nastavení z uživatelského profilu!`);
+      Log.info('[UTIO]', `DŮLEŽITÉ: Město nebude vybráno - použije se defaultní nastavení z uživatelského profilu!`);
 
       await this.bringToFront();
 
@@ -198,7 +198,7 @@ export class UtioBot {
       if (message && message.length > 0) {
         Log.success('[UTIO]', `Zpráva úspěšně získána (${message.length} řádků)`);
         Log.info('[UTIO]', `První řádek: "${message[0].substring(0, 50)}..."`);
-        Log.info('[UTIO]', `Parametry: Portal=${portalId}, Region=${regionId}, District=${districtId} (nevybírán!)`);
+        Log.info('[UTIO]', `Parametry: Portal=${portalId}, Region=${regionId}, District=${districtId}, Město=NEVYBRÁNO`);
         return message;
       } else {
         await Log.warn('[UTIO]', 'Nepodařilo se získat validní zprávu');
@@ -407,8 +407,25 @@ export class UtioBot {
       await this.page.select("#regionId", regionId.toString());
       await Wait.toSeconds(1);
 
-      // OKRES NEBUDEME VYBÍRAT - zůstane defaultní hodnota z uživatelského profilu
-      Log.info('[UTIO]', `OKRES NEVYBÍRÁM - ponechávám defaultní nastavení uživatele`);
+      // Vyber okres (náhodný pokud je 0)
+      if (districtId === 0) {
+        districtId = this._getRandomDistrict(regionId);
+        Log.info('[UTIO]', `Použit náhodný okres: ${districtId}`);
+      }
+
+      Log.info('[UTIO]', `Vybírám okres ${districtId}...`);
+      await this.page.waitForSelector("#districtId", { timeout: 5000 });
+      await this.page.select("#districtId", districtId.toString());
+      await Wait.toSeconds(1);
+
+      // MĚSTO NEVYBÍRÁME - ponecháváme defaultní nastavení uživatele
+      // Pokud existuje cityId pole, netkneme se ho!
+      const citySelector = await this.page.$('#cityId');
+      if (citySelector) {
+        Log.info('[UTIO]', `MĚSTO NEVYBÍRÁM - ponechávám defaultní nastavení uživatele (pole #cityId existuje)`);
+      } else {
+        Log.info('[UTIO]', `Pole #cityId neexistuje - v pořádku`);
+      }
 
       return true;
     } catch (err) {
