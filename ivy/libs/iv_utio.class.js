@@ -164,7 +164,6 @@ export class UtioBot {
 
     try {
       Log.info('[UTIO]', `Získávám zprávu pro portál ${portalId}, region ${regionId}, okres ${districtId}`);
-      Log.info('[UTIO]', `DŮLEŽITÉ: Město nebude vybráno - použije se defaultní nastavení z uživatelského profilu!`);
 
       await this.bringToFront();
 
@@ -198,7 +197,7 @@ export class UtioBot {
       if (message && message.length > 0) {
         Log.success('[UTIO]', `Zpráva úspěšně získána (${message.length} řádků)`);
         Log.info('[UTIO]', `První řádek: "${message[0].substring(0, 50)}..."`);
-        Log.info('[UTIO]', `Parametry: Portal=${portalId}, Region=${regionId}, District=${districtId}, Město=NEVYBRÁNO`);
+        Log.info('[UTIO]', `Parametry: Portal=${portalId}, Region=${regionId}, District=${districtId}`);
         return message;
       } else {
         await Log.warn('[UTIO]', 'Nepodařilo se získat validní zprávu');
@@ -391,7 +390,6 @@ export class UtioBot {
   async _fillMessageForm(portalId, regionId, districtId) {
     try {
       // Vyber portál
-      Log.info('[UTIO]', `Vybírám portál ${portalId}...`);
       await this.page.waitForSelector("#portalId", { timeout: 10000 });
       await this.page.select("#portalId", portalId.toString());
       await Wait.toSeconds(1);
@@ -402,7 +400,6 @@ export class UtioBot {
         Log.info('[UTIO]', `Použit náhodný region: ${regionId}`);
       }
 
-      Log.info('[UTIO]', `Vybírám region ${regionId}...`);
       await this.page.waitForSelector("#regionId", { timeout: 5000 });
       await this.page.select("#regionId", regionId.toString());
       await Wait.toSeconds(1);
@@ -413,7 +410,6 @@ export class UtioBot {
         Log.info('[UTIO]', `Použit náhodný okres: ${districtId}`);
       }
 
-      Log.info('[UTIO]', `Vybírám okres ${districtId}...`);
       await this.page.waitForSelector("#districtId", { timeout: 5000 });
       await this.page.select("#districtId", districtId.toString());
       await Wait.toSeconds(1);
@@ -422,7 +418,6 @@ export class UtioBot {
       // Pokud existuje cityId pole, netkneme se ho!
       const citySelector = await this.page.$('#cityId');
       if (citySelector) {
-        Log.info('[UTIO]', `MĚSTO NEVYBÍRÁM - ponechávám defaultní nastavení uživatele (pole #cityId existuje)`);
       } else {
         Log.info('[UTIO]', `Pole #cityId neexistuje - v pořádku`);
       }
