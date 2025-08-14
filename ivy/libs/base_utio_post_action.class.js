@@ -403,24 +403,29 @@ export class BaseUtioPostAction extends BasePostAction {
     // Vyčistit uložená UTIO data
     this.utioLogData = null;
     
-    // Aktualizuj počítadlo v dávce
-    await this.incrementBatchCounter(user);
+    // Aktualizuj počítadlo v dávce a zkontroluj zda je dávka dokončena
+    const batchCompleted = await this.incrementBatchCounter(user);
     
-    // Naplánovat další akci
-    if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
-      throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+    // Naplánovat další akci pouze pokud je dávka dokončena
+    if (batchCompleted) {
+      if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
+        throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+      }
+      const minMinutes = pickedAction.min_minutes;
+      const maxMinutes = pickedAction.max_minutes;
+      const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
+      
+      await db.safeExecute('actions.scheduleNext', [
+        Math.round(nextMinutes),
+        user.id,
+        this.actionCode
+      ]);
+      
+      Log.success(`[${user.id}]`, `UTIO post úspěšný! Dávka dokončena, další za ${Math.round(nextMinutes)} minut`);
+    } else {
+      // Dávka není dokončena - ponechat akci dostupnou pro další kolo
+      Log.success(`[${user.id}]`, `UTIO post úspěšný! Dávka pokračuje - akce zůstává dostupná`);
     }
-    const minMinutes = pickedAction.min_minutes;
-    const maxMinutes = pickedAction.max_minutes;
-    const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
-    
-    await db.safeExecute('actions.scheduleNext', [
-      Math.round(nextMinutes),
-      user.id,
-      this.actionCode
-    ]);
-    
-    Log.success(`[${user.id}]`, `UTIO post úspěšný! Další akce za ${Math.round(nextMinutes)} minut`);
   }
 
   /**
@@ -538,22 +543,28 @@ export class BaseUtioPostAction extends BasePostAction {
 
   /**
    * Zvýší počítadlo v dávce
+   * @returns {boolean} True pokud je dávka dokončena
    */
   async incrementBatchCounter(user) {
     const batchKey = `${user.id}_${this.groupType}`;
     const batch = global.utioBatches?.[batchKey];
     if (!batch) {
-      return;
+      // Pokud není batch, pravděpodobně je to první akce nebo chyba - považuj za dokončenou
+      return true;
     }
 
     batch.currentCount++;
     Log.debug(`[${user.id}]`, `Dávka aktualizována: ${batch.currentCount}/${batch.batchSize}`);
 
-    // Pokud je dávka dokončena, vymaž ji
+    // Pokud je dávka dokončena, vymaž ji a vrať true
     if (batch.currentCount >= batch.batchSize) {
       delete global.utioBatches[batchKey];
       Log.info(`[${user.id}]`, `Pracovní dávka ${this.groupType} dokončena (${batch.currentCount}/${batch.batchSize})`);
+      return true;
     }
+    
+    // Dávka pokračuje
+    return false;
   }
 
   /**
