@@ -101,8 +101,9 @@ export async function detectAccountBlock(fbBot, user) {
         // Nový formát
         return {
           locked: true,
-          reason: lockResult.reason || 'Account locked', type: lockResult.type || 'UNKNOWN',
-          severity: lockResult.severity || 'critical'
+          reason: lockResult.reason ? lockResult.reason : 'Account locked - no reason provided', 
+          type: lockResult.type ? lockResult.type : (() => { throw new Error('Lock type not provided by lockResult'); })(),
+          severity: lockResult.severity ? lockResult.severity : 'critical'
         };
       }
     }

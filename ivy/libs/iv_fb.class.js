@@ -595,7 +595,8 @@ export class FBBot {
           // Vrať objekt s detaily
           return {
             locked: true,
-            reason: fullAnalysis.errors.patterns.reason || 'Detekován problém s účtem', type: fullAnalysis.errors.patterns.type || 'UNKNOWN',
+            reason: fullAnalysis.errors.patterns.reason || 'Detekován problém s účtem', 
+            type: fullAnalysis.errors.patterns.type ? fullAnalysis.errors.patterns.type : (() => { throw new Error('FB_CLASS: Chybí patterns.type v fullAnalysis'); })(),
             severity: fullAnalysis.errors.severity
           };
         }
