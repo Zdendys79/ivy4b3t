@@ -244,12 +244,17 @@ export class BaseUtioPostAction extends BasePostAction {
       throw new Error('Cannot bring UTIO to front');
     }
 
-    // Uložit parametry pro logování
+    // Použít parametry z vybrané Facebook skupiny (ne z uživatelského profilu)
     const utioParams = {
       portal_id: user.portal_id || 1,
-      region_id: user.region_id || 5,
-      district_id: user.district_id || 0
+      region_id: data.region_id || 5,
+      district_id: data.district_id || 0
     };
+    
+    // Varování pokud skupina nemá nastavené geografické parametry
+    if (data.region_id === 0 || data.district_id === 0) {
+      Log.warn(`[${user.id}]`, `POZOR: Skupina "${data.name}" má region_id=${data.region_id}, district_id=${data.district_id} - UTIO použije náhodné nebo fallback hodnoty!`);
+    }
     
     // Získat zprávu z UTIO
     const message = await utioBot.getMessage(
