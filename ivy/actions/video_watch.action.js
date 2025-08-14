@@ -60,15 +60,29 @@ export class VideoWatchAction extends BaseAction {
       // Přenést FB záložku na popředí
       await fbBot.bringToFront();
 
-      // Přejít na hlavní Facebook feed
-      await fbBot.navigateToPage('https://www.facebook.com', { 
+      // Rozhodnutí mezi video portálem a reels (70% Watch, 30% Reels)
+      const useReels = Math.random() < 0.3;
+      const targetUrl = useReels ? 
+        'https://www.facebook.com/reel/' : 
+        'https://www.facebook.com/watch/';
+      
+      Log.info(`[${user.id}]`, `Navigace na ${useReels ? 'Reels' : 'Watch'} portál...`);
+      
+      await fbBot.navigateToPage(targetUrl, { 
         waitUntil: 'networkidle2' 
       });
-      await Wait.toSeconds(3, 'Načtení hlavní stránky');
+      await Wait.toSeconds(3, 'Načtení video portálu');
 
       // Intelligent timing - plánování podle invasive lock
       const watchingPlan = await this.calculateWatchingPlan(user.id);
-      Log.info(`[${user.id}]`, `📊 Plán sledování: ${watchingPlan.plannedVideos} videí (${watchingPlan.tranceMode ? 'trance mód' : 'normální'})`);
+      watchingPlan.isReels = useReels; // Přidej info o typu portálu
+      
+      // Nastavení času podle typu videí
+      watchingPlan.avgVideoTime = useReels ? 
+        8 + Math.random() * 12 :  // Reels: 8-20s (kratší)
+        20 + Math.random() * 25;  // Watch: 20-45s (delší)
+      
+      Log.info(`[${user.id}]`, `📊 Plán sledování: ${watchingPlan.plannedVideos} videí na ${useReels ? 'Reels' : 'Watch'} (${watchingPlan.tranceMode ? 'trance mód' : 'normální'})`);
 
       // Najít a sledovat videa podle plánu
       const videosWatched = await this.watchVideosIntelligently(user, fbBot, watchingPlan);
@@ -126,11 +140,12 @@ export class VideoWatchAction extends BaseAction {
         plannedVideos = Math.floor(Math.random() * 3) + 1; // 1-3 videa
       }
 
+      // Výpočet průměrného času podle typu videí (bude doplněno v execute)
       return {
         plannedVideos,
         tranceMode,
         profile,
-        avgVideoTime: 15 + Math.random() * 20 // 15-35s per video
+        avgVideoTime: 25 // Default, bude přepsáno podle typu portálu
       };
 
     } catch (err) {
@@ -226,13 +241,23 @@ export class VideoWatchAction extends BaseAction {
    */
   async findAndScrollToVideo(user, fbBot) {
     try {
-      // Různé selektory pro FB videa
+      // Selektory optimalizované pro Watch a Reels portály
       const videoSelectors = [
+        // Watch portál selektory
+        'div[data-pagelet="WatchFeed"] video',
+        'div[data-testid="watch-feed"] video', 
+        '[aria-label*="Video player"] video',
         'video[data-video-id]',
-        'div[data-pagelet="FeedUnit"] video',
+        
+        // Reels selektory  
+        'div[data-pagelet="ReelsFeed"] video',
+        'div[data-testid="reels-feed"] video',
+        '[data-testid="reel-video"]',
+        
+        // Obecné FB video selektory
         'div[role="article"] video',
-        '[data-testid="post_message"] ~ div video',
-        'div[data-ft] video'
+        'div[data-ft] video',
+        'video'
       ];
 
       // Nejdřív zkus najít video bez scrollování
@@ -251,9 +276,21 @@ export class VideoWatchAction extends BaseAction {
       }
 
       // Pokud nenalezeno, scroll dolů a zkus znovu
-      await fbBot.page.evaluate(() => {
-        window.scrollBy(0, 400 + Math.random() * 400); // 400-800px scroll
-      });
+      // Reels mají jiné scrollování než Watch
+      const currentUrl = await fbBot.page.url();
+      const isReels = currentUrl.includes('/reel/');
+      
+      if (isReels) {
+        // Reels - vertikální scroll (menší kroky)
+        await fbBot.page.evaluate(() => {
+          window.scrollBy(0, 200 + Math.random() * 300); // 200-500px
+        });
+      } else {
+        // Watch - normální scroll
+        await fbBot.page.evaluate(() => {
+          window.scrollBy(0, 400 + Math.random() * 400); // 400-800px
+        });
+      }
       await Wait.toSeconds(2, 'Načtení po scrollu');
 
       // Zkus znovu najít video po scrollu
