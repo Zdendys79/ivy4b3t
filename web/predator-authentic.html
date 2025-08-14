@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentic Predator Self-Destruct Display</title>
+    <style>
+        body {
+            background-color: #000000;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        #gauntlet-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        #countdown-display {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            border: 2px solid #333;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(170, 17, 17, 0.2);
+        }
+        
+        .digit-slot {
+            width: 60px;
+            height: 80px;
+            background: #000;
+            border: 1px solid #222;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 3px;
+            padding: 8px;
+            position: relative;
+        }
+        
+        .digit-slot.active {
+            background: #0a0a0a;
+            box-shadow: inset 0 0 15px rgba(170, 17, 17, 0.3);
+        }
+        
+        .led-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #330000;
+            border-radius: 50%;
+            transition: all 0.2s ease-in-out;
+            box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+        }
+        
+        .led-dot.on {
+            background-color: #FF3333;
+            box-shadow: 
+                0 0 8px #FF3333,
+                0 0 16px #AA1111,
+                inset 0 0 3px #FFAAAA;
+            animation: ledPulse 0.8s ease-in-out infinite alternate;
+        }
+        
+        .led-dot.dimming {
+            animation: ledDim 0.5s ease-out forwards;
+        }
+        
+        @keyframes ledPulse {
+            from { 
+                background-color: #FF3333;
+                box-shadow: 
+                    0 0 8px #FF3333,
+                    0 0 16px #AA1111,
+                    inset 0 0 3px #FFAAAA;
+            }
+            to { 
+                background-color: #FF5555;
+                box-shadow: 
+                    0 0 12px #FF5555,
+                    0 0 24px #DD3333,
+                    inset 0 0 3px #FFFFFF;
+            }
+        }
+        
+        @keyframes ledDim {
+            0% { 
+                background-color: #FF3333;
+                box-shadow: 
+                    0 0 8px #FF3333,
+                    0 0 16px #AA1111,
+                    inset 0 0 3px #FFAAAA;
+            }
+            100% { 
+                background-color: #330000;
+                box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+            }
+        }
+        
+        #status {
+            color: #AA1111;
+            font-size: 18px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            background: linear-gradient(145deg, #AA1111, #770000);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(170, 17, 17, 0.3);
+        }
+        
+        button:hover {
+            background: linear-gradient(145deg, #CC2222, #990000);
+            box-shadow: 0 6px 12px rgba(170, 17, 17, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(170, 17, 17, 0.3);
+        }
+        
+        .explosion-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, #FFAA00, #FF6600, transparent 70%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="gauntlet-container">
+        <div id="countdown-display">
+            <div class="digit-slot active" data-digit="0"></div>
+            <div class="digit-slot active" data-digit="1"></div>
+            <div class="digit-slot active" data-digit="2"></div>
+            <div class="digit-slot active" data-digit="3"></div>
+        </div>
+        
+        <div id="status">Self-Destruct Ready</div>
+        
+        <div class="controls">
+            <button onclick="startSelfDestruct()">Activate</button>
+            <button onclick="resetDisplay()">Reset</button>
+        </div>
+    </div>
+    
+    <div class="explosion-flash" id="explosion"></div>
+
+    <script>
+        class YautjaDisplay {
+            constructor() {
+                this.digitSlots = document.querySelectorAll('.digit-slot');
+                this.statusElement = document.getElementById('status');
+                this.explosionElement = document.getElementById('explosion');
+                this.isRunning = false;
+                this.currentDigit = 0;
+                
+                // Yautja číslice - každá je pattern 9 LED bodů (3x3 grid)
+                this.yautjaDigits = [
+                    // Digit 0 - alien pattern
+                    [1,1,1,1,0,1,1,1,1],
+                    // Digit 1 - alien pattern  
+                    [0,1,0,1,1,0,0,1,0],
+                    // Digit 2 - alien pattern
+                    [1,1,0,0,1,1,1,0,0],
+                    // Digit 3 - alien pattern
+                    [1,0,1,0,1,0,1,0,1]
+                ];
+                
+                this.initializeDisplay();
+            }
+            
+            initializeDisplay() {
+                this.digitSlots.forEach((slot, index) => {
+                    // Vyčisti slot
+                    slot.innerHTML = '';
+                    
+                    // Vytvoř 9 LED bodů pro každý slot
+                    for (let i = 0; i < 9; i++) {
+                        const led = document.createElement('div');
+                        led.className = 'led-dot';
+                        slot.appendChild(led);
+                    }
+                    
+                    // Nastav pattern pro danou číslicu
+                    this.setDigitPattern(index, this.yautjaDigits[index]);
+                });
+            }
+            
+            setDigitPattern(digitIndex, pattern) {
+                const slot = this.digitSlots[digitIndex];
+                const leds = slot.querySelectorAll('.led-dot');
+                
+                pattern.forEach((state, ledIndex) => {
+                    if (state === 1) {
+                        leds[ledIndex].classList.add('on');
+                    } else {
+                        leds[ledIndex].classList.remove('on');
+                    }
+                });
+            }
+            
+            async startCountdown() {
+                if (this.isRunning) return;
+                
+                this.reset();
+                this.isRunning = true;
+                this.currentDigit = 0;
+                this.statusElement.textContent = 'Self-Destruct Activated';
+                
+                // Postupně vypínej číslice (zprava doleva)
+                for (let i = 3; i >= 0; i--) {
+                    await this.sleep(2000); // 2 sekundy mezi číslicemi
+                    
+                    if (!this.isRunning) return;
+                    
+                    // Dimming animace před vypnutím
+                    const slot = this.digitSlots[i];
+                    const leds = slot.querySelectorAll('.led-dot.on');
+                    
+                    leds.forEach(led => {
+                        led.classList.add('dimming');
+                    });
+                    
+                    await this.sleep(500);
+                    
+                    // Vypni slot
+                    slot.classList.remove('active');
+                    leds.forEach(led => {
+                        led.classList.remove('on', 'dimming');
+                    });
+                    
+                    const remaining = i;
+                    if (remaining > 0) {
+                        this.statusElement.textContent = `Countdown: ${remaining} Active`;
+                    }
+                }
+                
+                // Exploze
+                await this.sleep(500);
+                this.explode();
+            }
+            
+            async explode() {
+                this.statusElement.textContent = 'DETONATION';
+                
+                // Flash efekt
+                this.explosionElement.style.opacity = '0.8';
+                await this.sleep(150);
+                this.explosionElement.style.opacity = '1';
+                await this.sleep(100);
+                this.explosionElement.style.opacity = '0.6';
+                await this.sleep(150);
+                this.explosionElement.style.opacity = '0';
+                
+                await this.sleep(500);
+                this.statusElement.textContent = 'Target Eliminated';
+                this.isRunning = false;
+            }
+            
+            reset() {
+                this.isRunning = false;
+                this.currentDigit = 0;
+                this.statusElement.textContent = 'Self-Destruct Ready';
+                this.explosionElement.style.opacity = '0';
+                
+                // Obnov všechny sloty
+                this.digitSlots.forEach((slot, index) => {
+                    slot.classList.add('active');
+                    this.setDigitPattern(index, this.yautjaDigits[index]);
+                });
+            }
+            
+            sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+        
+        // Globální instance
+        const display = new YautjaDisplay();
+        
+        // Globální funkce pro tlačítka
+        function startSelfDestruct() {
+            display.startCountdown();
+        }
+        
+        function resetDisplay() {
+            display.reset();
+        }
+        
+        // Auto-demo po načtení (volitelné)
+        setTimeout(() => {
+            // display.startCountdown();
+        }, 3000);
+    </script>
+</body>
+</html>

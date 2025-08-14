@@ -244,16 +244,39 @@ export class BaseUtioPostAction extends BasePostAction {
       throw new Error('Cannot bring UTIO to front');
     }
 
+    // Uložit parametry pro logování
+    const utioParams = {
+      portal_id: user.portal_id || 1,
+      region_id: user.region_id || 5,
+      district_id: user.district_id || 0
+    };
+    
     // Získat zprávu z UTIO
     const message = await utioBot.getMessage(
-      user.portal_id || 1, 
-      user.region_id || 5, 
-      user.district_id || 0
+      utioParams.portal_id, 
+      utioParams.region_id, 
+      utioParams.district_id
     );
     
     if (!message || !message.length) {
       throw new Error('No content available from UTIO');
     }
+
+    // Získat aktuální URL z UTIO stránky pro logování
+    let currentUtioUrl = 'unknown';
+    try {
+      currentUtioUrl = await utioBot.page.url();
+    } catch (err) {
+      Log.warn(`[${user.id}]`, `Nelze získat UTIO URL: ${err.message}`);
+    }
+
+    // Uložit informace pro pozdější logování
+    this.utioLogData = {
+      url: currentUtioUrl,
+      params: utioParams,
+      contentLength: Array.isArray(message) ? message.length : 1,
+      firstLine: Array.isArray(message) ? message[0] : message
+    };
 
     // Převeď na text a přidej mezeru na konec
     const textToInsert = (Array.isArray(message) ? message.join('\n') : message) + ' ';
@@ -343,14 +366,32 @@ export class BaseUtioPostAction extends BasePostAction {
   async handleSuccess(user, group, pickedAction) {
     Log.info(`[${user.id}]`, 'Zpracovávám úspěšné odeslání...');
     
+    // Vytvořit rozšířený log detail s UTIO informacemi
+    let logDetail = `Group: ${group.name} (${group.fb_id})`;
+    
+    // Přidat UTIO informace pokud jsou dostupné
+    if (this.utioLogData) {
+      const utioInfo = [
+        `UTIO_URL: ${this.utioLogData.url}`,
+        `PORTAL: ${this.utioLogData.params.portal_id}`,
+        `REGION: ${this.utioLogData.params.region_id}`,
+        `DISTRICT: ${this.utioLogData.params.district_id}`,
+        `CONTENT_LINES: ${this.utioLogData.contentLength}`,
+        `FIRST_LINE: ${this.utioLogData.firstLine ? this.utioLogData.firstLine.substring(0, 100) : 'N/A'}`
+      ];
+      logDetail += ` | ${utioInfo.join(' | ')}`;
+    }
+    
     // Zapsat úspěšnou akci do action_log
-    const logDetail = `Group: ${group.name} (${group.fb_id})`;
     await db.safeExecute('actions.logAction', [
       user.id,
       this.actionCode,
       group.id,      // reference_id (krátké)
-      logDetail      // text (dlouhé)
+      logDetail      // text (dlouhé) - nyní obsahuje UTIO parametry a URL
     ]);
+    
+    // Vyčistit uložená UTIO data
+    this.utioLogData = null;
     
     // Aktualizuj počítadlo v dávce
     await this.incrementBatchCounter(user);
@@ -374,6 +415,33 @@ export class BaseUtioPostAction extends BasePostAction {
    */
   async handleFailure(user, fbBot, group, reason = null) {
     await Log.error(`[${user.id}]`, 'UTIO post selhal');
+    
+    // Vytvořit rozšířený log detail s UTIO informacemi i pro chybové stavy
+    if (group) {
+      let logDetail = `FAILED - Group: ${group.name} (${group.fb_id}) | Reason: ${reason || 'Unknown'}`;
+      
+      // Přidat UTIO informace pokud jsou dostupné
+      if (this.utioLogData) {
+        const utioInfo = [
+          `UTIO_URL: ${this.utioLogData.url}`,
+          `PORTAL: ${this.utioLogData.params.portal_id}`,
+          `REGION: ${this.utioLogData.params.region_id}`,
+          `DISTRICT: ${this.utioLogData.params.district_id}`
+        ];
+        logDetail += ` | ${utioInfo.join(' | ')}`;
+      }
+      
+      // Zalogovat selhání
+      await db.safeExecute('actions.logAction', [
+        user.id,
+        this.actionCode,
+        group.id,
+        logDetail
+      ]);
+      
+      // Vyčistit uložená UTIO data
+      this.utioLogData = null;
+    }
     
     // NEBLOKOVAT skupiny při Facebook checkpoint - to není chyba skupiny!
     if (group && reason && !reason.includes('Facebook checkpoint')) {

@@ -1,0 +1,24 @@
+/* Predator Display CSS - Minimalistický displej pro segmentové zobrazení */
+
+:root {
+  --bg: #0c0c12;
+  --panel: #15151d;
+  --ink: #d8d8de;
+  --muted: #8c8c96;
+  --accent: #ff3b3b;
+  --off: #2a2a34;
+  --frame: #3e3e4a;
+}
+
+html, body { 
+  height: 100%; 
+}
+
+body {
+  margin: 0; 
+  background: var(--bg); 
+  color: var(--ink);
+  font: 18px/1.4 'Courier New', monospace;
+  display: grid; 
+  place-items: center;
+}

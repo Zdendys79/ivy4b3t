@@ -164,6 +164,7 @@ export class UtioBot {
 
     try {
       Log.info('[UTIO]', `Získávám zprávu pro portál ${portalId}, region ${regionId}, okres ${districtId}`);
+      Log.info('[UTIO]', `DŮLEŽITÉ: Okres nebude vybrán - použije se defaultní nastavení z uživatelského profilu!`);
 
       await this.bringToFront();
 
@@ -172,7 +173,7 @@ export class UtioBot {
         return false;
       }
 
-      // Vyplnění formuláře
+      // Vyplnění formuláře (okres se už nevybírá)
       if (!await this._fillMessageForm(portalId, regionId, districtId)) {
         return false;
       }
@@ -182,12 +183,22 @@ export class UtioBot {
         return false;
       }
 
+      // Získat finální URL pro logování
+      let finalUrl = 'unknown';
+      try {
+        finalUrl = await this.page.url();
+        Log.info('[UTIO]', `Finální UTIO URL: ${finalUrl}`);
+      } catch (urlErr) {
+        Log.warn('[UTIO]', `Nelze získat finální URL: ${urlErr.message}`);
+      }
+
       // Získání obsahu zprávy
       const message = await this._extractMessage();
 
       if (message && message.length > 0) {
         Log.success('[UTIO]', `Zpráva úspěšně získána (${message.length} řádků)`);
         Log.info('[UTIO]', `První řádek: "${message[0].substring(0, 50)}..."`);
+        Log.info('[UTIO]', `Parametry: Portal=${portalId}, Region=${regionId}, District=${districtId} (nevybírán!)`);
         return message;
       } else {
         await Log.warn('[UTIO]', 'Nepodařilo se získat validní zprávu');
@@ -396,11 +407,8 @@ export class UtioBot {
       await this.page.select("#regionId", regionId.toString());
       await Wait.toSeconds(1);
 
-      // Vždy použij okres 0 (všechny okresy)
-      Log.info('[UTIO]', `Vybírám okres 0 (všechny okresy)...`);
-      await this.page.waitForSelector("#districtId", { timeout: 5000 });
-      await this.page.select("#districtId", "0");
-      await Wait.toSeconds(1);
+      // OKRES NEBUDEME VYBÍRAT - zůstane defaultní hodnota z uživatelského profilu
+      Log.info('[UTIO]', `OKRES NEVYBÍRÁM - ponechávám defaultní nastavení uživatele`);
 
       return true;
     } catch (err) {

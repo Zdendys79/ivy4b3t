@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Predator Mathematical Countdown</title>
+  <style>
+    :root {
+      --bg: #0c0c12;
+      --panel: #15151d;
+      --ink: #d8d8de;
+      --muted: #8c8c96;
+      --accent: #ff3b3b;
+      --off: #2a2a34;
+      --frame: #3e3e4a;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 18px/1.4 'Courier New', monospace;
+      display: grid; place-items: center;
+    }
+    .wrap { 
+      width: min(1200px, 96vw); 
+      padding: 40px 20px; 
+      text-align: center;
+    }
+    
+    #countdown-value {
+      font-size: 48px;
+      color: var(--accent);
+      margin-bottom: 30px;
+      font-weight: bold;
+      letter-spacing: 3px;
+    }
+
+    .stage {
+      background: linear-gradient(180deg, #0f0f16, #0b0b10);
+      border: 1px solid #22222b; 
+      border-radius: 16px; 
+      padding: 20px; 
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 10px 30px rgba(0,0,0,.45);
+      margin-bottom: 20px;
+    }
+
+    #binary-display {
+      font-size: 24px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="countdown-value">0</div>
+    
+    <div id="binary-display">1111111</div>
+    
+    <div class="stage">
+      <svg id="predator" role="img" aria-label="Predator mathematical countdown display"
+           width="100%" height="300" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+
+  <script>
+  // === Parametry kresby ===
+  const ANGLES_DEG = [0, 51.4, 102.8, 154.2, 205.6, 257, 308.4]; // 7 segmentů rovnoměrně po celém kruhu (360°/7)
+  const ON_COLOR = '#ff3b3b';
+  const OFF_COLOR = '#2a2a34';
+  const FRAME = '#3e3e4a';
+
+  // Generuje všechny kombinace k prvků z n možných
+  function generateCombinations(n, k) {
+    const combinations = [];
+    
+    function backtrack(start, current) {
+      if (current.length === k) {
+        combinations.push([...current]);
+        return;
+      }
+      
+      for (let i = start; i < n; i++) {
+        current.push(i);
+        backtrack(i + 1, current);
+        current.pop();
+      }
+    }
+    
+    backtrack(0, []);
+    return combinations;
+  }
+
+  // Postupné zhasínání - nejprve 1 segment, pak 2, pak 3, atd.
+  function generateProgressivePatterns() {
+    const patterns = [];
+    
+    // 0 zhasnutých - všechny segmenty svítí
+    patterns.push('1111111');
+    
+    // Pro každý počet zhasnutých segmentů (1 až 7)
+    for (let zhasnutych = 1; zhasnutych <= 7; zhasnutych++) {
+      const combinations = generateCombinations(7, zhasnutych);
+      
+      // Pro každou kombinaci vytvoř pattern
+      combinations.forEach(positions => {
+        let pattern = '1111111'.split('');
+        positions.forEach(pos => {
+          pattern[pos] = '0'; // zhasni segment na této pozici
+        });
+        patterns.push(pattern.join(''));
+      });
+    }
+    
+    console.log(`Generováno ${patterns.length} patterns pro postupné zhasínání`);
+    return patterns;
+  }
+
+  // Aplikuje permutaci 1357246 na pattern
+  function applyHatPermutation(pattern) {
+    // Původní pořadí: 1234567 (pozice 0123456)
+    // Nové pořadí:    1357246 (pozice 0246135)
+    // Takže: pozice[0]→výstup[0], pozice[1]→výstup[2], pozice[2]→výstup[4], pozice[3]→výstup[6], pozice[4]→výstup[1], pozice[5]→výstup[3], pozice[6]→výstup[5]
+    
+    let permuted = new Array(7);
+    permuted[0] = pattern[0]; // 1→1
+    permuted[2] = pattern[1]; // 2→3  
+    permuted[4] = pattern[2]; // 3→5
+    permuted[6] = pattern[3]; // 4→7
+    permuted[1] = pattern[4]; // 5→2
+    permuted[3] = pattern[5]; // 6→4
+    permuted[5] = pattern[6]; // 7→6
+    
+    return permuted.join('');
+  }
+
+  // Získá pattern pro daný krok s aplikovanou permutací
+  function getProgressivePattern(step) {
+    const patterns = generateProgressivePatterns();
+    if (step < patterns.length) {
+      const originalPattern = patterns[step];
+      const permutedPattern = applyHatPermutation(originalPattern);
+      console.log(`Krok ${step}: ${originalPattern} → ${permutedPattern} (${originalPattern.split('').filter(b=>b==='1').length} svítících)`);
+      return permutedPattern;
+    }
+    return '0000000';
+  }
+
+  // Vytvoření „okna" s jedním glyfem (7 paprsků z centra)
+  function createWindow(svg, x, y, w, h, radius = 18) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${x} ${y})`);
+    svg.appendChild(g);
+    
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', 0);
+    rect.setAttribute('y', 0);
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('rx', radius);
+    rect.setAttribute('ry', radius);
+    rect.setAttribute('fill', '#1e1e26');
+    rect.setAttribute('stroke', FRAME);
+    rect.setAttribute('stroke-width', 2);
+    g.appendChild(rect);
+    
+    // Skupina segmentů
+    const segGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    segGroup.setAttribute('transform', `translate(${w/2} ${h/2})`);
+    g.appendChild(segGroup);
+    
+    const segments = [];
+    const pad = 25;
+    const r = Math.min(w, h)/2 - pad;
+    const thickness = Math.max(10, Math.round(r * 0.18));
+
+    ANGLES_DEG.forEach((deg, i) => {
+      const rad = deg * Math.PI / 180;
+      const x2 = Math.cos(rad) * r;
+      const y2 = -Math.sin(rad) * r;
+      
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', 0);
+      line.setAttribute('y1', 0);
+      line.setAttribute('x2', x2.toFixed(2));
+      line.setAttribute('y2', y2.toFixed(2));
+      line.setAttribute('stroke', OFF_COLOR);
+      line.setAttribute('stroke-width', thickness);
+      line.setAttribute('stroke-linecap', 'round');
+      segGroup.appendChild(line);
+      segments.push(line);
+      
+      // koncová kapička
+      const cap = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      cap.setAttribute('cx', x2.toFixed(2));
+      cap.setAttribute('cy', y2.toFixed(2));
+      cap.setAttribute('r', (thickness/2).toFixed(2));
+      cap.setAttribute('fill', OFF_COLOR);
+      segGroup.appendChild(cap);
+      segments.push(cap);
+    });
+
+    // API okna
+    return {
+      group: g,
+      setBinary(binaryStr) {
+        for (let i = 0; i < ANGLES_DEG.length; i++) {
+          const on = i < binaryStr.length && binaryStr[i] === '1';
+          const color = on ? ON_COLOR : OFF_COLOR;
+          const line = segments[i*2];
+          const cap = segments[i*2 + 1];
+          line.setAttribute('stroke', color);
+          cap.setAttribute('fill', color);
+        }
+      }
+    };
+  }
+
+  // Vytvoření celé tabule 4 okének
+  const svg = document.getElementById('predator');
+  const layout = { left: 50, top: 30, gap: 40, width: 1200-100, height: 300-60 };
+  const winW = (layout.width - 3*layout.gap) / 4;
+  const winH = layout.height;
+  const windows = [];
+  
+  for (let i = 0; i < 4; i++) {
+    const x = layout.left + i * (winW + layout.gap);
+    const y = layout.top;
+    windows.push(createWindow(svg, x, y, winW, winH));
+  }
+
+  // Generuj náhodné startovací číslo
+  const MAX_VALUE = 268435455; // 128^4 - 1
+  const startNumber = Math.floor(Math.random() * (MAX_VALUE + 1));
+  
+  // Odpočítávání
+  let currentStep = 0;
+  const countdownValue = document.getElementById('countdown-value');
+  const binaryDisplay = document.getElementById('binary-display');
+  
+  console.log(`Startovací náhodné číslo: ${startNumber}`);
+
+  // Převede číslo na 128-kovou soustavu se 4 ciframi
+  function toBase128(number) {
+    const digits = [];
+    let num = number;
+    
+    // Převeď na 128-kovou soustavu (4 cifry)
+    for (let i = 0; i < 4; i++) {
+      digits.unshift(num % 128); // přidej na začátek (zleva doprava)
+      num = Math.floor(num / 128);
+    }
+    
+    return digits;
+  }
+
+  function updateDisplay() {
+    const remaining = startNumber - currentStep; // odpočet od náhodného čísla k nule
+    
+    // Převeď číslo na 128-kovou soustavu
+    const base128Digits = toBase128(remaining);
+    
+    countdownValue.textContent = remaining;
+    
+    // Pro každé okno použij odpovídající cifru jako krok v progresivním patternu
+    windows.forEach((window, index) => {
+      const digit = base128Digits[index]; // cifra pro toto okno (0-127)
+      const pattern = getProgressivePatternForDigit(digit);
+      window.setBinary(pattern);
+    });
+    
+    // Zobraz cifry v 128-kové soustavě a startovní číslo
+    binaryDisplay.textContent = `Start: ${startNumber} | 128-base: ${base128Digits.join('-')}`;
+  }
+  
+  // Získá pattern pro konkrétní cifru (0-127)
+  // Mapuje cifru na progresivní pattern - čím nižší cifra, tím méně segmentů
+  function getProgressivePatternForDigit(digit) {
+    const patterns = generateProgressivePatterns();
+    // Obrať pořadí - cifra 127 = pattern 0 (všechny segmenty), cifra 0 = pattern 127 (žádné segmenty)
+    const patternIndex = 127 - digit;
+    
+    if (patternIndex < patterns.length) {
+      const originalPattern = patterns[patternIndex];
+      const permutedPattern = applyHatPermutation(originalPattern);
+      return permutedPattern;
+    }
+    return '0000000';
+  }
+
+  function startCountdown() {
+    updateDisplay();
+    
+    const timer = setInterval(() => {
+      currentStep++;
+      const remaining = startNumber - currentStep;
+      
+      if (remaining <= 0) {
+        clearInterval(timer);
+        // Finální efekt - všechny segmenty zhasnou
+        windows.forEach(window => {
+          window.setBinary('0000000');
+        });
+        countdownValue.textContent = '0';
+        binaryDisplay.textContent = '0000000';
+        
+        // Bliknutí po 1 sekundě
+        setTimeout(() => {
+          document.body.style.backgroundColor = '#FFAA00';
+          setTimeout(() => {
+            document.body.style.backgroundColor = '#FFFFFF';
+            setTimeout(() => {
+              document.body.style.backgroundColor = '#0c0c12';
+            }, 100);
+          }, 100);
+        }, 1000);
+        return;
+      }
+      
+      updateDisplay();
+    }, 100); // rychlejší interval pro testování (100ms)
+  }
+
+  // Automatický start po načtení
+  setTimeout(startCountdown, 1000);
+  </script>
+</body>
+</html>

@@ -167,7 +167,9 @@ try {
             callController('AuthController', 'logout');
             break;
             
-            
+        case '/quotes':
+            callController('QuotesController', 'index');
+            break;
             
         default:
             http_response_code(404);
