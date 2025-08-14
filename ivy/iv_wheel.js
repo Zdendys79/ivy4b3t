@@ -29,7 +29,12 @@ const config = getIvyConfig();
 class Wheel {
   constructor(activities) {
     this.activities = activities;
-    this.totalWeight = activities.reduce((sum, a) => sum + (a.effective_weight || 0), 0);
+    this.totalWeight = activities.reduce((sum, a) => {
+      if (typeof a.effective_weight === 'undefined' || a.effective_weight === null) {
+        throw new Error(`WHEEL CONSTRUCTOR: Aktivita nemá nastavené effective_weight: ${JSON.stringify(a)}`);
+      }
+      return sum + a.effective_weight;
+    }, 0);
   }
 
   pick() {
@@ -37,7 +42,10 @@ class Wheel {
 
     let r = Math.random() * this.totalWeight;
     for (const a of this.activities) {
-      const weight = a.effective_weight || 0;
+      if (typeof a.effective_weight === 'undefined' || a.effective_weight === null) {
+        throw new Error(`WHEEL: Aktivita nemá nastavené effective_weight: ${JSON.stringify(a)}`);
+      }
+      const weight = a.effective_weight;
       if (weight > 0 && r < weight) return a;
       r -= weight;
     }

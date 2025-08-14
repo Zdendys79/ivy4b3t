@@ -253,7 +253,10 @@ export class UIBot {
   }
 
   async _handlePause(data) {
-    const minutes = data.min || 1;
+    if (!data.min || data.min <= 0) {
+      throw new Error('UI_PAUSE: Chybí nebo neplatná hodnota data.min');
+    }
+    const minutes = data.min;
     Log.info('[UI]', `Pauza na ${minutes} minut`);
     await Wait.toMinutes(minutes, 'Pauza na oběd');
     Log.info('[UI][pause]', 'Pauza dokončena');
@@ -320,7 +323,10 @@ export class UIBot {
         elapsedTime += checkIntervalMs;
         const remainingTime = timeoutMs - elapsedTime;
         Log.debug('[UI]', `Heartbeat - zbývá ${Log.formatTime(remainingTime)} čekání...`);
-        db.heartBeat(this.currentCommand.user_id || 0, 0, 'UI_WAIT');
+        if (!this.currentCommand.user_id) {
+          throw new Error('UI_WAIT: Chybí user_id v currentCommand');
+        }
+        db.heartBeat(this.currentCommand.user_id, 0, 'UI_WAIT');
       } catch (e) {
         await Log.warn('[UI]', `Heartbeat během čekání selhal: ${e.message}`);
       }

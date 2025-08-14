@@ -23,10 +23,13 @@ import { ErrorReportBuilder } from './libs/iv_ErrorReportBuilder.class.js';
  */
 export async function handleFBError(user, fbBot, group = null, errorDetails = {}) {
   try {
-    await Log.warn('[ERROR_WORKFLOW]', `Detekována chyba pro uživatele ${user.id}: ${errorDetails.type || 'UNKNOWN'}`);
+    if (!errorDetails.type) {
+      throw new Error(`ERROR_WORKFLOW: Chybí errorDetails.type pro uživatele ${user.id}`);
+    }
+    await Log.warn('[ERROR_WORKFLOW]', `Detekována chyba pro uživatele ${user.id}: ${errorDetails.type}`);
 
     const pageUrl = fbBot.page ? fbBot.page.url() : 'unknown';
-    const errorType = errorDetails.type || 'UNKNOWN';
+    const errorType = errorDetails.type;
     const errorReason = errorDetails.reason || 'Nespecifikovaná chyba';
 
     // KROK 1: 60s countdown s možností uživatelské intervence
@@ -210,9 +213,15 @@ async function displayAnalysisSummary(analysis, reportId) {
   }
 
   if (analysis.errors && analysis.errors.hasErrors) {
-    await Log.warn('[ERROR_SUMMARY]', `Typ chyby: ${analysis.errors.patterns.type || 'UNKNOWN'}`);
+    if (!analysis.errors.patterns.type) {
+      throw new Error('ANALYSIS ERROR: Chybí patterns.type v analýze chyb');
+    }
+    await Log.warn('[ERROR_SUMMARY]', `Typ chyby: ${analysis.errors.patterns.type}`);
     await Log.warn('[ERROR_SUMMARY]', `Duvod: ${analysis.errors.patterns.reason || 'Neznamy'}`);
-    await Log.warn('[ERROR_SUMMARY]', `Závažnost: ${analysis.errors.severity || 'unknown'}`);
+    if (!analysis.errors.severity) {
+      throw new Error('ANALYSIS ERROR: Chybí severity v analýze chyb');
+    }
+    await Log.warn('[ERROR_SUMMARY]', `Závažnost: ${analysis.errors.severity}`);
   }
 
   if (analysis.complexity) {
@@ -255,7 +264,7 @@ export async function enhancedFBReadiness(user, fbBot, verificationOptions = {})
       await Log.warn('[ENHANCED_FB]', `Detekován problém: ${basicReadiness.reason}`);
 
       const errorDetails = {
-        type: basicReadiness.analysis.errors?.patterns?.type || 'UNKNOWN',
+        type: basicReadiness.analysis.errors?.patterns?.type ? basicReadiness.analysis.errors.patterns.type : (() => { throw new Error('ERROR_WORKFLOW: Chybí type v basicReadiness analysis'); })(),
         reason: basicReadiness.reason
       };
 

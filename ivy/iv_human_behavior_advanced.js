@@ -330,8 +330,11 @@ export class AdvancedHumanBehavior {
    * Výpočet zpoždění mezi znaky
    */
   calculateCharDelay(profile, context) {
-    // Fallback pro chybějící hodnoty
-    const typingSpeed = profile.avg_typing_speed || 150;
+    // Validace povinných hodnot
+    if (!profile.avg_typing_speed) {
+      throw new Error('HUMAN_BEHAVIOR: Chybí avg_typing_speed v profilu');
+    }
+    const typingSpeed = profile.avg_typing_speed;
     const variance = profile.typing_variance || config.typing_mistakes_chance * 4.3; // přepočet 0.07 * 4.3 ≈ 0.3
 
     const baseWPM = typingSpeed * (0.8 + Math.random() * 0.4);
