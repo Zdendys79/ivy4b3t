@@ -101,13 +101,17 @@ export class GroupExploreAction {
       const invasiveLock = new InvasiveLock();
       invasiveLock.init();
       
+      let nextExecutionMinutes = null;
+      
       if (invasiveLock.isActive()) {
         // Během invasive lock nepauza - pokračuj okamžitě
         Log.info(`[${user.id}]`, `Group explore dokončen, pokračuji okamžitě (invasive lock aktivní)`);
+        nextExecutionMinutes = 0; // Okamžitě
       } else {
         // Normální pauza mezi skupinami (max 30s)
         const nextSeconds = Math.floor(Math.random() * 25) + 5; // 5-30s
-        await db.updateActionPlan(user.id, this.actionCode, nextSeconds / 60); // převod na minuty
+        nextExecutionMinutes = nextSeconds / 60; // převod na minuty
+        await db.updateActionPlan(user.id, this.actionCode, nextExecutionMinutes);
         Log.success(`[${user.id}]`, `Group explore dokončen, další za ${Math.round(nextSeconds)}s`);
       }
 
@@ -116,7 +120,7 @@ export class GroupExploreAction {
         reason: 'Group explore completed successfully',
         groupInfo: groupInfo,
         nextAction: nextAction,
-        nextExecutionInMinutes: nextMinutes
+        nextExecutionInMinutes: nextExecutionMinutes
       };
 
     } catch (err) {
