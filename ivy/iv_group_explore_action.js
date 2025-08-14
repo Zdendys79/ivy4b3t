@@ -293,8 +293,8 @@ export class GroupExploreAction {
       // Zvýšení počtu průzkumů
       session.explorationCount++;
       
-      // Kontrola limitu průzkumů (10-15)
-      const maxExplorations = Math.floor(Math.random() * 6) + 10; // 10-15
+      // Kontrola limitu průzkumů (max 15)
+      const maxExplorations = 15;
       if (session.explorationCount >= maxExplorations) {
         Log.info(`[${user.id}]`, `Dosažen limit průzkumů (${session.explorationCount}/${maxExplorations}), ukončuji session`);
         delete global.exploreSession[user.id]; // Reset pro příští session
