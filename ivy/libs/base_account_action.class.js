@@ -43,8 +43,11 @@ export class BaseAccountAction extends BaseAction {
   async execute(user, context, pickedAction) {
     try {
       // Wheel už předal kompletní akci s parametry
-      const minMinutes = pickedAction.min_minutes || 60;  // Fallback hodnoty
-      const maxMinutes = pickedAction.max_minutes || 240;
+      if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
+        throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+      }
+      const minMinutes = pickedAction.min_minutes;
+      const maxMinutes = pickedAction.max_minutes;
       
       // Kontrola platnosti hodnot
       if (!Number.isInteger(minMinutes) || !Number.isInteger(maxMinutes) || minMinutes <= 0 || maxMinutes <= 0) {

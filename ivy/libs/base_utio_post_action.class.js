@@ -245,16 +245,21 @@ export class BaseUtioPostAction extends BasePostAction {
     }
 
     // Použít parametry z vybrané Facebook skupiny (ne z uživatelského profilu)
-    const utioParams = {
-      portal_id: user.portal_id || 1,
-      region_id: data.region_id || 5,
-      district_id: data.district_id || 0
-    };
-    
-    // Varování pokud skupina nemá nastavené geografické parametry
-    if (data.region_id === 0 || data.district_id === 0) {
-      Log.warn(`[${user.id}]`, `POZOR: Skupina "${data.name}" má region_id=${data.region_id}, district_id=${data.district_id} - UTIO použije náhodné nebo fallback hodnoty!`);
+    if (!user.portal_id) {
+      throw new Error(`Uživatel ${user.id} nemá nastavené portal_id`);
     }
+    if (!data.region_id || data.region_id === 0) {
+      throw new Error(`Skupina "${data.name}" nemá nastavené region_id`);
+    }
+    if (!data.district_id || data.district_id === 0) {
+      throw new Error(`Skupina "${data.name}" nemá nastavené district_id`);
+    }
+    
+    const utioParams = {
+      portal_id: user.portal_id,
+      region_id: data.region_id,
+      district_id: data.district_id
+    };
     
     // Získat zprávu z UTIO
     const message = await utioBot.getMessage(
@@ -402,8 +407,11 @@ export class BaseUtioPostAction extends BasePostAction {
     await this.incrementBatchCounter(user);
     
     // Naplánovat další akci
-    const minMinutes = pickedAction.min_minutes || 60;
-    const maxMinutes = pickedAction.max_minutes || 120;
+    if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
+      throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+    }
+    const minMinutes = pickedAction.min_minutes;
+    const maxMinutes = pickedAction.max_minutes;
     const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
     
     await db.safeExecute('actions.scheduleNext', [
