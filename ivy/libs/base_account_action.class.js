@@ -42,9 +42,12 @@ export class BaseAccountAction extends BaseAction {
    */
   async execute(user, context, pickedAction) {
     try {
+      // DEBUG: Zkontrolovat co obsahuje pickedAction
+      console.log('[DEBUG] pickedAction obsah:', JSON.stringify(pickedAction, null, 2));
+      
       // Wheel už předal kompletní akci s parametry
       if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
-        throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+        throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes. pickedAction obsahuje: ${JSON.stringify(pickedAction)}`);
       }
       const minMinutes = pickedAction.min_minutes;
       const maxMinutes = pickedAction.max_minutes;
