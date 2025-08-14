@@ -141,8 +141,11 @@ export class UniversalPostAction extends BasePostAction {
     ]);
     
     // Naplánovat další akci (4-8 hodin = 240-480 minut)
-    const minMinutes = pickedAction.min_minutes || 240;  // 4 hodiny
-    const maxMinutes = pickedAction.max_minutes || 480;  // 8 hodin
+    if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
+      throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+    }
+    const minMinutes = pickedAction.min_minutes;  // 4 hodiny
+    const maxMinutes = pickedAction.max_minutes;  // 8 hodin
     const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
     
     await db.safeExecute('actions.scheduleNext', [
@@ -243,8 +246,11 @@ export class UniversalPostAction extends BasePostAction {
     ]);
     
     // Naplánovat další akci (30-60 hodin = 1800-3600 minut)
-    const minMinutes = pickedAction.min_minutes || 1800;  // 30 hodin
-    const maxMinutes = pickedAction.max_minutes || 3600;  // 60 hodin
+    if (!pickedAction.min_minutes || !pickedAction.max_minutes) {
+      throw new Error(`Akce ${this.actionCode} nemá nastavené min_minutes nebo max_minutes`);
+    }
+    const minMinutes = pickedAction.min_minutes;  // 30 hodin
+    const maxMinutes = pickedAction.max_minutes;  // 60 hodin
     const nextMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
     
     await db.safeExecute('actions.scheduleNext', [
