@@ -96,11 +96,20 @@ export class GroupExploreAction {
       // Úspěšné dokončení
       await this.logActionSuccess(user, groupInfo);
       
-      // Krátká pauza mezi skupinami (max 30s)
-      const nextSeconds = Math.floor(Math.random() * 25) + 5; // 5-30s
-      await db.updateActionPlan(user.id, this.actionCode, nextSeconds / 60); // převod na minuty
-
-      Log.success(`[${user.id}]`, `Group explore dokončen, další za ${nextMinutes} minut`);
+      // Během invasive lock pokračovat okamžitě, jinak krátká pauza
+      const { InvasiveLock } = await import('./libs/iv_invasive_lock.class.js');
+      const invasiveLock = new InvasiveLock();
+      invasiveLock.init();
+      
+      if (invasiveLock.isActive()) {
+        // Během invasive lock nepauza - pokračuj okamžitě
+        Log.info(`[${user.id}]`, `Group explore dokončen, pokračuji okamžitě (invasive lock aktivní)`);
+      } else {
+        // Normální pauza mezi skupinami (max 30s)
+        const nextSeconds = Math.floor(Math.random() * 25) + 5; // 5-30s
+        await db.updateActionPlan(user.id, this.actionCode, nextSeconds / 60); // převod na minuty
+        Log.success(`[${user.id}]`, `Group explore dokončen, další za ${Math.round(nextSeconds)}s`);
+      }
 
       return {
         success: true,
