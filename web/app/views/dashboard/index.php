@@ -168,6 +168,11 @@ if (!defined('IVY_FRAMEWORK')) {
                             <div class="monitoring-title">API Status</div>
                             <div class="monitoring-desc">System status check</div>
                         </a>
+                        <a href="/quotes" class="monitoring-link">
+                            <div class="monitoring-icon">📝</div>
+                            <div class="monitoring-title">Citáty</div>
+                            <div class="monitoring-desc">Browse quotes collection</div>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -184,6 +189,9 @@ if (!defined('IVY_FRAMEWORK')) {
                         </button>
                         <button class="control-btn control-secondary" onclick="location.href='/scheme'">
                             🌳 System Tree
+                        </button>
+                        <button class="control-btn control-secondary" onclick="location.href='/quotes'">
+                            📝 Citáty
                         </button>
                     </div>
                 </div>

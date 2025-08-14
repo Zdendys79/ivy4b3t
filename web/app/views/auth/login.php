@@ -19,107 +19,30 @@ if (!defined('IVY_FRAMEWORK')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>_</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body, html {
-            background: #000;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        .terminal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
-        
-        #cursor {
-            animation: blink 1s infinite;
-            font-weight: bold;
-            font-size: 20px;
-            color: #fff;
-        }
-        
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        
-        #password {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            outline: none;
-            text-align: center;
-            letter-spacing: 2px;
-            caret-color: transparent;
-        }
-        
-        #countdown {
-            font-size: 24px;
-            color: #ff4444;
-            animation: pulse 0.5s infinite alternate;
-            font-weight: bold;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        
-        .hidden { 
-            display: none;
-            position: absolute;
-            left: -9999px;
-        }
-        
-        /* Mobile fallback - visible input */
-        @media (max-width: 768px) {
-            #password {
-                display: block !important;
-                position: static !important;
-                left: auto !important;
-                background: transparent;
-                border: 1px solid #333;
-                padding: 15px;
-                margin: 30px 0;
-                width: 300px;
-                text-align: center;
-                color: #fff;
-                font-size: 54px;
-                letter-spacing: 6px;
-            }
-            
-            .hidden {
-                display: block !important;
-                position: static !important;
-                left: auto !important;
-            }
-            
-            #cursor {
-                display: none;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="public/assets/css/login.css">
 </head>
 <body>
     <div class="terminal">
         <?php if (isset($timeout_info) && $timeout_info): ?>
-            <!-- Timeout mode: only red countdown -->
-            <div id="countdown"><?php echo $timeout_info['remaining_seconds']; ?></div>
+            <!-- Timeout mode: Predator countdown -->
+            <svg id="predator" role="img" aria-label="Predator countdown display"
+                 width="100%" height="300" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg"></svg>
+            <script src="public/assets/js/predator-display.js"></script>
             <script>
+                // Inicializace Predator displeje
+                const svg = document.getElementById('predator');
+                const display = new PredatorDisplay(svg);
+                
+                // Startovní číslo ze serveru
                 let timeLeft = <?php echo $timeout_info['remaining_seconds']; ?>;
+                
+                // Zobrazení aktuální hodnoty
+                display.displayNumber(timeLeft);
+                
+                // Odpočítávání s aktualizací displeje
                 const countdown = setInterval(() => {
                     timeLeft--;
-                    document.getElementById('countdown').textContent = timeLeft;
+                    display.displayNumber(timeLeft);
                     if (timeLeft <= 0) {
                         clearInterval(countdown);
                         location.replace('/login');

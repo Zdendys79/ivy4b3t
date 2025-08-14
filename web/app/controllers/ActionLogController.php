@@ -239,10 +239,12 @@ class ActionLogController extends BaseController
     private function handleQuotePostDetails($pdo, $date)
     {
         $query = "
-            SELECT al.*, u.surname, u.name, q.text as quote_text, q.author
+            SELECT al.*, u.surname, u.name, 
+                   COALESCE(q.translated_text, q.original_text) as quote_text, 
+                   q.author
             FROM action_log al
             LEFT JOIN fb_users u ON al.account_id = u.id
-            LEFT JOIN quotes q ON CAST(al.reference_id AS UNSIGNED) = q.id
+            LEFT JOIN quotes q ON CAST(al.text AS UNSIGNED) = q.id
             WHERE DATE(al.timestamp) = ? AND al.action_code = 'quote_post'
             ORDER BY al.timestamp DESC
         ";

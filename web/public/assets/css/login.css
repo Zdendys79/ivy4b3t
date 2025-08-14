@@ -1,0 +1,109 @@
+/**
+ * File: login.css
+ * Location: ~/web/public/assets/css/login.css
+ *
+ * Purpose: Ultra-minimalist terminal-style authentication styles
+ */
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body, html {
+    background: #000;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.terminal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+#cursor {
+    animation: blink 1s infinite;
+    font-weight: bold;
+    font-size: 20px;
+    color: #fff;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+#password {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 2px;
+    caret-color: transparent;
+}
+
+#countdown {
+    font-size: 24px;
+    color: #ff4444;
+    animation: pulse 0.5s infinite alternate;
+    font-weight: bold;
+}
+
+#predator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 95vw;
+    height: 60vh;
+    z-index: 1000;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.hidden { 
+    display: none;
+    position: absolute;
+    left: -9999px;
+}
+
+/* Mobile fallback - visible input */
+@media (max-width: 768px) {
+    #password {
+        display: block !important;
+        position: static !important;
+        left: auto !important;
+        background: transparent;
+        border: 1px solid #333;
+        padding: 15px;
+        margin: 30px 0;
+        width: 300px;
+        text-align: center;
+        color: #fff;
+        font-size: 54px;
+        letter-spacing: 6px;
+    }
+    
+    .hidden {
+        display: block !important;
+        position: static !important;
+        left: auto !important;
+    }
+    
+    #cursor {
+        display: none;
+    }
+}

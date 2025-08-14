@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Predator Mathematical Countdown</title>
+  <link rel="stylesheet" href="public/assets/css/predator-display.css">
+</head>
+<body>
+  <svg id="predator" role="img" aria-label="Predator mathematical countdown display"
+       width="100%" height="100%" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <script src="public/assets/js/predator-display.js"></script>
+  <script>
+    // Generuj náhodné startovací číslo s exponenty
+    function generateRandomNumber() {
+      const exponent = Math.floor(Math.random() * 4) + 1;
+      const maxValue = Math.pow(128, exponent) - 1;
+      const number = Math.floor(Math.random() * (maxValue + 1));
+      
+      console.log(`Exponent: ${exponent} (${exponent} číslic)`);
+      console.log(`Rozsah: 0 - ${maxValue} (128^${exponent})`);
+      console.log(`Startovací náhodné číslo: ${number}`);
+      
+      return number;
+    }
+    
+    // Inicializace a start
+    const svg = document.getElementById('predator');
+    const display = new PredatorDisplay(svg);
+    const startNumber = generateRandomNumber();
+    
+    // Automatický start po načtení
+    setTimeout(() => {
+      display.startCountdown(startNumber);
+    }, 1000);
+  </script>
+</body>
+</html>
