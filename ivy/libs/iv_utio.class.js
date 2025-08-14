@@ -414,13 +414,6 @@ export class UtioBot {
       await this.page.select("#districtId", districtId.toString());
       await Wait.toSeconds(1);
 
-      // MĚSTO NEVYBÍRÁME - ponecháváme defaultní nastavení uživatele
-      // Pokud existuje cityId pole, netkneme se ho!
-      const citySelector = await this.page.$('#cityId');
-      if (citySelector) {
-      } else {
-        Log.info('[UTIO]', `Pole #cityId neexistuje - v pořádku`);
-      }
 
       return true;
     } catch (err) {
