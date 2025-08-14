@@ -24,6 +24,7 @@ import { ReactAction } from '../actions/react.action.js';
 import { MessengerCheckAction } from '../actions/messenger_check.action.js';
 import { MessengerReplyAction } from '../actions/messenger_reply.action.js';
 import { GroupExploreAction } from '../actions/group_explore.action.js';
+import { StoriesViewAction } from '../actions/stories_view.action.js';
 
 export class ActionRouter {
   constructor() {
@@ -63,6 +64,7 @@ export class ActionRouter {
       this.registerAction('messenger_check', MessengerCheckAction);
       this.registerAction('messenger_reply', MessengerReplyAction);
       this.registerAction('group_explore', GroupExploreAction);
+      this.registerAction('stories_view', StoriesViewAction);
 
       this.initialized = true;
       Log.success('[ACTION_ROUTER]', `Inicializován s ${this.actionMap.size} akcemi`);
