@@ -73,8 +73,11 @@ export class GroupExploreAction {
 
         case 'finish_session':
           Log.info(`[${user.id}]`, '🏁 Session dokončena, plánuji další group_explore za delší čas');
-          // Naplánuj další spuštění za delší dobu (30-60 minut)
-          const sessionBreakMinutes = Math.floor(Math.random() * 31) + 30;
+          // Naplánuj podle parametrů akce z databáze (3-8 minut default)
+          const actionDef = await db.safeQueryFirst('actions.getDefinitionByCode', [this.actionCode]);
+          const minMinutes = actionDef?.min_minutes || 3;
+          const maxMinutes = actionDef?.max_minutes || 8;
+          const sessionBreakMinutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
           await db.updateActionPlan(user.id, this.actionCode, sessionBreakMinutes);
           
           return {
@@ -93,9 +96,9 @@ export class GroupExploreAction {
       // Úspěšné dokončení
       await this.logActionSuccess(user, groupInfo);
       
-      // Naplánuj další spuštění (3-8 minut)
-      const nextMinutes = Math.floor(Math.random() * 5) + 3;
-      await db.updateActionPlan(user.id, this.actionCode, nextMinutes);
+      // Krátká pauza mezi skupinami (max 30s)
+      const nextSeconds = Math.floor(Math.random() * 25) + 5; // 5-30s
+      await db.updateActionPlan(user.id, this.actionCode, nextSeconds / 60); // převod na minuty
 
       Log.success(`[${user.id}]`, `Group explore dokončen, další za ${nextMinutes} minut`);
 
@@ -293,8 +296,8 @@ export class GroupExploreAction {
       // Zvýšení počtu průzkumů
       session.explorationCount++;
       
-      // Kontrola limitu průzkumů (max 15)
-      const maxExplorations = 15;
+      // Dynamický limit podle biorytmů (12-20 podle nálady a energie)
+      const maxExplorations = await this.calculateDynamicExplorationCount(user.id);
       if (session.explorationCount >= maxExplorations) {
         Log.info(`[${user.id}]`, `Dosažen limit průzkumů (${session.explorationCount}/${maxExplorations}), ukončuji session`);
         delete global.exploreSession[user.id]; // Reset pro příští session
@@ -434,6 +437,61 @@ export class GroupExploreAction {
     } catch (err) {
       await Log.warn(`[${user.id}]`, `Chyba při kontrole dostupnosti: ${err.message}`);
       return false;
+    }
+  }
+
+  /**
+   * Vypočítá dynamický počet průzkumů podle biorytmů uživatele
+   * Základní rozsah: 12-20 skupin, upraveno podle nálady a energie
+   */
+  async calculateDynamicExplorationCount(userId) {
+    try {
+      // Získej behavioral profil uživatele
+      const profile = await db.safeQueryFirst('behavioralProfiles.getUserProfile', [userId]);
+      
+      if (!profile) {
+        Log.warn(`[${userId}]`, 'Chybí behavioral profil, používám střední hodnotu 16');
+        return 16; // Střední hodnota mezi 12-20
+      }
+
+      // Základní rozsah: 12-20 skupin
+      let baseCount = 16; // Střední hodnota
+      
+      // Úprava podle energie (0.6-1.0 typický rozsah)
+      const energyMultiplier = (profile.energy_level - 0.5) * 2; // -1 až +1
+      baseCount += Math.round(energyMultiplier * 2); // ±2 skupiny podle energie
+      
+      // Úprava podle nálady
+      const moodAdjustments = {
+        'energetic': +3,
+        'focused': +2, 
+        'happy': +1,
+        'neutral': 0,
+        'serious': -1,
+        'distracted': -2,
+        'tired': -3
+      };
+      
+      const moodAdjustment = moodAdjustments[profile.base_mood] || 0;
+      baseCount += moodAdjustment;
+      
+      // Úprava podle pozornosti (45-165s typický rozsah)
+      if (profile.attention_span < 60) {
+        baseCount -= 2; // Krátká pozornost = méně skupin
+      } else if (profile.attention_span > 120) {
+        baseCount += 2; // Dlouhá pozornost = více skupin
+      }
+      
+      // Zajisti rozsah 12-20
+      const finalCount = Math.max(12, Math.min(20, baseCount));
+      
+      Log.info(`[${userId}]`, `🧠 Biorytmy: energy=${profile.energy_level.toFixed(2)}, mood=${profile.base_mood}, attention=${profile.attention_span}s → ${finalCount} skupin`);
+      
+      return finalCount;
+      
+    } catch (err) {
+      await Log.error(`[${userId}]`, `Chyba při výpočtu dynamického počtu: ${err.message}`);
+      return 16; // Fallback na střední hodnotu
     }
   }
 
