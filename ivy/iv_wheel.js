@@ -485,10 +485,26 @@ async function handleNoAction(user, invasiveLock, availableActions) {
  * Vypočítá cooldown pro invasive lock
  */
 function calculateInvasiveCooldown() {
-  const cooldownConfig = config.get('cfg_posting_cooldown', { 
+  let cooldownConfig = config.get('cfg_posting_cooldown', { 
     min_seconds: 120, 
     max_seconds: 240 
   });
+  
+  // Pokud je to string, parsuj jako JSON
+  if (typeof cooldownConfig === 'string') {
+    try {
+      cooldownConfig = JSON.parse(cooldownConfig);
+    } catch (e) {
+      Log.error('[INVASIVE_LOCK]', `Chyba při parsování cfg_posting_cooldown: ${e.message}`);
+      cooldownConfig = { min_seconds: 120, max_seconds: 240 };
+    }
+  }
+  
+  // Validace hodnot
+  if (!cooldownConfig.min_seconds || !cooldownConfig.max_seconds) {
+    Log.error('[INVASIVE_LOCK]', 'Chybějící min_seconds nebo max_seconds v cfg_posting_cooldown');
+    cooldownConfig = { min_seconds: 120, max_seconds: 240 };
+  }
   
   const cooldownMs = (cooldownConfig.min_seconds + Math.random() * (cooldownConfig.max_seconds - cooldownConfig.min_seconds)) * 1000;
   
