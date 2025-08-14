@@ -168,7 +168,7 @@ export async function runWheelOfFortune(user, browser, context) {
         if (endingAction) {
           // Pro ukončovací akce nepotřebujeme FBBot
           const endingContext = { browser, ...context };
-          await actionRouter.executeAction(endingAction.code, user, endingContext, {});
+          await actionRouter.executeAction(endingAction.code, user, endingContext, endingAction);
           
         }
         break;
