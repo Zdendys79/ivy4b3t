@@ -5,7 +5,16 @@ define('IVY_FRAMEWORK', true);
 // Configure session for 30 days
 ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60); // 30 days in seconds
 ini_set('session.cookie_lifetime', 30 * 24 * 60 * 60); // 30 days in seconds
+ini_set('session.gc_probability', 1); // Enable garbage collection
+ini_set('session.gc_divisor', 100); // 1% chance of cleanup on each session start
 ini_set('session.cookie_samesite', 'Lax'); // Explicit SameSite for mobile compatibility
+
+// Use custom session path to avoid system cleanup
+$session_path = __DIR__ . '/storage/sessions';
+if (!is_dir($session_path)) {
+    mkdir($session_path, 0755, true);
+}
+session_save_path($session_path);
 
 // Start session
 session_start();

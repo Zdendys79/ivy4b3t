@@ -51,8 +51,9 @@ class AuthMiddleware
             return false;
         }
         
-        // Update last activity
+        // Update last activity and extend session expiration
         $_SESSION['last_activity'] = time();
+        $_SESSION['expires_at'] = time() + (30 * 24 * 60 * 60); // Extend for another 30 days
         
         error_log("Result: TRUE - authenticated and valid");
         return true;
