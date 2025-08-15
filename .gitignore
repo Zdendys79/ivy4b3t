@@ -22,5 +22,8 @@ commit_message.txt
 # PHP Error Logs
 web/logs/
 
+# PHP Session files
+web/storage/
+
 # Work history and journals
 work_history/
