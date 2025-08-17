@@ -471,7 +471,8 @@ export class GroupExploreAction {
       let baseCount = 16; // Střední hodnota
       
       // Úprava podle energie (0.6-1.0 typický rozsah)
-      const energyMultiplier = (profile.energy_level - 0.5) * 2; // -1 až +1
+      const energyLevel = parseFloat(profile.energy_level);
+      const energyMultiplier = (energyLevel - 0.5) * 2; // -1 až +1
       baseCount += Math.round(energyMultiplier * 2); // ±2 skupiny podle energie
       
       // Úprava podle nálady
@@ -498,7 +499,7 @@ export class GroupExploreAction {
       // Zajisti rozsah 12-20
       const finalCount = Math.max(12, Math.min(20, baseCount));
       
-      Log.info(`[${userId}]`, `🧠 Biorytmy: energy=${profile.energy_level.toFixed(2)}, mood=${profile.base_mood}, attention=${profile.attention_span}s → ${finalCount} skupin`);
+      Log.info(`[${userId}]`, `🧠 Biorytmy: energy=${energyLevel.toFixed(2)}, mood=${profile.base_mood}, attention=${profile.attention_span}s → ${finalCount} skupin`);
       
       return finalCount;
       
