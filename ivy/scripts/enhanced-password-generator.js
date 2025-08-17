@@ -56,4 +56,4 @@ try {
     process.exit(1);
 }
 
-module.exports = { generateSecurePassword };
+export { generateSecurePassword };
