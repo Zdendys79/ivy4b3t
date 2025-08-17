@@ -186,7 +186,6 @@ export class UtioBot {
       let finalUrl = 'unknown';
       try {
         finalUrl = await this.page.url();
-        Log.info('[UTIO]', `Finální UTIO URL: ${finalUrl}`);
       } catch (urlErr) {
         Log.warn('[UTIO]', `Nelze získat finální URL: ${urlErr.message}`);
       }
