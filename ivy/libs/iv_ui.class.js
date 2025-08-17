@@ -354,8 +354,8 @@ export class UIBot {
           allowedKeys: ['q'],
           onKeyPress: (key) => {
             if (key === 'q') {
-              Log.info('[UI]', 'Heartbeat čekání přerušeno klávesou "q" - ukončuji program');
-              process.exit(0);
+              Log.info('[UI]', 'Heartbeat čekání přerušeno klávesou "q" - ukončuji program a stop cyklus');
+              process.exit(99); // Exit code 99 stops start.sh cycle
             }
           }
         })
