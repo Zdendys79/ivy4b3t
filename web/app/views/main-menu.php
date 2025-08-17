@@ -102,6 +102,13 @@
             <p>Facebook Automation System - Centrální řídící panel</p>
         </div>
         
+        <?php
+        // GitHub PAT Token Monitoring
+        require_once __DIR__ . '/../helpers/TokenMonitor.php';
+        $tokenMonitor = new TokenMonitor(); // Použij přímé připojení
+        echo $tokenMonitor->getCompleteAlert();
+        ?>
+        
         <div class="status-info">
             <strong>Status:</strong> Systém online | 
             <strong>PHP:</strong> <?= PHP_VERSION ?> | 
