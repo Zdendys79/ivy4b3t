@@ -249,12 +249,12 @@ export class Wait {
             const action = onKeyPress(keyStr);
             // console.log(`[WAIT DEBUG] onKeyPress returned: "${action}"`);
             if (action === 'exit') {
-              Log.info('[WAIT]', `Stisknuta klávesa "${keyStr}" - ukončuji program...`);
-              process.exit(0);
+              Log.info('[WAIT]', `Stisknuta klávesa "${keyStr}" - ukončuji program a stop cyklus...`);
+              process.exit(99); // Exit code 99 stops start.sh cycle
             }
           } else if (keyStr === 'q') {
-            Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program...');
-            process.exit(0);
+            Log.info('[WAIT]', 'Stisknuta klávesa "q" - ukončuji program a stop cyklus...');
+            process.exit(99); // Exit code 99 stops start.sh cycle
           }
         }
       };
