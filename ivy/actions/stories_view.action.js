@@ -68,7 +68,7 @@ export class StoriesViewAction extends BaseAction {
       // Najít stories sekci
       const storiesFound = await this.findStoriesSection(user, fbBot);
       if (!storiesFound) {
-        Log.info(`[${user.id}]`, 'Stories sekce nenalezena - ukončuji bez chyby');
+        Log.info(`[${user.id}]`, 'Stories sekce nenalezena - pravděpodobně nejsou dostupné pro tento účet');
         return true;
       }
 
@@ -107,7 +107,7 @@ export class StoriesViewAction extends BaseAction {
         }
       }
 
-      Log.info(`[${user.id}]`, 'Stories sekce nenalezena na stránce');
+      Log.info(`[${user.id}]`, 'Stories sekce nenalezena - zkusil jsem všechny známé selektory');
       return false;
 
     } catch (err) {
@@ -123,8 +123,8 @@ export class StoriesViewAction extends BaseAction {
     let viewedCount = 0;
 
     try {
-      // Najdi všechny dostupné story prvky
-      const storyElements = await fbBot.page.$$('[role="button"][aria-label*="story" i], [role="button"][aria-label*="Story" i], div[data-pagelet="Stories"] div[role="button"]');
+      // Najdi všechny dostupné story prvky - aktualizované selektory
+      const storyElements = await fbBot.page.$$('div[data-pagelet="Stories"] [role="button"], [aria-label*="Stories"] [role="button"], [data-testid="stories-tray"] [role="button"], div[aria-label*="Stories"] div[role="button"]');
       
       if (storyElements.length === 0) {
         Log.info(`[${user.id}]`, 'Žádné story prvky nenalezeny');
