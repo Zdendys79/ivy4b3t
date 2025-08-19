@@ -16,9 +16,9 @@ export const SYSTEM = {
   `,
 
   heartBeatExtended: `
-    INSERT LOW_PRIORITY INTO heartbeat (host, up, user_id, group_id, version, action_name, action_started_at)
-    VALUES (?, NOW(), ?, 0, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE up = NOW(), user_id = ?, version = ?, action_name = ?, action_started_at = ?
+    INSERT LOW_PRIORITY INTO heartbeat (host, up, user_id, group_id, version, action_name, action_started_at, system_versions)
+    VALUES (?, NOW(), ?, 0, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE up = NOW(), user_id = ?, version = ?, action_name = ?, action_started_at = ?, system_versions = ?
   `,
 
   getActiveHeartbeats: `

@@ -80,15 +80,94 @@ if (!dbInitialized) {
 const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
 await SystemLogger.logStartup(hostname, versionCode, process.env.IVY_GIT_BRANCH, consoleLogger.sessionId);
 
+// Funkce pro získání systémových verzí
+async function getSystemVersions() {
+  try {
+    const { execSync } = await import('child_process');
+    
+    // Získat verze systému
+    const ubuntuVersion = execSync('lsb_release -rs 2>/dev/null || echo "unknown"', { encoding: 'utf8' }).trim();
+    const nodeVersion = process.version;
+    
+    let npmVersion = 'unknown';
+    try {
+      npmVersion = execSync('npm --version 2>/dev/null', { encoding: 'utf8' }).trim();
+    } catch {}
+    
+    let syncthingVersion = 'unknown';
+    try {
+      const syncthingOutput = execSync('syncthing version 2>/dev/null', { encoding: 'utf8' });
+      const match = syncthingOutput.match(/syncthing\s+(v[\d.]+)/);
+      syncthingVersion = match ? match[1] : 'unknown';
+    } catch {}
+    
+    let chromeRdVersion = 'unknown';
+    try {
+      chromeRdVersion = execSync('dpkg -l | grep chrome-remote-desktop | awk \'{print $3}\' 2>/dev/null || echo "unknown"', { encoding: 'utf8' }).trim();
+    } catch {}
+    
+    // Zjistit čas posledního APT upgrade
+    let lastSystemUpdate = 'unknown';
+    try {
+      // Pokus o načtení z apt history
+      const aptHistory = execSync('grep -E "Start-Date.*upgrade" /var/log/apt/history.log 2>/dev/null | tail -1', { encoding: 'utf8' }).trim();
+      if (aptHistory) {
+        const match = aptHistory.match(/Start-Date: (.+)/);
+        if (match) {
+          lastSystemUpdate = new Date(match[1]).toISOString();
+        }
+      } else {
+        // Fallback - čas modifikace dpkg status souboru
+        const dpkgStat = execSync('stat -c %Y /var/lib/dpkg/status 2>/dev/null', { encoding: 'utf8' }).trim();
+        if (dpkgStat) {
+          lastSystemUpdate = new Date(parseInt(dpkgStat) * 1000).toISOString();
+        }
+      }
+    } catch {}
+    
+    return {
+      ubuntu: ubuntuVersion,
+      node: nodeVersion,
+      npm: npmVersion,
+      syncthing: syncthingVersion,
+      chrome_remote_desktop: chromeRdVersion,
+      last_system_update: lastSystemUpdate,
+      collected_at: new Date().toISOString()
+    };
+  } catch (err) {
+    Log.warn('[SYSTEM_VERSIONS]', `Chyba při získávání verzí: ${err.message}`);
+    return null;
+  }
+}
+
+// Globální proměnné pro systémové verze
+let lastSystemVersionsUpdate = null;
+let cachedSystemVersions = null;
+
 // Asynchronní heartbeat funkce
 async function backgroundHeartbeat() {
   try {
+    // Kontrola zda je čas aktualizovat systémové verze (24h interval)
+    const now = Date.now();
+    let systemVersions = null;
+    
+    if (!lastSystemVersionsUpdate || (now - lastSystemVersionsUpdate) >= (24 * 60 * 60 * 1000)) {
+      Log.info('[HEARTBEAT]', 'Získávám systémové verze...');
+      systemVersions = await getSystemVersions();
+      if (systemVersions) {
+        cachedSystemVersions = systemVersions;
+        lastSystemVersionsUpdate = now;
+        Log.info('[HEARTBEAT]', `Systémové verze aktualizovány: ${JSON.stringify(systemVersions)}`);
+      }
+    }
+    
     const result = await db.heartBeatExtended({
       hostname: hostname,
       version: versionCode,
       userId: global.systemState.currentUserId,
       action: global.systemState.currentAction,
-      actionStartedAt: global.systemState.actionStartTime
+      actionStartedAt: global.systemState.actionStartTime,
+      systemVersions: systemVersions // Pošle jen když jsou aktualizovány
     });
     
     // Cache UI příkaz z odpovědi
@@ -202,7 +281,9 @@ if (isCLIMode) {
 } else {
   // Normální režim
   (async () => {
-    // První heartbeat IHNED pro okamžité ohlášení
+    // První heartbeat IHNED pro okamžité ohlášení - s verzemi systému
+    Log.info('[IVY]', 'Spouštím první heartbeat s načtením systémových verzí...');
+    lastSystemVersionsUpdate = 0; // Vynucení načtení verzí při prvním heartbeatu
     await backgroundHeartbeat();
     
     // Zobraz verzi z databáze po prvním heartbeatu (z tabulky variables)

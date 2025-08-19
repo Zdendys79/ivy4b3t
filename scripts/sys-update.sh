@@ -42,9 +42,9 @@ echo "[UPDATE] Spouštím plnou aktualizaci včetně phased updates..." | tee -a
 sudo apt-get -o APT::Get::Always-Include-Phased-Updates=true update | tee -a "$LOG_FILE"
 sudo apt-get -o APT::Get::Always-Include-Phased-Updates=true upgrade -y | tee -a "$LOG_FILE"
 
-# 4. Instalace Noto Mono fontu pro Unicode podporu v terminálu
-echo "[FONTS] Instaluji Noto Mono font pro Unicode podporu..." | tee -a "$LOG_FILE"
-sudo apt-get install -y fonts-noto-mono | tee -a "$LOG_FILE"
+# 4. Instalace Noto fontů pro Unicode a emoji podporu v terminálu
+echo "[FONTS] Instaluji Noto fonty pro Unicode a emoji podporu..." | tee -a "$LOG_FILE"
+sudo apt-get install -y fonts-noto-mono fonts-noto-color-emoji | tee -a "$LOG_FILE"
 
 # Refresh font cache pro okamžité použití nových fontů
 echo "[FONTS] Čistím poškozené font cache soubory..." | tee -a "$LOG_FILE"
@@ -68,6 +68,38 @@ echo "[POLKIT] ✅ Color management authentication výzvy potlačeny" | tee -a "
 # 4. Odstranění nepoužívaných balíků
 echo "[CLEANUP] Odstraňuji nepotřebné balíky..."
 sudo apt-get autoremove -y
+
+# 4a. Aktualizace Syncthing na verzi 2.x
+echo "[SYNCTHING] Instaluji/aktualizuji Syncthing na verzi 2.x..." | tee -a "$LOG_FILE"
+
+# 4a.1 Přidání oficiálního Syncthing v2 repository
+echo "[SYNCTHING] Přidávám oficiální Syncthing v2 repository..." | tee -a "$LOG_FILE"
+sudo mkdir -p /etc/apt/keyrings
+sudo curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg | tee -a "$LOG_FILE"
+echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable-v2" | sudo tee /etc/apt/sources.list.d/syncthing.list | tee -a "$LOG_FILE"
+
+# 4a.2 Nastavení repository priority
+echo "[SYNCTHING] Nastavuji prioritu Syncthing repository..." | tee -a "$LOG_FILE"
+printf "Package: *\nPin: origin apt.syncthing.net\nPin-Priority: 990\n" | sudo tee /etc/apt/preferences.d/syncthing.pref | tee -a "$LOG_FILE"
+
+# 4a.3 Instalace/aktualizace Syncthing v2.x
+echo "[SYNCTHING] Aktualizuji APT cache a instaluji Syncthing v2.x..." | tee -a "$LOG_FILE"
+sudo apt-get update | tee -a "$LOG_FILE"
+sudo apt-get install -y syncthing | tee -a "$LOG_FILE"
+
+# 4a.4 Kontrola úspěšné instalace
+if command -v syncthing >/dev/null 2>&1; then
+    SYNCTHING_VERSION=$(syncthing version | head -n1)
+    echo "[SYNCTHING] ✅ Úspěšně nainstalováno: $SYNCTHING_VERSION" | tee -a "$LOG_FILE"
+    
+    if [[ $SYNCTHING_VERSION == *"v2."* ]]; then
+        echo "[SYNCTHING] ✅ Potvrzena verze 2.x" | tee -a "$LOG_FILE"
+    else
+        echo "[SYNCTHING] ⚠️ Varování: Verze neobsahuje 'v2.' - zkontrolujte instalaci" | tee -a "$LOG_FILE"
+    fi
+else
+    echo "[SYNCTHING] ❌ Chyba: Syncthing není dostupný po instalaci" | tee -a "$LOG_FILE"
+fi
 
 # 5. Zajištění automatického spuštění Syncthingu
 echo "[SYNCTHING] Povoluji autospuštění Syncthingu..." | tee -a "$LOG_FILE"
@@ -112,7 +144,12 @@ else
     echo "[SYNCTHING] API klíč není dostupný - přeskakuji rescan" | tee -a "$LOG_FILE"
 fi
 
-# 6. Restart systému
+# 6. Oprava oprávnění log souboru před restartem
+echo "[CLEANUP] Opravuji oprávnění log souboru..." | tee -a "$LOG_FILE"
+sudo chown "$USER:$USER" "$LOG_FILE"
+sudo chmod 664 "$LOG_FILE"
+
+# 7. Restart systému
 echo "[REBOOT] Restart systému za 10 vteřin (stiskni Ctrl+C pro zrušení)..." | tee -a "$LOG_FILE"
 sleep 10
 sudo reboot

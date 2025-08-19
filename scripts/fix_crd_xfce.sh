@@ -1,10 +1,15 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # fix_crd_xfce.sh
-# Umístění: ~/Sync/scripts/fix_crd_xfce.sh
+# Umístění: ~/ivy4b3t/scripts/fix_crd_xfce.sh
 # Účel: Nastavení výchozí relace pro Chrome Remote Desktop na Xfce a potlačení výzev při přihlášení
 
 set -e
+
+echo "[FIX] Kontroluji a nastavuji oprávnění pro home adresář..."
+# Zajisti že máme práva k zápisu do home
+chmod u+w "$HOME" 2>/dev/null || true
+mkdir -p "$HOME/.config" && chmod u+w "$HOME/.config" 2>/dev/null || true
 
 echo "[FIX] Nastavuji UTC čas před instalací..."
 sudo timedatectl set-timezone UTC
@@ -14,8 +19,22 @@ sleep 2
 echo "[FIX] ✅ Čas nastaven na UTC: $(date -u)"
 
 echo "[FIX] Vytvářím ~/.chrome-remote-desktop-session..."
-echo "exec /usr/bin/xfce4-session" > ~/.chrome-remote-desktop-session
-chmod +x ~/.chrome-remote-desktop-session
+echo "[DEBUG] Home adresář: $HOME"
+echo "[DEBUG] Oprávnění home: $(ls -ld "$HOME" 2>/dev/null | cut -d' ' -f1 || echo 'nelze zjistit')"
+
+# Vytvoř soubor s explicitní kontrolou
+if echo "exec /usr/bin/xfce4-session" > "$HOME/.chrome-remote-desktop-session"; then
+    chmod +x "$HOME/.chrome-remote-desktop-session"
+    echo "[FIX] ✅ ~/.chrome-remote-desktop-session úspěšně vytvořen"
+else
+    echo "[ERROR] ❌ Nepodařilo se vytvořit ~/.chrome-remote-desktop-session"
+    echo "[ERROR] Zkouším přes sudo..."
+    sudo touch "$HOME/.chrome-remote-desktop-session"
+    sudo chown "$USER:$USER" "$HOME/.chrome-remote-desktop-session"
+    echo "exec /usr/bin/xfce4-session" > "$HOME/.chrome-remote-desktop-session"
+    chmod +x "$HOME/.chrome-remote-desktop-session"
+    echo "[FIX] ✅ ~/.chrome-remote-desktop-session vytvořen přes sudo"
+fi
 
 echo "[FIX] Instaluji Xfce4 a základní komponenty..."
 sudo apt-get update
