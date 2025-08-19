@@ -1,9 +1,9 @@
 /**
- * Predator Display System - Matematický displej se segmenty v 128-kové soustavě
+ * Septem Segmenta Display - Matematický displej se sedmi segmenty v 128-kové soustavě  
  * Používá progresivní systém zhasínání s permutací 1357246
  */
 
-class PredatorDisplay {
+class SegmentDisplay {
   constructor(svgElement) {
     this.svg = svgElement;
     this.windows = [];
@@ -14,15 +14,17 @@ class PredatorDisplay {
     this.onColor = '#ff3b3b';
     this.currentStep = 0;
     this.startNumber = 0;
+    this.maxWindows = 10; // Maximální počet číslic pro rozumnou velikost
     
     this.init();
   }
   
   init() {
-    // Vytvoř všechna 4 okna
-    for (let i = 0; i < 4; i++) {
+    // Vytvoř maximální počet oken - budou se dynamicky zobrazovat/skrývat
+    for (let i = 0; i < this.maxWindows; i++) {
       const window = this.createWindow(0, 0, this.winW, this.winH);
       this.windows.push(window);
+      window.group.style.display = 'none'; // Začni skryté
     }
   }
   
@@ -185,28 +187,56 @@ class PredatorDisplay {
 
   // Funkce pro centrování aktivních oken
   centerActiveWindows(activeCount) {
-    const totalWidth = activeCount * this.winW + (activeCount - 1) * this.layout.gap;
+    // Omeť počet na dostupná okna
+    const actualCount = Math.min(activeCount, this.maxWindows);
+    
+    // Přizpůsobit velikost oken podle počtu číslic
+    let winW = this.winW;
+    let gap = this.layout.gap;
+    
+    // Pro více než 5 číslic zmenši okna a mezery
+    if (actualCount > 5) {
+      const scale = Math.max(0.6, 5 / actualCount);
+      winW = this.winW * scale;
+      gap = this.layout.gap * scale;
+    }
+    
+    const totalWidth = actualCount * winW + (actualCount - 1) * gap;
     const startX = (this.layout.width - totalWidth) / 2;
     const centerY = (this.layout.height - this.winH) / 2;
     
-    for (let i = 0; i < 4; i++) {
+    // Skryj všechna okna nejprve
+    for (let i = 0; i < this.maxWindows; i++) {
+      this.windows[i].group.style.display = 'none';
+    }
+    
+    // Zobraz a pozicuj jen aktivní okna
+    for (let i = 0; i < actualCount; i++) {
       const window = this.windows[i];
-      if (i < activeCount) {
-        const x = startX + i * (this.winW + this.layout.gap);
-        window.group.setAttribute('transform', `translate(${x} ${centerY})`);
-        window.group.style.display = 'block';
+      const x = startX + i * (winW + gap);
+      
+      // Dynamicky přizpůsob velikost
+      if (actualCount > 5) {
+        const scale = Math.max(0.6, 5 / actualCount);
+        window.group.setAttribute('transform', `translate(${x} ${centerY}) scale(${scale})`);
       } else {
-        window.group.style.display = 'none';
+        window.group.setAttribute('transform', `translate(${x} ${centerY})`);
       }
+      
+      window.group.style.display = 'block';
     }
   }
 
-  // Převede číslo na 128-kovou soustavu se 4 ciframi
-  toBase128(number) {
+  // Převede číslo na 128-kovou soustavu s dynamickým počtem číslic
+  toBase128(number, minDigits = 1) {
     const digits = [];
     let num = number;
     
-    for (let i = 0; i < 4; i++) {
+    // Vypočítej potřebný počet číslic
+    const neededDigits = number === 0 ? 1 : Math.floor(Math.log(number) / Math.log(128)) + 1;
+    const digitCount = Math.min(Math.max(neededDigits, minDigits), this.maxWindows);
+    
+    for (let i = 0; i < digitCount; i++) {
       digits.unshift(num % 128);
       num = Math.floor(num / 128);
     }
@@ -217,18 +247,14 @@ class PredatorDisplay {
   // Hlavní funkce pro zobrazení čísla
   displayNumber(number) {
     const base128Digits = this.toBase128(number);
-    
-    // Zjisti počet potřebných číslic automaticky z čísla
-    const neededDigits = number === 0 ? 1 : Math.floor(Math.log(number) / Math.log(128)) + 1;
-    const activeCount = Math.min(neededDigits, 4);
+    const activeCount = base128Digits.length;
     
     // Centruj aktivní okna
     this.centerActiveWindows(activeCount);
     
     // Pro každé aktivní okno nastav pattern
     for (let i = 0; i < activeCount; i++) {
-      const digitIndex = 4 - activeCount + i;
-      const digit = base128Digits[digitIndex];
+      const digit = base128Digits[i];
       const pattern = this.getProgressivePatternForDigit(digit);
       this.windows[i].setBinary(pattern);
     }
@@ -278,5 +304,5 @@ class PredatorDisplay {
 
 // Export pro použití v jiných souborech
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = PredatorDisplay;
+  module.exports = SegmentDisplay;
 }

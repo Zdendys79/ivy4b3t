@@ -24,14 +24,14 @@ if (!defined('IVY_FRAMEWORK')) {
 <body>
     <div class="terminal">
         <?php if (isset($timeout_info) && $timeout_info): ?>
-            <!-- Timeout mode: Predator countdown -->
-            <svg id="predator" role="img" aria-label="Predator countdown display"
+            <!-- Timeout mode: Septem Segmenta countdown -->
+            <svg id="segments" role="img" aria-label="Septem Segmenta countdown display"
                  width="100%" height="300" viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg"></svg>
-            <script src="public/assets/js/predator-display.js"></script>
+            <script src="public/assets/js/segment-display.js"></script>
             <script>
-                // Inicializace Predator displeje
-                const svg = document.getElementById('predator');
-                const display = new PredatorDisplay(svg);
+                // Inicializace Septem Segmenta displeje
+                const svg = document.getElementById('segments');
+                const display = new SegmentDisplay(svg);
                 
                 // Startovní číslo ze serveru
                 let timeLeft = <?php echo $timeout_info['remaining_seconds']; ?>;
@@ -45,6 +45,7 @@ if (!defined('IVY_FRAMEWORK')) {
                     display.displayNumber(timeLeft);
                     if (timeLeft <= 0) {
                         clearInterval(countdown);
+                        // Po dokončení timeout přesměruj na login (systém zjistí že timeout vypršel)
                         location.replace('/login');
                     }
                 }, 1000);

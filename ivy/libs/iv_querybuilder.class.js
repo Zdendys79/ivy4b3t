@@ -334,12 +334,18 @@ export class QueryBuilder {
   }
 
   async heartBeatExtended(params) {
-    const { hostname, version, userId, action, actionStartedAt } = params;
+    const { hostname, version, userId, action, actionStartedAt, systemVersions } = params;
     
     // Konvertovat timestamp na DATETIME nebo NULL
     let actionStartedAtFormatted = null;
     if (actionStartedAt) {
       actionStartedAtFormatted = new Date(actionStartedAt).toISOString().slice(0, 19).replace('T', ' ');
+    }
+    
+    // Připravit system_versions JSON (pokud je poskytnut)
+    let systemVersionsJson = null;
+    if (systemVersions) {
+      systemVersionsJson = JSON.stringify(systemVersions);
     }
     
     // Porovnat s předchozím stavem pro detekci změn
@@ -352,9 +358,10 @@ export class QueryBuilder {
       }
     }
     
-    // Aktualizovat heartbeat
+    // Aktualizovat heartbeat s možnými system_versions
     await this.safeExecute('system.heartBeatExtended', [
-      hostname, userId, version, action, actionStartedAtFormatted, userId, version, action, actionStartedAtFormatted
+      hostname, userId, version, action, actionStartedAtFormatted, systemVersionsJson,
+      userId, version, action, actionStartedAtFormatted, systemVersionsJson
     ]);
     
     // Získat UI příkaz a verzi z databáze

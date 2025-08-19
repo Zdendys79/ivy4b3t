@@ -181,6 +181,12 @@ try {
             break;
             
         default:
+            // Check for /counter/{number} pattern
+            if (preg_match('#^/counter/(\d+)$#', $path, $matches)) {
+                $_GET['number'] = $matches[1]; // Předej číslo jako GET parametr
+                callController('CounterController', 'display');
+                break;
+            }
             http_response_code(404);
             echo "404 - Stránka nenalezena<br>";
             echo "Cesta: " . htmlspecialchars($path) . "<br>";

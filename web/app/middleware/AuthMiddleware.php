@@ -24,6 +24,11 @@ class AuthMiddleware
      */
     public static function requiresAuth($path)
     {
+        // Counter routes are public
+        if (preg_match('#^/counter/\d+$#', $path)) {
+            return false;
+        }
+        
         return !in_array($path, self::$publicRoutes);
     }
     
