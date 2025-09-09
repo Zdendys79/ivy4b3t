@@ -403,6 +403,36 @@ export class BaseUtioPostAction extends BasePostAction {
     // Vyčistit uložená UTIO data
     this.utioLogData = null;
     
+    // NOVÉ: Vypočítat a nastavit cooldown pro skupinu
+    try {
+      const { GroupCooldownCalculator } = await import('./group_cooldown_calculator.class.js');
+      
+      // Vypočítat cooldown v minutách
+      const cooldownMinutes = GroupCooldownCalculator.calculateMinutes(
+        group.member_count || 100, // Výchozí 100 pokud chybí
+        group.priority || 3         // Výchozí priorita 3
+      );
+      
+      if (cooldownMinutes) {
+        // Pro hodnoty nad 1440 minut (24 hodin) použít hodiny
+        if (cooldownMinutes > 1440) {
+          const hours = Math.round(cooldownMinutes / 60);
+          await db.safeExecute('groups.updateNextSeenHours', [hours, group.id]);
+          Log.info(`[${user.id}]`, `Cooldown skupiny ${group.name} nastaven na ${hours} hodin`);
+        } else {
+          await db.safeExecute('groups.updateNextSeen', [Math.round(cooldownMinutes), group.id]);
+          Log.info(`[${user.id}]`, `Cooldown skupiny ${group.name} nastaven na ${Math.round(cooldownMinutes)} minut`);
+        }
+        
+        // Debug info
+        const debugInfo = GroupCooldownCalculator.debugInfo(group.member_count, group.priority);
+        Log.debug(`[${user.id}]`, `Cooldown výpočet: ${debugInfo.human} (členů: ${group.member_count}, priorita: ${group.priority})`);
+      }
+    } catch (err) {
+      Log.warn(`[${user.id}]`, `Chyba při nastavení cooldownu: ${err.message}`);
+      // Nezastavovat akci kvůli chybě cooldownu
+    }
+    
     // Aktualizuj počítadlo v dávce a zkontroluj zda je dávka dokončena
     const batchCompleted = await this.incrementBatchCounter(user);
     

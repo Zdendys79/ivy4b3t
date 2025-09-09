@@ -90,6 +90,18 @@ export const GROUPS = {
     WHERE id = ?
   `,
 
+  updateNextSeenHours: `
+    UPDATE fb_groups
+    SET next_seen = NOW() + INTERVAL ? HOUR
+    WHERE id = ?
+  `,
+
+  updateNextSeenDynamic: `
+    UPDATE fb_groups
+    SET next_seen = ?
+    WHERE id = ?
+  `,
+
   updateMemberCount: `
     UPDATE fb_groups
     SET member_count = ?
