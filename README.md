@@ -48,81 +48,62 @@
 
 ```
 ~/git/ivy4b3t/                ← Git repozitář
-├── ivy/                      ← Hlavní kód robota
+├── ivy/                      ← Hlavní aplikace pro VM (Node.js - vzdálené VM)
 │   ├── ivy.js                ← Hlavní smyčka klienta (verifikační + volání tick())
 │   ├── iv_worker.js          ← Pracovní cyklus: výběr uživatele, login, akce
-│   ├── iv_ui.js              ← Zpracování UI příkazů z webového rozhraní
-│   ├── iv_fb.js              ← Práce s FBem (login, postování, analýza)
-│   ├── iv_utio.js            ← Login a práce s UTIO portálem
-│   ├── iv_wait.js            ← Pauzy a zpoždění pro simulaci lidského chování
-│   ├── iv_sql.js             ← Komunikace s databází přes ESM SQL modul
-│   ├── iv_support.js         ← Pomocné funkce – vkládání zpráv, zvýšení limitů, screenshoty
-│   ├── iv_version.js         ← Načítání verze z `package.json`
-│   ├── iv_rhythm.js          ← Plánování akcí podle `action_plan`
-│   ├── libs/                ← Objektově orientované třídy
-│   │   ├── iv_actions.class.js    ← Implementace všech typů akcí
-│   │   ├── iv_fb.class.js         ← Třída pro práci s Facebook
-│   │   ├── iv_utio.class.js       ← Třída pro práci s UTIO portálem
-│   │   ├── iv_ui.class.js         ← Třída pro zpracování UI příkazů
-│   │   ├── iv_log.class.js        ← Centralizované logování
-│   │   ├── iv_page_analyzer.class.js ← Analýza stavu FB stránky
-│   │   ├── iv_querybuilder.class.js  ← Builder pro složité SQL dotazy
-│   │   ├── iv_console_logger.class.js ← Logger pro konzoli s session ID
-│   │   └── iv_char.class.js       ← Pomocné funkce pro práci s textem
-│   ├── config.json           ← Konfigurace větve, log úrovní, ikon a chování
-│   ├── git-common.sh         ← Společný modul pro Git operace napříč skripty
-│   ├── start.sh              ← Opakovaný spouštěcí skript (git pull + rsync + `node ivy.js`)
-│   ├── main-start.sh         ← Produkční spouštěcí skript (vždy main větev)
-│   ├── update-files.sh       ← Pomocný skript pro aktualizaci souborů bez spuštění
-│   ├── loginuser.js          ← Skript pro správu FB uživatele na webu
-│   ├── cycleusers.js         ← Cyklické přepínání uživatelů na virtuálu
-│   ├── rss_reader.js         ← Skript pro načítání zpráv z RSS a ukládání URL do databáze
-│   ├── git_commit_version.js ← Hook/post-commit pro uložení verze do DB a package.json
-│   └── sql/                  ← SQL dotazy a konfigurace
-│       ├── queries/          ← Modulární SQL dotazy v ESM struktuře
-│       │   ├── index.js      ← Hlavní exportní bod všech SQL dotazů
-│       │   ├── users.js      ← Dotazy pro práci s uživateli
-│       │   ├── groups.js     ← Dotazy pro práci se skupinami
-│       │   ├── quotes.js     ← Dotazy pro práci s citáty
-│       │   ├── actions.js    ← Dotazy pro akce a plánování
-│       │   ├── limits.js     ← Dotazy pro správu limitů
-│       │   ├── system.js     ← Systémové dotazy
-│       │   └── logs.js       ← Dotazy pro logování
-│       ├── sql_config.json   ← Databázové přístupové údaje (NEukládá se do Git)
-│       ├── sql_config_sample.json ← Vzor pro sql_config.json
-│       ├── iv_user.sql       ← Legacy dotaz pro výběr uživatele
-│       └── iv_group.sql      ← Legacy dotaz pro výběr skupiny
-├── scripts/                  ← Utility a systémové skripty pro správu projektu
+│   ├── actions/              ← Implementace jednotlivých akcí
+│   ├── libs/                 ← Objektově orientované třídy
+│   ├── sql/                  ← SQL dotazy a konfigurace
+│   ├── scripts/              ← Utility skripty pro IVY
+│   └── logs/                 ← Logy aplikace
+├── web/                      ← PHP webové rozhraní (Apache - https://ivy.zdendys79.website - lokální)
+│   ├── app/                  ← MVC architektura (controllers, views, services)
+│   ├── config/               ← Konfigurace webového rozhraní
+│   ├── public/               ← Veřejné assety
+│   ├── restricted/           ← Část webu nedostupná přes HTTP (SQL skripty, zálohy)
+│   ├── storage/              ← Session soubory
+│   ├── logs/                 ← PHP error logy
+│   └── index.php             ← Hlavní vstupní bod webové aplikace
+├── quote_harvester/          ← Sklizeň citátů (nezávislý systém)
+│   ├── src/                  ← Zdrojové třídy pro harvesting
+│   ├── harvester.js          ← Hlavní harvester aplikace
+│   └── node_modules/         ← Závislosti harvester systému
+├── rss-server/               ← RSS feeds pro news_post akce
+│   ├── rss-standalone.js     ← Hlavní RSS server aplikace
+│   ├── libs/                 ← Třídy pro RSS processing
+│   └── node_modules/         ← Závislosti RSS serveru
+├── translation-checker/      ← Kontrola překladů (nezávislé)
+│   └── translation-quality-checker.js ← Hlavní checker aplikace
+├── scripts/                  ← Maintenance skripty, SQL migrace (synchronizované pomocí syncthing na všechny VM)
 │   ├── setup-ivy.sh          ← Kompletní instalační skript pro IVY prostředí
-│   ├── db_ivy_create.sh      ← Vytvoření databáze s všemi tabulkami a daty
 │   ├── db_backup.sh          ← Zálohování databáze s versioning
-│   ├── install_ivy_git.sh    ← Instalace projektu Ivy z Gitu na VM
-│   ├── install-ivy-deps.sh   ← Instalace závislostí pro Ivy v Linuxu
-│   ├── install-latest-node.sh ← Instalace nejnovější verze Node.js
-│   ├── bootstrap-ivy.sh      ← Bootstrap prostředí pro Ivy
-│   ├── manage-git.sh         ← Správa git repozitáře a základní operace
-│   ├── update-node-env.sh    ← Aktualizace NVM, Node.js a NPM
-│   ├── commit.ps1            ← PowerShell commit s verzováním a Notepad editorem
-│   ├── create_links.bat      ← Vytváření symbolických linků ve Windows
-│   ├── pre-commit            ← Git hook – automatizace před commitem
-│   └── post-commit           ← Git hook – automatizace po commitu
-├── web/                      ← Webová a dashboard část projektu
-│   ├── restricted/           ← Část webu nedostupná přes HTTP
-│   │   ├── ivy_create_full.sql     ← SQL skript pro vytvoření celé databáze
-│   │   ├── ivy_data_full.sql       ← SQL skript pro import výchozích dat
-│   │   ├── ivy_data_scheme.sql     ← SQL skript pro vložení dat do scheme
-│   │   ├── ivy_data_referers.sql   ← SQL skript pro vložení referer URL
-│   │   ├── ivy_data_action_definitions.sql ← SQL skript pro definice akcí
-│   │   ├── sql_config.json         ← Přístupové údaje do databáze pro PHP (NEukládá se do Git)
-│   │   ├── sql_config_example.json ← Vzor pro sql_config.json
-│   │   ├── install_ivy.sh          ← Instalační skript pro inicializaci databáze
-│   │   └── backups/               ← Složka pro automatické zálohy databáze
-│   ├── system/               ← Systémová složka pro PHP
-│   │   └── db_class.php      ← Třída pro správu databáze
-│   ├── index.php             ← Hlavní vstupní bod webové aplikace
-│   ├── dashboard.php         ← Dashboard pro správu robotů
-│   ├── style.css             ← Styly pro webovou aplikaci
-│   └── script.js             ← JavaScript pro interaktivitu webu
+│   ├── pre-commit-hook.sh    ← Git hook – automatizace před commitem
+│   ├── post-commit-hook.sh   ← Git hook – automatizace po commitu
+│   ├── maintenance/          ← Maintenance utility
+│   ├── sql/                  ← SQL migrace a utility
+│   └── Update-NodeEnv.ps1    ← PowerShell skript pro Node update
+├── DOCS/                     ← Dokumentace komponent a postupů
+│   ├── AI_memory.md          ← Dokumentace AI paměti
+│   ├── README.*.md           ← Dokumentace jednotlivých komponent
+│   ├── ECMA2025.md           ← JavaScript features reference
+│   ├── ECMAScript-Features.md ← Další JS reference
+│   └── PROJECT_MAP.md        ← Mapa projektu
+├── GUIDES/                   ← Detailní návody (z původní CLAUDE.md)
+│   ├── curl-testing.md       ← Web testování s přihlášením
+│   ├── database-operations.md ← MariaDB MCP + BASH postupy  
+│   ├── git-workflow.md       ← Git pravidla a commit hooks
+│   ├── rss-system.md         ← RSS server a news_post akce
+│   ├── architecture.md       ← Deployment a spouštění IVY
+│   ├── troubleshooting.md    ← Logy a debugging
+│   └── FB_DEBUGGING_GUIDE.md ← Facebook debugging guide
+├── backup/                   ← Záložní soubory (není v gitu)
+├── backups/                  ← Databázové zálohy
+├── sql/                      ← Globální SQL skripty
+├── work_history/            ← Historie práce
+├── commit.sh                 ← Bash commit script
+├── commit.ps1                ← PowerShell commit script  
+├── commit_message.txt        ← Soubor pro commit zprávy
+├── CLAUDE.md                 ← Hlavní paměť AI
 └── README.md                 ← Tento dokumentační soubor
 ```
 
