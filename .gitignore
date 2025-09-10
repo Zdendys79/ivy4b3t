@@ -27,3 +27,10 @@ web/storage/
 
 # Work history and journals
 work_history/
+
+# Test soubory
+test_*.js
+*_test.js
+
+# Backup folder
+backup/
