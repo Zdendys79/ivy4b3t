@@ -10,6 +10,71 @@ class ActionLogController extends BaseController
         try {
             $pdo = $this->db->getPdo();
             
+            // Získat seznam hostů z heartbeat tabulky s verzí a aktuálním uživatelem
+            $hosts_query = "
+                SELECT 
+                    h.host,
+                    h.version,
+                    h.current_user_id,
+                    u.name,
+                    u.surname
+                FROM heartbeat h
+                LEFT JOIN fb_users u ON h.current_user_id = u.id
+                WHERE h.last_heartbeat >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                ORDER BY h.host
+            ";
+            $stmt = $pdo->prepare($hosts_query);
+            $stmt->execute();
+            $hosts_data = $stmt->fetchAll();
+            
+            // Statistiky akcí podle hostů za poslední hodinu a 24 hodin
+            $host_stats = [];
+            foreach ($hosts_data as $host_info) {
+                $host = $host_info['host'];
+                // Statistiky za posledních 24 hodin
+                $stats_24h_query = "
+                    SELECT 
+                        action_code,
+                        COUNT(*) as count
+                    FROM action_log 
+                    WHERE host = ? 
+                        AND timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                    GROUP BY action_code
+                ";
+                $stmt = $pdo->prepare($stats_24h_query);
+                $stmt->execute([$host]);
+                $stats_24h = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+                
+                // Statistiky za poslední hodinu
+                $stats_1h_query = "
+                    SELECT 
+                        action_code,
+                        COUNT(*) as count
+                    FROM action_log 
+                    WHERE host = ? 
+                        AND timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                    GROUP BY action_code
+                ";
+                $stmt = $pdo->prepare($stats_1h_query);
+                $stmt->execute([$host]);
+                $stats_1h = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+                
+                // Celkové počty
+                $total_24h = array_sum($stats_24h);
+                $total_1h = array_sum($stats_1h);
+                
+                $host_stats[$host] = [
+                    'version' => $host_info['version'],
+                    'current_user' => $host_info['name'] && $host_info['surname'] ? 
+                        $host_info['name'] . ' ' . $host_info['surname'] : 
+                        ($host_info['current_user_id'] ? 'User #' . $host_info['current_user_id'] : '-'),
+                    'stats_24h' => $stats_24h,
+                    'stats_1h' => $stats_1h,
+                    'total_24h' => $total_24h,
+                    'total_1h' => $total_1h
+                ];
+            }
+            
             // Denní přehled akcí s počty účtů
             $query = "
                 SELECT 
@@ -61,7 +126,8 @@ class ActionLogController extends BaseController
             $this->render_partial('system/action-log-overview', [
                 'title' => 'Přehled akcí podle dnů',
                 'grouped_data' => $grouped_data,
-                'action_details' => $action_details
+                'action_details' => $action_details,
+                'host_stats' => $host_stats
             ]);
             
         } catch (Exception $e) {
