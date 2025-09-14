@@ -76,8 +76,8 @@ export class BasePostAction extends BaseAction {
     Log.info(`[${user.id}]`, 'Naviguji na facebook.com...');
     
     const pageReady = await fbBot.navigateToPage('https://www.facebook.com/', {
-      waitUntil: 'networkidle2',
-      timeout: 30 * 1000 // 30s
+      waitUntil: 'domcontentloaded', // Spolehlivější než networkidle2
+      timeout: 60 * 1000 // 60s pro pomalé připojení
     });
 
     if (!pageReady) {
