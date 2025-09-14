@@ -81,18 +81,9 @@ export class BaseUtioPostAction extends BasePostAction {
       throw new Error('Cannot bring Facebook to front at start');
     }
 
-    // Navigace na Facebook skupinu - s kontrolou buy_sell
-    let groupUrl = `https://www.facebook.com/groups/${group.fb_id}`;
-    if (group.is_buy_sell_group === 1) {
-      groupUrl += '/buy_sell_discussion';
-      Log.info(`[${user.id}]`, `Skupina je buy_sell - přidávám /buy_sell_discussion`);
-    }
-    Log.info(`[${user.id}]`, `Naviguji na ${groupUrl}...`);
-    
-    const pageReady = await fbBot.navigateToPage(groupUrl, {
-      waitUntil: 'domcontentloaded', // Změna z networkidle2 - rychlejší a spolehlivější
-      timeout: 10 * 1000 // 10s - stránka musí být načtena rychle
-    });
+    // Navigace na Facebook skupinu - používá novou pomocnou metodu
+    Log.info(`[${user.id}]`, `Naviguji na skupinu ${group.name} (${group.fb_id})...`);
+    const pageReady = await fbBot.navigateToGroup(group.fb_id, group.is_buy_sell_group === 1);
 
     if (!pageReady) {
       throw new Error('Facebook checkpoint detected - cannot continue');

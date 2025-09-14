@@ -311,6 +311,40 @@ export class FBBot {
   }
 
   /**
+   * Rychlá navigace s výchozími parametry pro FB stránky
+   * @param {string} url - cílová URL
+   * @returns {Promise<boolean>} true pokud navigace uspěla
+   */
+  async navigateQuick(url) {
+    return this.navigateToPage(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 10000
+    });
+  }
+
+  /**
+   * Navigace na FB skupinu s optimálními parametry
+   * @param {string} groupId - FB ID skupiny
+   * @param {boolean} isBuySell - true pokud je to buy/sell skupina
+   * @returns {Promise<boolean>} true pokud navigace uspěla
+   */
+  async navigateToGroup(groupId, isBuySell = false) {
+    let url = `https://www.facebook.com/groups/${groupId}`;
+    if (isBuySell) {
+      url += '/buy_sell_discussion';
+    }
+    return this.navigateQuick(url);
+  }
+
+  /**
+   * Navigace na hlavní FB stránku
+   * @returns {Promise<boolean>} true pokud navigace uspěla
+   */
+  async navigateToHome() {
+    return this.navigateQuick('https://www.facebook.com/');
+  }
+
+  /**
    * Naviguje na URL a ověří zdraví stránky pomocí analýzy
    * @param {string} url - cílová URL
    * @param {object} options - Puppeteer goto options
