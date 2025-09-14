@@ -15,12 +15,12 @@ class ActionLogController extends BaseController
                 SELECT 
                     h.host,
                     h.version,
-                    h.current_user_id,
+                    h.user_id,
                     u.name,
                     u.surname
                 FROM heartbeat h
-                LEFT JOIN fb_users u ON h.current_user_id = u.id
-                WHERE h.last_heartbeat >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                LEFT JOIN fb_users u ON h.user_id = u.id
+                WHERE h.up >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                 ORDER BY h.host
             ";
             $stmt = $pdo->prepare($hosts_query);
@@ -34,12 +34,13 @@ class ActionLogController extends BaseController
                 // Statistiky za posledních 24 hodin
                 $stats_24h_query = "
                     SELECT 
-                        action_code,
+                        al.action_code,
                         COUNT(*) as count
-                    FROM action_log 
-                    WHERE host = ? 
-                        AND timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-                    GROUP BY action_code
+                    FROM action_log al
+                    JOIN fb_users u ON al.account_id = u.id
+                    WHERE u.host = ? 
+                        AND al.timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                    GROUP BY al.action_code
                 ";
                 $stmt = $pdo->prepare($stats_24h_query);
                 $stmt->execute([$host]);
@@ -48,12 +49,13 @@ class ActionLogController extends BaseController
                 // Statistiky za poslední hodinu
                 $stats_1h_query = "
                     SELECT 
-                        action_code,
+                        al.action_code,
                         COUNT(*) as count
-                    FROM action_log 
-                    WHERE host = ? 
-                        AND timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-                    GROUP BY action_code
+                    FROM action_log al
+                    JOIN fb_users u ON al.account_id = u.id
+                    WHERE u.host = ? 
+                        AND al.timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+                    GROUP BY al.action_code
                 ";
                 $stmt = $pdo->prepare($stats_1h_query);
                 $stmt->execute([$host]);
@@ -67,7 +69,7 @@ class ActionLogController extends BaseController
                     'version' => $host_info['version'],
                     'current_user' => $host_info['name'] && $host_info['surname'] ? 
                         $host_info['name'] . ' ' . $host_info['surname'] : 
-                        ($host_info['current_user_id'] ? 'User #' . $host_info['current_user_id'] : '-'),
+                        ($host_info['user_id'] ? 'User #' . $host_info['user_id'] : '-'),
                     'stats_24h' => $stats_24h,
                     'stats_1h' => $stats_1h,
                     'total_24h' => $total_24h,
