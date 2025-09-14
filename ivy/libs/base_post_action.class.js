@@ -77,7 +77,7 @@ export class BasePostAction extends BaseAction {
     
     const pageReady = await fbBot.navigateToPage('https://www.facebook.com/', {
       waitUntil: 'domcontentloaded', // Spolehlivější než networkidle2
-      timeout: 60 * 1000 // 60s pro pomalé připojení
+      timeout: 10 * 1000 // 10s - stránka musí být načtena rychle
     });
 
     if (!pageReady) {
