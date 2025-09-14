@@ -318,8 +318,16 @@ export class FBBot {
    */
   async navigateToPage(url, options = {}) {
     try {
-      // a) Navigace na stránku
-      await this.page.goto(url, options);
+      // Výchozí nastavení pro bezpečnou navigaci
+      const safeOptions = {
+        waitUntil: options.waitUntil || 'domcontentloaded',
+        timeout: options.timeout || 60000 // Výchozí 60s timeout
+      };
+      
+      Log.debug('[FB]', `Navigace na ${url} s options:`, safeOptions);
+      
+      // a) Navigace na stránku s timeoutem
+      await this.page.goto(url, safeOptions);
       
       // V UI režimu neprovádět žádnou analýzu
       if (this.disableAnalysis) {

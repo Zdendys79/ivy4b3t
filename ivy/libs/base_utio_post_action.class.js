@@ -90,8 +90,8 @@ export class BaseUtioPostAction extends BasePostAction {
     Log.info(`[${user.id}]`, `Naviguji na ${groupUrl}...`);
     
     const pageReady = await fbBot.navigateToPage(groupUrl, {
-      waitUntil: 'networkidle2',
-      timeout: 30 * 1000 // 30s
+      waitUntil: 'domcontentloaded', // Změna z networkidle2 - rychlejší a spolehlivější
+      timeout: 60 * 1000 // 60s místo 30s pro pomalé skupiny
     });
 
     if (!pageReady) {
