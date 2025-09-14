@@ -321,7 +321,7 @@ export class FBBot {
       // Výchozí nastavení pro bezpečnou navigaci
       const safeOptions = {
         waitUntil: options.waitUntil || 'domcontentloaded',
-        timeout: options.timeout || 60000 // Výchozí 60s timeout
+        timeout: options.timeout || 10000 // 10s timeout - stránka musí být načtena rychle
       };
       
       Log.debug('[FB]', `Navigace na ${url} s options:`, safeOptions);

@@ -195,7 +195,7 @@ export class GroupExploreAction {
       Log.info(`[${user.id}]`, `Naviguji na skupinu z cache: ${groupUrl}`);
       await fbBot.navigateToPage(groupUrl, { 
         waitUntil: 'domcontentloaded',
-        timeout: 60000 
+        timeout: 10000 // 10s - stránka musí být načtena rychle
       });
       await Wait.toSeconds(4, 'Načtení skupiny z cache');
       return true;
@@ -216,7 +216,7 @@ export class GroupExploreAction {
       // Naviguj na skupinový discover
       await fbBot.navigateToPage('https://www.facebook.com/groups/discover', { 
         waitUntil: 'domcontentloaded',
-        timeout: 60000 
+        timeout: 10000 // 10s - stránka musí být načtena rychle
       });
       await Wait.toSeconds(5, 'Načtení discover stránky');
       

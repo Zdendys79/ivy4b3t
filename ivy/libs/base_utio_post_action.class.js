@@ -91,7 +91,7 @@ export class BaseUtioPostAction extends BasePostAction {
     
     const pageReady = await fbBot.navigateToPage(groupUrl, {
       waitUntil: 'domcontentloaded', // Změna z networkidle2 - rychlejší a spolehlivější
-      timeout: 60 * 1000 // 60s místo 30s pro pomalé skupiny
+      timeout: 10 * 1000 // 10s - stránka musí být načtena rychle
     });
 
     if (!pageReady) {
