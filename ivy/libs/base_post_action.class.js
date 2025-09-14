@@ -72,13 +72,10 @@ export class BasePostAction extends BaseAction {
     // Přenést FB záložku na popředí
     await fbBot.bringToFront();
     
-    // Navigace na Facebook - čekáme na networkidle2
+    // Navigace na Facebook - používá novou pomocnou metodu
     Log.info(`[${user.id}]`, 'Naviguji na facebook.com...');
     
-    const pageReady = await fbBot.navigateToPage('https://www.facebook.com/', {
-      waitUntil: 'domcontentloaded', // Spolehlivější než networkidle2
-      timeout: 10 * 1000 // 10s - stránka musí být načtena rychle
-    });
+    const pageReady = await fbBot.navigateToHome();
 
     if (!pageReady) {
       throw new Error('Facebook checkpoint detected - cannot continue');
