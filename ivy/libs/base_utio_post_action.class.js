@@ -18,6 +18,7 @@ export class BaseUtioPostAction extends BasePostAction {
   constructor(actionName, groupType) {
     super(actionName);
     this.groupType = groupType;
+    this.postButtonClicked = false; // Sledování kliknutí na tlačítko Zveřejnit
   }
 
   /**
@@ -28,6 +29,16 @@ export class BaseUtioPostAction extends BasePostAction {
       needsFB: true,
       needsUtio: true
     };
+  }
+
+  /**
+   * Vypočítá invasive cooldown (2-4 minuty)
+   */
+  calculateInvasiveCooldown() {
+    const minMinutes = 2;
+    const maxMinutes = 4;
+    const minutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
+    return Math.floor(minutes * 60 * 1000); // Převod na milisekundy
   }
 
   /**
@@ -201,9 +212,34 @@ export class BaseUtioPostAction extends BasePostAction {
       // KROK 7: Zpracovat výsledek
       if (success) {
         await this.handleSuccess(user, data, pickedAction);
+        
+        // Nastavit invasive lock po úspěšném postu
+        if (pickedAction.is_invasive) {
+          const { InvasiveLock } = await import('./iv_invasive_lock.class.js');
+          const invasiveLock = new InvasiveLock();
+          invasiveLock.init();
+          
+          const cooldownMs = this.calculateInvasiveCooldown();
+          invasiveLock.set(cooldownMs);
+          Log.info(`[${user.id}]`, `Invasive lock nastaven na ${invasiveLock.getRemainingSeconds()}s po úspěšném postu`);
+        }
+        
         return true;
       } else {
         await this.handleFailure(user, fbBot, data, 'Post failed - normal posting error');
+        
+        // Nastavit kratší invasive lock i po neúspěchu (pokud došlo ke kliknutí na Zveřejnit)
+        if (pickedAction.is_invasive && this.postButtonClicked) {
+          const { InvasiveLock } = await import('./iv_invasive_lock.class.js');
+          const invasiveLock = new InvasiveLock();
+          invasiveLock.init();
+          
+          // Kratší cooldown pro neúspěšný pokus (50% normálního času)
+          const cooldownMs = Math.floor(this.calculateInvasiveCooldown() * 0.5);
+          invasiveLock.set(cooldownMs);
+          Log.info(`[${user.id}]`, `Invasive lock nastaven na ${invasiveLock.getRemainingSeconds()}s po neúspěšném pokusu`);
+        }
+        
         return false;
       }
 
@@ -319,6 +355,9 @@ export class BaseUtioPostAction extends BasePostAction {
     if (!clicked) {
       throw new Error('Failed to publish post - "Zveřejnit" button not found');
     }
+    
+    // Označit, že bylo kliknuto na tlačítko pro případ selhání
+    this.postButtonClicked = true;
     
     // Počkat na reakci po kliknutí (větší pauza pro UTIO)
     await Wait.toSeconds(12);
@@ -455,6 +494,57 @@ export class BaseUtioPostAction extends BasePostAction {
   async handleFailure(user, fbBot, group, reason = null) {
     await Log.error(`[${user.id}]`, 'UTIO post selhal');
     
+    // Zachytit diagnostiku před logováním
+    let diagnosticData = null;
+    if (fbBot && fbBot.page) {
+      try {
+        // Pořiď screenshot
+        const timestamp = Date.now();
+        const screenshotPath = `/tmp/post_fail_${user.id}_${timestamp}.png`;
+        await fbBot.page.screenshot({ path: screenshotPath, fullPage: false });
+        
+        // Získej viditelné elementy z DOM
+        const visibleElements = await fbBot.page.evaluate(() => {
+          const elements = [];
+          const allElements = document.querySelectorAll('*');
+          
+          allElements.forEach(el => {
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            
+            // Pouze viditelné elementy
+            if (rect.width > 0 && rect.height > 0 && 
+                style.display !== 'none' && 
+                style.visibility !== 'hidden' &&
+                style.opacity !== '0') {
+              
+              const text = el.textContent?.trim();
+              if (text && text.length > 0 && text.length < 200) {
+                elements.push({
+                  tag: el.tagName.toLowerCase(),
+                  text: text.substring(0, 100),
+                  className: el.className || '',
+                  id: el.id || ''
+                });
+              }
+            }
+          });
+          
+          return elements.slice(0, 50); // Max 50 elementů
+        });
+        
+        diagnosticData = {
+          screenshot: screenshotPath,
+          visibleElements: visibleElements,
+          url: await fbBot.page.url()
+        };
+        
+        Log.info(`[${user.id}]`, `Screenshot uložen: ${screenshotPath}`);
+      } catch (err) {
+        Log.warn(`[${user.id}]`, `Nelze získat diagnostiku: ${err.message}`);
+      }
+    }
+    
     // Vytvořit rozšířený log detail s UTIO informacemi i pro chybové stavy
     if (group) {
       let logDetail = `FAILED - Group: ${group.name} (${group.fb_id}) | Reason: ${reason || 'Unknown'}`;
@@ -468,6 +558,30 @@ export class BaseUtioPostAction extends BasePostAction {
           `DISTRICT: ${this.utioLogData.params.district_id}`
         ];
         logDetail += ` | ${utioInfo.join(' | ')}`;
+      }
+      
+      // Přidat diagnostiku pokud je dostupná
+      if (diagnosticData) {
+        logDetail += ` | SCREENSHOT: ${diagnosticData.screenshot}`;
+        
+        // Uložit diagnostická data do databáze (usergroups tabulka má sloupec 'note')
+        try {
+          const diagnosticJson = JSON.stringify({
+            reason: reason,
+            screenshot: diagnosticData.screenshot,
+            url: diagnosticData.url,
+            elements: diagnosticData.visibleElements.slice(0, 10), // Jen prvních 10 elementů
+            timestamp: new Date().toISOString()
+          });
+          
+          // Aktualizovat poznámku v usergroups
+          await db.safeExecute(
+            'UPDATE usergroups SET note = ? WHERE user_id = ? AND group_id = ?',
+            [diagnosticJson, user.id, group.id]
+          );
+        } catch (err) {
+          Log.warn(`[${user.id}]`, `Nelze uložit diagnostiku: ${err.message}`);
+        }
       }
       
       // Zalogovat selhání
