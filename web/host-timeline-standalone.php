@@ -284,15 +284,16 @@ function getActionColor($action) {
         }
         .session-block {
             position: absolute;
-            left: 2px;
-            right: 2px;
+            width: 80%; /* Pevná šířka */
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            padding: 8px;
+            border-radius: 4px;
+            padding: 2px; /* Zmenšený vnitřní okraj */
+            margin: 2px; /* Vnější okraj */
             cursor: pointer;
             transition: all 0.3s ease;
             overflow: hidden;
+            font-size: 10px; /* Menší písmo pro lepší zobrazení */
         }
         .session-block:hover {
             transform: scale(1.02);
@@ -302,20 +303,26 @@ function getActionColor($action) {
         }
         .session-header {
             font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 5px;
-            padding-bottom: 3px;
+            font-size: 10px;
+            margin-bottom: 2px;
+            padding-bottom: 2px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .session-actions {
-            font-size: 11px;
-            line-height: 1.4;
+            font-size: 9px;
+            line-height: 1.2;
         }
         .action-line {
-            margin: 2px 0;
-            padding: 2px 4px;
-            border-radius: 3px;
+            margin: 1px 0;
+            padding: 1px 2px;
+            border-radius: 2px;
             background: rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         /* Barvy akcí */
         .activity-post_utio_g { background: linear-gradient(45deg, #4CAF50, #45a049); }
@@ -444,14 +451,17 @@ function getActionColor($action) {
                         if (!isset($sessions[$session_key])) continue;
                         $session = $sessions[$session_key];
                         
-                        // Vypočítat pozici - 4x více vertikálního prostoru
-                        $session_top = (($max_time - $session['end']) / ($max_time - $min_time)) * 2400; // 4x výška
-                        $session_height = (($session['end'] - $session['start']) / ($max_time - $min_time)) * 2400; // 4x výška
-                        if ($session_height < 30) $session_height = 30; // Minimální výška
+                        // Vypočítat pozici - 4x více vertikálního prostoru (NOW je nahoře = 0)
+                        $session_start_from_now = (($max_time - $session['start']) / ($max_time - $min_time)) * 2400;
+                        $session_end_from_now = (($max_time - $session['end']) / ($max_time - $min_time)) * 2400;
+                        $session_top = $session_end_from_now; // Top pozice je konec session
+                        $session_height = $session_start_from_now - $session_end_from_now; // Výška
+                        if ($session_height < 20) $session_height = 20; // Minimální výška
                         
-                        $session_left = 10 + (($session['user_id'] % 3) * 30); // Horizontální rozložení podle user_id
+                        // Pevná šířka 80% sloupce, zarovnáno na střed
+                        $session_left = 10; // 10% od kraje (80% šířka = 10% zleva, 10% zprava)
                         
-                        echo "<div class='session-block' style='left: {$session_left}%; right: {$session_left}%; top: {$session_top}px; height: {$session_height}px;'>";
+                        echo "<div class='session-block' style='left: {$session_left}%; top: {$session_top}px; height: {$session_height}px;'>";
                         echo "<div class='session-header'>#{$session['user_id']} {$session['surname']}</div>";
                         echo "<div class='session-actions'>";
                         
