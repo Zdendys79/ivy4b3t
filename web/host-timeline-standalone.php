@@ -146,8 +146,8 @@ ksort($hosts);
 $min_time = strtotime($start_time);
 $max_time = strtotime($end_time);
 $total_minutes = ($max_time - $min_time) / 60;
-// Upravit šířku sloupců pro 4x rozšíření (400% šířka)
-$column_width = count($hosts) > 0 ? floor(360 / count($hosts)) : 360; // 360% místo 90%
+// Vrátit původní šířku sloupců - hosté vedle sebe
+$column_width = count($hosts) > 0 ? floor(90 / count($hosts)) : 90;
 
 // Funkce pro formátování času
 function formatDuration($seconds) {
@@ -235,37 +235,35 @@ function getActionColor($action) {
         }
         .timeline-grid {
             position: relative;
-            min-height: 600px;
+            min-height: 2400px; /* 4x výška pro vertikální rozšíření */
             margin-top: 100px;
-            width: 400%; /* 4x rozšíření časové osy */
         }
         .time-axis {
             position: absolute;
-            top: -80px;
-            left: 80px;
+            top: 0;
+            left: 0;
             right: 0;
-            height: 80px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            height: 2400px; /* 4x výška */
+            border-left: 2px solid rgba(255, 255, 255, 0.3);
         }
         .time-label {
             position: absolute;
-            top: 50px;
             font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
-            transform: translateX(-50%);
+            transform: translateY(-50%);
         }
         .hour-line {
             position: absolute;
             top: 70px;
-            bottom: -600px;
+            bottom: -2400px; /* 4x výška */
             width: 1px;
             background: rgba(255, 255, 255, 0.1);
         }
         .host-column {
             position: absolute;
             top: 0;
-            min-height: 600px;
-            width: <?php echo ($column_width / 4); ?>%; /* Upraveno pro 4x rozšíření */
+            min-height: 2400px; /* 4x výška */
+            width: <?php echo $column_width; ?>%;
             border-left: 1px solid rgba(255, 255, 255, 0.1);
         }
         .host-header {
@@ -414,20 +412,20 @@ function getActionColor($action) {
                 <!-- Časová osa nahoře -->
                 <div class="time-axis">
                     <?php
-                    // Zobrazit časové značky - 4x hustší (každých 15 minut)
+                    // Zobrazit časové značky - každých 15 minut
                     $interval_minutes = 15; // Každých 15 minut
                     $num_markers = ($hours * 60) / $interval_minutes;
                     
                     for ($i = 0; $i <= $num_markers; $i++) {
                         $label_time = $max_time - ($i * $interval_minutes * 60);
-                        $left = (($max_time - $label_time) / ($max_time - $min_time)) * 100;
+                        $top = (($max_time - $label_time) / ($max_time - $min_time)) * 2400; // Vertikální pozice
                         
                         // Zobrazit pouze každou celou hodinu s textem, ostatní jen čáru
                         if ($i % 4 == 0) { // Každá 4. značka = celá hodina
-                            echo "<div class='time-label' style='left: {$left}%;'>" . date('H:00', $label_time) . "</div>";
-                            echo "<div class='hour-line' style='left: {$left}%; background: rgba(255, 255, 255, 0.3);'></div>";
+                            echo "<div class='time-label' style='top: " . ($top + 50) . "px; left: -60px;'>" . date('H:00', $label_time) . "</div>";
+                            echo "<div class='hour-line' style='top: " . ($top + 70) . "px; left: 0; right: 0; height: 1px; width: auto; background: rgba(255, 255, 255, 0.3);'></div>";
                         } else {
-                            echo "<div class='hour-line' style='left: {$left}%; background: rgba(255, 255, 255, 0.05);'></div>";
+                            echo "<div class='hour-line' style='top: " . ($top + 70) . "px; left: 0; right: 0; height: 1px; width: auto; background: rgba(255, 255, 255, 0.05);'></div>";
                         }
                     }
                     ?>
@@ -437,9 +435,8 @@ function getActionColor($action) {
                 <?php
                 $col_index = 0;
                 foreach ($hosts as $host_name => $host_data) {
-                    $left = $col_index * ($column_width / 4); // Upraveno pro 4x rozšíření
-                    $width = $column_width / 4; // Upraveno pro 4x rozšíření
-                    echo "<div class='host-column' style='left: {$left}%; width: {$width}%;'>";
+                    $left = $col_index * $column_width;
+                    echo "<div class='host-column' style='left: {$left}%; width: {$column_width}%;'>";
                     echo "<div class='host-header'>{$host_name}</div>";
                     
                     // Zobrazit sessions pro tento host
@@ -447,14 +444,14 @@ function getActionColor($action) {
                         if (!isset($sessions[$session_key])) continue;
                         $session = $sessions[$session_key];
                         
-                        // Vypočítat pozici
-                        $session_left = (($max_time - $session['end']) / ($max_time - $min_time)) * 100;
-                        $session_width = (($session['end'] - $session['start']) / ($max_time - $min_time)) * 100;
-                        if ($session_width < 2) $session_width = 2; // Minimální šířka
+                        // Vypočítat pozici - 4x více vertikálního prostoru
+                        $session_top = (($max_time - $session['end']) / ($max_time - $min_time)) * 2400; // 4x výška
+                        $session_height = (($session['end'] - $session['start']) / ($max_time - $min_time)) * 2400; // 4x výška
+                        if ($session_height < 30) $session_height = 30; // Minimální výška
                         
-                        $session_top = 10 + (($session['user_id'] % 10) * 60); // Vertikální rozložení podle user_id
+                        $session_left = 10 + (($session['user_id'] % 3) * 30); // Horizontální rozložení podle user_id
                         
-                        echo "<div class='session-block' style='left: {$session_left}%; width: {$session_width}%; top: {$session_top}px;'>";
+                        echo "<div class='session-block' style='left: {$session_left}%; right: {$session_left}%; top: {$session_top}px; height: {$session_height}px;'>";
                         echo "<div class='session-header'>#{$session['user_id']} {$session['surname']}</div>";
                         echo "<div class='session-actions'>";
                         
