@@ -57,7 +57,10 @@ export const GROUPS = {
       AND g.priority > 0
       AND (g.next_seen IS NULL OR g.next_seen <= NOW())
       AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
-    ORDER BY RAND()
+    ORDER BY 
+      CASE WHEN g.next_seen IS NULL THEN '1970-01-01' ELSE g.next_seen END ASC,
+      g.priority DESC,
+      RAND()
     LIMIT 1
   `,
 
