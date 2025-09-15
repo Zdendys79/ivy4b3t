@@ -228,16 +228,17 @@ export class BaseUtioPostAction extends BasePostAction {
       } else {
         await this.handleFailure(user, fbBot, data, 'Post failed - normal posting error');
         
-        // Nastavit kratší invasive lock i po neúspěchu (pokud došlo ke kliknutí na Zveřejnit)
+        // Nastavit PLNÝ invasive lock i po neúspěchu (pokud došlo ke kliknutí na Zveřejnit)
+        // DŮLEŽITÉ: Nezkracovat! Facebook je citlivý na rychlé akce
         if (pickedAction.is_invasive && this.postButtonClicked) {
           const { InvasiveLock } = await import('./iv_invasive_lock.class.js');
           const invasiveLock = new InvasiveLock();
           invasiveLock.init();
           
-          // Kratší cooldown pro neúspěšný pokus (50% normálního času)
-          const cooldownMs = Math.floor(this.calculateInvasiveCooldown() * 0.5);
+          // PLNÝ cooldown i pro neúspěšný pokus - ochrana proti blokaci účtu
+          const cooldownMs = this.calculateInvasiveCooldown();
           invasiveLock.set(cooldownMs);
-          Log.info(`[${user.id}]`, `Invasive lock nastaven na ${invasiveLock.getRemainingSeconds()}s po neúspěšném pokusu`);
+          Log.info(`[${user.id}]`, `Invasive lock nastaven na ${invasiveLock.getRemainingSeconds()}s po neúspěšném pokusu (plná délka pro bezpečnost)`);
         }
         
         return false;
