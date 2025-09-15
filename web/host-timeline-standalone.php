@@ -236,7 +236,8 @@ function getActionColor($action) {
         .timeline-grid {
             position: relative;
             min-height: 2400px; /* 4x výška pro vertikální rozšíření */
-            margin-top: 100px;
+            margin-top: 50px;
+            padding-top: 30px; /* Prostor pro host headers */
         }
         .time-axis {
             position: absolute;
@@ -268,23 +269,24 @@ function getActionColor($action) {
         }
         .host-header {
             position: absolute;
-            top: -100px;
+            top: -30px; /* Menší offset pro host headers */
             left: 0;
             right: 0;
-            height: 30px;
+            height: 25px;
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.1);
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.15);
             border-radius: 5px 5px 0 0;
-            padding: 5px;
+            padding: 3px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            z-index: 10; /* Nad session bloky */
         }
         .session-block {
             position: absolute;
-            width: 80%; /* Pevná šířka */
+            width: 96%; /* Širší DIV */
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 4px;
@@ -429,10 +431,10 @@ function getActionColor($action) {
                         
                         // Zobrazit pouze každou celou hodinu s textem, ostatní jen čáru
                         if ($i % 4 == 0) { // Každá 4. značka = celá hodina
-                            echo "<div class='time-label' style='top: " . ($top + 50) . "px; left: -60px;'>" . date('H:00', $label_time) . "</div>";
-                            echo "<div class='hour-line' style='top: " . ($top + 70) . "px; left: 0; right: 0; height: 1px; width: auto; background: rgba(255, 255, 255, 0.3);'></div>";
+                            echo "<div class='time-label' style='top: {$top}px; left: 10px;'>" . date('H:00', $label_time) . "</div>";
+                            echo "<div class='hour-line' style='top: {$top}px; left: 80px; right: 0; height: 1px; width: auto; background: rgba(255, 255, 255, 0.3);'></div>";
                         } else {
-                            echo "<div class='hour-line' style='top: " . ($top + 70) . "px; left: 0; right: 0; height: 1px; width: auto; background: rgba(255, 255, 255, 0.05);'></div>";
+                            echo "<div class='hour-line' style='top: {$top}px; left: 80px; right: 0; height: 1px; width: auto; background: rgba(255, 255, 255, 0.05);'></div>";
                         }
                     }
                     ?>
@@ -458,11 +460,17 @@ function getActionColor($action) {
                         $session_height = $session_start_from_now - $session_end_from_now; // Výška
                         if ($session_height < 20) $session_height = 20; // Minimální výška
                         
-                        // Pevná šířka 80% sloupce, zarovnáno na střed
-                        $session_left = 10; // 10% od kraje (80% šířka = 10% zleva, 10% zprava)
+                        // Pevná šířka 96% sloupce, zarovnáno na střed
+                        $session_left = 2; // 2% od kraje (96% šířka = 2% zleva, 2% zprava)
+                        
+                        // Vypočítat délku trvání session
+                        $duration_seconds = $session['end'] - $session['start'];
+                        $duration_minutes = floor($duration_seconds / 60);
+                        $duration_secs = $duration_seconds % 60;
+                        $duration_str = sprintf("%02d:%02d", $duration_minutes, $duration_secs);
                         
                         echo "<div class='session-block' style='left: {$session_left}%; top: {$session_top}px; height: {$session_height}px;'>";
-                        echo "<div class='session-header'>#{$session['user_id']} {$session['surname']}</div>";
+                        echo "<div class='session-header'>#{$session['user_id']} {$session['surname']} ({$duration_str})</div>";
                         echo "<div class='session-actions'>";
                         
                         // Zobrazit sumář akcí
@@ -475,14 +483,9 @@ function getActionColor($action) {
                                 $delay_duration = 0;
                                 foreach ($session['actions'] as $act) {
                                     if ($act['code'] === 'account_delay' && $act['text']) {
-                                        // Parsovat délku z textu (očekáváme formát typu "300 minut")
-                                        if (preg_match('/(\d+)\s*(minut|hodin|sekund)/i', $act['text'], $matches)) {
+                                        // Parsovat délku z textu (formát "Account delay: XXXmin")
+                                        if (preg_match('/(\d+)\s*min/i', $act['text'], $matches)) {
                                             $delay_duration = intval($matches[1]);
-                                            if (stripos($matches[2], 'hodin') !== false) {
-                                                $delay_duration *= 60; // Převést na minuty
-                                            } elseif (stripos($matches[2], 'sekund') !== false) {
-                                                $delay_duration = floor($delay_duration / 60); // Převést na minuty
-                                            }
                                         }
                                     }
                                 }
