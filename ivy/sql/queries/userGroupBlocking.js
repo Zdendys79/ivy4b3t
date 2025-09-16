@@ -151,5 +151,20 @@ export const USER_GROUP_BLOCKING = {
     UPDATE user_groups 
     SET note = ?
     WHERE user_id = ? AND group_id = ?
+  `,
+
+  updateDiagnosticData: `
+    UPDATE user_groups 
+    SET screenshot = ?, dom = ?, note = ?
+    WHERE user_id = ? AND group_id = ?
+  `,
+
+  getDiagnosticData: `
+    SELECT screenshot, dom, note, blocked_until, last_block_reason, time
+    FROM user_groups 
+    WHERE user_id = ? AND group_id = ?
+      AND (screenshot IS NOT NULL OR dom IS NOT NULL)
+    ORDER BY time DESC
+    LIMIT 1
   `
 };
