@@ -499,48 +499,51 @@ export class BaseUtioPostAction extends BasePostAction {
     let diagnosticData = null;
     if (fbBot && fbBot.page) {
       try {
-        // Pořiď screenshot
-        const timestamp = Date.now();
-        const screenshotPath = `/tmp/post_fail_${user.id}_${timestamp}.png`;
-        await fbBot.page.screenshot({ path: screenshotPath, fullPage: false });
+        // Pořiď screenshot jako base64
+        const screenshotBuffer = await fbBot.page.screenshot({ fullPage: false });
+        const screenshotBase64 = screenshotBuffer.toString('base64');
         
-        // Získej viditelné elementy z DOM
-        const visibleElements = await fbBot.page.evaluate(() => {
+        // Získej zjednodušený DOM otisk - pouze DIV/SPAN s vysokým z-index
+        const domFingerprint = await fbBot.page.evaluate(() => {
           const elements = [];
-          const allElements = document.querySelectorAll('*');
+          const divSpan = document.querySelectorAll('div, span');
           
-          allElements.forEach(el => {
+          divSpan.forEach(el => {
             const rect = el.getBoundingClientRect();
             const style = window.getComputedStyle(el);
+            const zIndex = parseInt(style.zIndex) || 0;
             
-            // Pouze viditelné elementy
+            // Pouze viditelné elementy s vysokým z-index (pravděpodobně modály/chyby)
             if (rect.width > 0 && rect.height > 0 && 
                 style.display !== 'none' && 
                 style.visibility !== 'hidden' &&
-                style.opacity !== '0') {
+                style.opacity !== '0' &&
+                (zIndex > 100 || el.textContent?.includes('chyb') || el.textContent?.includes('error'))) {
               
               const text = el.textContent?.trim();
-              if (text && text.length > 0 && text.length < 200) {
+              if (text && text.length > 0 && text.length < 300) {
                 elements.push({
                   tag: el.tagName.toLowerCase(),
-                  text: text.substring(0, 100),
-                  className: el.className || '',
+                  text: text.substring(0, 150),
+                  zIndex: zIndex,
+                  className: el.className?.substring(0, 50) || '',
                   id: el.id || ''
                 });
               }
             }
           });
           
-          return elements.slice(0, 50); // Max 50 elementů
+          // Seřadit podle z-index (nejvyšší první)
+          return elements.sort((a, b) => b.zIndex - a.zIndex).slice(0, 20);
         });
         
         diagnosticData = {
-          screenshot: screenshotPath,
-          visibleElements: visibleElements,
+          screenshotBase64: screenshotBase64,
+          domFingerprint: domFingerprint,
           url: await fbBot.page.url()
         };
         
-        Log.info(`[${user.id}]`, `Screenshot uložen: ${screenshotPath}`);
+        Log.info(`[${user.id}]`, `Screenshot zachycen (${Math.round(screenshotBase64.length/1024)}KB)`);
       } catch (err) {
         Log.warn(`[${user.id}]`, `Nelze získat diagnostiku: ${err.message}`);
       }
@@ -563,24 +566,31 @@ export class BaseUtioPostAction extends BasePostAction {
       
       // Přidat diagnostiku pokud je dostupná
       if (diagnosticData) {
-        logDetail += ` | SCREENSHOT: ${diagnosticData.screenshot}`;
+        const screenshotSize = Math.round(diagnosticData.screenshotBase64.length / 1024);
+        logDetail += ` | SCREENSHOT: ${screenshotSize}KB | DOM_ELEMENTS: ${diagnosticData.domFingerprint.length}`;
         
-        // Uložit diagnostická data do databáze (usergroups tabulka má sloupec 'note')
+        // Uložit diagnostická data do databáze
         try {
-          const diagnosticJson = JSON.stringify({
+          const noteJson = JSON.stringify({
             reason: reason,
-            screenshot: diagnosticData.screenshot,
             url: diagnosticData.url,
-            elements: diagnosticData.visibleElements.slice(0, 10), // Jen prvních 10 elementů
+            screenshot_size_kb: screenshotSize,
+            dom_elements_count: diagnosticData.domFingerprint.length,
             timestamp: new Date().toISOString()
           });
+
+          const domJson = JSON.stringify(diagnosticData.domFingerprint);
           
-          // Aktualizovat poznámku v user_groups
-          await db.safeExecute('userGroupBlocking.updateDiagnosticNote', [
-            diagnosticJson, 
+          // Aktualizovat screenshot, DOM a poznámku v user_groups
+          await db.safeExecute('userGroupBlocking.updateDiagnosticData', [
+            diagnosticData.screenshotBase64,  // screenshot BLOB
+            domJson,                          // dom TEXT
+            noteJson,                         // note TEXT  
             user.id, 
             group.id
           ]);
+
+          Log.info(`[${user.id}]`, `Diagnostika uložena: ${screenshotSize}KB screenshot, ${diagnosticData.domFingerprint.length} DOM elementů`);
         } catch (err) {
           Log.warn(`[${user.id}]`, `Nelze uložit diagnostiku: ${err.message}`);
         }

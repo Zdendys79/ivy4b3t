@@ -454,11 +454,14 @@ CREATE TABLE `user_groups` (
   `block_count` tinyint(3) unsigned NOT NULL DEFAULT 0,
   `last_block_reason` varchar(255) DEFAULT NULL,
   `last_block_date` datetime DEFAULT NULL,
+  `screenshot` mediumblob DEFAULT NULL COMMENT 'Base64 screenshot při selhání akce',
+  `dom` text DEFAULT NULL COMMENT 'Zjednodušený DOM otisk - viditelné elementy s vysokým z-index',
   UNIQUE KEY `user_group` (`user_id`,`group_id`) USING BTREE,
   KEY `group_id` (`group_id`),
+  KEY `idx_user_groups_diagnostic` (`user_id`,`group_id`,`time`),
   CONSTRAINT `user_groups_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `fb_users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `user_groups_ibfk_2` FOREIGN KEY (`group_id`) REFERENCES `fb_groups` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Per-user group blocking s diagnostikou chyb';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
