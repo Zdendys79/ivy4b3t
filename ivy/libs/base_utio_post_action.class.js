@@ -160,6 +160,16 @@ export class BaseUtioPostAction extends BasePostAction {
         // Aktualizuj timestamp při úspěšném joinu
         await db.safeExecute('users.updateLastGroupJoin', [user.id]);
         Log.info(`[${user.id}]`, 'Úspěšně kliknuto na "Přidat se ke skupině" - cooldown nastaven');
+        
+        // Pro GV skupiny nastav kratší group cooldown (1 hodina místo standardního)
+        if (group.type === 'GV') {
+          await db.safeExecute('groups.updateNextSeen', [60, group.id]); // 1 hodina
+          Log.info(`[${user.id}]`, `GV skupina ${group.name} - kratší cooldown 1h po pokusu o join`);
+        } else {
+          // Pro ostatní skupiny standardní kratší cooldown (např. 3 hodiny)
+          await db.safeExecute('groups.updateNextSeen', [180, group.id]); // 3 hodiny
+          Log.info(`[${user.id}]`, `Skupina ${group.name} - cooldown 3h po pokusu o join`);
+        }
       }
     }
 
