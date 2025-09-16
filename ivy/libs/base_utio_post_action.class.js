@@ -600,11 +600,11 @@ export class BaseUtioPostAction extends BasePostAction {
           
           // Aktualizovat screenshot, DOM a poznámku v user_groups
           await db.safeExecute('userGroupBlocking.updateDiagnosticData', [
+            user.id,                          // user_id
+            group.id,                         // group_id
             diagnosticData.screenshotBase64,  // screenshot BLOB
             domJson,                          // dom TEXT
-            noteJson,                         // note TEXT  
-            user.id, 
-            group.id
+            noteJson                          // note TEXT
           ]);
 
           Log.info(`[${user.id}]`, `Diagnostika uložena: ${screenshotSize}KB screenshot, ${diagnosticData.domFingerprint.length} DOM elementů`);
@@ -797,7 +797,7 @@ export class BaseUtioPostAction extends BasePostAction {
       
       return {
         allowed: result.can_join === 1,
-        minutesRemaining: Math.max(0, -result.minutes_remaining)
+        minutesRemaining: Math.max(0, result.minutes_remaining)
       };
     } catch (err) {
       Log.error(`[${user.id}]`, `Chyba při kontrole join cooldown: ${err.message}`);
