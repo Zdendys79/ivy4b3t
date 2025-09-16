@@ -613,6 +613,15 @@ export class BaseUtioPostAction extends BasePostAction {
       Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) zablokována kvůli selhání: ${reason}`);
     } else if (group && reason && reason.includes('Facebook checkpoint')) {
       Log.info(`[${user.id}]`, `Skupina ${group.name} (${group.id}) NEZABLOKOVÁNA - důvod: ${reason} (systémový problém)`);
+      
+      // KRITICKÉ: Automaticky zamknout účet při Facebook checkpoint detekci
+      try {
+        await db.lockAccountWithReason(user.id, `Facebook checkpoint detected: ${reason}`, 'CHECKPOINT');
+        await Log.systemLog('ACCOUNT_LOCKED', `User ${user.id} auto-locked due to Facebook checkpoint`);
+        Log.error(`[${user.id}]`, `Účet automaticky zamčen kvůli Facebook checkpoint detekci`);
+      } catch (lockErr) {
+        Log.error(`[${user.id}]`, `Chyba při automatickém zamykání: ${lockErr.message}`);
+      }
     }
   }
 

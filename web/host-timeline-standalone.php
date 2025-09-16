@@ -38,28 +38,8 @@ $hours = isset($_GET['hours']) ? intval($_GET['hours']) : 24;
 $start_time = date('Y-m-d H:i:s', strtotime("-{$hours} hours"));
 $end_time = date('Y-m-d H:i:s');
 
-// Získat aktivity hostů z action_log - seskupené podle času
+// Získat všechny aktivity hostů bez seskupování - seskupíme v PHP
 $query = "
-    SELECT 
-        u.host,
-        al.account_id,
-        u.surname,
-        al.action_code,
-        al.timestamp,
-        al.text,
-        MIN(al.timestamp) as session_start,
-        MAX(al.timestamp) as session_end,
-        TIMESTAMPDIFF(MINUTE, MIN(al.timestamp), MAX(al.timestamp)) as session_duration
-    FROM action_log al
-    JOIN fb_users u ON al.account_id = u.id
-    WHERE al.timestamp >= ?
-      AND u.host IS NOT NULL
-    GROUP BY u.host, al.account_id, FLOOR(UNIX_TIMESTAMP(al.timestamp) / 3600)
-    ORDER BY u.host, al.timestamp DESC
-";
-
-// Získat detailní aktivity pro každou session
-$detail_query = "
     SELECT 
         u.host,
         al.account_id,
@@ -71,11 +51,12 @@ $detail_query = "
     FROM action_log al
     JOIN fb_users u ON al.account_id = u.id
     WHERE al.timestamp >= ?
+      AND al.timestamp <= NOW()
       AND u.host IS NOT NULL
-    ORDER BY u.host, al.timestamp DESC
+    ORDER BY u.host, al.timestamp ASC
 ";
 
-$stmt = $conn->prepare($detail_query);
+$stmt = $conn->prepare($query);
 $stmt->bind_param('s', $start_time);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -83,11 +64,14 @@ $result = $stmt->get_result();
 // Zpracovat data do struktur
 $hosts = [];
 $sessions = [];
+$current_sessions = []; // Sledování aktuální session pro každý host
+$session_counter = 0;
+$max_gap_minutes = 10; // Maximální mezera mezi akcemi v minutách
 
 while ($row = $result->fetch_assoc()) {
     $host_name = $row['host'];
     $user_id = $row['account_id'];
-    $session_key = $host_name . '_' . $user_id . '_' . floor(strtotime($row['timestamp']) / 3600);
+    $timestamp = strtotime($row['timestamp']);
     
     // Inicializovat host
     if (!isset($hosts[$host_name])) {
@@ -97,21 +81,50 @@ while ($row = $result->fetch_assoc()) {
         ];
     }
     
-    // Inicializovat session
-    if (!isset($sessions[$session_key])) {
+    // Klíč pro aktuální session daného hosta
+    $host_session_key = $host_name;
+    
+    // Rozhodnout, zda vytvořit novou session
+    $create_new_session = false;
+    
+    if (!isset($current_sessions[$host_session_key])) {
+        // První session pro tento host
+        $create_new_session = true;
+    } else {
+        $last_session_key = $current_sessions[$host_session_key];
+        $last_session = $sessions[$last_session_key];
+        
+        // Vytvořit novou session pokud:
+        // 1. Změnil se user_id
+        // 2. Je větší než 10 minutová mezera od poslední akce
+        if ($last_session['user_id'] != $user_id || 
+            ($timestamp - $last_session['end']) > ($max_gap_minutes * 60)) {
+            $create_new_session = true;
+        }
+    }
+    
+    // Vytvořit novou session pokud je potřeba
+    if ($create_new_session) {
+        $session_counter++;
+        $session_key = $host_name . '_' . $user_id . '_' . $session_counter;
+        
         $sessions[$session_key] = [
             'host' => $host_name,
             'user_id' => $user_id,
             'surname' => $row['surname'],
-            'start' => strtotime($row['timestamp']),
-            'end' => strtotime($row['timestamp']),
+            'start' => $timestamp,
+            'end' => $timestamp,
             'actions' => [],
             'action_counts' => []
         ];
+        
+        $current_sessions[$host_session_key] = $session_key;
+        $hosts[$host_name]['sessions'][] = $session_key;
+    } else {
+        $session_key = $current_sessions[$host_session_key];
     }
     
     // Aktualizovat časy session
-    $timestamp = strtotime($row['timestamp']);
     if ($timestamp < $sessions[$session_key]['start']) {
         $sessions[$session_key]['start'] = $timestamp;
     }
@@ -132,11 +145,6 @@ while ($row = $result->fetch_assoc()) {
         $sessions[$session_key]['action_counts'][$row['action_code']] = 0;
     }
     $sessions[$session_key]['action_counts'][$row['action_code']]++;
-    
-    // Přidat session k hostu
-    if (!in_array($session_key, $hosts[$host_name]['sessions'])) {
-        $hosts[$host_name]['sessions'][] = $session_key;
-    }
 }
 
 // Seřadit hosty podle názvu
@@ -148,6 +156,10 @@ $max_time = strtotime($end_time);
 $total_minutes = ($max_time - $min_time) / 60;
 // Vrátit původní šířku sloupců - hosté vedle sebe
 $column_width = count($hosts) > 0 ? floor(90 / count($hosts)) : 90;
+
+// HLAVNÍ PROMĚNNÁ PRO VERTIKÁLNÍ ROZŠÍŘENÍ - 48x (4x * 12x)
+$vertical_scale = 48;
+$timeline_height = $hours * 100 * $vertical_scale; // Výška časové osy v pixelech
 
 // Funkce pro formátování času
 function formatDuration($seconds) {
@@ -235,7 +247,7 @@ function getActionColor($action) {
         }
         .timeline-grid {
             position: relative;
-            min-height: 2400px; /* 4x výška pro vertikální rozšíření */
+            min-height: <?php echo $timeline_height; ?>px; /* Dynamická výška */
             margin-top: 50px;
             padding-top: 30px; /* Prostor pro host headers */
         }
@@ -244,7 +256,7 @@ function getActionColor($action) {
             top: 0;
             left: 0;
             right: 0;
-            height: 2400px; /* 4x výška */
+            height: <?php echo $timeline_height; ?>px; /* Dynamická výška */
             border-left: 2px solid rgba(255, 255, 255, 0.3);
         }
         .time-label {
@@ -256,33 +268,34 @@ function getActionColor($action) {
         .hour-line {
             position: absolute;
             top: 70px;
-            bottom: -2400px; /* 4x výška */
+            bottom: -<?php echo $timeline_height; ?>px; /* Dynamická výška */
             width: 1px;
             background: rgba(255, 255, 255, 0.1);
         }
         .host-column {
             position: absolute;
             top: 0;
-            min-height: 2400px; /* 4x výška */
+            min-height: <?php echo $timeline_height; ?>px; /* Dynamická výška */
             width: <?php echo $column_width; ?>%;
             border-left: 1px solid rgba(255, 255, 255, 0.1);
         }
         .host-header {
-            position: absolute;
-            top: -30px; /* Menší offset pro host headers */
+            position: sticky;
+            top: 0;
             left: 0;
             right: 0;
             height: 25px;
             text-align: center;
             font-weight: bold;
             font-size: 12px;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.25);
             border-radius: 5px 5px 0 0;
             padding: 3px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            z-index: 10; /* Nad session bloky */
+            z-index: 100; /* Nad session bloky */
+            margin-bottom: 5px; /* Mezera mezi header a prvním blokem */
         }
         .session-block {
             position: absolute;
@@ -325,6 +338,11 @@ function getActionColor($action) {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        .action-failed {
+            opacity: 0.5;
+            text-decoration: line-through;
+            font-style: italic;
         }
         /* Barvy akcí */
         .activity-post_utio_g { background: linear-gradient(45deg, #4CAF50, #45a049); }
@@ -427,7 +445,7 @@ function getActionColor($action) {
                     
                     for ($i = 0; $i <= $num_markers; $i++) {
                         $label_time = $max_time - ($i * $interval_minutes * 60);
-                        $top = (($max_time - $label_time) / ($max_time - $min_time)) * 2400; // Vertikální pozice
+                        $top = (($max_time - $label_time) / ($max_time - $min_time)) * $timeline_height; // Použití dynamické výšky
                         
                         // Zobrazit pouze každou celou hodinu s textem, ostatní jen čáru
                         if ($i % 4 == 0) { // Každá 4. značka = celá hodina
@@ -453,18 +471,47 @@ function getActionColor($action) {
                         if (!isset($sessions[$session_key])) continue;
                         $session = $sessions[$session_key];
                         
-                        // Vypočítat pozici - 4x více vertikálního prostoru (NOW je nahoře = 0)
-                        $session_start_from_now = (($max_time - $session['start']) / ($max_time - $min_time)) * 2400;
-                        $session_end_from_now = (($max_time - $session['end']) / ($max_time - $min_time)) * 2400;
-                        $session_top = $session_end_from_now; // Top pozice je konec session
-                        $session_height = $session_start_from_now - $session_end_from_now; // Výška
-                        if ($session_height < 20) $session_height = 20; // Minimální výška
+                        // Vypočítat pozici s použitím dynamické výšky (NOW je nahoře = 0)
+                        // Omezit session pouze na viditelný rozsah
+                        $session_start_time = max($session['start'], $min_time);
+                        $session_end_time = min($session['end'], $max_time);
+                        
+                        // Přeskočit session mimo rozsah
+                        if ($session_end_time < $min_time || $session_start_time > $max_time) {
+                            continue;
+                        }
+                        
+                        // Najít poslední akci (account_delay nebo account_sleep) pro určení konce session
+                        $actual_session_end = $session['start']; // Výchozí je začátek
+                        foreach ($session['actions'] as $action) {
+                            // Aktualizovat konec na čas každé akce
+                            if ($action['time'] > $actual_session_end) {
+                                $actual_session_end = $action['time'];
+                            }
+                            // Pokud je to account_delay nebo account_sleep, je to konec session
+                            if ($action['code'] === 'account_delay' || $action['code'] === 'account_sleep') {
+                                $actual_session_end = $action['time'];
+                                break; // Konec session nalezen
+                            }
+                        }
+                        
+                        // Vypočítat pozici - session začíná nahoře v čase začátku a roste dolů
+                        // Top pozice je začátek session (první akce)
+                        // Přidat offset pro host header (30px = 25px header + 5px margin)
+                        $session_top = (($max_time - $session['start']) / ($max_time - $min_time)) * $timeline_height + 30;
+                        
+                        // Výška podle skutečné délky session (od začátku do konce/delay/sleep)
+                        $session_duration_seconds = $actual_session_end - $session['start'];
+                        $session_height = ($session_duration_seconds / ($max_time - $min_time)) * $timeline_height;
+                        
+                        // Minimální výška pro viditelnost
+                        if ($session_height < 20) $session_height = 20;
                         
                         // Pevná šířka 96% sloupce, zarovnáno na střed
                         $session_left = 2; // 2% od kraje (96% šířka = 2% zleva, 2% zprava)
                         
-                        // Vypočítat délku trvání session
-                        $duration_seconds = $session['end'] - $session['start'];
+                        // Vypočítat délku trvání session (použít stejnou logiku jako pro výšku)
+                        $duration_seconds = $session_duration_seconds; // Už vypočítáno výše
                         $duration_minutes = floor($duration_seconds / 60);
                         $duration_secs = $duration_seconds % 60;
                         $duration_str = sprintf("%02d:%02d", $duration_minutes, $duration_secs);
@@ -480,40 +527,68 @@ function getActionColor($action) {
                             // Speciální zpracování pro account_delay a account_sleep
                             if ($action === 'account_delay') {
                                 // Najít delay akci a získat délku
-                                $delay_duration = 0;
+                                $delay_minutes = 0;
                                 foreach ($session['actions'] as $act) {
-                                    if ($act['code'] === 'account_delay' && $act['text']) {
-                                        // Parsovat délku z textu (formát "Account delay: XXXmin")
-                                        if (preg_match('/(\d+)\s*min/i', $act['text'], $matches)) {
-                                            $delay_duration = intval($matches[1]);
+                                    if ($act['code'] === 'account_delay') {
+                                        // Nejdřív zkusit reference_id (nové záznamy)
+                                        if ($act['reference_id'] && is_numeric($act['reference_id'])) {
+                                            $delay_minutes = intval($act['reference_id']);
+                                            break;
+                                        }
+                                        // Fallback na parsování textu (staré záznamy)
+                                        elseif ($act['text'] && preg_match('/(\d+)\s*h/i', $act['text'], $matches)) {
+                                            $delay_minutes = intval($matches[1]) * 60; // Převést hodiny na minuty
+                                            break;
                                         }
                                     }
                                 }
-                                $hours = floor($delay_duration / 60);
-                                $minutes = $delay_duration % 60;
+                                $hours = floor($delay_minutes / 60);
+                                $minutes = $delay_minutes % 60;
                                 echo "<div class='action-line {$color_class}'>account_delay ({$hours}h:{$minutes}m)</div>";
                             } elseif ($action === 'account_sleep') {
                                 // Najít sleep akci a získat délku
-                                $sleep_duration = 0;
+                                $sleep_minutes = 0;
                                 foreach ($session['actions'] as $act) {
-                                    if ($act['code'] === 'account_sleep' && $act['text']) {
-                                        if (preg_match('/(\d+)\s*(dní|hodin|minut)/i', $act['text'], $matches)) {
-                                            $sleep_duration = intval($matches[1]);
-                                            if (stripos($matches[2], 'dní') !== false) {
-                                                $sleep_duration *= 1440; // Převést na minuty
-                                            } elseif (stripos($matches[2], 'hodin') !== false) {
-                                                $sleep_duration *= 60; // Převést na minuty
-                                            }
+                                    if ($act['code'] === 'account_sleep') {
+                                        // Nejdřív zkusit reference_id (nové záznamy)
+                                        if ($act['reference_id'] && is_numeric($act['reference_id'])) {
+                                            $sleep_minutes = intval($act['reference_id']);
+                                            break;
+                                        }
+                                        // Fallback na parsování textu (staré záznamy)
+                                        elseif ($act['text'] && preg_match('/(\d+)\s*h/i', $act['text'], $matches)) {
+                                            $sleep_minutes = intval($matches[1]) * 60; // Převést hodiny na minuty
+                                            break;
                                         }
                                     }
                                 }
-                                $days = floor($sleep_duration / 1440);
-                                $hours = floor(($sleep_duration % 1440) / 60);
-                                $minutes = $sleep_duration % 60;
+                                $sleep_hours = $sleep_minutes / 60;
+                                $days = floor($sleep_hours / 24);
+                                $hours = floor($sleep_hours % 24);
+                                $minutes = $sleep_minutes % 60;
                                 echo "<div class='action-line {$color_class}'>account_sleep ({$days}d:{$hours}h:{$minutes}m)</div>";
                             } else {
-                                // Běžné akce
-                                if ($count > 1) {
+                                // Běžné akce - zkontrolovat pokud jsou FAILED
+                                $failed_count = 0;
+                                $success_count = 0;
+                                
+                                // Spočítat úspěšné a neúspěšné akce
+                                foreach ($session['actions'] as $act) {
+                                    if ($act['code'] === $action) {
+                                        if (strpos($act['text'], 'FAILED') !== false) {
+                                            $failed_count++;
+                                        } else {
+                                            $success_count++;
+                                        }
+                                    }
+                                }
+                                
+                                // Zobrazit s informací o selhání
+                                if ($failed_count > 0 && $success_count > 0) {
+                                    echo "<div class='action-line {$color_class}'>{$count}x {$action} ({$success_count}✓/{$failed_count}✗)</div>";
+                                } elseif ($failed_count > 0) {
+                                    echo "<div class='action-line {$color_class} action-failed'>{$count}x {$action} (all failed)</div>";
+                                } elseif ($count > 1) {
                                     echo "<div class='action-line {$color_class}'>{$count}x {$action}</div>";
                                 } else {
                                     echo "<div class='action-line {$color_class}'>{$action}</div>";
