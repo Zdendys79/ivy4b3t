@@ -286,8 +286,9 @@ export async function runWheelOfFortune(user, browser, context) {
           Log.info(`[${user.id}]`, `Opakovatelná akce ${pickedAction.code} zůstává dostupná pro další kolo`);
         }
         
-        // Nastavení invasive lock po úspěšné invazivní akci
-        if (pickedAction.is_invasive) {
+        // Invasive lock se nyní nastavuje přímo v BaseUtioPostAction
+        // Pro ostatní invazivní akce (pokud by byly) nastavit zde
+        if (pickedAction.is_invasive && !pickedAction.code.startsWith('post_utio')) {
           const cooldownMs = calculateInvasiveCooldown();
           invasiveLock.set(cooldownMs);
           Log.info(`[${user.id}]`, `Invasive lock nastaven na ${invasiveLock.getRemainingSeconds()}s`);
@@ -307,8 +308,8 @@ export async function runWheelOfFortune(user, browser, context) {
       
       // 7b. restart_needed check is now handled by Wait.toSecondsInterruptible
 
-      // 8. Pauza mezi akcemi (přerušitelná při restart_needed)
-      await Wait.toSecondsInterruptible(config.getWheelActionDelaySeconds().max, 'Pauza mezi akcemi');
+      // 8. Pauza mezi akcemi (20 sekund)
+      await Wait.toSecondsInterruptible(20, 'Pauza mezi akcemi na kole štěstí');
     }
 
     Log.success(`[${user.id}]`, `Kolo štěstí dokončeno. Provedeno ${actionCount} akcí`);

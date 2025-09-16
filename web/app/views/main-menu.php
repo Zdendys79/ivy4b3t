@@ -145,6 +145,7 @@
                     <li><a href="dashboard">📈 Pokročilý dashboard</a></li>
                     <li><a href="quotes">📝 Citáty</a></li>
                     <li><a href="dont_panic"><img src="public/assets/images/hitchhiker-symbol.svg" alt="Don't Panic!" style="width: 32px; height: auto; vertical-align: middle; margin-right: 8px;"> Don't panic!</a></li>
+                    <li><a href="host-timeline">🤖 Host Timeline</a></li>
                     <li><a href="api/status">🔌 API Status</a></li>
                 </ul>
             </div>

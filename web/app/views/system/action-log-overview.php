@@ -96,6 +96,51 @@
             background-color: #007bff;
             color: white;
         }
+        .host-stats-section {
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .host-stats-header {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .host-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .host-stats-table th, .host-stats-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .host-stats-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .host-name {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .version-badge {
+            background-color: #6c757d;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        .stats-detail {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .stats-number {
+            font-weight: bold;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -120,6 +165,63 @@
                 <strong>📅 Seřazeno:</strong> Nejnovější den nahoře • 
                 <strong>👥 Detail účtů:</strong> Pro akce s méně než 6 účastníky
             </div>
+            
+            <?php if (!empty($host_stats)): ?>
+                <div class="host-stats-section">
+                    <div class="host-stats-header">
+                        🤖 Statistiky aktivních hostů
+                    </div>
+                    
+                    <table class="host-stats-table">
+                        <thead>
+                            <tr>
+                                <th>Host</th>
+                                <th>Verze</th>
+                                <th>Aktuální uživatel</th>
+                                <th>Poslední hodina</th>
+                                <th>Posledních 24 hodin</th>
+                                <th>Detail akcí (24h)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($host_stats as $host => $stats): ?>
+                                <tr>
+                                    <td>
+                                        <span class="host-name"><?= htmlspecialchars($host) ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="version-badge"><?= htmlspecialchars($stats['version'] ?: 'N/A') ?></span>
+                                    </td>
+                                    <td>
+                                        <?= htmlspecialchars($stats['current_user']) ?>
+                                    </td>
+                                    <td>
+                                        <span class="stats-number"><?= $stats['total_1h'] ?></span> akcí
+                                    </td>
+                                    <td>
+                                        <span class="stats-number"><?= $stats['total_24h'] ?></span> akcí
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($stats['stats_24h'])): ?>
+                                            <div class="stats-detail">
+                                                <?php 
+                                                $actions_list = [];
+                                                foreach ($stats['stats_24h'] as $action => $count) {
+                                                    $actions_list[] = "<strong>{$action}</strong>: {$count}";
+                                                }
+                                                echo implode(', ', $actions_list);
+                                                ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="stats-detail">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
             
             <?php if (empty($grouped_data)): ?>
                 <p>Žádné záznamy akcí nebyly nalezeny za posledních 30 dní.</p>
