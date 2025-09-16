@@ -367,7 +367,7 @@ export class BrowserManager {
       '--disable-background-timer-throttling',
       '--disable-backgrounding-occluded-windows',
       '--disable-renderer-backgrounding',
-      '--disable-features=TranslateUI,SessionRestore',
+      '--disable-features=TranslateUI,SessionRestore,ChromeMetrics',
       '--disable-ipc-flooding-protection',
       '--disable-prompt-on-repost',
       '--disable-hang-monitor',
@@ -376,6 +376,12 @@ export class BrowserManager {
       '--start-maximized',
       '--no-sandbox',
       '--disable-setuid-sandbox',
+      // Zakázání metrik a telemetrie - zabrání vytváření obrovských DeferredBrowserMetrics
+      '--disable-metrics',
+      '--disable-metrics-repo',
+      '--metrics-recording-only',
+      '--disable-field-trial-config',
+      '--disable-sync',
       `--profile-directory=${profileDir}`,
       `--user-data-dir=${this.userDataDir}`
     ];

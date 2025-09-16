@@ -92,7 +92,8 @@ export class BaseAccountAction extends BaseAction {
       } else {
         await this.db.safeExecute('actions.scheduleNext', [validatedMinutes, user.id, this.actionName]);
       }
-      await this.logAction(user, null, logText);
+      // Ulož do action_log s minutami v reference_id
+      await this.logAction(user, validatedMinutes.toString(), logText);
       
       Log.info(`[${user.id}]`, logText);
       return true;

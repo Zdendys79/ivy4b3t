@@ -168,6 +168,10 @@ try {
             callController('ActionLogController', 'dailyOverview');
             break;
             
+        case '/host-timeline':
+            require_once __DIR__ . '/host-timeline-standalone.php';
+            break;
+            
         case '/login':
             callController('AuthController', 'login');
             break;

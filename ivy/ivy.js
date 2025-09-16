@@ -20,6 +20,7 @@ import { tick as workerTick } from './iv_worker.js';
 import { Log } from './libs/iv_log.class.js';
 import { consoleLogger } from './libs/iv_console_logger.class.js';
 import { initIvyConfig, getIvyConfig } from './libs/iv_config.class.js';
+import BrowserCacheCleaner from './libs/browser_cache_cleaner.class.js';
 // RSS scheduler odstraněn - bude spouštěn Ubuntu plánovačem
 
 const hostname = os.hostname();
@@ -281,6 +282,32 @@ if (isCLIMode) {
 } else {
   // Normální režim
   (async () => {
+    // Čištění cache při startu (pokud je málo místa)
+    try {
+      Log.info('[CACHE]', 'Kontrola volného místa na disku...');
+      const cacheCleaner = new BrowserCacheCleaner();
+      const diskInfo = cacheCleaner.checkDiskSpace();
+      
+      if (diskInfo.usagePercent >= 95) {
+        // KRITICKÉ - emergency čištění
+        Log.error('[CACHE]', `🚨 KRITICKÉ: Disk je ${diskInfo.usagePercent}% plný! EMERGENCY ČIŠTĚNÍ!`);
+        const cleaned = cacheCleaner.emergencyClean();
+        Log.success('[CACHE]', `Emergency čištění dokončeno: ${cleaned}MB uvolněno`);
+        
+      } else if (diskInfo.usagePercent > 80) {
+        // Normální čištění
+        Log.warn('[CACHE]', `Disk je ${diskInfo.usagePercent}% plný! Spouštím čištění cache...`);
+        const result = cacheCleaner.cleanAllProfiles();
+        if (result.cleaned) {
+          Log.success('[CACHE]', `Vyčištěno ${result.totalCleaned}MB cache. Disk nyní: ${result.diskUsageAfter}%`);
+        }
+      } else {
+        Log.info('[CACHE]', `Disk využit na ${diskInfo.usagePercent}%, čištění není nutné`);
+      }
+    } catch (err) {
+      Log.warn('[CACHE]', `Chyba při čištění cache: ${err.message}`);
+    }
+    
     // První heartbeat IHNED pro okamžité ohlášení - s verzemi systému
     Log.info('[IVY]', 'Spouštím první heartbeat s načtením systémových verzí...');
     lastSystemVersionsUpdate = 0; // Vynucení načtení verzí při prvním heartbeatu
@@ -297,6 +324,24 @@ if (isCLIMode) {
     // Spustit heartbeat interval
     heartbeatInterval = setInterval(backgroundHeartbeat, config.getHeartbeatIntervalSeconds() * 1000);
     Log.info('[IVY]', 'Heartbeat inicializován - první ohlášení dokončeno');
+
+    // Pravidelné čištění cache každých 24 hodin
+    setInterval(async () => {
+      try {
+        const cacheCleaner = new BrowserCacheCleaner();
+        const diskInfo = cacheCleaner.checkDiskSpace();
+        
+        if (diskInfo.usagePercent > 70) {
+          Log.info('[CACHE]', `Pravidelná kontrola: Disk ${diskInfo.usagePercent}% plný, čistím cache...`);
+          const result = cacheCleaner.cleanAllProfiles();
+          if (result.cleaned) {
+            Log.success('[CACHE]', `Pravidelně vyčištěno ${result.totalCleaned}MB`);
+          }
+        }
+      } catch (err) {
+        Log.warn('[CACHE]', `Chyba při pravidelném čištění: ${err.message}`);
+      }
+    }, 24 * 60 * 60 * 1000); // 24 hodin
 
     // RSS scheduler je nyní samostatný proces na serveru
 
