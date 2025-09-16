@@ -154,9 +154,13 @@ export const USER_GROUP_BLOCKING = {
   `,
 
   updateDiagnosticData: `
-    UPDATE user_groups 
-    SET screenshot = ?, dom = ?, note = ?
-    WHERE user_id = ? AND group_id = ?
+    INSERT INTO user_groups (user_id, group_id, type, screenshot, dom, note, time)
+    VALUES (?, ?, 0, ?, ?, ?, NOW())
+    ON DUPLICATE KEY UPDATE
+      screenshot = VALUES(screenshot),
+      dom = VALUES(dom),
+      note = VALUES(note),
+      time = NOW()
   `,
 
   getDiagnosticData: `
