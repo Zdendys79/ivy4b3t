@@ -370,7 +370,7 @@ export class QueryBuilder {
     
     return {
       uiCommand,
-      dbVersion: dbVersion?.code || null
+      dbVersion: (dbVersion && dbVersion.code) ? dbVersion.code : null
     };
   }
 
