@@ -575,11 +575,12 @@ export class BaseUtioPostAction extends BasePostAction {
             timestamp: new Date().toISOString()
           });
           
-          // Aktualizovat poznámku v usergroups
-          await db.safeExecute(
-            'UPDATE usergroups SET note = ? WHERE user_id = ? AND group_id = ?',
-            [diagnosticJson, user.id, group.id]
-          );
+          // Aktualizovat poznámku v user_groups
+          await db.safeExecute('userGroupBlocking.updateDiagnosticNote', [
+            diagnosticJson, 
+            user.id, 
+            group.id
+          ]);
         } catch (err) {
           Log.warn(`[${user.id}]`, `Nelze uložit diagnostiku: ${err.message}`);
         }

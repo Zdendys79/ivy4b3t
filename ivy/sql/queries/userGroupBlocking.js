@@ -143,5 +143,13 @@ export const USER_GROUP_BLOCKING = {
     JOIN fb_groups g ON ug.group_id = g.id
     WHERE ug.user_id = ?
     ORDER BY ug.block_count DESC, g.name ASC
+  `,
+
+  // ===== DIAGNOSTICKÉ AKTUALIZACE =====
+
+  updateDiagnosticNote: `
+    UPDATE user_groups 
+    SET note = ?
+    WHERE user_id = ? AND group_id = ?
   `
 };
