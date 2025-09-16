@@ -382,10 +382,10 @@ export class PageAnalyzer {
       Log.debug('[ANALYZER]', `Raw metrics: ${JSON.stringify(data.metrics)}`);
 
       // Hodnocení komplexnosti (upravené pro moderní Facebook)
-      const isNormal = data.metrics.elements > 1500 &&
-        data.metrics.images > 10 &&          // Facebook používá hodně SVG ikon
-        data.metrics.scripts > 20 &&
-        data.metrics.links > 5;              // SPA používá méně přímých odkazů
+      const isNormal = data.metrics.elements > 300 &&   // Sníženo z 1500
+        data.metrics.images > 5 &&           // Sníženo z 10
+        data.metrics.scripts > 5 &&          // Sníženo z 20
+        data.metrics.links > 2;              // Sníženo z 5
 
       const suspiciouslySimple = data.metrics.elements < 100 &&
         data.metrics.images < 5 &&
