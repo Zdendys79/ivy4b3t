@@ -240,7 +240,13 @@ export class Wait {
       keyListener = (key) => {
         const keyStr = key.toString().toLowerCase();
         // console.log(`[WAIT DEBUG] Key pressed: "${keyStr}", allowed: [${allowedKeys.join(',')}]`);
-        
+
+        // Ctrl+C v raw módu přichází jako \x03 - předat dál jako SIGINT
+        if (key[0] === 0x03) {
+          process.kill(process.pid, 'SIGINT');
+          return;
+        }
+
         if (allowedKeys.includes(keyStr)) {
           keyPressed = keyStr;
           
