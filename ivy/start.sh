@@ -30,26 +30,27 @@ if [[ -d "$REPO_DIR" ]]; then
     echo "[START] Aktualizuji git-common.sh z repozitáře..."
     cd "$REPO_DIR" || exit 1
     
-    # Stáhni všechny změny
-    git fetch origin 2>/dev/null || {
-        echo "[START] VAROVÁNÍ: git fetch selhal - možný problém s připojením"
-    }
-    
-    # Pokus se přepnout na větev, pokud neexistuje, vytvoř ji
-    if ! git checkout "$BRANCH" 2>/dev/null; then
-        echo "[START] Větev $BRANCH neexistuje lokálně, vytvářím z origin/$BRANCH..."
-        if ! git checkout -b "$BRANCH" "origin/$BRANCH" 2>/dev/null; then
-            echo "[START] VAROVÁNÍ: Nepodařilo se vytvořit větev $BRANCH"
-            echo "[START] Používám main větev jako záložní řešení..."
-            BRANCH="main"
-            git checkout main 2>/dev/null || true
+    # Stáhni všechny změny - selhání je kritická chyba
+    if ! git fetch origin 2>&1; then
+        echo "[START] CHYBA: git fetch selhal - bez připojení k repozitáři nelze pokračovat!"
+        exit 1
+    fi
+
+    # Přepni na požadovanou větev - selhání je kritická chyba (žádný fallback)
+    if ! git checkout "$BRANCH" 2>&1; then
+        if ! git checkout -b "$BRANCH" "origin/$BRANCH" 2>&1; then
+            echo "[START] CHYBA: Větev '$BRANCH' neexistuje lokálně ani na origin!"
+            echo "[START] Dostupné větve na origin:"
+            git branch -r 2>&1
+            exit 1
         fi
     fi
-    
-    # Reset na nejnovější stav
-    git reset --hard "origin/$BRANCH" 2>/dev/null || {
-        echo "[START] VAROVÁNÍ: Nepodařilo se synchronizovat s origin/$BRANCH"
-    }
+
+    # Reset na nejnovější stav - selhání je kritická chyba
+    if ! git reset --hard "origin/$BRANCH" 2>&1; then
+        echo "[START] CHYBA: Nepodařilo se synchronizovat s origin/$BRANCH!"
+        exit 1
+    fi
     
     # Zkopíruj aktuální git-common.sh
     if [[ -f "$REPO_DIR/ivy/git-common.sh" ]]; then
