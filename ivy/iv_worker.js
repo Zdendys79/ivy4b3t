@@ -84,6 +84,15 @@ async function handleUICommands() {
       global.uiCommandCache = null;
     }
     
+    // Special case: hold command - no user or browser needed
+    // Worker cycles between heartbeat and hold until admin marks it fulfilled
+    if (uiCommand.command === 'hold') {
+      await db.uiCommandAccepted(uiCommand.id);
+      Log.info('[WORKER]', `Hold příkaz aktivní (ID: ${uiCommand.id}) - worker čeká na uvolnění...`);
+      await Wait.toSeconds(30, 'Hold čekání');
+      return true;
+    }
+
     const user = await userSelector.getUserForUICommand(uiCommand);
     if (!user) {
       await Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
