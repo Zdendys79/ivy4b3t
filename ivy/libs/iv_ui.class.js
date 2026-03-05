@@ -323,10 +323,11 @@ export class UIBot {
         elapsedTime += checkIntervalMs;
         const remainingTime = timeoutMs - elapsedTime;
         Log.debug('[UI]', `Heartbeat - zbývá ${Log.formatTime(remainingTime)} čekání...`);
-        if (!this.currentCommand.user_id) {
-          throw new Error('UI_WAIT: Chybí user_id v currentCommand');
+        const cmdData = JSON.parse(this.currentCommand.data || '{}');
+        if (!cmdData.user_id) {
+          throw new Error('UI_WAIT: Chybí user_id v datech příkazu');
         }
-        db.heartBeat(this.currentCommand.user_id, 0, 'UI_WAIT');
+        db.heartBeat(cmdData.user_id, 0, 'UI_WAIT');
       } catch (e) {
         await Log.warn('[UI]', `Heartbeat během čekání selhal: ${e.message}`);
       }
