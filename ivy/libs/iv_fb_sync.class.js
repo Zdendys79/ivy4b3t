@@ -6,29 +6,32 @@
 import { Log } from './iv_log.class.js';
 
 export class FBSync {
-  constructor(mainPool, prodPool) {
+  constructor(mainPool, prodPool, isMainBranch = false) {
     this.mainPool = mainPool;
     this.prodPool = prodPool;
+    this.isMainBranch = isMainBranch;
   }
 
   /**
-   * Synchronized execute - prepare on both pools, execute if both OK
+   * Synchronized execute - na main větvi zapisuje do obou DB, na production jen do prod.
    * @param {string} query - SQL query
    * @param {Array} params - Parameters
-   * @returns {Promise<any>} Result from main pool
+   * @returns {Promise<any>} Result from active pool
    */
   async executeSync(query, params = []) {
     try {
-      
-      // Execute na obou poolech současně
-      const [mainResult, prodResult] = await Promise.all([
-        this.mainPool.execute(query, params),
-        this.prodPool.execute(query, params)
-      ]);
-      
-      
-      return mainResult[0]; // Vrátit výsledek z hlavní DB
-      
+      if (this.isMainBranch) {
+        // Na main větvi: synchronizovaný zápis do obou DB
+        const [mainResult] = await Promise.all([
+          this.mainPool.execute(query, params),
+          this.prodPool.execute(query, params)
+        ]);
+        return mainResult[0];
+      } else {
+        // Na production větvi: pouze produkční DB
+        const [result] = await this.prodPool.execute(query, params);
+        return result;
+      }
     } catch (err) {
       await Log.error('[FB_SYNC]', `Synchronized query failed: ${err.message}`);
       throw err;

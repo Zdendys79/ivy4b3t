@@ -61,8 +61,9 @@ Log.info('[SQL]', `Active pool: ${isMainBranch ? 'main_pool (test DB)' : 'prod_p
 Log.info('[SQL]', `Database pools initialized successfully`);
 
 // FBSync instance pro synchronizaci FB tabulek
-const fbSync = new FBSync(main_pool, prod_pool);
-Log.info('[SQL]', 'FBSync instance created for fb_users and fb_groups synchronization');
+// Na main větvi synchronizuje zápisy do obou DB; na production větvi pouze prod DB
+const fbSync = new FBSync(main_pool, prod_pool, isMainBranch);
+Log.info('[SQL]', `FBSync instance created (sync mode: ${isMainBranch ? 'dual-DB (main+prod)' : 'prod-only'})`);
 
 function _truncateLog(data, maxLines = 10, maxJsonLength = 500) {
   if (typeof data === 'string') {
