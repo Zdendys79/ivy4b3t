@@ -11,59 +11,29 @@ import mysql from 'mysql2/promise';
 import { QueryUtils } from './sql/queries/index.js';
 import { QueryBuilder } from './libs/iv_querybuilder.class.js';
 import { Log } from './libs/iv_log.class.js';
-import { FBSync } from './libs/iv_fb_sync.class.js';
 
 
-// Use ONLY environment variables for database connection - NO config files
+// Povinné systémové proměnné pro připojení k databázi
 if (!process.env.DB_USER || !process.env.DB_PASS || !process.env.DB_HOST || !process.env.DB_NAME) {
   await Log.error('[SQL]', 'CHYBA: Chybí povinné systémové proměnné: DB_HOST, DB_USER, DB_PASS, DB_NAME');
   await Log.error('[SQL]', 'Restartuj terminál nebo spusť: source ~/.bashrc');
   process.exit(1);
 }
 
-Log.info('[SQL]', 'Používám systémové proměnné pro připojení k databázi.');
+Log.info('[SQL]', `Připojuji k databázi: ${process.env.DB_HOST}/${process.env.DB_NAME}`);
 
-
-// Určit názvy databází podle větve
-const isMainBranch = process.env.IVY_GIT_BRANCH === 'main';
-const mainDbName = process.env.DB_NAME + '_test';  // Vždy s _test sufixem
-const prodDbName = process.env.DB_NAME;           // Vždy bez sufixu
-
-Log.info('[SQL]', `Branch detection: ${isMainBranch ? 'main' : 'production'}`);
-Log.info('[SQL]', `Main DB: ${mainDbName}, Prod DB: ${prodDbName}`);
-
-// Main pool - test databáze
-const main_pool = mysql.createPool({
+// Jediný connection pool — DB se řídí proměnnou DB_NAME v .bashrc
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
-  database: mainDbName,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
-// Production pool - produkční databáze
-const prod_pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: prodDbName,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
-// Pool pro běžné dotazy podle aktuální větve
-const pool = isMainBranch ? main_pool : prod_pool;
-
-Log.info('[SQL]', `Active pool: ${isMainBranch ? 'main_pool (test DB)' : 'prod_pool (production DB)'}`);
-Log.info('[SQL]', `Database pools initialized successfully`);
-
-// FBSync instance pro synchronizaci FB tabulek
-// Na main větvi synchronizuje zápisy do obou DB; na production větvi pouze prod DB
-const fbSync = new FBSync(main_pool, prod_pool, isMainBranch);
-Log.info('[SQL]', `FBSync instance created (sync mode: ${isMainBranch ? 'dual-DB (main+prod)' : 'prod-only'})`);
+Log.info('[SQL]', 'Database pool initialized successfully');
 
 function _truncateLog(data, maxLines = 10, maxJsonLength = 500) {
   if (typeof data === 'string') {
@@ -249,11 +219,10 @@ export async function transaction(callback) {
 }
 
 export function getConnectionStats() {
-  const currentDbName = isMainBranch ? mainDbName : prodDbName;
   return {
     config: {
       host: process.env.DB_HOST,
-      database: currentDbName,
+      database: process.env.DB_NAME,
       connectionLimit: 10
     },
     pool: {
@@ -264,7 +233,7 @@ export function getConnectionStats() {
   };
 }
 
-export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute, fbSync);
+export const db = new QueryBuilder(safeQueryFirst, safeQueryAll, safeExecute);
 db.pool = pool; // Pro přímý přístup k pool objektu
 
 export async function initializeDatabase() {
@@ -309,7 +278,7 @@ export async function initializeDatabase() {
 
 export { SQL } from './sql/queries/index.js';
 export { testConnection as testDB, closeConnection as closeDB };
-export { pool, main_pool, prod_pool, fbSync };
+export { pool };
 
 export async function verifyMsg(groupId, messageHash) {
   Log.debug('[SQL]', `Checking message duplicate: group ${groupId}, hash ${messageHash.substring(0, 8)}...`);

@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GIT_COMMON_PATH="$SCRIPT_DIR/git-common.sh"
 
 # Volba větve - parametr nebo výchozí production
-BRANCH=${1:-"production"}
+BRANCH=${1:-"main"}
 
 # KRITICKÉ: Nejprve musíme aktualizovat git-common.sh z repozitáře
 # Jinak používáme starou verzi která nefunguje správně
@@ -197,7 +197,6 @@ main_loop() {
 
 
         # Spuštění aplikace
-        export IVY_GIT_BRANCH="$BRANCH"
         node --trace-warnings ivy.js
 
         local exit_code=$?
@@ -256,7 +255,7 @@ trap cleanup SIGINT SIGTERM
 
 # Úvodní informace
 echo "======================================================"
-echo "IVY START SCRIPT - VĚTEV: $BRANCH (verze sync fix)"
+echo "IVY START SCRIPT"
 echo "======================================================"
 echo "Datum: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "Hostitel: $(hostname)"
@@ -265,11 +264,6 @@ echo "Repozitář: $REPO_DIR"
 echo "Cíl: $TARGET_DIR"
 echo "Větev: $BRANCH"
 echo "Limit restartů: $MAX_RETRIES za $TIME_WINDOW sekund"
-echo ""
-echo "Použití: ./start.sh [větev]"
-echo "Příklady:"
-echo "  ./start.sh              # production větev (výchozí)"
-echo "  ./start.sh main         # main větev"
 echo "======================================================"
 
 # Kontrola základních závislostí
