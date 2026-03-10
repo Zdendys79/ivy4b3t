@@ -52,7 +52,7 @@ export class InteractiveDebugger {
    */
   async pauseOnError(errorLevel, message, context = {}) {
     // PRODUKČNÍ REŽIM - vypnout celý debugger
-    if (process.env.NODE_ENV === 'production' || process.env.IVY_GIT_BRANCH === 'production') {
+    if (process.env.IVY_DEBUG !== '1') {
       const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
       console.log(`${timestamp} [PRODUKCE] [${errorLevel}] ${message}`);
       if (Object.keys(context).length > 0) {
@@ -143,7 +143,7 @@ export class InteractiveDebugger {
       const userId = global.systemState?.currentUserId || null;
       
       // PRODUKČNÍ REŽIM - žádný zápis do databáze
-      if (process.env.NODE_ENV === 'production' || process.env.IVY_GIT_BRANCH === 'production') {
+      if (process.env.IVY_DEBUG !== '1') {
         // V produkci se debug incidents neukládají do DB vůbec
         return;
       }

@@ -34,25 +34,6 @@ global.systemState = {
   actionStartTime: null,
   restart_needed: false
 };
-// VÝJIMKA Z PRAVIDLA: Tento fallback je povolen pro testování bez start.sh
-// Při přímém spuštění (node ivy.js) není IVY_GIT_BRANCH nastavena
-// V produkci je vždy nastavena přes start.sh/main-start.sh
-async function initializeGitBranch() {
-  if (!process.env.IVY_GIT_BRANCH) {
-    try {
-      const { execSync } = await import('child_process');
-      const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-      process.env.IVY_GIT_BRANCH = branch;
-    } catch (err) {
-      await Log.warn('[IVY]', `Nelze zjistit Git branch: ${err.message}. Používám fallback: main`);
-      process.env.IVY_GIT_BRANCH = 'main';
-    }
-  }
-  global.isTestBranch = (process.env.IVY_GIT_BRANCH === 'main');
-}
-
-// Spustit inicializaci a počkat na dokončení
-await initializeGitBranch();
 global.uiCommandCache = null;
 
 // Initialize the console logger
@@ -66,7 +47,7 @@ let heartbeatInterval = null;
 
 Log.info('[IVY]', `Spouštím klienta na hostu: ${hostname}`);
 Log.info('[IVY]', `Verze klienta: ${versionCode} (ze souboru package.json)`);
-Log.info('[IVY]', `Git branch: ${process.env.IVY_GIT_BRANCH}${global.isTestBranch ? ' (testing)' : ''}`);
+Log.info('[IVY]', `Databáze: ${process.env.DB_NAME}@${process.env.DB_HOST}`);
 Log.info('[IVY]', `Session ID: ${consoleLogger.sessionId}`);
 
 
@@ -79,7 +60,7 @@ if (!dbInitialized) {
 
 // Záznam do systémového logu o spuštění
 const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
-await SystemLogger.logStartup(hostname, versionCode, process.env.IVY_GIT_BRANCH, consoleLogger.sessionId);
+await SystemLogger.logStartup(hostname, versionCode, 'main', consoleLogger.sessionId);
 
 // Funkce pro získání systémových verzí
 async function getSystemVersions() {
@@ -398,7 +379,7 @@ async function gracefulShutdown(signal) {
     
     // Záznam do systémového logu o ukončení - PŘED zavřením DB
     const { SystemLogger } = await import('./libs/iv_system_logger.class.js');
-    await SystemLogger.logShutdown(hostname, versionCode, process.env.IVY_GIT_BRANCH, consoleLogger.sessionId, signal);
+    await SystemLogger.logShutdown(hostname, versionCode, 'main', consoleLogger.sessionId, signal);
     
     // Zavři databázové spojení AŽ PO logování
     await closeDB();
