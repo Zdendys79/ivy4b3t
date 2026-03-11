@@ -6,7 +6,7 @@
  * - Neinvazivní, opakovatelná akce
  * - Navštíví max 5 skupin za jedno spuštění
  * - Aktualizuje: name, member_count, category, last_seen
- * - Kontroluje dostupnost skupiny (content_not_available → priority=0)
+ * - Kontroluje dostupnost skupiny (content_not_available → trvalý blok uživatel↔skupina)
  * - Vybírá skupiny s nejstarším last_seen
  */
 
@@ -105,12 +105,11 @@ export class GroupAuditAction extends BaseAction {
     await fbBot.navigateToGroup(group.fb_id, group.is_buy_sell_group === 1);
     await Wait.toSeconds(3 + Math.random() * 3, 'Načtení skupiny');
 
-    // Kontrola dostupnosti
+    // Kontrola dostupnosti — "Obsah teď není dostupný"
     const notAvailable = await fbBot.contentNotAvailable();
     if (notAvailable) {
-      Log.warn(`[${user.id}]`, `Skupina ${group.name} (${group.id}) je nedostupná`);
-      const markQuery = QueryUtils.getQuery('groups.markGroupInaccessible');
-      await db.pool.query(markQuery, [`audit: content_not_available (${new Date().toISOString().slice(0, 10)})`, group.id]);
+      Log.warn(`[${user.id}]`, `Skupina ${group.name} (${group.id}) je nedostupná pro tohoto uživatele`);
+      await this.blockUserGroup(user.id, group.id, 'content_not_available');
       return { success: true, inaccessible: true };
     }
 
@@ -120,9 +119,8 @@ export class GroupAuditAction extends BaseAction {
       try {
         const groupAnalysis = await fbBot.pageAnalyzer.analyzeGroup();
         if (!groupAnalysis.isGroup) {
-          Log.warn(`[${user.id}]`, `${group.name} (${group.id}) — stránka není skupina, deaktivuji`);
-          const markQuery = QueryUtils.getQuery('groups.markGroupInaccessible');
-          await db.pool.query(markQuery, [`audit: not_a_group_page (${new Date().toISOString().slice(0, 10)})`, group.id]);
+          Log.warn(`[${user.id}]`, `${group.name} (${group.id}) — stránka není skupina pro tohoto uživatele`);
+          await this.blockUserGroup(user.id, group.id, 'not_a_group_page');
           return { success: true, inaccessible: true };
         }
         membershipStatus = groupAnalysis.membershipStatus?.status || 'unknown';
@@ -159,5 +157,26 @@ export class GroupAuditAction extends BaseAction {
       `Audit ${group.type}: ${groupInfo?.name || group.name} [${membershipStatus}]`);
 
     return { success: true, inaccessible: false, membershipStatus };
+  }
+
+  /**
+   * Trvale zablokuje skupinu pro daného uživatele (blocked_until = 2099-12-31)
+   */
+  async blockUserGroup(userId, groupId, reason) {
+    try {
+      const dateStr = new Date().toISOString().slice(0, 10);
+      await db.pool.query(`
+        INSERT INTO user_groups (user_id, group_id, type, blocked_until, block_count, last_block_reason, last_block_date, time)
+        VALUES (?, ?, 0, '2099-12-31 00:00:00', 1, ?, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+          blocked_until = '2099-12-31 00:00:00',
+          block_count = block_count + 1,
+          last_block_reason = ?,
+          last_block_date = NOW()
+      `, [userId, groupId, `${reason} (${dateStr})`, `${reason} (${dateStr})`]);
+      Log.info(`[${userId}]`, `Skupina ${groupId} trvale zablokována: ${reason}`);
+    } catch (err) {
+      await Log.error(`[${userId}]`, `Chyba při blokování skupiny ${groupId}: ${err.message}`);
+    }
   }
 }
