@@ -79,6 +79,7 @@ export const USERS = {
     FROM fb_users u
     WHERE u.host LIKE ?
       AND u.locked IS NULL
+      AND (u.next_worktime IS NULL OR u.next_worktime <= NOW())
       -- User's sleep/delay periods have expired (if they exist)
       AND NOT EXISTS (
         SELECT 1
@@ -130,6 +131,7 @@ export const USERS = {
     FROM fb_users u
     WHERE u.host LIKE ?
       AND u.locked IS NULL
+      AND (u.next_worktime IS NULL OR u.next_worktime <= NOW())
       -- Main branch: ignoruje ukončovací akce, rotační výběr podle worktime
       -- User has at least one available action (včetně ending actions)
       AND (
