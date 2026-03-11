@@ -322,14 +322,9 @@ export class BaseUtioPostAction extends BasePostAction {
     }
 
     // Použít parametry z vybrané Facebook skupiny (ne z uživatelského profilu)
+    // region_id=0 a district_id=0 jsou povoleny — UtioBot vybere náhodný region/okres
     if (!user.portal_id) {
       throw new Error(`Uživatel ${user.id} nemá nastavené portal_id`);
-    }
-    if (!data.region_id || data.region_id === 0) {
-      throw new Error(`Skupina "${data.name}" nemá nastavené region_id`);
-    }
-    if (!data.district_id || data.district_id === 0) {
-      throw new Error(`Skupina "${data.name}" nemá nastavené district_id`);
     }
     
     const utioParams = {
@@ -828,8 +823,8 @@ export class BaseUtioPostAction extends BasePostAction {
       }
       
       return {
-        allowed: result.can_join === 1,
-        minutesRemaining: Math.max(0, result.minutes_remaining)
+        allowed: Number(result.can_join) === 1,
+        minutesRemaining: Math.max(0, Number(result.minutes_remaining))
       };
     } catch (err) {
       Log.error(`[${user.id}]`, `Chyba při kontrole join cooldown: ${err.message}`);
