@@ -39,18 +39,31 @@ fs.writeFileSync('ivy/package.json', JSON.stringify(pkg, null, 2) + '\n');
 "
 echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do package.json"
 
-# Zápis do DB (MariaDB na localhost, databáze utiolite)
-DB_HOST="127.0.0.1"
-DB_USER="B3.remotes"
-DB_PASS="e6TksATbS2E3FmQt-xEQgja1mh6mT"
-DB_NAME="utiolite"
+# Zápis do DB přes Node mysql2 (žádný mysql CLI klient není potřeba)
+# Spouštíme z ivy/ kde jsou node_modules
+DB_RESULT=$(cd ivy && node --input-type=module -e "
+import mysql from 'mysql2/promise';
+try {
+  const conn = await mysql.createConnection({
+    host: '127.0.0.1', user: 'B3.remotes',
+    password: 'e6TksATbS2E3FmQt-xEQgja1mh6mT', database: 'utiolite',
+    connectTimeout: 5000,
+  });
+  await conn.execute(
+    \"INSERT INTO variables (name, value, type, description) VALUES ('version', ?, 'string', 'versionCode z package.json') ON DUPLICATE KEY UPDATE value = ?\",
+    ['$VERSION_CODE', '$VERSION_CODE']
+  );
+  await conn.end();
+  console.log('ok');
+} catch (e) {
+  console.log('error: ' + e.message);
+}
+" 2>/dev/null) || DB_RESULT="error: node failed"
 
-SQL="INSERT INTO variables (name, value, type, description) VALUES ('version', '$VERSION_CODE', 'string', 'Aktuální versionCode z package.json') ON DUPLICATE KEY UPDATE value = '$VERSION_CODE';"
-
-if mariadb -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" -e "$SQL" 2>/dev/null; then
-  echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do databáze $DB_NAME"
+if [ "$DB_RESULT" = "ok" ]; then
+  echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do databáze utiolite"
 else
-  echo "[PRE-COMMIT] VAROVÁNÍ: Nepodařilo se zapsat verzi do DB (commit pokračuje)"
+  echo "[PRE-COMMIT] VAROVÁNÍ: DB zápis selhal ($DB_RESULT) — commit pokračuje"
 fi
 
 git add ivy/package.json
