@@ -140,20 +140,24 @@ export class BaseUtioPostAction extends BasePostAction {
       return;
     }
 
-    // DEBUG: Výpis dostupných textů na stránce pro diagnostiku
+    // DEBUG: Zachytit stav stránky pro diagnostiku (uloží se do action_log přes error message)
+    let debugPageInfo = '';
     try {
       const availableTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 30 });
       const currentUrl = await fbBot.page.url();
-      Log.warn(`[${user.id}]`, `DEBUG step2 URL: ${currentUrl}`);
-      Log.warn(`[${user.id}]`, `DEBUG step2 texty na stránce (${availableTexts.length}): ${availableTexts.slice(0, 15).join(' | ')}`);
+      debugPageInfo = `URL: ${currentUrl} | TEXTS(${availableTexts.length}): ${availableTexts.slice(0, 15).join(' | ')}`;
+      Log.warn(`[${user.id}]`, `DEBUG step2: ${debugPageInfo}`);
     } catch (dbgErr) {
-      Log.warn(`[${user.id}]`, `DEBUG step2 chyba: ${dbgErr.message}`);
+      debugPageInfo = `DEBUG_ERROR: ${dbgErr.message}`;
     }
+
+    // Uložit debug info do instance pro pozdější použití v error message
+    this._step2DebugInfo = debugPageInfo;
 
     // Krok 4.2: "Napište něco" neexistuje - zkusit "Diskuze"
     Log.info(`[${user.id}]`, '"Napište něco" nenalezeno - zkouším "Diskuze"...');
     const discussionClicked = await fbBot.pageAnalyzer.clickElementWithText('Diskuze');
-    
+
     if (discussionClicked) {
       Log.info(`[${user.id}]`, '"Diskuze" stisknuto - označuji skupinu jako buy_sell a čekám 5s');
       
@@ -207,8 +211,9 @@ export class BaseUtioPostAction extends BasePostAction {
       }
     }
 
-    // Nic nefunguje - zablokovat skupinu a skončit
-    throw new Error('Cannot find post input field or discussion - blocking group');
+    // Nic nefunguje - zablokovat skupinu a skončit (s debug info)
+    const debugSuffix = this._step2DebugInfo ? ` [${this._step2DebugInfo}]` : '';
+    throw new Error(`Cannot find post input field or discussion - blocking group${debugSuffix}`);
   }
 
   /**
