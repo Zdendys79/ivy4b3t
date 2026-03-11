@@ -185,6 +185,16 @@ main_loop() {
         echo "[START] Informace o verzi:"
         get_git_info "$REPO_DIR" | sed 's/^/[START]   /'
 
+        # npm install pokud chybí node_modules
+        if [[ ! -d "$TARGET_DIR/node_modules" ]]; then
+            echo "[START] node_modules chybí - spouštím npm install..."
+            cd "$TARGET_DIR" && npm install --quiet || {
+                echo "[START] CHYBA: npm install selhal!"
+                sleep 5
+                continue
+            }
+        fi
+
         # Kontrola hlavního souboru
         if [[ ! -f "ivy.js" ]]; then
             echo "[START] Hlavní soubor ivy.js nenalezen v $TARGET_DIR"
