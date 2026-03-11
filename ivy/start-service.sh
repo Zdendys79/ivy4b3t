@@ -9,10 +9,6 @@
 SESSION="ivy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Načíst uživatelské prostředí (DB_HOST, DB_USER atd.) — systemd .bashrc nenačítá
-# shellcheck source=/dev/null
-source ~/.bashrc 2>/dev/null || true
-
 # Zabit existující session (čistý start)
 tmux kill-session -t "$SESSION" 2>/dev/null || true
 
