@@ -417,11 +417,44 @@ export const GROUPS = {
   `,
 
   getUserExplorationStats: `
-    SELECT 
+    SELECT
       COUNT(*) as groups_discovered,
       COUNT(CASE WHEN fg.last_seen >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as groups_today,
       COUNT(CASE WHEN fg.last_seen >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 END) as groups_this_week
     FROM fb_groups fg
     WHERE fg.type = 'Z'
+  `,
+
+  // ===== GROUP AUDIT =====
+
+  getGroupsForAudit: `
+    SELECT g.id, g.fb_id, g.name, g.type, g.priority, g.member_count,
+           g.category, g.last_seen, g.is_buy_sell_group
+    FROM fb_groups g
+    LEFT JOIN user_groups ug ON g.id = ug.group_id AND ug.user_id = ?
+    WHERE g.type IN ('G', 'GV')
+      AND g.priority > 0
+      AND (ug.blocked_until IS NULL OR ug.blocked_until <= NOW())
+    ORDER BY
+      CASE WHEN g.last_seen IS NULL THEN '1970-01-01' ELSE g.last_seen END ASC
+    LIMIT ?
+  `,
+
+  updateGroupAudit: `
+    UPDATE fb_groups
+    SET name = ?,
+        member_count = ?,
+        category = ?,
+        last_seen = NOW(),
+        next_seen = NOW() + INTERVAL ? MINUTE
+    WHERE id = ?
+  `,
+
+  markGroupInaccessible: `
+    UPDATE fb_groups
+    SET priority = 0,
+        note = ?,
+        last_seen = NOW()
+    WHERE id = ?
   `
 };

@@ -34,6 +34,10 @@ export const GroupsMixin = {
    * @param {string} note - Poznámka k žádosti
    * @returns {Promise<boolean>} True pokud bylo úspěšné
    */
+  async getGroupsForAudit(userId, limit = 5) {
+    return await this.safeQueryAll('groups.getGroupsForAudit', [userId, limit], true);
+  },
+
   async insertUserGroupMembership(userId, groupId, note = 'Žádost o členství') {
     const query = `
       INSERT INTO user_groups (user_id, group_id, type, note, time)

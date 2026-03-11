@@ -24,6 +24,7 @@ import { ReactAction } from '../actions/react.action.js';
 import { MessengerCheckAction } from '../actions/messenger_check.action.js';
 import { MessengerReplyAction } from '../actions/messenger_reply.action.js';
 import { GroupExploreAction } from '../actions/group_explore.action.js';
+import { GroupAuditAction } from '../actions/group_audit.action.js';
 import { StoriesViewAction } from '../actions/stories_view.action.js';
 import { VideoWatchAction } from '../actions/video_watch.action.js';
 
@@ -65,6 +66,7 @@ export class ActionRouter {
       this.registerAction('messenger_check', MessengerCheckAction);
       this.registerAction('messenger_reply', MessengerReplyAction);
       this.registerAction('group_explore', GroupExploreAction);
+      this.registerAction('group_audit', GroupAuditAction);
       this.registerAction('stories_view', StoriesViewAction);
       this.registerAction('video_watch', VideoWatchAction);
 
