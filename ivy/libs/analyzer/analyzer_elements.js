@@ -194,8 +194,8 @@ export const ElementsMixin = {
       // Hledej element s požadovaným textem
       let element = null;
       for (const el of elements) {
-        const matches = matchType === 'exact' ?
-          el.text === text :
+        const matches = matchType === 'exact' ? el.text === text :
+          matchType === 'startsWith' ? el.text.startsWith(text) :
           el.text.includes(text);
 
         if (matches) {
@@ -274,8 +274,8 @@ export const ElementsMixin = {
       // Hledej element s požadovaným textem
       let found = false;
       for (const el of elements) {
-        const matches = matchType === 'exact' ?
-          el.text === text :
+        const matches = matchType === 'exact' ? el.text === text :
+          matchType === 'startsWith' ? el.text.startsWith(text) :
           el.text.includes(text);
 
         if (matches) {
