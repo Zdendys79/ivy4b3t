@@ -101,14 +101,14 @@ verify_version_with_db() {
         return
     fi
 
-    if [[ -z "$DB_HOST" || -z "$DB_USER" || -z "$DB_PASS" || -z "$DB_NAME" ]]; then
-        echo "[START] Verze: lokální=$local_version (DB proměnné nedostupné)"
+    local check_script="$TARGET_DIR/check-version.js"
+    if [[ ! -f "$check_script" ]]; then
+        echo "[START] Verze: lokální=$local_version (check-version.js nenalezen)"
         return
     fi
 
     local db_version
-    db_version=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
-        -sNe "SELECT code FROM variables WHERE name='versionCode' LIMIT 1" 2>/dev/null)
+    db_version=$(node "$check_script" 2>/dev/null)
 
     if [[ -z "$db_version" ]]; then
         echo "[START] Verze: lokální=$local_version (DB dotaz selhal)"
