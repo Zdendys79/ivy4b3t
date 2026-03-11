@@ -25,13 +25,13 @@ try {
     connectTimeout: 5000,
   });
   const [rows] = await conn.execute(
-    "SELECT code FROM variables WHERE name='versionCode' LIMIT 1"
+    "SELECT value FROM variables WHERE name='version' LIMIT 1"
   );
   await conn.end();
   if (rows.length > 0) {
-    out({ ok: true, version: rows[0].code });
+    out({ ok: true, version: rows[0].value });
   } else {
-    out({ ok: false, error: 'versionCode nenalezen v tabulce variables' });
+    out({ ok: false, error: 'version nenalezen v tabulce variables' });
     process.exit(1);
   }
 } catch (err) {
