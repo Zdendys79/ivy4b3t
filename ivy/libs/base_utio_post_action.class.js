@@ -102,7 +102,24 @@ export class BaseUtioPostAction extends BasePostAction {
 
     // Jedna lidská pauza
     await Wait.toSeconds(5, 'Po načtení skupiny');
-    
+
+    // Kontrola "Obsah teď není dostupný" — trvalý blok uživatel↔skupina
+    const notAvailable = await fbBot.contentNotAvailable();
+    if (notAvailable) {
+      // Trvalý blok v user_groups
+      const dateStr = new Date().toISOString().slice(0, 10);
+      await db.pool.query(`
+        INSERT INTO user_groups (user_id, group_id, type, blocked_until, block_count, last_block_reason, last_block_date, time)
+        VALUES (?, ?, 0, '2099-12-31 00:00:00', 1, ?, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+          blocked_until = '2099-12-31 00:00:00',
+          block_count = block_count + 1,
+          last_block_reason = ?,
+          last_block_date = NOW()
+      `, [user.id, group.id, `content_not_available (${dateStr})`, `content_not_available (${dateStr})`]);
+      throw new Error(`Skupina "${group.name}" je trvale nedostupná pro tohoto uživatele`);
+    }
+
     // Aktualizace počtu členů skupiny
     await this.updateGroupMemberCount(user, fbBot, group);
 
