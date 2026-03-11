@@ -1,0 +1,16 @@
+[Unit]
+Description=Ivy Worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/remotes/ivy/start-service.sh
+ExecStop=/usr/bin/tmux kill-session -t ivy
+Restart=on-failure
+RestartSec=30
+Environment=HOME=/home/remotes
+Environment=PATH=/home/remotes/.local/bin:/home/remotes/.nvm/versions/node/v24.14.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=default.target

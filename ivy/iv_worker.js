@@ -26,6 +26,7 @@ import { BrowserManager } from './libs/iv_browser_manager.class.js';
 import { UserSelector } from './libs/iv_user_selector.class.js';
 
 import { Wait } from './libs/iv_wait.class.js';
+import { getAvailableDisplay } from './libs/iv_display.js';
 
 const config = getIvyConfig();
 const browserManager = new BrowserManager();
@@ -93,6 +94,13 @@ async function handleUICommands() {
       return true;
     }
 
+    const display = getAvailableDisplay();
+    if (!display) {
+      Log.warn('[WORKER]', `UI příkaz "${uiCommand.command}" vyžaduje DISPLAY - není k dispozici, přeskakuji.`);
+      return false;
+    }
+    if (!process.env.DISPLAY) process.env.DISPLAY = display;
+
     const user = await userSelector.getUserForUICommand(uiCommand);
     if (!user) {
       await Log.warn('[WORKER]', 'UI příkaz neobsahuje platného uživatele');
@@ -133,6 +141,17 @@ async function handleUICommands() {
  * @returns {Promise<void>}
  */
 async function processUserWork() {
+  const display = getAvailableDisplay();
+  if (!display) {
+    Log.info('[WORKER]', 'Grafické prostředí (DISPLAY) není k dispozici - přeskakuji browser práci.');
+    await Wait.toMinutes(2, 'Čekání na grafické prostředí');
+    return;
+  }
+  if (!process.env.DISPLAY) {
+    process.env.DISPLAY = display;
+    Log.info('[WORKER]', `DISPLAY nastaven na ${display} (detekován z X11 socketu)`);
+  }
+
   const user = await userSelector.selectUser();
   if (!user) {
     await userSelector.showAccountLockStats();
