@@ -134,10 +134,20 @@ export class BaseUtioPostAction extends BasePostAction {
 
     // Krok 4.1: Pokus o "Napište něco"
     const postClicked = await fbBot.pageAnalyzer.clickElementWithText('Napište něco', { matchType: 'startsWith' });
-    
+
     if (postClicked) {
       Log.success(`[${user.id}]`, 'KROK 2 DOKONČEN: Kliknuto na vstupní pole');
       return;
+    }
+
+    // DEBUG: Výpis dostupných textů na stránce pro diagnostiku
+    try {
+      const availableTexts = await fbBot.pageAnalyzer.getAvailableTexts({ maxResults: 30 });
+      const currentUrl = await fbBot.page.url();
+      Log.warn(`[${user.id}]`, `DEBUG step2 URL: ${currentUrl}`);
+      Log.warn(`[${user.id}]`, `DEBUG step2 texty na stránce (${availableTexts.length}): ${availableTexts.slice(0, 15).join(' | ')}`);
+    } catch (dbgErr) {
+      Log.warn(`[${user.id}]`, `DEBUG step2 chyba: ${dbgErr.message}`);
     }
 
     // Krok 4.2: "Napište něco" neexistuje - zkusit "Diskuze"

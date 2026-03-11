@@ -122,6 +122,13 @@ export class UtioBot {
         Log.info('[UTIO]', 'Uživatel je již přihlášen');
         this.isLoggedIn = true;
         this.currentUser = user;
+
+        // Přejdi na /tags/index pokud tam ještě nejsme
+        const currentUrl = await this.page.url();
+        if (!currentUrl.includes('/tags/index')) {
+          await this._navigateToMessageGenerator();
+        }
+
         return true;
       }
 
@@ -131,7 +138,11 @@ export class UtioBot {
       if (loginSuccess) {
         this.isLoggedIn = true;
         this.currentUser = user;
-        Log.success('[UTIO]', `Uživatel ${user.u_login} úspěšně přihlášen`);
+
+        // Po přihlášení přejdi na /tags/index (stránka s formulářem)
+        await this._navigateToMessageGenerator();
+
+        Log.success('[UTIO]', `Uživatel ${user.u_login} úspěšně přihlášen a na /tags/index`);
         return true;
       } else {
         await Log.error('[UTIO]', `Přihlášení uživatele ${user.u_login} se nezdařilo`);
