@@ -74,7 +74,8 @@ export class BaseUtioPostAction extends BasePostAction {
     const group = await db.safeQueryFirst('groups.getSingleAvailableGroup', [user.id, this.groupType]);
 
     if (group) {
-      // Ihned rezervovat skupinu — nastavit next_seen +30 min, aby ji jiný worker nevybral
+      // Ihned rezervovat skupinu — last_seen=NOW + next_seen +30 min, aby ji jiný worker nevybral
+      await db.safeExecute('groups.updateLastSeen', [group.id]);
       await db.safeExecute('groups.updateNextSeen', [30, group.id]);
       Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrána skupina ID ${group.id}: ${group.name} (rezervace 30 min)`);
     }
@@ -480,7 +481,10 @@ export class BaseUtioPostAction extends BasePostAction {
     // Vyčistit uložená UTIO data
     this.utioLogData = null;
     
-    // NOVÉ: Vypočítat a nastavit cooldown pro skupinu
+    // Aktualizovat last_seen na NOW() — skupina byla právě úspěšně obsloužena
+    await db.safeExecute('groups.updateLastSeen', [group.id]);
+
+    // Vypočítat a nastavit cooldown (next_seen) pro skupinu
     try {
       const { GroupCooldownCalculator } = await import('./group_cooldown_calculator.class.js');
       
