@@ -107,11 +107,14 @@ verify_version_with_db() {
         return
     fi
 
-    local db_version
-    db_version=$(node "$check_script" 2>/dev/null)
+    local result ok db_version db_error
+    result=$(node "$check_script" 2>/dev/null)
+    ok=$(echo "$result" | jq -r '.ok // false')
+    db_version=$(echo "$result" | jq -r '.version // empty')
+    db_error=$(echo "$result" | jq -r '.error // empty')
 
-    if [[ -z "$db_version" ]]; then
-        echo "[START] Verze: lokální=$local_version (DB dotaz selhal)"
+    if [[ "$ok" != "true" ]]; then
+        echo "[START] Verze: lokální=$local_version | DB chyba: ${db_error:-neznámá}"
         return
     fi
 

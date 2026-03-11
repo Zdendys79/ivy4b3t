@@ -1,17 +1,23 @@
 /**
  * check-version.js
- * Vypíše versionCode z DB na stdout. Určeno pro volání z start.sh.
+ * Vypíše JSON s versionCode z DB na stdout. Určeno pro volání z start.sh.
  * Používá mysql2 (stejná závislost jako ivy) — mysql CLI není potřeba.
  *
- * Výstup: řetězec verze (např. "oiv"), nebo prázdný výstup při chybě.
- * Exit 0 = OK, Exit 1 = chyba (chybí env, DB nedostupná).
+ * Výstup JSON:
+ *   { "ok": true,  "version": "oiv" }
+ *   { "ok": false, "error": "popis chyby" }
  */
 
 import mysql from 'mysql2/promise';
 
+const out = (obj) => { console.log(JSON.stringify(obj)); };
+
 const { DB_HOST, DB_USER, DB_PASS, DB_NAME } = process.env;
 
-if (!DB_HOST || !DB_USER || !DB_PASS || !DB_NAME) process.exit(1);
+if (!DB_HOST || !DB_USER || !DB_PASS || !DB_NAME) {
+  out({ ok: false, error: 'chybí env proměnné: DB_HOST, DB_USER, DB_PASS, DB_NAME' });
+  process.exit(1);
+}
 
 try {
   const conn = await mysql.createConnection({
@@ -22,8 +28,13 @@ try {
     "SELECT code FROM variables WHERE name='versionCode' LIMIT 1"
   );
   await conn.end();
-  if (rows.length > 0) process.stdout.write(rows[0].code);
-  process.exit(0);
-} catch {
+  if (rows.length > 0) {
+    out({ ok: true, version: rows[0].code });
+  } else {
+    out({ ok: false, error: 'versionCode nenalezen v tabulce variables' });
+    process.exit(1);
+  }
+} catch (err) {
+  out({ ok: false, error: err.message });
   process.exit(1);
 }
