@@ -70,13 +70,15 @@ export class BaseUtioPostAction extends BasePostAction {
    */
   async step0_selectData(user) {
     Log.info(`[${user.id}]`, 'KROK 0: Vybírám dostupnou skupinu z databáze...');
-    
+
     const group = await db.safeQueryFirst('groups.getSingleAvailableGroup', [user.id, this.groupType]);
-    
+
     if (group) {
-      Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrána skupina ID ${group.id}: ${group.name}`);
+      // Ihned rezervovat skupinu — nastavit next_seen +30 min, aby ji jiný worker nevybral
+      await db.safeExecute('groups.updateNextSeen', [30, group.id]);
+      Log.success(`[${user.id}]`, `KROK 0 DOKONČEN: Vybrána skupina ID ${group.id}: ${group.name} (rezervace 30 min)`);
     }
-    
+
     return group;
   }
 
