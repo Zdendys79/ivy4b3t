@@ -13,9 +13,11 @@ import fs from 'fs';
 export function getAvailableDisplay() {
   if (process.env.DISPLAY) return process.env.DISPLAY;
   try {
-    const sockets = fs.readdirSync('/tmp/.X11-unix');
-    const socket = sockets.find(f => /^X\d+$/.test(f));
-    if (socket) return `:${socket.slice(1)}`;
+    const sockets = fs.readdirSync('/tmp/.X11-unix')
+      .filter(f => /^X\d+$/.test(f))
+      .map(f => ({ name: f, num: parseInt(f.slice(1), 10) }))
+      .sort((a, b) => b.num - a.num); // Prefer highest display number (CRD = X20)
+    if (sockets.length > 0) return `:${sockets[0].num}`;
   } catch {}
   return null;
 }
