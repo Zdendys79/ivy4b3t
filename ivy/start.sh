@@ -86,6 +86,43 @@ TIME_WINDOW=60
 LAST_START_FILE="$TARGET_DIR/.last_start_time"
 
 # ===========================================
+# FUNKCE PRO OVĚŘENÍ VERZE S DB
+# ===========================================
+
+# Porovná lokální versionCode (package.json) s hodnotou v DB (variables.versionCode).
+# Volá se v každém cyklu hlavní smyčky.
+verify_version_with_db() {
+    local target_dir=${1:-$TARGET_DIR}
+    local local_version
+    local_version=$(jq -r '.versionCode // empty' "$target_dir/package.json" 2>/dev/null)
+
+    if [[ -z "$local_version" ]]; then
+        echo "[START] Verze: nelze načíst z package.json"
+        return
+    fi
+
+    if [[ -z "$DB_HOST" || -z "$DB_USER" || -z "$DB_PASS" || -z "$DB_NAME" ]]; then
+        echo "[START] Verze: lokální=$local_version (DB proměnné nedostupné)"
+        return
+    fi
+
+    local db_version
+    db_version=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" \
+        -sNe "SELECT code FROM variables WHERE name='versionCode' LIMIT 1" 2>/dev/null)
+
+    if [[ -z "$db_version" ]]; then
+        echo "[START] Verze: lokální=$local_version (DB dotaz selhal)"
+        return
+    fi
+
+    if [[ "$local_version" == "$db_version" ]]; then
+        echo "[START] Verze: $local_version = DB ✓"
+    else
+        echo "[START] VAROVÁNÍ: lokální ($local_version) ≠ DB ($db_version) — nutná aktualizace!"
+    fi
+}
+
+# ===========================================
 # FUNKCE PRO SPRÁVU RESTARTŮ
 # ===========================================
 
@@ -181,9 +218,10 @@ main_loop() {
             continue
         }
 
-        # Zobraz informace o verzi
+        # Zobraz informace o verzi + ověř s DB
         echo "[START] Informace o verzi:"
         get_git_info "$REPO_DIR" | sed 's/^/[START]   /'
+        verify_version_with_db "$TARGET_DIR"
 
         # npm install pokud chybí node_modules
         if [[ ! -d "$TARGET_DIR/node_modules" ]]; then
