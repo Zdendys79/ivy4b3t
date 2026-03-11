@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Pre-commit hook: generuje nový 3-znakový versionCode a zapisuje do package.json + DB
+# Instalace: ln -sf ../../scripts/pre-commit-hook.sh .git/hooks/pre-commit
+
 # Generuj 3-znakový kód z malých písmen (nesmí být stejný jako předchozí)
 CURRENT_VERSION=$(node -e "
 try {
@@ -32,26 +35,22 @@ node -e "
 const fs = require('fs');
 const pkg = JSON.parse(fs.readFileSync('ivy/package.json', 'utf8'));
 pkg.versionCode = '$VERSION_CODE';
-fs.writeFileSync('ivy/package.json', JSON.stringify(pkg, null, 2));
+fs.writeFileSync('ivy/package.json', JSON.stringify(pkg, null, 2) + '\n');
 "
 echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do package.json"
 
-# Zápis do databáze do tabulky variables - podle aktuální branch
-CURRENT_BRANCH=$(git branch --show-current)
-if [[ "$CURRENT_BRANCH" == "main" ]]; then
-    TARGET_DB="${MYSQL_DATABASE}_test"
+# Zápis do DB (MariaDB na localhost, databáze utiolite)
+DB_HOST="127.0.0.1"
+DB_USER="B3.remotes"
+DB_PASS="e6TksATbS2E3FmQt-xEQgja1mh6mT"
+DB_NAME="utiolite"
+
+SQL="INSERT INTO variables (name, value, type, description) VALUES ('version', '$VERSION_CODE', 'string', 'Aktuální versionCode z package.json') ON DUPLICATE KEY UPDATE value = '$VERSION_CODE';"
+
+if mariadb -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" -e "$SQL" 2>/dev/null; then
+  echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do databáze $DB_NAME"
 else
-    TARGET_DB="$MYSQL_DATABASE"
+  echo "[PRE-COMMIT] VAROVÁNÍ: Nepodařilo se zapsat verzi do DB (commit pokračuje)"
 fi
-
-SQL="INSERT INTO variables (name, value) VALUES ('version', '$VERSION_CODE') ON DUPLICATE KEY UPDATE value = '$VERSION_CODE';"
-
-mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$TARGET_DB" -e "$SQL"
-echo "[PRE-COMMIT] Verze $VERSION_CODE zapsána do databáze $TARGET_DB"
-
-# Synchronizace scripts složky
-mkdir -p "/home/remotes/Sync/scripts"
-rsync -av "/home/remotes/ivy4b3t/scripts/" "/home/remotes/Sync/scripts/"
-echo "[PRE-COMMIT] Scripts synchronizovány"
 
 git add ivy/package.json
