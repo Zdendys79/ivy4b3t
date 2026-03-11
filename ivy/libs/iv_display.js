@@ -11,13 +11,11 @@ import fs from 'fs';
  * @returns {string|null}
  */
 export function getAvailableDisplay() {
-  if (process.env.DISPLAY) return process.env.DISPLAY;
+  // CRD (Chrome Remote Desktop) always uses :20
+  const CRD_DISPLAY = ':20';
   try {
-    const sockets = fs.readdirSync('/tmp/.X11-unix')
-      .filter(f => /^X\d+$/.test(f))
-      .map(f => ({ name: f, num: parseInt(f.slice(1), 10) }))
-      .sort((a, b) => b.num - a.num); // Prefer highest display number (CRD = X20)
-    if (sockets.length > 0) return `:${sockets[0].num}`;
+    const sockets = fs.readdirSync('/tmp/.X11-unix');
+    if (sockets.includes('X20')) return CRD_DISPLAY;
   } catch {}
   return null;
 }
